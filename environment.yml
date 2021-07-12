@@ -1,0 +1,32 @@
+name: lcm
+
+channels:
+  - conda-forge
+  - nodefaults
+  - opensourceeconomics
+
+dependencies:
+  - python >=3.7
+  - pip
+  - setuptools_scm
+  - toml
+
+  # Conda
+  - anaconda-client
+  - conda-build
+  - conda-verify
+
+  # Package dependencies
+  - estimagic
+
+  # Misc
+  - black
+  - jupyterlab
+  - matplotlib
+  - pdbpp
+  - pre-commit
+  - pydot
+  - pytest
+  - pytest-cov
+  - tox-conda
+
