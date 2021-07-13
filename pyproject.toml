@@ -3,4 +3,4 @@ requires = ["setuptools>=45", "wheel", "setuptools_scm[toml]>=6.0"]
 
 
 [tool.setuptools_scm]
-write_to = "src/_lcm/_version.py"
+write_to = "src/lcm/_version.py"

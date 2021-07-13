@@ -76,6 +76,7 @@ repos:
     hooks:
     -   id: interrogate
         args: [-v, --fail-under=40, src, tests]
+        exclude: _version.py
 -   repo: https://github.com/codespell-project/codespell
     rev: v2.1.0
     hooks:
