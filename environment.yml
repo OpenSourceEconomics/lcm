@@ -18,6 +18,11 @@ dependencies:
 
   # Package dependencies
   - estimagic
+  - numpy
+  - scipy
+  - numba
+  - pandas
+
 
   # Misc
   - black
@@ -29,4 +34,3 @@ dependencies:
   - pytest
   - pytest-cov
   - tox-conda
-
