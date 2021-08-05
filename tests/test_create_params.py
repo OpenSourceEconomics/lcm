@@ -16,4 +16,4 @@ def test_create_params_phelps_deaton_with_shocks():
         ("additive_utility_shock", "scale"),
     ]
 
-    assert list(params.index) == expected_index
+    assert sorted(params.index) == sorted(expected_index)

@@ -22,6 +22,8 @@ dependencies:
   - scipy
   - numba
   - pandas
+  - jax
+  - networkx
 
 
   # Misc

@@ -1,19 +1,25 @@
 """Define example model specifications."""
-import numpy as np
+import jax.numpy as jnp
 
 
-def phelps_deaton_utility_with_shocks(
-    consumption, working, delta, wage_shock, additive_utility_shock
+def phelps_deaton_utility_with_shock(
+    consumption, working, delta, additive_utility_shock
 ):
-    return np.log(consumption) + additive_utility_shock - delta * wage_shock * working
+    return jnp.log(consumption) + additive_utility_shock - delta * working
 
 
-def phelps_deaton_utility(consumption, working, delta, wage_shock):
-    return np.log(consumption) - delta * wage_shock * working
+def phelps_deaton_utility(consumption, working, delta):
+    return jnp.log(consumption) - delta * working
 
 
 def working(retirement):
     return 1 - retirement
+
+
+def next_wealth_with_shock(
+    wealth, consumption, working, wage, wage_shock, interest_rate
+):
+    return interest_rate * (wealth - consumption) + wage * wage_shock * working
 
 
 def next_wealth(wealth, consumption, working, wage, interest_rate):
@@ -24,25 +30,16 @@ def next_wealth_constraint(next_wealth):
     return next_wealth >= 0
 
 
-PHELPS_DEATON_WITH_SHOCKS = {
-    "functions": {
-        "utility": phelps_deaton_utility_with_shocks,
-        "next_wealth": next_wealth,
-        "next_wealth_constraint": next_wealth_constraint,
-        "working": working,
-    },
-    "choices": {
-        "retirement": {"options": [0, 1], "absorbing_values": [1]},
-        "consumption": {"grid_type": "linspace", "n_points": 10},
-    },
-    "states": {"wealth": {"grid_type": "linspace", "n_points": 12}},
-    "shocks": {
-        "wage_shock": "lognormal",
-        # special name to signal that this shock can be set to zero to calculate
-        # expected utility
-        "additive_utility_shock": "extreme_value",
-    },
-}
+def age(period):
+    return period + 18
+
+
+def mandatory_retirement_filter(retirement, age):
+    return retirement == 1 | age < 65
+
+
+def absorbing_retirement_filter(retirement, lagged_retirement):
+    return retirement == 1 | lagged_retirement == 0
 
 
 PHELPS_DEATON = {
@@ -53,8 +50,39 @@ PHELPS_DEATON = {
         "working": working,
     },
     "choices": {
-        "retirement": {"options": [0, 1], "absorbing_values": [1]},
-        "consumption": {"grid_type": "linspace", "n_points": 10},
+        "retirement": {"options": [0, 1]},
+        "consumption": {
+            "grid_type": "linspace",
+            "start": 0,
+            "stop": 1e6,
+            "n_points": 10,
+        },
     },
-    "states": {"wealth": {"grid_type": "linspace", "n_points": 12}},
+    "states": {
+        "wealth": {"grid_type": "linspace", "start": 0, "stop": 1e6, "n_points": 12}
+    },
+    "n_periods": 20,
+}
+
+
+PHELPS_DEATON_WITH_SHOCKS = {
+    **PHELPS_DEATON,
+    "functions": {
+        "utility": phelps_deaton_utility_with_shock,
+        "next_wealth": next_wealth_with_shock,
+        "next_wealth_constraint": next_wealth_constraint,
+        "working": working,
+    },
+    "shocks": {
+        "wage_shock": "lognormal",
+        # special name to signal that this shock can be set to zero to calculate
+        # expected utility
+        "additive_utility_shock": "extreme_value",
+    },
+}
+
+
+PHELPS_DEATON_WITH_FILTERS = {
+    **PHELPS_DEATON,
+    "state_filters": [mandatory_retirement_filter, absorbing_retirement_filter],
 }
