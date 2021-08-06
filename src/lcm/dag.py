@@ -24,20 +24,35 @@ def concatenate_functions(functions, target):
         function: A function that produces target when called with suitable arguments.
 
     """
-    if isinstance(functions, list):
-        functions = {func.__name__: func for func in functions}
-
-    if target not in functions:
-        # to-do: add typo suggestions via fuzzywuzzy, see estimagic or gettsim
-        msg = f"The target '{target}' is not in functions."
-        raise ValueError(msg)
-
+    functions = _check_and_process_inputs(functions, target)
     raw_dag = _create_complete_dag(functions)
     dag = _limit_dag_to_targets_and_their_ancestors(raw_dag, target)
     signature = _get_signature(functions, dag)
     exec_info = _create_execution_info(functions, dag)
     concatenated = _create_concatenated_function(exec_info, signature)
     return concatenated
+
+
+def get_ancestors(functions, target):
+    """Get all ancestors of target in a dag"""
+    functions = _check_and_process_inputs(functions, target)
+    raw_dag = _create_complete_dag(functions)
+    dag = _limit_dag_to_targets_and_their_ancestors(raw_dag, target)
+    return nx.ancestors(dag, target)
+
+
+def _check_and_process_inputs(functions, target):
+    if isinstance(functions, list):
+        functions = {func.__name__: func for func in functions}
+
+    if not isinstance(target, str):
+        raise ValueError(f"target must be a string, not {type(target)}")
+
+    if target not in functions:
+        # to-do: add typo suggestions via fuzzywuzzy, see estimagic or gettsim
+        msg = f"The target '{target}' is not in functions."
+        raise ValueError(msg)
+    return functions
 
 
 def _create_complete_dag(functions):
