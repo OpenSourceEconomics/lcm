@@ -36,7 +36,7 @@ jobs:
 
       - name: Run unit tests and doctests.
         shell: bash -l {0}
-        run: tox -e pytest -- src tests -m "unit or (not integration and not end_to_end)" --cov=./ --cov-report=xml -n auto
+        run: tox -e pytest -- src tests --cov-report=xml --cov=./ -n auto
 
       - name: Upload coverage report for unit tests and doctests.
         if: runner.os == 'Linux' && matrix.python-version == '3.8'
