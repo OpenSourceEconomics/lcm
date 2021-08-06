@@ -33,12 +33,28 @@ def concatenate_functions(functions, target):
     return concatenated
 
 
-def get_ancestors(functions, target):
-    """Get all ancestors of target in a dag"""
+def get_ancestors(functions, target, include_target=False):
+    """Build a DAG and extract all ancestors of target.
+
+    Args:
+        functions (dict or list): Dict or list of functions. If a list, the function
+            name is inferred from the __name__ attribute of the entries. If a dict,
+            the name of the function is set to the dictionary key.
+        target (str): Name of the function that produces the target function.
+        include_target (bool): Whether to include the target as its own ancestor.
+
+    Returns:
+        set: The ancestors
+
+    """
     functions = _check_and_process_inputs(functions, target)
     raw_dag = _create_complete_dag(functions)
     dag = _limit_dag_to_targets_and_their_ancestors(raw_dag, target)
-    return nx.ancestors(dag, target)
+
+    ancestors = nx.ancestors(dag, target)
+    if include_target:
+        ancestors.add(target)
+    return ancestors
 
 
 def _check_and_process_inputs(functions, target):
