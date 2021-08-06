@@ -1,8 +1,7 @@
 """Create a state space for a given model."""
-import inspect
-
 import numpy as np
 from lcm import grids as grids_module
+from lcm.dag import get_ancestors
 
 
 def create_state_choice_space(model):
@@ -44,11 +43,11 @@ def _find_simple_and_complex_variables(model):
     ]
     all_variables = set(state_variables + discrete_choices)
 
-    # to-do: all dependencies of filtered variables are also a filtered variable
     filtered_variables = {}
-    for func in model.get("state_filters", []):
+    filters = model.get("state_filters", [])
+    for func in filters:
         filtered_variables = filtered_variables.union(
-            inspect.signature(func).parameters
+            get_ancestors(filters, func.__name__)
         )
 
     simple_variables = all_variables.difference(filtered_variables)
@@ -64,7 +63,7 @@ def _create_grids(model):
     grids = {}
     for name, spec in gridspecs.items():
         if "options" in spec:
-            grids["name"] = np.array(spec["options"])
+            grids[name] = np.array(spec["options"])
         else:
             spec = spec.copy()
             func = getattr(grids_module, spec.pop("grid_type"))
