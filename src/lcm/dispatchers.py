@@ -20,6 +20,13 @@ def state_space_map(func, simple_variables, complex_variables):
         complex_variables (list): Names of the complex variables in the
             state_choice_space.
     """
+    if not set(simple_variables).isdisjoint(complex_variables):
+        raise ValueError("Simple and complex variables overlap.")
+
+    _all_variables = simple_variables + complex_variables
+    if len(_all_variables) != len(set(_all_variables)):
+        raise ValueError("Same argument provided more than once.")
+
     signature = inspect.signature(func)
     parameters = list(signature.parameters)
 
@@ -36,6 +43,7 @@ def state_space_map(func, simple_variables, complex_variables):
 
     vmapped.__signature__ = signature
     vmapped_with_kwargs = allow_kwargs(vmapped)
+
     return vmapped_with_kwargs
 
 
@@ -52,6 +60,9 @@ def product_map(func, product_axes):
         product_axes (list): List with names of arguments that over which the cartesian
             product should be formed.
     """
+    if len(product_axes) != len(set(product_axes)):
+        raise ValueError("Same argument provided more than once.")
+
     signature = inspect.signature(func)
     vmapped = _product_map(func, product_axes)
     vmapped.__signature__ = signature
