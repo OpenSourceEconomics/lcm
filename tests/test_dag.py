@@ -27,7 +27,15 @@ def test_concatenate_functions():
     )
 
     calculated_res = concatenated(wage=5, working=8)
-    expected_res = 56
+
+    def _complete_utility(wage, working):
+        """The function that we try to generate dynamically."""
+        leis = _leisure(working)
+        cons = _consumption(working, wage)
+        util = leis + cons
+        return util
+
+    expected_res = _complete_utility(wage=5, working=8)
     assert calculated_res == expected_res
 
     calculated_args = set(inspect.signature(concatenated).parameters)
