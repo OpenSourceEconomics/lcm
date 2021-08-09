@@ -1,9 +1,10 @@
 """Small utility functions used troughout the project."""
 import itertools
+from collections.abc import Mapping
 
 
-def map_nested_dictionary(function, dictionary, by="keys"):
-    """Apply a function to all values of a nested dictionary.
+def map_dictionary(function, dictionary, by="keys"):
+    """Apply a function to the keys or values of a flat or nested dictionary.
 
     Args:
         function (callable): function to be applied.
@@ -16,15 +17,19 @@ def map_nested_dictionary(function, dictionary, by="keys"):
 
     """
     if by == "values":
-        if isinstance(dictionary, dict):
-            return {
-                k: map_nested_dictionary(function, v, by) for k, v in dictionary.items()
-            }
+        if isinstance(dictionary, Mapping):
+            return {k: map_dictionary(function, v, by) for k, v in dictionary.items()}
         else:
             return function(dictionary)
 
     elif by == "keys":
-        raise NotImplementedError()
+        if isinstance(dictionary, Mapping):
+            return {
+                function(k): map_dictionary(function, v, by)
+                for k, v in dictionary.items()
+            }
+        else:
+            return dictionary
 
 
 def filter_dictionary(function, dictionary, by="keys"):
