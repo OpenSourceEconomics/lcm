@@ -134,7 +134,7 @@ def _get_signature(functions, dag):
     parameter_objects = []
     for arg in arguments:
         parameter_objects.append(
-            inspect.Parameter(name=arg, kind=inspect.Parameter.KEYWORD_ONLY)
+            inspect.Parameter(name=arg, kind=inspect.Parameter.POSITIONAL_OR_KEYWORD)
         )
 
     sig = inspect.Signature(parameters=parameter_objects)
@@ -176,9 +176,10 @@ def _create_concatenated_function(execution_info, signature):
         callable: The concatenated function
 
     """
+    parameters = sorted(signature.parameters)
 
-    def concatenated(**kwargs):
-        results = {**kwargs}
+    def concatenated(*args, **kwargs):
+        results = {**dict(zip(parameters, args)), **kwargs}
         for name, info in execution_info.items():
             arguments = _dict_subset(results, info["arguments"])
             result = info["func"](**arguments)
