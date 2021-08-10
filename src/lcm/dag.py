@@ -1,9 +1,10 @@
 import inspect
+import textwrap
 
 import networkx as nx
 
 
-def concatenate_functions(functions, target):
+def concatenate_functions(functions, targets):
     """Combine functions to one function that generates target.
 
     Functions can depend on the output of other functions as inputs, as long as the
@@ -18,22 +19,28 @@ def concatenate_functions(functions, target):
         functions (dict or list): Dict or list of functions. If a list, the function
             name is inferred from the __name__ attribute of the entries. If a dict,
             the name of the function is set to the dictionary key.
-        target (str): Name of the function that produces the target.
+        target (str): Name of the function that produces the target or list of such
+            function names.
 
     Returns:
         function: A function that produces target when called with suitable arguments.
 
     """
-    functions = _check_and_process_inputs(functions, target)
+    functions, targets, single_target = _check_and_process_inputs(functions, targets)
     raw_dag = _create_complete_dag(functions)
-    dag = _limit_dag_to_targets_and_their_ancestors(raw_dag, target)
+    dag = _limit_dag_to_targets_and_their_ancestors(raw_dag, targets)
     signature = _get_signature(functions, dag)
     exec_info = _create_execution_info(functions, dag)
-    concatenated = _create_concatenated_function(exec_info, signature)
+    if single_target:
+        concatenated = _create_concatenated_function_single_target(exec_info, signature)
+    else:
+        concatenated = _create_concatenated_function_multi_target(
+            exec_info, signature, targets
+        )
     return concatenated
 
 
-def get_ancestors(functions, target, include_target=False):
+def get_ancestors(functions, targets, include_target=False):
     """Build a DAG and extract all ancestors of target.
 
     Args:
@@ -47,28 +54,41 @@ def get_ancestors(functions, target, include_target=False):
         set: The ancestors
 
     """
-    functions = _check_and_process_inputs(functions, target)
+    functions, targets, _ = _check_and_process_inputs(functions, targets)
     raw_dag = _create_complete_dag(functions)
-    dag = _limit_dag_to_targets_and_their_ancestors(raw_dag, target)
+    dag = _limit_dag_to_targets_and_their_ancestors(raw_dag, targets)
 
-    ancestors = nx.ancestors(dag, target)
-    if include_target:
-        ancestors.add(target)
+    ancestors = set()
+    for target in targets:
+        ancestors = ancestors.union(nx.ancestors(dag, target))
+        if include_target:
+            ancestors.add(target)
     return ancestors
 
 
-def _check_and_process_inputs(functions, target):
-    if isinstance(functions, list):
+def _check_and_process_inputs(functions, targets):
+    if isinstance(functions, (list, tuple)):
         functions = {func.__name__: func for func in functions}
 
-    if not isinstance(target, str):
-        raise ValueError(f"target must be a string, not {type(target)}")
+    single_target = isinstance(targets, str)
+    if single_target:
+        targets = [targets]
 
-    if target not in functions:
-        # to-do: add typo suggestions via fuzzywuzzy, see estimagic or gettsim
-        msg = f"The target '{target}' is not in functions."
-        raise ValueError(msg)
-    return functions
+    not_strings = [target for target in targets if not isinstance(target, str)]
+    if not_strings:
+        raise ValueError(
+            f"Targets must be strings. The following targets are not: {not_strings}"
+        )
+
+    # to-do: add typo suggestions via fuzzywuzzy, see estimagic
+    targets_not_in_functions = set(targets) - set(functions)
+    if targets_not_in_functions:
+        formatted = _format_list_linewise(targets_not_in_functions)
+        raise ValueError(
+            f"The following targets have no corresponding function:\n{formatted}"
+        )
+
+    return functions, targets, single_target
 
 
 def _create_complete_dag(functions):
@@ -93,7 +113,7 @@ def _create_complete_dag(functions):
     return dag
 
 
-def _limit_dag_to_targets_and_their_ancestors(dag, target):
+def _limit_dag_to_targets_and_their_ancestors(dag, targets):
     """Limit DAG to targets and their ancestors.
 
     Args:
@@ -104,8 +124,9 @@ def _limit_dag_to_targets_and_their_ancestors(dag, target):
         networkx.DiGraph: The pruned DAG.
 
     """
-    used_nodes = {target}
-    used_nodes = used_nodes | set(nx.ancestors(dag, target))
+    used_nodes = set(targets)
+    for target in targets:
+        used_nodes = used_nodes | set(nx.ancestors(dag, target))
 
     all_nodes = set(dag.nodes)
 
@@ -164,7 +185,7 @@ def _create_execution_info(functions, dag):
     return out
 
 
-def _create_concatenated_function(execution_info, signature):
+def _create_concatenated_function_single_target(execution_info, signature):
     """Create a concatenated function object with correct signature.
 
     Args:
@@ -191,6 +212,48 @@ def _create_concatenated_function(execution_info, signature):
     return concatenated
 
 
+def _create_concatenated_function_multi_target(execution_info, signature, targets):
+    """Create a concatenated function object with correct signature.
+
+    Args:
+        execution_info (dict): Dictionary with functions and their arguments for each
+            node in the dag. The functions are already in topological_sort order.
+        signature (inspect.Signature)): The signature of the concatenated function.
+        targets (list): List that is used to determine what is returned and the
+            order of the outputs.
+
+    Returns:
+        callable: The concatenated function
+
+    """
+    parameters = sorted(signature.parameters)
+
+    def concatenated(*args, **kwargs):
+        results = {**dict(zip(parameters, args)), **kwargs}
+        for name, info in execution_info.items():
+            arguments = _dict_subset(results, info["arguments"])
+            result = info["func"](**arguments)
+            results[name] = result
+
+        out = tuple(results[target] for target in targets)
+        return out
+
+    concatenated.__signature__ = signature
+
+    return concatenated
+
+
 def _dict_subset(dictionary, keys):
     """Reduce dictionary to keys."""
     return {k: dictionary[k] for k in keys}
+
+
+def _format_list_linewise(list_):
+    formatted_list = '",\n    "'.join(list_)
+    return textwrap.dedent(
+        """
+        [
+            "{formatted_list}",
+        ]
+        """
+    ).format(formatted_list=formatted_list)
