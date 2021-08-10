@@ -137,8 +137,7 @@ def test_product_map_with_all_arguments_mapped_some_scalar():
     }
 
     decorated = product_map(f, ["a", "b", "c"])
-    error_msg = "vmap got arg 0 of rank 0 but axis to be mapped 0"
-    with pytest.raises(ValueError, match=error_msg):
+    with pytest.raises(ValueError):
         decorated(*grids.values())
 
 
