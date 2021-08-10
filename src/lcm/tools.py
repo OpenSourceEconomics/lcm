@@ -3,7 +3,7 @@ import itertools
 from collections.abc import Mapping
 
 
-def map_dictionary(function, dictionary, by="keys"):
+def map_dict(func, dictionary, by="keys"):
     """Apply a function to the keys or values of a flat or nested dictionary.
 
     Args:
@@ -18,21 +18,18 @@ def map_dictionary(function, dictionary, by="keys"):
     """
     if by == "values":
         if isinstance(dictionary, Mapping):
-            return {k: map_dictionary(function, v, by) for k, v in dictionary.items()}
+            return {k: map_dict(func, v, by) for k, v in dictionary.items()}
         else:
-            return function(dictionary)
+            return func(dictionary)
 
     elif by == "keys":
         if isinstance(dictionary, Mapping):
-            return {
-                function(k): map_dictionary(function, v, by)
-                for k, v in dictionary.items()
-            }
+            return {func(k): map_dict(func, v, by) for k, v in dictionary.items()}
         else:
             return dictionary
 
 
-def filter_dictionary(function, dictionary, by="keys"):
+def filter_dict(func, dictionary, by="keys"):
     """Filter a dictionary by conditions on keys or values.
 
     Args:
@@ -43,19 +40,19 @@ def filter_dictionary(function, dictionary, by="keys"):
         dict: Filtered dictionary
 
     Examples:
-        >>> filter_dictionary(lambda x: "bla" in x, {"bla": 1, "blubb": 2})
+        >>> filter_dict(lambda x: "bla" in x, {"bla": 1, "blubb": 2})
         {'bla': 1}
-        >>> filter_dictionary(lambda x: x <= 1, {"bla": 1, "blubb": 2}, by="values")
+        >>> filter_dict(lambda x: x <= 1, {"bla": 1, "blubb": 2}, by="values")
         {'bla': 1}
 
     """
     if by == "keys":
-        keys_to_keep = set(filter(function, dictionary))
+        keys_to_keep = set(filter(func, dictionary))
         out = {key: val for key, val in dictionary.items() if key in keys_to_keep}
     elif by == "values":
         out = {}
         for key, val in dictionary.items():
-            if function(val):
+            if func(val):
                 out[key] = val
     else:
         raise ValueError(f"by must be 'keys' or 'values', not {by}")
@@ -63,7 +60,7 @@ def filter_dictionary(function, dictionary, by="keys"):
     return out
 
 
-def update_dictionary(dictionary, other):
+def update_dict(dictionary, other):
     """Create a copy of dictionary and update it with other.
 
     Args:
@@ -77,18 +74,18 @@ def update_dictionary(dictionary, other):
     Examples:
         # make sure input is not changed
         >>> first = {"a": 1, "b": 2}
-        >>> updated = update_dictionary(first, {"c": 3})
+        >>> updated = update_dict(first, {"c": 3})
         >>> assert first == {"a": 1, "b": 2}
 
         # make sure update works
-        >>> update_dictionary({"a": 1, "b": 2}, {"c": 3})
+        >>> update_dict({"a": 1, "b": 2}, {"c": 3})
         {'a': 1, 'b': 2, 'c': 3}
 
     """
     return {**dictionary, **other}
 
 
-def combine_dictionaries(dictionaries):
+def combine_dicts(dictionaries):
     """Combine a list of non-overlapping dictionaries into one.
 
     Args:
@@ -99,7 +96,7 @@ def combine_dictionaries(dictionaries):
 
 
     Examples:
-        >>> combine_dictionaries([{"a": 1}, {"b": 2}])
+        >>> combine_dicts([{"a": 1}, {"b": 2}])
         {'a': 1, 'b': 2}
 
     """
