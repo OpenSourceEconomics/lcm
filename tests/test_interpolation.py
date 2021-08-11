@@ -11,11 +11,11 @@ def f(a, b, c):
 
 
 def g(a, b, c, d):
-    return 2 * a ** 3 + 3 * b ** 2 - c - d
+    return f(a, b, c) - d
 
 
 def h(a, b, c, d, e):
-    return 2 * a ** 3 + 3 * b ** 2 - c - d + e ** 5
+    return g(a, b, c, d) + e ** 5
 
 
 def test_linear_interpolation_2d():
