@@ -34,7 +34,6 @@ Need for freedom
   we do not want redundant information to be required anywhere.
 
 
-
 Main Design Considerations
 --------------------------
 
@@ -161,14 +160,20 @@ state_solvers vs. state_choice solvers
 
 - A state solver would be a solver that is dispatched over the state space and looks
   at all discrete choices that are possible in that state internally. It cannot produce
-  any output at the state_choice level. It's main advantage would be memory efficiency.
-  The memory efficiency does not only come from not storing things on state_choice level
-  but also from the fact that no state_choice_space is constructed and thus no
-  state_choice_indexer is needed.
+  any output at the state_choice level unless all choice variables are ``simple``.
+  It's main advantage would be memory efficiency. The memory efficiency does not only
+  come from not storing things on state_choice level but also from the fact that no
+  state_choice_space is constructed and thus no state_choice_indexer is needed.
 - A state_choice solver would be a solver that is dispatched over the state choice
   space. It can only produce outputs on the state_choice level that can be aggregated
   later if necessary. Calculating the Emax would be a separate step after those solvers.
-
--> I think we need both in the long run. The smarter solvers are definitely
-state_choice solvers because they need to pre-calculate policies. However, we also need
-memory efficient dumb solvers.
+- We definitely need state_solvers because memory is the more stringent resource
+  constraint. Whether we even need state_choice_solvers boils down to two questions:
+  1. How many calculations can be saved by reducing the choice sets as part of the
+  state space construction.
+  2. How much memory is saved by storing state_choice level data only for feasible
+  choices and not for all choices.
+- Since a similar and probably bigger waste of computations is probably incurred anyways
+  for the way we implement budget constraints, I currently tend towards no static
+  reduction of choice sets, no state_choice_space and thus no state_choice solvers
+  (at least in the beginning).

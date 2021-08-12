@@ -15,3 +15,4 @@ contributors.
    dags
    solver_interface
    discrete_choices
+   constraints
