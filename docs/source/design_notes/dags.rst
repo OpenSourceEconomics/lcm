@@ -25,3 +25,11 @@ Current implementation
 
 .. automodule:: lcm.dag
     :members: concatenate_functions
+
+
+Highlights
+----------
+
+- The dag function cannot only be used to construct efficient functions based on
+  arbitrary building blocks, but generate several versions of such a function,
+  for example one that returns intermediate outputs and one that does not.

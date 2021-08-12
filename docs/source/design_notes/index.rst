@@ -13,3 +13,5 @@ contributors.
    vectorization
    interpolation
    dags
+   solver_interface
+   discrete_choices

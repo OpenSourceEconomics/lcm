@@ -28,6 +28,12 @@ Main Design Considerations
 - dispatchers such as vmap and functions that build on it are used to achieve the other
   cases.
 
+.. Note:: While one might think that vectorization is only about performance, this is
+  absolutely not the case. The dispatchers reduce complexity enormously. Firstly,
+  because they are basically a form of encapsulation: The exact representation of the
+  state space is irrelevant as long as there is a corresponding dispatcher. Secondly,
+  They facilitate the reuse of functions. Thirdly, writing functions for the scalar
+  case is much easier and faster.
 
 Current implementation
 ----------------------
