@@ -154,3 +154,21 @@ Pro DAG
   be eliminated by jax anyways.
 - I have personally never had an experience where I regretted solving something with
   a dag.
+
+
+state_solvers vs. state_choice solvers
+--------------------------------------
+
+- A state solver would be a solver that is dispatched over the state space and looks
+  at all discrete choices that are possible in that state internally. It cannot produce
+  any output at the state_choice level. It's main advantage would be memory efficiency.
+  The memory efficiency does not only come from not storing things on state_choice level
+  but also from the fact that no state_choice_space is constructed and thus no
+  state_choice_indexer is needed.
+- A state_choice solver would be a solver that is dispatched over the state choice
+  space. It can only produce outputs on the state_choice level that can be aggregated
+  later if necessary. Calculating the Emax would be a separate step after those solvers.
+
+-> I think we need both in the long run. The smarter solvers are definitely
+state_choice solvers because they need to pre-calculate policies. However, we also need
+memory efficient dumb solvers.
