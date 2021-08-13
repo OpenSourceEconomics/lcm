@@ -48,12 +48,7 @@ def get_logspace_coordinate(value, start, stop, n_points):
     # Calculate mapped point on a linear scale
     step_length = (stop_lin - start_lin) / (n_points - 1)
     lower_point = jnp.exp(start_lin + step_length * jnp.floor(mapped_point_log))
-    upper_point = jnp.exp(start_lin + step_length * jnp.ceil(mapped_point_log))
+    upper_point = lower_point + 1
 
-    if lower_point == upper_point:
-        mapped_point_lin = mapped_point_log
-    else:
-        mapped_point_lin = jnp.floor(mapped_point_log) + (value - lower_point) / (
-            upper_point - lower_point
-        )
+    mapped_point_lin = lower_point + (value - lower_point) / (upper_point - lower_point)
     return mapped_point_lin
