@@ -44,6 +44,32 @@ def test_linear_interpolation_2d():
         aaae(calculated, scipy_res)
 
 
+def test_linear_interpolation_logscale_2d():
+
+    grid1 = np.logspace(np.log10(1), np.log10(10), 7)
+    grid2 = np.logspace(np.log10(1), np.log10(10), 3)
+
+    prod_grid = np.array(list(itertools.product(grid1, grid2)))
+    values = (prod_grid ** 2).sum(axis=1).reshape(7, 3)
+
+    points = np.array([[9.8, 2.3], [2.1, 8.2], [2.7, 1.1]])
+
+    grid_info = [("logspace", (1, 10, 7)), ("logspace", (1, 10, 3))]
+
+    for point in points:
+        calculated = linear_interpolation(
+            values=values,
+            point=point,
+            grid_info=grid_info,
+        )
+
+        scipy_func = RegularGridInterpolator(
+            points=(grid1, grid2), values=values, method="linear"
+        )
+        scipy_res = scipy_func(point)
+        aaae(calculated, scipy_res)
+
+
 def test_linear_interpolation_3d():
     grid1 = np.linspace(1, 5, 5)
     grid2 = np.linspace(4, 7, 4)

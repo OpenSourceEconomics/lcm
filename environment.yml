@@ -25,11 +25,11 @@ dependencies:
   - jax
   - networkx
 
-
   # Misc
   - black
   - jupyterlab
   - matplotlib
+  - nodejs
   - pdbpp
   - pre-commit
   - pydot
