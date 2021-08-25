@@ -5,7 +5,7 @@ import textwrap
 import networkx as nx
 
 
-def concatenate_functions(functions, targets):
+def concatenate_functions(functions, targets, return_dict: bool = False):
     """Combine functions to one function that generates target.
 
     Functions can depend on the output of other functions as inputs, as long as the
@@ -22,6 +22,8 @@ def concatenate_functions(functions, targets):
             the name of the function is set to the dictionary key.
         targets (str): Name of the function that produces the target or list of such
             function names.
+        return_dict (bool, optional): Whether the function should return a dictionary
+            with node names as keys or just the values as a tuple for multiple outputs.
 
     Returns:
         function: A function that produces target when called with suitable arguments.
@@ -36,7 +38,7 @@ def concatenate_functions(functions, targets):
         concatenated = _create_concatenated_function_single_target(exec_info, signature)
     else:
         concatenated = _create_concatenated_function_multi_target(
-            exec_info, signature, targets
+            exec_info, signature, targets, return_dict
         )
     return concatenated
 
@@ -47,7 +49,7 @@ def get_ancestors(functions, targets, include_target=False):
     Args:
         functions (dict or list): Dict or list of functions. If a list, the function
             name is inferred from the __name__ attribute of the entries. If a dict,
-            the name of the function is set to the dictionary key.
+            with node names as keys or just the values as a tuple for multiple outputs.
         targets (str): Name of the function that produces the target function.
         include_target (bool): Whether to include the target as its own ancestor.
 
@@ -214,7 +216,7 @@ def _create_concatenated_function_single_target(execution_info, signature):
 
 
 def _create_concatenated_function_multi_target(
-    execution_info, signature, targets, return_dict: bool = False
+    execution_info, signature, targets, return_dict: bool
 ):
     """Create a concatenated function object with correct signature.
 
@@ -224,8 +226,8 @@ def _create_concatenated_function_multi_target(
         signature (inspect.Signature)): The signature of the concatenated function.
         targets (list): List that is used to determine what is returned and the
             order of the outputs.
-        return_dict (bool, optional): Whether the function should return a dictionary
-            with node names as keys or just the values as a tuple.
+        return_dict (bool): Whether the function should return a dictionary
+            with node names as keys or just the values as a tuple for multiple outputs.
 
     Returns:
         callable: The concatenated function

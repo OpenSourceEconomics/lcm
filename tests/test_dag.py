@@ -1,5 +1,6 @@
 import inspect
 
+import pytest
 from lcm.dag import concatenate_functions
 from lcm.dag import get_ancestors
 
@@ -45,18 +46,22 @@ def test_concatenate_functions_single_target():
     assert calculated_args == expected_args
 
 
-def test_concatenate_functions_multi_target():
+@pytest.mark.parametrize("return_dict", [True, False])
+def test_concatenate_functions_multi_target(return_dict):
     concatenated = concatenate_functions(
         functions=[_utility, _unrelated, _leisure, _consumption],
         targets=["_utility", "_consumption"],
+        return_dict=return_dict,
     )
 
     calculated_res = concatenated(wage=5, working=8)
 
-    expected_res = (
-        _complete_utility(wage=5, working=8),
-        _consumption(wage=5, working=8),
-    )
+    expected_res = {
+        "_utility": _complete_utility(wage=5, working=8),
+        "_consumption": _consumption(wage=5, working=8),
+    }
+    if not return_dict:
+        expected_res = tuple(expected_res.values())
     assert calculated_res == expected_res
 
     calculated_args = set(inspect.signature(concatenated).parameters)
