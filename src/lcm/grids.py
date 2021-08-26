@@ -43,12 +43,18 @@ def get_logspace_coordinate(value, start, stop, n_points):
     start_lin = jnp.log(start)
     stop_lin = jnp.log(stop)
     value_lin = jnp.log(value)
-    mapped_point_log = get_linspace_coordinate(value_lin, start_lin, stop_lin, n_points)
 
-    # Calculate mapped point on a linear scale
+    mapped_point_lin = get_linspace_coordinate(value_lin, start_lin, stop_lin, n_points)
+
+    # Calculate lower and upper point on log/exp scale
     step_length = (stop_lin - start_lin) / (n_points - 1)
-    lower_point = jnp.exp(start_lin + step_length * jnp.floor(mapped_point_log))
-    upper_point = lower_point + 1
+    rank_lower_gridpoint = jnp.floor(mapped_point_lin)
+    rank_upper_gridpoint = rank_lower_gridpoint + 1
 
-    mapped_point_lin = lower_point + (value - lower_point) / (upper_point - lower_point)
-    return mapped_point_lin
+    # Calc
+    lower_gridpoint = jnp.exp(start_lin + step_length * rank_lower_gridpoint)
+    upper_gridpoint = jnp.exp(start_lin + step_length * rank_upper_gridpoint)
+
+    # Calculate transformed mapped point
+    decimal = (value - lower_gridpoint) / (upper_gridpoint - lower_gridpoint)
+    return rank_lower_gridpoint + decimal

@@ -165,3 +165,40 @@ def test_linear_interpolation_5d():
         scipy_res = scipy_func(point)
 
         aaae(calculated, scipy_res)
+
+
+def test_linear_interpolation_logscale_5d():
+
+    grid1 = np.logspace(np.log10(1), np.log10(5), 5)
+    grid2 = np.logspace(np.log10(4), np.log10(7), 4)
+    grid3 = np.logspace(np.log10(7), np.log10(9), 2)
+    grid4 = np.logspace(np.log10(10), np.log10(11), 2)
+    grid5 = np.logspace(np.log10(3), np.log10(4), 10)
+
+    values = h(
+        *np.meshgrid(grid1, grid2, grid3, grid4, grid5, indexing="ij", sparse=False)
+    )
+
+    points = np.array(
+        [[2.1, 6.2, 8.3, 10.4, 3], [3.3, 5.2, 7.1, 10, 3.6], [2.7, 4.3, 7, 10.5, 4]]
+    )
+
+    grid_info = [
+        ("logspace", (1, 5, 5)),
+        ("logspace", (4, 7, 4)),
+        ("logspace", (7, 9, 2)),
+        ("logspace", (10, 11, 2)),
+        ("logspace", (3, 4, 10)),
+    ]
+    for point in points:
+        calculated = linear_interpolation(
+            values=values,
+            point=point,
+            grid_info=grid_info,
+        )
+        scipy_func = RegularGridInterpolator(
+            points=(grid1, grid2, grid3, grid4, grid5), values=values, method="linear"
+        )
+        scipy_res = scipy_func(point)
+
+        aaae(calculated, scipy_res)
