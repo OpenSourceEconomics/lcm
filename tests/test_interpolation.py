@@ -106,7 +106,7 @@ def test_linear_interpolation_monotone_grid(info, points, calc_values):
         ),
     ],
 )
-def test_linear_interpolation_logarithmic_grid(grid, info, points, calc_values):
+def test_linear_interpolation_logarithmic_scale(grid, info, points, calc_values):
     grids = [np.logspace(*g) for g in grid]
     grid_info = [("logspace",) + (i,) for i in info]
 
