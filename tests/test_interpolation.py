@@ -1,204 +1,115 @@
-import itertools
-
 import numpy as np
+import pytest
 from lcm.interpolation import linear_interpolation
 from numpy.testing import assert_array_almost_equal as aaae
 from scipy.interpolate import RegularGridInterpolator
 
 
-def f(a, b, c):
+def assert_point_wise(grids, grid_info, points, values):
+    for point in points:
+        calculated = linear_interpolation(
+            values=values,
+            point=point,
+            grid_info=grid_info,
+        )
+
+        scipy_func = RegularGridInterpolator(
+            points=grids, values=values, method="linear"
+        )
+        scipy_res = scipy_func(point)
+
+        aaae(calculated, scipy_res)
+
+
+def _calc_values_2d(a, b):
+    return a / b
+
+
+def _calc_values_3d(a, b, c):
     return 2 * a ** 3 + 3 * b ** 2 - c
 
 
-def g(a, b, c, d):
-    return f(a, b, c) - d
+def _calc_values_4d(a, b, c, d):
+    return _calc_values_3d(a, b, c) - d
 
 
-def h(a, b, c, d, e):
-    return g(a, b, c, d) + e ** 5
+def _calc_values_5d(a, b, c, d, e):
+    return _calc_values_4d(a, b, c, d) + e ** 5
 
 
-def test_linear_interpolation_2d():
-    grid1 = np.array([1, 2, 3, 4, 5.0])
-    grid2 = np.array([2, 3, 4.0])
+@pytest.mark.parametrize(
+    "info, points, calc_values",
+    [
+        (
+            [(1, 5, 5), (2, 4, 3)],
+            np.array([[2.5, 3.5], [2.1, 3.8], [2.7, 3.3]]),
+            _calc_values_2d,
+        ),
+        (
+            [(1, 5, 5), (4, 7, 4), (7, 9, 4)],
+            np.array([[2.1, 6.2, 8.3], [3.3, 5.2, 7.1], [2.7, 4.3, 7]]),
+            _calc_values_3d,
+        ),
+        (
+            [(1, 5, 5), (4, 7, 4), (7, 9, 4), (10, 11, 2)],
+            np.array([[2.1, 6.2, 8.3, 10.4], [3.3, 5.2, 7.1, 10], [2.7, 4.3, 7, 11.0]]),
+            _calc_values_4d,
+        ),
+        (
+            [(1, 5, 5), (4, 7, 4), (7, 9, 4), (10, 11, 2), (-3, 4, 10)],
+            np.array(
+                [
+                    [2.1, 6.2, 8.3, 10.4, -3],
+                    [3.3, 5.2, 7.1, 10, 0],
+                    [2.7, 4.3, 7, 11.0, -1.7],
+                ]
+            ),
+            _calc_values_5d,
+        ),
+    ],
+)
+def test_linear_interpolation_monotone_grid(info, points, calc_values):
+    grids = [np.linspace(*i) for i in info]
+    grid_info = [("linspace",) + (i,) for i in info]
 
-    prod_grid = np.array(list(itertools.product(grid1, grid2)))
-    values = (prod_grid ** 2).sum(axis=1).reshape(5, 3)
+    values = calc_values(*np.meshgrid(*grids, indexing="ij", sparse=False))
 
-    points = np.array([[2.5, 3.5], [2.1, 3.8], [2.7, 3.3]])
-
-    grid_info = [("linspace", (1, 5, 5)), ("linspace", (2, 4, 3))]
-
-    for point in points:
-        calculated = linear_interpolation(
-            values=values,
-            point=point,
-            grid_info=grid_info,
-        )
-
-        scipy_func = RegularGridInterpolator(
-            points=(grid1, grid2), values=values, method="linear"
-        )
-        scipy_res = scipy_func(point)
-
-        aaae(calculated, scipy_res)
-
-
-def test_linear_interpolation_logscale_2d():
-
-    grid1 = np.logspace(np.log10(1), np.log10(10), 7)
-    grid2 = np.logspace(np.log10(1), np.log10(10), 3)
-
-    prod_grid = np.array(list(itertools.product(grid1, grid2)))
-    values = (prod_grid ** 2).sum(axis=1).reshape(7, 3)
-
-    points = np.array([[9.8, 2.3], [2.1, 8.2], [2.7, 1.1]])
-
-    grid_info = [("logspace", (1, 10, 7)), ("logspace", (1, 10, 3))]
-
-    for point in points:
-        calculated = linear_interpolation(
-            values=values,
-            point=point,
-            grid_info=grid_info,
-        )
-
-        scipy_func = RegularGridInterpolator(
-            points=(grid1, grid2), values=values, method="linear"
-        )
-        scipy_res = scipy_func(point)
-        aaae(calculated, scipy_res)
+    assert_point_wise(grids, grid_info, points, values)
 
 
-def test_linear_interpolation_3d():
-    grid1 = np.linspace(1, 5, 5)
-    grid2 = np.linspace(4, 7, 4)
-    grid3 = np.linspace(7, 9, 2)
+@pytest.mark.parametrize(
+    "grid, info, points, calc_values",
+    [
+        (
+            [(np.log10(1), np.log10(10), 7), (np.log10(1), np.log10(10), 3)],
+            [(1, 10, 7), (1, 10, 3)],
+            np.array([[9.8, 2.3], [2.1, 8.2], [2.7, 1.1]]),
+            _calc_values_2d,
+        ),
+        (
+            [
+                (np.log10(1), np.log10(5), 5),
+                (np.log10(4), np.log10(7), 4),
+                (np.log10(7), np.log10(9), 2),
+                (np.log10(10), np.log10(11), 2),
+                (np.log10(3), np.log10(4), 10),
+            ],
+            [(1, 5, 5), (4, 7, 4), (7, 9, 2), (10, 11, 2), (3, 4, 10)],
+            np.array(
+                [
+                    [2.1, 6.2, 8.3, 10.4, 3],
+                    [3.3, 5.2, 7.1, 10, 3.6],
+                    [2.7, 4.3, 7, 10.5, 4],
+                ]
+            ),
+            _calc_values_5d,
+        ),
+    ],
+)
+def test_linear_interpolation_logarithmic_grid(grid, info, points, calc_values):
+    grids = [np.logspace(*g) for g in grid]
+    grid_info = [("logspace",) + (i,) for i in info]
 
-    values = f(*np.meshgrid(grid1, grid2, grid3, indexing="ij", sparse=False))
+    values = calc_values(*np.meshgrid(*grids, indexing="ij", sparse=False))
 
-    points = np.array([[2.1, 6.2, 8.3], [3.3, 5.2, 7.1], [2.7, 4.3, 7]])
-
-    grid_info = [
-        ("linspace", (1, 5, 5)),
-        ("linspace", (4, 7, 4)),
-        ("linspace", (7, 9, 2)),
-    ]
-
-    for point in points:
-        calculated = linear_interpolation(
-            values=values,
-            point=point,
-            grid_info=grid_info,
-        )
-        scipy_func = RegularGridInterpolator(
-            points=(grid1, grid2, grid3), values=values, method="linear"
-        )
-        scipy_res = scipy_func(point)
-
-        aaae(calculated, scipy_res)
-
-
-def test_linear_interpolation_4d():
-    grid1 = np.linspace(1, 5, 5)
-    grid2 = np.linspace(4, 7, 4)
-    grid3 = np.linspace(7, 9, 2)
-    grid4 = np.linspace(10, 11, 2)
-
-    values = g(*np.meshgrid(grid1, grid2, grid3, grid4, indexing="ij", sparse=False))
-
-    points = np.array([[2.1, 6.2, 8.3, 10.4], [3.3, 5.2, 7.1, 10], [2.7, 4.3, 7, 11.0]])
-
-    grid_info = [
-        ("linspace", (1, 5, 5)),
-        ("linspace", (4, 7, 4)),
-        ("linspace", (7, 9, 2)),
-        ("linspace", (10, 11, 2)),
-    ]
-
-    for point in points:
-        calculated = linear_interpolation(
-            values=values,
-            point=point,
-            grid_info=grid_info,
-        )
-        scipy_func = RegularGridInterpolator(
-            points=(grid1, grid2, grid3, grid4), values=values, method="linear"
-        )
-        scipy_res = scipy_func(point)
-
-        aaae(calculated, scipy_res)
-
-
-def test_linear_interpolation_5d():
-    grid1 = np.linspace(1, 5, 5)
-    grid2 = np.linspace(4, 7, 4)
-    grid3 = np.linspace(7, 9, 2)
-    grid4 = np.linspace(10, 11, 2)
-    grid5 = np.linspace(-3, 4, 10)
-
-    values = h(
-        *np.meshgrid(grid1, grid2, grid3, grid4, grid5, indexing="ij", sparse=False)
-    )
-
-    points = np.array(
-        [[2.1, 6.2, 8.3, 10.4, -3], [3.3, 5.2, 7.1, 10, 0], [2.7, 4.3, 7, 11.0, -1.7]]
-    )
-
-    grid_info = [
-        ("linspace", (1, 5, 5)),
-        ("linspace", (4, 7, 4)),
-        ("linspace", (7, 9, 2)),
-        ("linspace", (10, 11, 2)),
-        ("linspace", (-3, 4, 10)),
-    ]
-
-    for point in points:
-        calculated = linear_interpolation(
-            values=values,
-            point=point,
-            grid_info=grid_info,
-        )
-        scipy_func = RegularGridInterpolator(
-            points=(grid1, grid2, grid3, grid4, grid5), values=values, method="linear"
-        )
-        scipy_res = scipy_func(point)
-
-        aaae(calculated, scipy_res)
-
-
-def test_linear_interpolation_logscale_5d():
-
-    grid1 = np.logspace(np.log10(1), np.log10(5), 5)
-    grid2 = np.logspace(np.log10(4), np.log10(7), 4)
-    grid3 = np.logspace(np.log10(7), np.log10(9), 2)
-    grid4 = np.logspace(np.log10(10), np.log10(11), 2)
-    grid5 = np.logspace(np.log10(3), np.log10(4), 10)
-
-    values = h(
-        *np.meshgrid(grid1, grid2, grid3, grid4, grid5, indexing="ij", sparse=False)
-    )
-
-    points = np.array(
-        [[2.1, 6.2, 8.3, 10.4, 3], [3.3, 5.2, 7.1, 10, 3.6], [2.7, 4.3, 7, 10.5, 4]]
-    )
-
-    grid_info = [
-        ("logspace", (1, 5, 5)),
-        ("logspace", (4, 7, 4)),
-        ("logspace", (7, 9, 2)),
-        ("logspace", (10, 11, 2)),
-        ("logspace", (3, 4, 10)),
-    ]
-    for point in points:
-        calculated = linear_interpolation(
-            values=values,
-            point=point,
-            grid_info=grid_info,
-        )
-        scipy_func = RegularGridInterpolator(
-            points=(grid1, grid2, grid3, grid4, grid5), values=values, method="linear"
-        )
-        scipy_res = scipy_func(point)
-
-        aaae(calculated, scipy_res)
+    assert_point_wise(grids, grid_info, points, values)
