@@ -34,7 +34,7 @@ def concatenate_functions(functions, targets):
     if single_target:
         concatenated = _create_concatenated_function_single_target(exec_info, signature)
     else:
-        concatenated = _create_concatenated_function_multi_target(
+        concatenated = _create_concatenated_function_multi_target_tuple(
             exec_info, signature, targets
         )
     return concatenated
@@ -212,7 +212,9 @@ def _create_concatenated_function_single_target(execution_info, signature):
     return concatenated
 
 
-def _create_concatenated_function_multi_target(execution_info, signature, targets):
+def _create_concatenated_function_multi_target_tuple(
+    execution_info, signature, targets
+):
     """Create a concatenated function object with correct signature.
 
     Args:
@@ -236,6 +238,38 @@ def _create_concatenated_function_multi_target(execution_info, signature, target
             results[name] = result
 
         out = tuple(results[target] for target in targets)
+        return out
+
+    concatenated.__signature__ = signature
+
+    return concatenated
+
+
+def _create_concatenated_function_multi_target_dict(execution_info, signature, targets):
+    """Create a concatenated function object with correct signature.
+
+    Args:
+        execution_info (dict): Dictionary with functions and their arguments for each
+            node in the dag. The functions are already in topological_sort order.
+        signature (inspect.Signature)): The signature of the concatenated function.
+        targets (list): List that is used to determine what is returned and the
+            order of the outputs.
+
+    Returns:
+        callable: The concatenated function
+
+    """
+    parameters = sorted(signature.parameters)
+
+    def concatenated(*args, **kwargs):
+        results = {**dict(zip(parameters, args)), **kwargs}
+        for name, info in execution_info.items():
+            arguments = _dict_subset(results, info["arguments"])
+            result = info["func"](**arguments)
+            results[name] = result
+
+        out = _dict_subset(results, targets)
+
         return out
 
     concatenated.__signature__ = signature

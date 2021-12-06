@@ -33,7 +33,6 @@ Need for freedom
   states grid, EGM based methods also require the optimal policies. To save memory
   we do not want redundant information to be required anywhere.
 
-
 Main Design Considerations
 --------------------------
 
@@ -87,12 +86,12 @@ Compute Optimized Solver
 - Calculate continuation values and policies during backwards induction
 - Only do lookups during simulation and likelihood.
 
-
 Potential Outputs of solvers
 ----------------------------
 
 - **continuation_values**: n-dimensional array with continuation values. The number and
   order of dimensions is defined by the ``state_space_map`` function.
+- **emax_inputs**: ...
 - **policies**: n-dimensional array with optimal policies. The number and order of
   dimensions is defined by the ``state_choice_space_map`` function.
 - **grids**: the grids that can be used to construct the cartesian grid on which the
@@ -113,8 +112,8 @@ Implementation 1: Monolithic
 - The arguments are:
     - the keys of the return dictionary (if mode == "backward")
     - the state/choice variables
-    - mode which is "forward" or "backward" and determines what is part of the
-      returned dictionary.
+- mode which is "forward" or "backward" and determines what is part of the
+  returned dictionary.
 
 
 Implementation 2: DAG
@@ -153,6 +152,7 @@ Pro DAG
   be eliminated by jax anyways.
 - I have personally never had an experience where I regretted solving something with
   a dag.
+- Better error messages
 
 
 state_solvers vs. state_choice solvers

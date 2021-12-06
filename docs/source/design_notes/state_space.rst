@@ -69,10 +69,25 @@ Current Implementation
   state space representation. This is done for simplicity and reduction of memory
   requirements.
 
-Open Questions and Limatations
-------------------------------
 
-- The choice sets are stored in a very uncompressed way in the state_choice space.
-  Might want to do something more similar to respy.
-- Filtering is not yet implemented.
-- The indexer is not yet implemented.
+Splitting the state space into independent partitions
+-----------------------------------------------------
+
+- So far we had assumed that it is necessary to keep at least the value function of all
+  states in memory during the backward induction. However, this is not the case if
+  some parts of the state space are completely independent. Example: If there are
+  unobserved types, the model can simply be solved independently for each type.
+- Easiest way of exploiting this would be time invariant simple variables because they
+  split the state space into otherwise identical independent partitions. Non-identical
+  independent partitions would probably cause too much imbalance and compilation time
+  to be practical.
+- One way of executing this efficiently would be to generate a function that solves
+  the model for one partition and calculates the simulated data or likelihood
+  ingredients. Then we could pmap or vmap over the partitioning variable. However this
+  would probably mean that we cannot write to disk anywhere in between, so while it
+  dividies naive memory usage by n_partitions, saving to disk can always divide naive
+  memory usage by n_periods.
+- A python loop over the individual partitions can achieve both memory savings and
+  might not even be that much slower.
+- We do not have to think much about it now. Our code will be flexible enough to solve
+  the sub models anyways.
