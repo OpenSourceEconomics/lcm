@@ -1,10 +1,11 @@
+import functools
 import inspect
 import textwrap
 
 import networkx as nx
 
 
-def concatenate_functions(functions, targets):
+def concatenate_functions(functions, targets, return_dict: bool = False):
     """Combine functions to one function that generates target.
 
     Functions can depend on the output of other functions as inputs, as long as the
@@ -19,8 +20,10 @@ def concatenate_functions(functions, targets):
         functions (dict or list): Dict or list of functions. If a list, the function
             name is inferred from the __name__ attribute of the entries. If a dict,
             the name of the function is set to the dictionary key.
-        target (str): Name of the function that produces the target or list of such
+        targets (str): Name of the function that produces the target or list of such
             function names.
+        return_dict (bool, optional): Whether the function should return a dictionary
+            with node names as keys or just the values as a tuple for multiple outputs.
 
     Returns:
         function: A function that produces target when called with suitable arguments.
@@ -34,8 +37,8 @@ def concatenate_functions(functions, targets):
     if single_target:
         concatenated = _create_concatenated_function_single_target(exec_info, signature)
     else:
-        concatenated = _create_concatenated_function_multi_target_tuple(
-            exec_info, signature, targets
+        concatenated = _create_concatenated_function_multi_target(
+            exec_info, signature, targets, return_dict
         )
     return concatenated
 
@@ -46,8 +49,8 @@ def get_ancestors(functions, targets, include_target=False):
     Args:
         functions (dict or list): Dict or list of functions. If a list, the function
             name is inferred from the __name__ attribute of the entries. If a dict,
-            the name of the function is set to the dictionary key.
-        target (str): Name of the function that produces the target function.
+            with node names as keys or just the values as a tuple for multiple outputs.
+        targets (str): Name of the function that produces the target function.
         include_target (bool): Whether to include the target as its own ancestor.
 
     Returns:
@@ -118,7 +121,7 @@ def _limit_dag_to_targets_and_their_ancestors(dag, targets):
 
     Args:
         dag (networkx.DiGraph): The complete DAG.
-        target (str): Variable of interest.
+        targets (str): Variable of interest.
 
     Returns:
         networkx.DiGraph: The pruned DAG.
@@ -212,8 +215,11 @@ def _create_concatenated_function_single_target(execution_info, signature):
     return concatenated
 
 
-def _create_concatenated_function_multi_target_tuple(
-    execution_info, signature, targets
+def _create_concatenated_function_multi_target(
+    execution_info,
+    signature,
+    targets,
+    return_dict,
 ):
     """Create a concatenated function object with correct signature.
 
@@ -223,6 +229,8 @@ def _create_concatenated_function_multi_target_tuple(
         signature (inspect.Signature)): The signature of the concatenated function.
         targets (list): List that is used to determine what is returned and the
             order of the outputs.
+        return_dict (bool): Whether the function should return a dictionary
+            with node names as keys or just the values as a tuple for multiple outputs.
 
     Returns:
         callable: The concatenated function
@@ -237,42 +245,13 @@ def _create_concatenated_function_multi_target_tuple(
             result = info["func"](**arguments)
             results[name] = result
 
-        out = tuple(results[target] for target in targets)
+        out = {target: results[target] for target in targets}
         return out
 
     concatenated.__signature__ = signature
 
-    return concatenated
-
-
-def _create_concatenated_function_multi_target_dict(execution_info, signature, targets):
-    """Create a concatenated function object with correct signature.
-
-    Args:
-        execution_info (dict): Dictionary with functions and their arguments for each
-            node in the dag. The functions are already in topological_sort order.
-        signature (inspect.Signature)): The signature of the concatenated function.
-        targets (list): List that is used to determine what is returned and the
-            order of the outputs.
-
-    Returns:
-        callable: The concatenated function
-
-    """
-    parameters = sorted(signature.parameters)
-
-    def concatenated(*args, **kwargs):
-        results = {**dict(zip(parameters, args)), **kwargs}
-        for name, info in execution_info.items():
-            arguments = _dict_subset(results, info["arguments"])
-            result = info["func"](**arguments)
-            results[name] = result
-
-        out = _dict_subset(results, targets)
-
-        return out
-
-    concatenated.__signature__ = signature
+    if not return_dict:
+        concatenated = _convert_dict_output_to_tuple(concatenated)
 
     return concatenated
 
@@ -280,6 +259,14 @@ def _create_concatenated_function_multi_target_dict(execution_info, signature, t
 def _dict_subset(dictionary, keys):
     """Reduce dictionary to keys."""
     return {k: dictionary[k] for k in keys}
+
+
+def _convert_dict_output_to_tuple(func):
+    @functools.wraps(func)
+    def wrapped(*args, **kwargs):
+        return tuple(func(*args, **kwargs).values())
+
+    return wrapped
 
 
 def _format_list_linewise(list_):
