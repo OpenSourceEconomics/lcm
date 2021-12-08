@@ -36,8 +36,8 @@ def test_aggregation_without_shocks(values, segment_info, collapse, n_leading_ax
     calculated = aggregate_conditional_continuation_values(
         values=values,
         shock_type=None,
-        agg_axes=agg_axes,
-        segment_info=segment_info,
+        choice_axes=agg_axes,
+        choice_segments=segment_info,
     )
 
     expected = jnp.array([8, 9.5])
@@ -73,9 +73,9 @@ def test_aggregation_with_extreme_value_shocks(
     calculated = aggregate_conditional_continuation_values(
         values=values,
         shock_type="extreme_value",
-        agg_axes=agg_axes,
-        segment_info=segment_info,
-        shock_params=scale,
+        choice_axes=agg_axes,
+        choice_segments=segment_info,
+        shock_scale=scale,
     )
 
     expected_shape = tuple([1] * n_leading_axes + [2])
