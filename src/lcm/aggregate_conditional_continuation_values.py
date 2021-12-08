@@ -117,17 +117,17 @@ def _segment_extreme_value_emax_over_last_axis(a, scale, segment_info):
     """
     a_t = _put_last_axis_first(a)
 
-    a_t_scaled = a_t / scale
+    emax_t = scale * _segment_logsumexp(a_t / scale, segment_info)
 
-    lse = _segment_logsumexp(a_t_scaled, segment_info)
-
-    emax_t = scale * lse
     emax = _put_first_axis_last(emax_t)
     return emax
 
 
 def _segment_logsumexp(a, segment_info):
     """Calculate a logsumexp over segments of the first axis of a.
+
+    We use the familiar logsumexp trick for numerical stability. See:
+    https://gregorygundersen.com/blog/2020/02/09/log-sum-exp/ for details.
 
     Args:
         a (jax.numpy.ndarray): Multidimensional jax array.
