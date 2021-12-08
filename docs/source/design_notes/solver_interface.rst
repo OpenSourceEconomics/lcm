@@ -38,15 +38,6 @@ Main Design Considerations
 
 - We do not want to standardize what a solver needs to return but only standardize
   the formats in which things need to be stored in case a solver wants to return them.
-- The solve function needs to be implemented on the "one state" or "one state + choices"
-  level such that we can use dispatchers in order to evaluate them on different
-  collections of inputs during backwards induction and the forward passes. E.g. full
-  state space during backwards induction (using state_space_map) and array with
-  observed states from an empirical dataset in likelihood (using simple vmap).
-- Instead of one monolithing solver function we might want to standardize a few
-  building blocks such that we can generate versions that return intermediate outputs
-  or not. This depends on the question what a solver actually is.
-
 
 Terminology
 -----------
