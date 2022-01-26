@@ -3,8 +3,8 @@ import itertools
 import jax.numpy as jnp
 import pytest
 from jax import config
-from lcm.dispatchers import product_map
-from lcm.dispatchers import state_space_map
+from lcm.dispatchers import gridmap
+from lcm.dispatchers import productmap
 from numpy.testing import assert_array_almost_equal as aaae
 
 config.update("jax_enable_x64", True)
@@ -23,12 +23,12 @@ def g(a, b, c, d):
 
 
 # ======================================================================================
-# product_map
+# productmap
 # ======================================================================================
 
 
 @pytest.fixture()
-def setup_product_map_f():
+def setup_productmap_f():
     grids = {
         "a": jnp.linspace(-5, 5, 10),
         "b": jnp.linspace(0, 3, 7),
@@ -38,7 +38,7 @@ def setup_product_map_f():
 
 
 @pytest.fixture()
-def expected_product_map_f():
+def expected_productmap_f():
     grids = {
         "a": jnp.linspace(-5, 5, 10),
         "b": jnp.linspace(0, 3, 7),
@@ -51,7 +51,7 @@ def expected_product_map_f():
 
 
 @pytest.fixture()
-def setup_product_map_g():
+def setup_productmap_g():
     grids = {
         "a": jnp.linspace(-5, 5, 10),
         "b": jnp.linspace(0, 3, 7),
@@ -62,7 +62,7 @@ def setup_product_map_g():
 
 
 @pytest.fixture()
-def expected_product_map_g():
+def expected_productmap_g():
     grids = {
         "a": jnp.linspace(-5, 5, 10),
         "b": jnp.linspace(0, 3, 7),
@@ -78,15 +78,15 @@ def expected_product_map_g():
 @pytest.mark.parametrize(
     "func, args, grids, expected",
     [
-        (f, ["a", "b", "c"], "setup_product_map_f", "expected_product_map_f"),
-        (g, ["a", "b", "c", "d"], "setup_product_map_g", "expected_product_map_g"),
+        (f, ["a", "b", "c"], "setup_productmap_f", "expected_productmap_f"),
+        (g, ["a", "b", "c", "d"], "setup_productmap_g", "expected_productmap_g"),
     ],
 )
-def test_product_map_with_all_arguments_mapped(func, args, grids, expected, request):
+def test_productmap_with_all_arguments_mapped(func, args, grids, expected, request):
     grids = request.getfixturevalue(grids)
     expected = request.getfixturevalue(expected)
 
-    decorated = product_map(func, args)
+    decorated = productmap(func, args)
     calculated_args = decorated(*grids.values())
     calculated_kwargs = decorated(**grids)
 
@@ -94,26 +94,26 @@ def test_product_map_with_all_arguments_mapped(func, args, grids, expected, requ
     aaae(calculated_kwargs, expected)
 
 
-def test_product_map_different_func_order(setup_product_map_f):
-    decorated_f = product_map(f, ["a", "b", "c"])
-    expected = decorated_f(*setup_product_map_f.values())
+def test_productmap_different_func_order(setup_productmap_f):
+    decorated_f = productmap(f, ["a", "b", "c"])
+    expected = decorated_f(*setup_productmap_f.values())
 
-    decorated_f2 = product_map(f2, ["a", "b", "c"])
-    calculated_f2_kwargs = decorated_f2(**setup_product_map_f)
+    decorated_f2 = productmap(f2, ["a", "b", "c"])
+    calculated_f2_kwargs = decorated_f2(**setup_productmap_f)
 
     aaae(calculated_f2_kwargs, expected)
 
 
-def test_product_map_change_arg_order(setup_product_map_f, expected_product_map_f):
-    expected = jnp.transpose(expected_product_map_f, (1, 0, 2))
+def test_productmap_change_arg_order(setup_productmap_f, expected_productmap_f):
+    expected = jnp.transpose(expected_productmap_f, (1, 0, 2))
 
-    decorated = product_map(f, ["b", "a", "c"])
-    calculated = decorated(**setup_product_map_f)
+    decorated = productmap(f, ["b", "a", "c"])
+    calculated = decorated(**setup_productmap_f)
 
     aaae(calculated, expected)
 
 
-def test_product_map_with_all_arguments_mapped_some_len_one():
+def test_productmap_with_all_arguments_mapped_some_len_one():
     grids = {
         "a": jnp.array([1]),
         "b": jnp.array([2]),
@@ -124,24 +124,24 @@ def test_product_map_with_all_arguments_mapped_some_len_one():
 
     expected = f(*helper).reshape(1, 1, 5)
 
-    decorated = product_map(f, ["a", "b", "c"])
+    decorated = productmap(f, ["a", "b", "c"])
     calculated = decorated(*grids.values())
     aaae(calculated, expected)
 
 
-def test_product_map_with_all_arguments_mapped_some_scalar():
+def test_productmap_with_all_arguments_mapped_some_scalar():
     grids = {
         "a": 1,
         "b": 2,
         "c": jnp.linspace(1, 5, 5),
     }
 
-    decorated = product_map(f, ["a", "b", "c"])
+    decorated = productmap(f, ["a", "b", "c"])
     with pytest.raises(ValueError):
         decorated(*grids.values())
 
 
-def test_product_map_with_some_arguments_mapped():
+def test_productmap_with_some_arguments_mapped():
     grids = {
         "a": jnp.linspace(-5, 5, 10),
         "b": 1,
@@ -152,24 +152,24 @@ def test_product_map_with_some_arguments_mapped():
 
     expected = f(*helper).reshape(10, 5)
 
-    decorated = product_map(f, ["a", "c"])
+    decorated = productmap(f, ["a", "c"])
     calculated = decorated(*grids.values())
     aaae(calculated, expected)
 
 
-def test_product_map_with_some_argument_mapped_twice():
+def test_productmap_with_some_argument_mapped_twice():
     error_msg = "Same argument provided more than once."
     with pytest.raises(ValueError, match=error_msg):
-        product_map(f, ["a", "a", "c"])
+        productmap(f, ["a", "a", "c"])
 
 
 # ======================================================================================
-# state_space_map
+# gridmap
 # ======================================================================================
 
 
 @pytest.fixture()
-def setup_state_space_map():
+def setup_gridmap():
     simple_variables = {
         "a": jnp.array([1.0, 2, 3]),
         "b": jnp.array([3.0, 4]),
@@ -190,7 +190,7 @@ def setup_state_space_map():
 
 
 @pytest.fixture()
-def expected_state_space_map():
+def expected_gridmap():
     simple_variables = {
         "a": jnp.array([1.0, 2, 3]),
         "b": jnp.array([3.0, 4]),
@@ -208,15 +208,13 @@ def expected_state_space_map():
     return expected_result
 
 
-def test_state_space_map_all_arguments_mapped(
-    setup_state_space_map, expected_state_space_map
-):
-    simple_variables, complex_variables = setup_state_space_map
+def test_gridmap_all_arguments_mapped(setup_gridmap, expected_gridmap):
+    simple_variables, complex_variables = setup_gridmap
 
-    decorated = state_space_map(g, list(simple_variables), list(complex_variables))
+    decorated = gridmap(g, list(simple_variables), list(complex_variables))
     calculated = decorated(**simple_variables, **complex_variables)
 
-    aaae(calculated, expected_state_space_map)
+    aaae(calculated, expected_gridmap)
 
 
 @pytest.mark.parametrize(
@@ -234,6 +232,6 @@ def test_state_space_map_all_arguments_mapped(
         ),
     ],
 )
-def test_state_space_map_arguments_overlap(error_msg, simple_vars, complex_vars):
+def test_gridmap_arguments_overlap(error_msg, simple_vars, complex_vars):
     with pytest.raises(ValueError, match=error_msg):
-        state_space_map(g, simple_vars, complex_vars)
+        gridmap(g, simple_vars, complex_vars)

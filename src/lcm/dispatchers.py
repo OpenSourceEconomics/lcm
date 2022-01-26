@@ -4,13 +4,13 @@ import inspect
 from jax import vmap
 
 
-def state_space_map(func, simple_variables, complex_variables):
-    """Apply vmap such that a function can be evaluated on the state space.
+def gridmap(func, simple_variables, complex_variables):
+    """Apply vmap such that func is evaluated on a grid of simple and complex variables.
 
     This is achieved by applying a product map for all simple_variables and a
     vmap for the complex variables.
 
-    In contrast to vmap, product_map preserves the function signature and allows the
+    In contrast to vmap, gridmap preserves the function signature and allows the
     function to be called with keyword arguments.
 
     Args:
@@ -47,12 +47,12 @@ def state_space_map(func, simple_variables, complex_variables):
     return vmapped_with_kwargs
 
 
-def product_map(func, product_axes):
-    """Apply vmap such that func is applied to cartesian product of product_axes.
+def productmap(func, variables):
+    """Apply vmap such that func is evaluated on the cartesian product of product_axes.
 
-    This requires an iterative application of vmap.
+    This is achieved by an iterative application of vmap.
 
-    In contrast to vmap, product_map preserves the function signature and allows the
+    In contrast to vmap, productmap preserves the function signature and allows the
     function to be called with keyword arguments.
 
     Args:
@@ -60,11 +60,11 @@ def product_map(func, product_axes):
         product_axes (list): List with names of arguments that over which the cartesian
             product should be formed.
     """
-    if len(product_axes) != len(set(product_axes)):
+    if len(variables) != len(set(variables)):
         raise ValueError("Same argument provided more than once.")
 
     signature = inspect.signature(func)
-    vmapped = _product_map(func, product_axes)
+    vmapped = _product_map(func, variables)
     vmapped.__signature__ = signature
     vmapped_with_kwargs = allow_kwargs(vmapped)
 
