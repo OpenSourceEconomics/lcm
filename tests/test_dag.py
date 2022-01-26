@@ -1,6 +1,7 @@
 import inspect
 
 import pytest
+from lcm.dag import aggregate_functions
 from lcm.dag import concatenate_functions
 from lcm.dag import get_ancestors
 
@@ -99,3 +100,23 @@ def test_get_ancestors_multiple_targets():
 
     expected = {"wage", "working"}
     assert calculated == expected
+
+
+def test_aggregate_functions_with_and():
+    funcs = {"f1": lambda: True, "f2": lambda: False}
+    aggregated = aggregate_functions(
+        functions=funcs,
+        targets=["f1", "f2"],
+        aggregator=lambda a, b: a and b,
+    )
+    assert not aggregated()
+
+
+def test_aggregate_functions_with_or():
+    funcs = {"f1": lambda: True, "f2": lambda: False}
+    aggregated = aggregate_functions(
+        functions=funcs,
+        targets=["f1", "f2"],
+        aggregator=lambda a, b: a or b,
+    )
+    assert aggregated()

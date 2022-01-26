@@ -43,6 +43,35 @@ def concatenate_functions(functions, targets, return_dict: bool = False):
     return concatenated
 
 
+def aggregate_functions(functions, targets, aggregator=lambda a, b: a and b):
+    """Aggregate the result of targets
+
+    Functions can depend on the output of other functions as inputs, as long as the
+    dependencies can be described by a directed acyclic graph (DAG).
+
+    All functions in targets need to return a scalar bool.
+
+    Functions that are not required to produce the target will simply be ignored.
+
+    The arguments of the combined function are all arguments of relevant functions
+    that are not themselves function names.
+
+    Args:
+        functions (dict or list): Dict or list of functions. If a list, the function
+            name is inferred from the __name__ attribute of the entries. If a dict,
+            the name of the function is set to the dictionary key.
+        targets (str): Name of the function that produces the target or list of such
+            function names.
+
+    Returns:
+        function: A function that produces target when called with suitable arguments.
+
+    """
+    concatenated = concatenate_functions(functions, targets, False)
+    aggregated = _add_aggregation(concatenated, aggregator)
+    return aggregated
+
+
 def get_ancestors(functions, targets, include_target=False):
     """Build a DAG and extract all ancestors of target.
 
@@ -254,6 +283,18 @@ def _create_concatenated_function_multi_target(
         concatenated = _convert_dict_output_to_tuple(concatenated)
 
     return concatenated
+
+
+def _add_aggregation(func, aggregator):
+    @functools.wraps(func)
+    def with_aggregation(*args, **kwargs):
+        to_aggregate = func(*args, **kwargs)
+        agg = to_aggregate[0]
+        for entry in to_aggregate[1:]:
+            agg = aggregator(agg, entry)
+        return agg
+
+    return with_aggregation
 
 
 def _dict_subset(dictionary, keys):
