@@ -24,6 +24,8 @@ dependencies:
   - jax>=0.3.0
   - jaxlib>=0.3.0
   - networkx
+  - dags
+  - pybaum
 
   # Misc
   - numba
