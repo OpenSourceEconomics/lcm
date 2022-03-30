@@ -39,7 +39,7 @@ def aggregate_conditional_continuation_values(
             continuation values.
         shock_type (str or None): One of None, "extreme_value" and "nesed_logit".
         choice_axes (int or tuple): Int or tuple of int, specifying which axes in
-            values correspond to simple choice variables.
+            values correspond to dense choice variables.
         choice_segments (dict): Dictionary with the entries "segment_ids"
             and "num_segments". segment_ids are a 1d integer array that partitions the
             last dimension of values into choice sets over which we need to aggregate.

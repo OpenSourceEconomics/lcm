@@ -76,11 +76,6 @@ repos:
     hooks:
     -   id: interrogate
         args: [-v, --fail-under=10, src, tests]
--   repo: https://github.com/codespell-project/codespell
-    rev: v2.1.0
-    hooks:
-    -   id: codespell
-        args: [-L hist,-L unparseable]
 -   repo: meta
     hooks:
     -   id: check-hooks-apply

@@ -6,8 +6,8 @@ from numpy.testing import assert_array_almost_equal as aaae
 
 def test_contsolve_last_period():
     state_choice_space = {
-        "simple_variables": {"a": jnp.array([0, 1.0]), "b": jnp.array([2, 3.0])},
-        "complex_variables": {"c": jnp.array([4, 5, 6])},
+        "value_grid": {"a": jnp.array([0, 1.0]), "b": jnp.array([2, 3.0])},
+        "combination_grid": {"c": jnp.array([4, 5, 6])},
     }
 
     def _utility_and_feasibility(a, c, b, d):

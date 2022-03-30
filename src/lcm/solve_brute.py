@@ -21,22 +21,22 @@ def contsolve_last_period(
             and order of dimensions is defined by the ``gridmap`` function.
 
     """
-    n_simple = len(state_choice_space["simple_variables"])
+    n_dense = len(state_choice_space["value_grid"])
     n_cont_choices = len(continuous_choice_grids)
 
-    max_axes = tuple(range(n_simple, n_simple + n_cont_choices))
+    max_axes = tuple(range(n_dense, n_dense + n_cont_choices))
 
     gridmapped = gridmap(
         func=utility_and_feasibility,
-        dense_vars=list(state_choice_space["simple_variables"])
+        dense_vars=list(state_choice_space["value_grid"])
         + list(continuous_choice_grids),
-        sparse_vars=list(state_choice_space["complex_variables"]),
+        sparse_vars=list(state_choice_space["combination_grid"]),
     )
 
     utilities, feasibilities = gridmapped(
-        **state_choice_space["simple_variables"],
+        **state_choice_space["value_grid"],
         **continuous_choice_grids,
-        **state_choice_space["complex_variables"],
+        **state_choice_space["combination_grid"],
     )
 
     best = utilities.max(axis=max_axes, where=feasibilities, initial=-jnp.inf)

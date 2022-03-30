@@ -1,7 +1,7 @@
 """Create a state space for a given model."""
 import numpy as np
+from dags import get_ancestors
 from lcm import grids as grids_module
-from lcm.dag import get_ancestors
 
 
 def create_state_choice_space(model):
