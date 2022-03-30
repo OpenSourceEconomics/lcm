@@ -170,38 +170,38 @@ def test_productmap_with_some_argument_mapped_twice():
 
 @pytest.fixture()
 def setup_gridmap():
-    simple_variables = {
+    value_grid = {
         "a": jnp.array([1.0, 2, 3]),
         "b": jnp.array([3.0, 4]),
     }
 
-    complex_grids = {
+    sparse_values = {
         "c": jnp.array([7.0, 8, 9, 10]),
         "d": jnp.array([9.0, 10, 11, 12, 13]),
     }
 
-    helper = jnp.array(list(itertools.product(*complex_grids.values()))).T
+    helper = jnp.array(list(itertools.product(*sparse_values.values()))).T
 
-    complex_variables = {
+    combination_grid = {
         "c": helper[0],
         "d": helper[1],
     }
-    return simple_variables, complex_variables
+    return value_grid, combination_grid
 
 
 @pytest.fixture()
 def expected_gridmap():
-    simple_variables = {
+    value_grid = {
         "a": jnp.array([1.0, 2, 3]),
         "b": jnp.array([3.0, 4]),
     }
 
-    complex_grids = {
+    combination_grid = {
         "c": jnp.array([7.0, 8, 9, 10]),
         "d": jnp.array([9.0, 10, 11, 12, 13]),
     }
 
-    all_grids = {**simple_variables, **complex_grids}
+    all_grids = {**value_grid, **combination_grid}
     helper = jnp.array(list(itertools.product(*all_grids.values()))).T
 
     expected_result = g(*helper).reshape(3, 2, 4 * 5)
@@ -209,19 +209,19 @@ def expected_gridmap():
 
 
 def test_gridmap_all_arguments_mapped(setup_gridmap, expected_gridmap):
-    simple_variables, complex_variables = setup_gridmap
+    dense_vars, sparse_vars = setup_gridmap
 
-    decorated = gridmap(g, list(simple_variables), list(complex_variables))
-    calculated = decorated(**simple_variables, **complex_variables)
+    decorated = gridmap(g, list(dense_vars), list(sparse_vars))
+    calculated = decorated(**dense_vars, **sparse_vars)
 
     aaae(calculated, expected_gridmap)
 
 
 @pytest.mark.parametrize(
-    "error_msg, simple_vars, complex_vars",
+    "error_msg, dense_vars, sparse_vars",
     [
         (
-            "Simple and complex variables overlap.",
+            "dense_vars and sparse_vars overlap",
             ["a", "b"],
             ["a", "c", "d"],
         ),
@@ -232,6 +232,6 @@ def test_gridmap_all_arguments_mapped(setup_gridmap, expected_gridmap):
         ),
     ],
 )
-def test_gridmap_arguments_overlap(error_msg, simple_vars, complex_vars):
+def test_gridmap_arguments_overlap(error_msg, dense_vars, sparse_vars):
     with pytest.raises(ValueError, match=error_msg):
-        gridmap(g, simple_vars, complex_vars)
+        gridmap(g, dense_vars, sparse_vars)

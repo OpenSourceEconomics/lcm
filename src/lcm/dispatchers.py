@@ -4,33 +4,37 @@ import inspect
 from jax import vmap
 
 
-def gridmap(func, simple_variables, complex_variables):
-    """Apply vmap such that func is evaluated on a grid of simple and complex variables.
+def gridmap(func, dense_vars, sparse_vars):
+    """Apply vmap such that func is evaluated on a grid of dense and sparse variables.
 
-    This is achieved by applying a product map for all simple_variables and a
-    vmap for the complex variables.
+    This is achieved by applying a product map for all dense_vars and a vmap for the
+    sparse_vars.
 
     In contrast to vmap, gridmap preserves the function signature and allows the
     function to be called with keyword arguments.
 
     Args:
         func (callable): The function to be dispatched.
-        simple_variables (list): Names of the simple variables in the
-            state_choice_space.
-        complex_variables (list): Names of the complex variables in the
-            state_choice_space.
-    """
-    if not set(simple_variables).isdisjoint(complex_variables):
-        raise ValueError("Simple and complex variables overlap.")
+        dense_vars (list): Names of the dense variables, i.e. those that are simply
+            stored as array of possible values in the grid because the possible values
+            of those variable does not depend on the value of other variables.
+        sparse_vars (list): Names of the sparse variables, i.e. those that are stored
+            as arrays of possible combinations of variables in the grid because the
+            possible values of these variables does depend on the value of other
+            variables.
 
-    _all_variables = simple_variables + complex_variables
+    """
+    if not set(dense_vars).isdisjoint(sparse_vars):
+        raise ValueError("dense_vars and sparse_vars overlap.")
+
+    _all_variables = dense_vars + sparse_vars
     if len(_all_variables) != len(set(_all_variables)):
         raise ValueError("Same argument provided more than once.")
 
     signature = inspect.signature(func)
     parameters = list(signature.parameters)
 
-    positions = [parameters.index(cv) for cv in complex_variables]
+    positions = [parameters.index(cv) for cv in sparse_vars]
     in_axes = []
     for i in range(len(parameters)):
         if i in positions:
@@ -39,7 +43,7 @@ def gridmap(func, simple_variables, complex_variables):
             in_axes.append(None)
 
     vmapped = vmap(func, in_axes=in_axes)
-    vmapped = _product_map(vmapped, simple_variables)
+    vmapped = _product_map(vmapped, dense_vars)
 
     vmapped.__signature__ = signature
     vmapped_with_kwargs = allow_kwargs(vmapped)

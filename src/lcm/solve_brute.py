@@ -28,9 +28,9 @@ def contsolve_last_period(
 
     gridmapped = gridmap(
         func=utility_and_feasibility,
-        simple_variables=list(state_choice_space["simple_variables"])
+        dense_vars=list(state_choice_space["simple_variables"])
         + list(continuous_choice_grids),
-        complex_variables=list(state_choice_space["complex_variables"]),
+        sparse_vars=list(state_choice_space["complex_variables"]),
     )
 
     utilities, feasibilities = gridmapped(
