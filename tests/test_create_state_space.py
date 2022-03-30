@@ -6,12 +6,12 @@ from numpy.testing import assert_array_almost_equal as aaae
 
 def test_create_state_choice_space_only_simple_variables():
     calculated = create_state_choice_space(PHELPS_DEATON_WITH_SHOCKS)
-    expected_simple = {
+    expected_value_grid = {
         "retirement": np.array([0, 1]),
         "wealth": np.linspace(0, 1e6, 12),
     }
 
-    assert calculated["complex"] == {}
-    assert set(calculated["simple"]) == set(expected_simple)
-    for key, grid in calculated["simple"].items():
-        aaae(grid, expected_simple[key])
+    assert calculated["combination_grid"] == {}
+    assert set(calculated["value_grid"]) == set(expected_value_grid)
+    for key, grid in calculated["value_grid"].items():
+        aaae(grid, expected_value_grid[key])

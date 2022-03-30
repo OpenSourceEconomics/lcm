@@ -10,33 +10,27 @@ def create_state_choice_space(model):
     A state_choice_space is a compressed representation of all feasible states and the
     feasible choices within that state. We currently use the following compressions:
 
-    - We distinguish between simple and complex variables. Simple state or choice
-      variables are those whose set of feasible values does not depend on any other
-      state or choice variables. Complex state or choice variables are all other state
-      variables. For simple state variables it is thus enough to store the grid of
-      feasible values.
-
-    Future compressions could be:
-
-    - Use that there are typically only few different choice sets. Thus the state
-      choice space could be compressed by only saving the index in a list of choice sets
-      and not the entire choice set
+    We distinguish between dense and sparse variables (dense_vars and sparse_vars).
+    Dense state or choice variables are those whose set of feasible values does not
+    depend on any other state or choice variables. Sparse state or choice variables are
+    all other state variables. For dense state variables it is thus enough to store the
+    grid of feasible values (value_grid), whereas for sparse variables all feasible
+    combinations (combination_grid) have to be stored.
 
     """
-    simple_variables, complex_variables = _find_simple_and_complex_variables(model)
-    grids = _create_grids(model)
+    dense_vars, sparse_vars = _find_dense_and_sparse_variables(model)
+    grids = _create_grids_from_gridspecs(model)
 
     space = {
-        "complex": _create_complex_state_choice_space(
-            grids, complex_variables, model.get("filters", [])
+        "combination_grid": _create_combination_grid(
+            grids, sparse_vars, model.get("filters", [])
         ),
-        "simple": _create_simple_state_choice_space(grids, simple_variables),
+        "value_grid": _create_value_grid(grids, dense_vars),
     }
-    # to-do: We probably also need an indexer for the complex state space
     return space
 
 
-def _find_simple_and_complex_variables(model):
+def _find_dense_and_sparse_variables(model):
     state_variables = list(model["states"])
     discrete_choices = [
         name for name, spec in model["choices"].items() if "options" in spec
@@ -50,12 +44,12 @@ def _find_simple_and_complex_variables(model):
             get_ancestors(filters, func.__name__)
         )
 
-    simple_variables = all_variables.difference(filtered_variables)
-    complex_variables = all_variables.difference(simple_variables)
-    return simple_variables, complex_variables
+    dense_vars = all_variables.difference(filtered_variables)
+    sparse_vars = all_variables.difference(dense_vars)
+    return dense_vars, sparse_vars
 
 
-def _create_grids(model):
+def _create_grids_from_gridspecs(model):
     gridspecs = {
         **model["choices"],
         **model["states"],
@@ -72,12 +66,12 @@ def _create_grids(model):
     return grids
 
 
-def _create_complex_state_choice_space(grids, complex_variables, filters):  # noqa: U100
+def _create_combination_grid(grids, sparse_vars, filters):  # noqa: U100
     """Create the ore state choice space.
 
     Args:
         grids (dict): Dictionary of grids for all variables in the model
-        complex_variables (set): Names of the complex variablse
+        sparse_vars (set): Names of the sparse_variables
         filters (list): List of filter functions. A filter function depends on one or
             more variables and returns True if a state is feasible.
 
@@ -86,7 +80,7 @@ def _create_complex_state_choice_space(grids, complex_variables, filters):  # no
             state_choice_space.
 
     """
-    if complex_variables or filters:
+    if sparse_vars or filters:
         # to-do: create state space and apply filters
         raise NotImplementedError()
     else:
@@ -94,5 +88,5 @@ def _create_complex_state_choice_space(grids, complex_variables, filters):  # no
     return out
 
 
-def _create_simple_state_choice_space(grids, simple_variables):
-    return {name: grid for name, grid in grids.items() if name in simple_variables}
+def _create_value_grid(grids, dense_vars):
+    return {name: grid for name, grid in grids.items() if name in dense_vars}
