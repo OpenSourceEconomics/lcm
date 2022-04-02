@@ -66,7 +66,7 @@ def _create_grids_from_gridspecs(model):
     return grids
 
 
-def _create_combination_grid(grids, sparse_vars, filters):  # noqa: U100
+def _create_combination_grid(grids, subset, filters):  # noqa: U100
     """Create the ore state choice space.
 
     Args:
@@ -80,7 +80,7 @@ def _create_combination_grid(grids, sparse_vars, filters):  # noqa: U100
             state_choice_space.
 
     """
-    if sparse_vars or filters:
+    if subset or filters:
         # to-do: create state space and apply filters
         raise NotImplementedError()
     else:
@@ -88,5 +88,5 @@ def _create_combination_grid(grids, sparse_vars, filters):  # noqa: U100
     return out
 
 
-def _create_value_grid(grids, dense_vars):
-    return {name: grid for name, grid in grids.items() if name in dense_vars}
+def _create_value_grid(grids, subset):
+    return {name: grid for name, grid in grids.items() if name in subset}
