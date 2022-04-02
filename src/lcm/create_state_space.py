@@ -1,7 +1,11 @@
 """Create a state space for a given model."""
+import jax
+import jax.numpy as jnp
 import numpy as np
+from dags import concatenate_functions
 from dags import get_ancestors
 from lcm import grids as grids_module
+from lcm.dispatchers import productmap
 
 
 def create_state_choice_space(model):
@@ -28,6 +32,57 @@ def create_state_choice_space(model):
         "value_grid": _create_value_grid(grids, dense_vars),
     }
     return space
+
+
+def create_filter_mask(
+    grids, filters, fixed_inputs=None, subset=None, aux_functions=None, jit_filter=True
+):
+    """Create mask for combinations of grid values that is True if all filters are True.
+
+    Args:
+        grids (dict): Dictionary containing a one-dimensional grid for each
+            variable that is used as a basis to construct the higher dimensional
+            grid.
+        filters (dict): Dict of filter functions. A filter function depends on
+            one or more variables and returns True if a state is feasible.
+        fixed_inputs (dict): A dict of fixed inputs for the filters or
+            aux_functions. An example would be a model period.
+        subset (list): The subset of variables to be considered in the mask.
+        aux_functions (dict): Auxiliary functions that calculate derived variables
+            needed in the filters.
+        jit_filter (bool): Whether the aggregated filter function is jitted before
+            applying it.
+
+    Returns:
+        jax.numpy.ndarray: Multi-Dimensional boolean array that is True
+            for a feasible combination of variables. The order of the
+            dimensions in the mask is defined by the order of `grids`.
+
+    """
+    # preparations
+    _subset = list(grids) if subset is None else subset
+    _aux_functions = {} if aux_functions is None else aux_functions
+    _axis_names = [name for name in grids if name in _subset]
+    _grids = {name: jnp.array(grids[name]) for name in _axis_names}
+    _filter_names = list(filters)
+
+    # Create scalar dag function to evaluate all filters
+    _functions = {**filters, **_aux_functions}
+    _scalar_filter = concatenate_functions(
+        functions=_functions,
+        targets=_filter_names,
+        aggregator=jnp.logical_and,
+    )
+
+    # Apply dispatcher to get mask
+    _filter = productmap(_scalar_filter, variables=_axis_names)
+
+    # Calculate mask
+    if jit_filter:
+        _filter = jax.jit(_filter)
+    mask = _filter(**_grids, **fixed_inputs)
+
+    return mask
 
 
 def _find_dense_and_sparse_variables(model):

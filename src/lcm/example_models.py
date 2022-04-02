@@ -54,12 +54,12 @@ PHELPS_DEATON = {
         "consumption": {
             "grid_type": "linspace",
             "start": 0,
-            "stop": 1e6,
-            "n_points": 10,
+            "stop": 1e4,
+            "n_points": 11,
         },
     },
     "states": {
-        "wealth": {"grid_type": "linspace", "start": 0, "stop": 1e6, "n_points": 12}
+        "wealth": {"grid_type": "linspace", "start": 0, "stop": 1e4, "n_points": 11}
     },
     "n_periods": 20,
 }
