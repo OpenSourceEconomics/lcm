@@ -1,4 +1,6 @@
 """Create a state space for a given model."""
+import warnings
+
 import jax
 import jax.numpy as jnp
 import numpy as np
@@ -85,6 +87,32 @@ def create_filter_mask(
     return mask
 
 
+def create_combination_grid(grids, masks, subset=None):
+    # preparations
+    _subset = list(grids) if subset is None else subset
+    _axis_names = [name for name in grids if name in _subset]
+    _grids = {name: jnp.array(grids[name]) for name in _axis_names}
+
+    # get combined mask
+    _mask_np = np.array(_combine_masks(masks))
+
+    # Calculate meshgrid
+    _all_combis = jnp.meshgrid(*_grids.values(), indexing="ij")
+
+    # Flatten meshgrid entries
+    combi_grid = {name: arr[_mask_np] for name, arr in zip(_axis_names, _all_combis)}
+
+    return combi_grid
+
+
+def _combine_masks(masks):
+    if isinstance(masks, (np.ndarray, jnp.ndarray)):
+        _mask = np.array(masks)
+    else:
+        _mask = np.array(jnp.logical_and(*masks))
+    return _mask
+
+
 def _find_dense_and_sparse_variables(model):
     state_variables = list(model["states"])
     discrete_choices = [
@@ -135,6 +163,7 @@ def _create_combination_grid(grids, subset, filters):  # noqa: U100
             state_choice_space.
 
     """
+    warnings.warn("Outdated function. Just left here to keep a test running.")
     if subset or filters:
         # to-do: create state space and apply filters
         raise NotImplementedError()

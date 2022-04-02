@@ -1,5 +1,6 @@
 import jax.numpy as jnp
 import pytest
+from lcm.create_state_space import create_combination_grid
 from lcm.create_state_space import create_filter_mask
 from lcm.create_state_space import create_state_choice_space
 from lcm.example_models import PHELPS_DEATON_WITH_SHOCKS
@@ -63,3 +64,22 @@ def test_create_filter_mask(filter_mask_inputs, period, expected):
     )
 
     aaae(calculated, expected)
+
+
+def test_create_combination_grid():
+    grids = {
+        "lagged_retirement": jnp.array([0, 1]),
+        "retirement": jnp.array([0, 1]),
+    }
+
+    mask = jnp.array([[True, False], [True, True]])
+
+    calculated = create_combination_grid(grids=grids, masks=mask)
+
+    expected = {
+        "lagged_retirement": jnp.array([0, 1, 1]),
+        "retirement": jnp.array([0, 0, 1]),
+    }
+
+    for key in expected:
+        aaae(calculated[key], expected[key])
