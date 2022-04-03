@@ -1,7 +1,9 @@
 import jax.numpy as jnp
+import numpy as np
 import pytest
 from lcm.create_state_space import create_combination_grid
 from lcm.create_state_space import create_filter_mask
+from lcm.create_state_space import create_indexers_and_segments
 from lcm.create_state_space import create_state_choice_space
 from lcm.example_models import PHELPS_DEATON_WITH_SHOCKS
 from numpy.testing import assert_array_almost_equal as aaae
@@ -83,3 +85,25 @@ def test_create_combination_grid():
 
     for key in expected:
         aaae(calculated[key], expected[key])
+
+
+def test_create_indexers_and_segments():
+    mask = np.full((3, 3, 2), False)
+    mask[1, 0, 0] = True
+    mask[1, -1, -1] = True
+    mask[2] = True
+    mask = jnp.array(mask)
+
+    state_indexer, choice_indexer, segments = create_indexers_and_segments(
+        mask=mask, n_states=2
+    )
+
+    expected_state_indexer = jnp.array([[-1, -1, -1], [0, -1, 1], [2, 3, 4]])
+
+    expected_choice_indexer = jnp.array([[0, -1], [-1, 1], [2, 3], [4, 5], [6, 7]])
+
+    expected_segments = jnp.array([0, 1, 2, 2, 3, 3, 4, 4])
+
+    aaae(state_indexer, expected_state_indexer)
+    aaae(choice_indexer, expected_choice_indexer)
+    aaae(segments, expected_segments)

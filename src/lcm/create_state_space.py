@@ -113,6 +113,56 @@ def _combine_masks(masks):
     return _mask
 
 
+def create_indexers_and_segments(mask, n_states, fill_value=-1):
+    """Create indexers and segment info related to sparse states and choices.
+
+    Args:
+        mask (np.ndarray): Boolean array with one dimension per state
+            or choice variable that is True for feasible state-choice
+            combinations. The state variables occupy the first dimensions.
+            I.e. the shape is (n_s1, ..., n_sm, n_c1, ..., n_cm).
+        n_states (np.ndarray): Number of state variables.
+        fill_value (np.ndarray): Value of the index array for infeasible
+            states or choices.
+
+
+    Returns:
+        jax.numpy.ndarray: The state indexer with (n_s1, ..., n_sm). The entries are
+            ``fill_value`` for infeasible states and count the feasible states
+            otherwise.
+        jax.numpy.ndarray: the state-choice indexer with shape
+            (n_feasible_states, n_c1, ..., n_cn). The entries are ``fill_value`` for
+            infeasible state-choice combinations and count the feasible state-choice
+            combinations otherwise.
+
+    """
+    mask = np.array(mask)
+
+    choice_axes = tuple(range(n_states, mask.ndim))
+    is_feasible_state = mask.any(axis=choice_axes)
+    n_feasible_states = np.count_nonzero(is_feasible_state)
+
+    state_indexer = np.full(is_feasible_state.shape, fill_value)
+    state_indexer[is_feasible_state] = np.arange(n_feasible_states)
+
+    # reduce mask before doing calculations and using higher dtypes
+    reduced_mask = mask[is_feasible_state]
+
+    counter = reduced_mask.cumsum().reshape(reduced_mask.shape) - 1
+    state_choice_indexer = np.full(reduced_mask.shape, fill_value)
+    state_choice_indexer[reduced_mask] = counter[reduced_mask]
+
+    new_choice_axes = tuple(range(1, mask.ndim - n_states + 1))
+    n_choices = np.count_nonzero(reduced_mask, new_choice_axes)
+    segments = np.repeat(np.arange(n_feasible_states), n_choices)
+
+    return (
+        jnp.array(state_indexer),
+        jnp.array(state_choice_indexer),
+        jnp.array(segments),
+    )
+
+
 def _find_dense_and_sparse_variables(model):
     state_variables = list(model["states"])
     discrete_choices = [
