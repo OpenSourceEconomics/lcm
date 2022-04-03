@@ -1,5 +1,9 @@
 """Create a state space for a given model."""
 import warnings
+from typing import Dict
+from typing import List
+from typing import NamedTuple
+from typing import Union
 
 import jax
 import jax.numpy as jnp
@@ -8,6 +12,30 @@ from dags import concatenate_functions
 from dags import get_ancestors
 from lcm import grids as grids_module
 from lcm.dispatchers import productmap
+
+
+class Grid(NamedTuple):
+    """Representation of a dense or sparse grid compatible with grimap."""
+
+    dense_vars: List[str]
+    sparse_vars: List[str]
+    grid: Dict[str, jnp.ndarray]
+
+
+class StateChoiceInfo(NamedTuple):
+    """Info to work with a function evaluated on a state-choice grid.
+
+    Provides information to look up values, aggregate values over choice dimensions
+    or interpolate values over continuous dimensions.
+
+    """
+
+    state_vars: List[str]
+    choice_vars: List[str]
+    state_indexer: jnp.ndarray
+    choice_indexer: Union[jnp.ndarray, None]
+    choice_segments: Union[jnp.ndarray, None]
+    gridspecs: Dict[str, Union[Dict, jnp.ndarray]]
 
 
 def create_state_choice_space(model):
