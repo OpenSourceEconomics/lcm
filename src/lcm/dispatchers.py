@@ -4,7 +4,7 @@ import inspect
 from jax import vmap
 
 
-def gridmap(func, dense_vars, sparse_vars):
+def gridmap(func, dense_vars, sparse_vars, dense_first=True):
     """Apply vmap such that func is evaluated on a grid of dense and sparse variables.
 
     This is achieved by applying a product map for all dense_vars and a vmap for the
@@ -22,6 +22,21 @@ def gridmap(func, dense_vars, sparse_vars):
             as arrays of possible combinations of variables in the grid because the
             possible values of these variables does depend on the value of other
             variables.
+        dense_first (bool): Whether the dense or sparse dimensions should come first
+            in the output of the dispatched function.
+
+
+    Returns:
+        callable: A callable with the same arguments as func (but with an additional
+            leading dimension) that returns a jax.numpy.ndarray or pytree of arrays.
+            If ``func`` returns a scalar, the dispatched function returns a
+            jax.numpy.ndarray with k + 1 dimensions, where k is the length of
+            ``dense_vars`` and the additional dimension corresponds to the
+            ``sparse_vars``. The order of the dimensions is determined by the order of
+            ``dense_vars`` as well as the ``dense_first`` argument.
+            If the output of ``func`` is a jax pytree, the usual jax behavior applies,
+            i.e. the leading dimensions of all arrays in the pytree are as described
+            above but there might be additional dimensions.
 
     """
     if not set(dense_vars).isdisjoint(sparse_vars):
@@ -42,8 +57,12 @@ def gridmap(func, dense_vars, sparse_vars):
         else:
             in_axes.append(None)
 
-    vmapped = vmap(func, in_axes=in_axes)
-    vmapped = _product_map(vmapped, dense_vars)
+    if dense_first:
+        vmapped = vmap(func, in_axes=in_axes)
+        vmapped = _product_map(vmapped, dense_vars)
+    else:
+        vmapped = _product_map(func, dense_vars)
+        vmapped = vmap(vmapped, in_axes=in_axes)
 
     vmapped.__signature__ = signature
     vmapped_with_kwargs = allow_kwargs(vmapped)
@@ -61,8 +80,20 @@ def productmap(func, variables):
 
     Args:
         func (callable): The function to be dispatched.
-        product_axes (list): List with names of arguments that over which the cartesian
+        variables (list): List with names of arguments that over which the cartesian
             product should be formed.
+
+    Returns:
+        callable: A callable with the same arguments as func (but with an additional
+            leading dimension) that returns a jax.numpy.ndarray or pytree of arrays.
+            If ``func`` returns a scalar, the dispatched function returns a
+            jax.numpy.ndarray with k dimensions, where k is the length of ``variables``.
+            The order of the dimensions is determined by the order of ``variables``
+            which can be different to the order of ``funcs`` arguments. If the output of
+            ``func`` is a jax pytree, the usual jax behavior applies, i.e. the leading
+            dimensions of all arrays in the pytree are as described above but there
+            might be additional dimensions.
+
     """
     if len(variables) != len(set(variables)):
         raise ValueError("Same argument provided more than once.")

@@ -208,13 +208,17 @@ def expected_gridmap():
     return expected_result
 
 
-def test_gridmap_all_arguments_mapped(setup_gridmap, expected_gridmap):
+@pytest.mark.parametrize("dense_first", [True, False])
+def test_gridmap_all_arguments_mapped(setup_gridmap, expected_gridmap, dense_first):
     dense_vars, sparse_vars = setup_gridmap
 
-    decorated = gridmap(g, list(dense_vars), list(sparse_vars))
+    decorated = gridmap(g, list(dense_vars), list(sparse_vars), dense_first=dense_first)
     calculated = decorated(**dense_vars, **sparse_vars)
 
-    aaae(calculated, expected_gridmap)
+    if dense_first:
+        aaae(calculated, expected_gridmap)
+    else:
+        aaae(calculated, jnp.transpose(expected_gridmap, axes=(2, 0, 1)))
 
 
 @pytest.mark.parametrize(
