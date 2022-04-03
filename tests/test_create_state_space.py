@@ -3,6 +3,7 @@ import numpy as np
 import pytest
 from lcm.create_state_space import create_combination_grid
 from lcm.create_state_space import create_filter_mask
+from lcm.create_state_space import create_forward_mask
 from lcm.create_state_space import create_indexers_and_segments
 from lcm.create_state_space import create_state_choice_space
 from lcm.example_models import PHELPS_DEATON_WITH_SHOCKS
@@ -85,6 +86,41 @@ def test_create_combination_grid():
 
     for key in expected:
         aaae(calculated[key], expected[key])
+
+
+def test_create_forward_mask():
+    """We use the following simplified test case (that does not make economic sense).
+
+    - People can stay at home (work=0), work part time (work=1) or full time (work=2)
+    - Experience is measured in work units
+    - Initial experience is only [0, 1] but in total one can accumulate up to 6 points
+    - People can only work full time if they have no previous work experience
+    - People have to work at least part time if they have no previous experience
+
+    """
+    grids = {
+        "experience": jnp.arange(6),
+        "working": jnp.array([0, 1, 2]),
+    }
+
+    initial = {
+        "experience": jnp.array([0, 0, 1, 1]),
+        "working": jnp.array([1, 2, 0, 1]),
+    }
+
+    def next_experience(experience, working):
+        return experience + working
+
+    calculated = create_forward_mask(
+        initial=initial,
+        grids=grids,
+        next_functions={"next_experience": next_experience},
+        jit_next=True,
+    )
+
+    expected = jnp.array([False, True, True, False, False, False])
+
+    aaae(calculated, expected)
 
 
 def test_create_indexers_and_segments():

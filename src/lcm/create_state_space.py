@@ -1,4 +1,5 @@
 """Create a state space for a given model."""
+import inspect
 import warnings
 from typing import Dict
 from typing import List
@@ -11,6 +12,7 @@ import numpy as np
 from dags import concatenate_functions
 from dags import get_ancestors
 from lcm import grids as grids_module
+from lcm.dispatchers import gridmap
 from lcm.dispatchers import productmap
 
 
@@ -111,6 +113,83 @@ def create_filter_mask(
     if jit_filter:
         _filter = jax.jit(_filter)
     mask = _filter(**_grids, **fixed_inputs)
+
+    return mask
+
+
+def create_forward_mask(
+    initial, grids, next_functions, fixed_inputs=None, aux_functions=None, jit_next=True
+):
+    """Create a mask for combinations of grid values.
+
+    Args:
+        intitial (dict): Dict of arrays with valid combinations of variables.
+        grids (dict): Dictionary containing a one-dimensional grid for each
+            variable that is used as a basis to construct the higher dimensional
+            grid.
+        next_functions (dict): Dict of functions for the state space transitions.
+            All keys need to start with "next".
+        fixed_inputs (dict): A dict of fixed inputs for the next_functions or
+            aux_functions. An example would be a model period.
+        aux_functions (dict): Auxiliary functions that calculate derived variables
+            needed in the filters.
+        jit_next (bool): Whether the aggregated next_function is jitted before
+            applying it.
+
+    """
+    warnings.warn("This is extremely experimental and probably buggy!")
+    # preparations
+    _state_vars = [
+        name for name in grids if f"next_{name}" in next_functions
+    ]  # sort in order of grids
+    _aux_functions = {} if aux_functions is None else aux_functions
+    _shape = tuple(len(grids[name]) for name in _state_vars)
+    _next_functions = {
+        f"next_{name}": next_functions[f"next_{name}"] for name in _state_vars
+    }
+    _fixed_inputs = {} if fixed_inputs is None else fixed_inputs
+
+    # find valid arguments
+    valid_args = set(initial) | set(_aux_functions) | set(_fixed_inputs)
+
+    # find next functions with only valid arguments
+    _valid_next_functions = {}
+    for name, func in _next_functions.items():
+        present_args = set(inspect.signature(func).parameters)
+        if present_args.issubset(valid_args):
+            _valid_next_functions[name] = func
+
+    # create scalar next function
+    _next = concatenate_functions(
+        functions={**_valid_next_functions, **_aux_functions},
+        targets=list(_valid_next_functions),
+        return_type="dict",
+    )
+
+    # apply dispatcher
+    needed_args = set(inspect.signature(_next).parameters)
+    _needed_initial = {k: val for k, val in initial.items() if k in needed_args}
+    _gridmapped = gridmap(_next, dense_vars=[], sparse_vars=list(_needed_initial))
+
+    # calculate next values
+    if jit_next:
+        _gridmapped = jax.jit(_gridmapped)
+    _next_values = _gridmapped(**_needed_initial, **_fixed_inputs)
+
+    # create all-false mask
+    mask = np.full(_shape, False)
+
+    # fill with full slices to get indexers
+    indices = []
+    for i, var in enumerate(_state_vars):
+        name = f"next_{var}"
+        if name in _next_values:
+            indices.append(_next_values[name])
+        else:
+            indices.append(slice(0, _shape[i]))
+
+    # set mask to True with indexers
+    mask[tuple(indices)] = True
 
     return mask
 
