@@ -1,9 +1,12 @@
+from functools import partial
 from typing import List
 from typing import NamedTuple
 
 import jax.numpy as jnp
+import lcm.grids as grids_module
 import numpy as np
 from dags.signature import with_signature
+from jax.scipy.ndimage import map_coordinates
 
 
 class VariableInfo(NamedTuple):
@@ -111,20 +114,55 @@ def get_discrete_grid_position_finder(grid, in_name, out_name=None):
     if _grid == list(range(len(grid))):
 
         @with_signature(kwargs=[in_name])
-        def discrete_position_finder(**kwargs):
+        def find_discrete_position(**kwargs):
             return kwargs[in_name]
 
     else:
         val_to_pos = dict(zip(_grid, range(len(grid))))
 
         @with_signature(kwargs=[in_name])
-        def discrete_position_finder(**kwargs):
+        def find_discrete_position(**kwargs):
             return val_to_pos[kwargs[in_name]]
 
-    discrete_position_finder.__name__ = out_name
+    find_discrete_position.__name__ = out_name
 
-    return discrete_position_finder
+    return find_discrete_position
 
 
-def get_continuous_coordinate_finder():
-    pass
+def get_continuous_coordinate_finder(in_name, grid_type, grid_info=None, out_name=None):
+
+    if out_name is None:
+        out_name = f"{in_name}_coordinate"
+
+    grid_info = {} if grid_info is None else grid_info
+
+    raw_func = getattr(grids_module, f"get_{grid_type}_coordinate")
+    partialled_func = partial(raw_func, **grid_info)
+
+    @with_signature(kwargs=[in_name])
+    def find_coordinate(**kwargs):
+        return partialled_func(kwargs[in_name])
+
+    find_coordinate.__name__ = out_name
+
+    return find_coordinate
+
+
+def get_interpolator(value_name, axis_order, map_coordinates_kwargs=None):
+
+    kwargs = {"order": 1, "mode": "nearest"}
+    if map_coordinates_kwargs is not None:
+        kwargs = {**kwargs, **map_coordinates_kwargs}
+
+    partialled_map_coordinates = partial(map_coordinates, **kwargs)
+
+    @with_signature(kwargs=[value_name] + axis_order)
+    def interpolate(**kwargs):
+        coordinates = jnp.array([kwargs[var] for var in axis_order])
+        out = partialled_map_coordinates(
+            input=kwargs[value_name],
+            coordinates=coordinates,
+        )
+        return out
+
+    return interpolate
