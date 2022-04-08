@@ -109,6 +109,7 @@ def test_create_combination_grid_2_masks():
     for key in expected:
         aaae(calculated[key], expected[key])
 
+
 @pytest.mark.xfail
 def test_create_combination_grid_multiple_masks():
     grids = {
@@ -131,7 +132,6 @@ def test_create_combination_grid_multiple_masks():
 
     for key in expected:
         aaae(calculated[key], expected[key])
-
 
 
 def test_create_forward_mask():
@@ -169,6 +169,46 @@ def test_create_forward_mask():
     aaae(calculated, expected)
 
 
+def test_create_forward_mask_multiple_next_funcs():
+    """We use another simple example.
+
+    - People can stay at home (work=0), work part time (work=1) or full time (work=2)
+    - Experience is measured in work units
+    - Initial experience is only [0, 1] but in total one can accumulate up to 6 points
+    - People can only work full time if they have no previous work experience
+    - People have to work at least part time if they have no previous experience
+
+    """
+    grids = {
+        "experience": jnp.arange(6),
+        "working": jnp.array([0, 1, 2]),
+        "health": jnp.array([0, 1]),
+    }
+
+    initial = {
+        "experience": jnp.array([0, 0, 1, 1]),
+        "working": jnp.array([1, 2, 0, 1]),
+        "health": jnp.array([0, 1, 0, 1]),
+    }
+
+    def next_experience(experience, working):
+        return experience + working
+
+    def next_health(experience, working):
+        return int(experience + working > 4)
+
+    calculated = create_forward_mask(
+        initial=initial,
+        grids=grids,
+        next_functions={"next_experience": next_experience, "next_health": next_health},
+        jit_next=True,
+    )
+
+    expected = jnp.array([False, True, True, False, False, False])
+
+    aaae(calculated, expected)
+
+
 def test_create_indexers_and_segments():
     mask = np.full((3, 3, 2), False)
     mask[1, 0, 0] = True
@@ -189,4 +229,3 @@ def test_create_indexers_and_segments():
     aaae(state_indexer, expected_state_indexer)
     aaae(choice_indexer, expected_choice_indexer)
     aaae(segments, expected_segments)
-
