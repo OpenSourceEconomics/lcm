@@ -88,6 +88,52 @@ def test_create_combination_grid():
         aaae(calculated[key], expected[key])
 
 
+def test_create_combination_grid_2_masks():
+    grids = {
+        "lagged_retirement": jnp.array([0, 1]),
+        "retirement": jnp.array([0, 1]),
+    }
+
+    masks = [
+        jnp.array([[True, False], [True, True]]),
+        jnp.array([[True, True], [False, True]]),
+    ]
+
+    calculated = create_combination_grid(grids=grids, masks=masks)
+
+    expected = {
+        "lagged_retirement": jnp.array([0, 1]),
+        "retirement": jnp.array([0, 1]),
+    }
+
+    for key in expected:
+        aaae(calculated[key], expected[key])
+
+@pytest.mark.xfail
+def test_create_combination_grid_multiple_masks():
+    grids = {
+        "lagged_retirement": jnp.array([0, 1]),
+        "retirement": jnp.array([0, 1]),
+    }
+
+    masks = [
+        jnp.array([[True, False], [True, True]]),
+        jnp.array([[True, False], [True, True]]),
+        jnp.array([[True, True], [False, True]]),
+    ]
+
+    calculated = create_combination_grid(grids=grids, masks=masks)
+
+    expected = {
+        "lagged_retirement": jnp.array([0, 1]),
+        "retirement": jnp.array([0, 1]),
+    }
+
+    for key in expected:
+        aaae(calculated[key], expected[key])
+
+
+
 def test_create_forward_mask():
     """We use the following simplified test case (that does not make economic sense).
 
@@ -143,3 +189,4 @@ def test_create_indexers_and_segments():
     aaae(state_indexer, expected_state_indexer)
     aaae(choice_indexer, expected_choice_indexer)
     aaae(segments, expected_segments)
+
