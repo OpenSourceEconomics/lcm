@@ -214,10 +214,16 @@ def create_combination_grid(grids, masks, subset=None):
 
 def _combine_masks(masks):
     if isinstance(masks, (np.ndarray, jnp.ndarray)):
-        _mask = np.array(masks)
+        _masks = [masks]
     else:
-        _mask = np.array(jnp.logical_and(*masks))
-    return _mask
+        _masks = sorted(masks, key=lambda x: len(x.shape), reverse=True)
+
+    mask = _masks[0]
+    for m in _masks[1:]:
+        _shape = tuple(list(m.shape) + [1] * (mask.ndim - m.ndim))
+        mask = jnp.logical_and(mask, m.reshape(_shape))
+    mask = np.array(mask)
+    return mask
 
 
 def create_indexers_and_segments(mask, n_states, fill_value=-1):

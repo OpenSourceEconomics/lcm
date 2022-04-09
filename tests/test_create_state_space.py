@@ -1,6 +1,7 @@
 import jax.numpy as jnp
 import numpy as np
 import pytest
+from lcm.create_state_space import _combine_masks
 from lcm.create_state_space import create_combination_grid
 from lcm.create_state_space import create_filter_mask
 from lcm.create_state_space import create_forward_mask
@@ -143,3 +144,45 @@ def test_create_indexers_and_segments():
     aaae(state_indexer, expected_state_indexer)
     aaae(choice_indexer, expected_choice_indexer)
     aaae(segments, expected_segments)
+
+
+def test_combine_masks_single_mask():
+    mask = jnp.array([True, False])
+    calculated = _combine_masks(mask)
+    aaae(calculated, mask)
+
+
+def test_combine_mask_same_shape():
+    masks = [
+        jnp.array([[True, False], [True, True]]),
+        jnp.array([[True, True], [True, False]]),
+        jnp.array([[True, True], [True, True]]),
+    ]
+
+    expected = jnp.array([[True, False], [True, False]])
+
+    calculated = _combine_masks(masks)
+    aaae(calculated, expected)
+
+
+def test_combine_masks_different_shape():
+    masks = [
+        jnp.array([[True, False], [True, True], [False, True]]),
+        jnp.array([True, True, False]),
+    ]
+
+    expected = jnp.array([[True, False], [True, True], [False, False]])
+
+    calculated = _combine_masks(masks)
+
+    aaae(calculated, expected)
+
+
+def test_combine_masks_invalid_shapes():
+    masks = [
+        jnp.array([[True, False], [True, True], [False, True]]),
+        jnp.array([True, True]),
+    ]
+
+    with pytest.raises(TypeError):
+        _combine_masks(masks, match="incompatible shapes for broadcasting")
