@@ -1,7 +1,6 @@
 import jax.numpy as jnp
 import numpy as np
 import pytest
-from lcm.create_state_space import _combine_masks
 from lcm.create_state_space import create_combination_grid
 from lcm.create_state_space import create_filter_mask
 from lcm.create_state_space import create_forward_mask
@@ -111,7 +110,6 @@ def test_create_combination_grid_2_masks():
         aaae(calculated[key], expected[key])
 
 
-@pytest.mark.xfail
 def test_create_combination_grid_multiple_masks():
     grids = {
         "lagged_retirement": jnp.array([0, 1]),
@@ -178,6 +176,7 @@ def test_create_forward_mask_multiple_next_funcs():
     - Initial experience is only [0, 1] but in total one can accumulate up to 6 points
     - People can only work full time if they have no previous work experience
     - People have to work at least part time if they have no previous experience
+    - People get bad health after they have more than 1 experience
 
     """
     grids = {
@@ -189,14 +188,14 @@ def test_create_forward_mask_multiple_next_funcs():
     initial = {
         "experience": jnp.array([0, 0, 1, 1]),
         "working": jnp.array([1, 2, 0, 1]),
-        "health": jnp.array([0, 1, 0, 1]),
+        "health": jnp.array([0, 0, 0, 0]),
     }
 
     def next_experience(experience, working):
         return experience + working
 
     def next_health(experience, working):
-        return int(experience + working > 4)
+        return ((experience + working) > 1).astype(int)
 
     calculated = create_forward_mask(
         initial=initial,
@@ -205,7 +204,16 @@ def test_create_forward_mask_multiple_next_funcs():
         jit_next=True,
     )
 
-    expected = jnp.array([False, True, True, False, False, False])
+    expected = jnp.array(
+        [
+            [False, False],
+            [True, False],
+            [False, True],
+            [False, False],
+            [False, False],
+            [False, False],
+        ]
+    )
 
     aaae(calculated, expected)
 
@@ -230,45 +238,3 @@ def test_create_indexers_and_segments():
     aaae(state_indexer, expected_state_indexer)
     aaae(choice_indexer, expected_choice_indexer)
     aaae(segments, expected_segments)
-
-
-def test_combine_masks_single_mask():
-    mask = jnp.array([True, False])
-    calculated = _combine_masks(mask)
-    aaae(calculated, mask)
-
-
-def test_combine_mask_same_shape():
-    masks = [
-        jnp.array([[True, False], [True, True]]),
-        jnp.array([[True, True], [True, False]]),
-        jnp.array([[True, True], [True, True]]),
-    ]
-
-    expected = jnp.array([[True, False], [True, False]])
-
-    calculated = _combine_masks(masks)
-    aaae(calculated, expected)
-
-
-def test_combine_masks_different_shape():
-    masks = [
-        jnp.array([[True, False], [True, True], [False, True]]),
-        jnp.array([True, True, False]),
-    ]
-
-    expected = jnp.array([[True, False], [True, True], [False, False]])
-
-    calculated = _combine_masks(masks)
-
-    aaae(calculated, expected)
-
-
-def test_combine_masks_invalid_shapes():
-    masks = [
-        jnp.array([[True, False], [True, True], [False, True]]),
-        jnp.array([True, True]),
-    ]
-
-    with pytest.raises(TypeError):
-        _combine_masks(masks, match="incompatible shapes for broadcasting")
