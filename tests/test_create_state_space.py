@@ -218,6 +218,61 @@ def test_create_forward_mask_multiple_next_funcs():
     aaae(calculated, expected)
 
 
+def test_forward_mask_w_aux_function():
+    """We use another simple example.
+
+    - People can stay at home (work=0), work part time (work=1) or full time (work=2)
+    - Experience is measured in work units
+    - Initial experience is only [0, 1] but in total one can accumulate up to 6 points
+    - People can only work full time if they have no previous work experience
+    - People have to work at least part time if they have no previous experience
+    - People get bad health after they have more than 1 experience.
+    - Bad health in an even period is problematic
+
+    """
+    grids = {
+        "experience": jnp.arange(6),
+        "working": jnp.array([0, 1, 2]),
+        "health": jnp.array([0, 1]),
+    }
+
+    initial = {
+        "experience": jnp.array([0, 0, 1, 1]),
+        "working": jnp.array([1, 2, 0, 1]),
+        "health": jnp.array([0, 0, 1, 1]),
+    }
+
+    def healthy_working(health, working):
+        return working if health == 0 else 0
+
+    def next_experience(experience, healthy_working):
+        return experience + healthy_working
+
+    def next_health(experience, working):
+        return (((experience + working) > 0) & (working == 2)).astype(int)
+
+    calculated = create_forward_mask(
+        initial=initial,
+        grids=grids,
+        next_functions={"next_experience": next_experience, "next_health": next_health},
+        aux_functions={"healthy_working": healthy_working},
+        jit_next=True,
+    )
+
+    expected = jnp.array(
+        [
+            [False, False],
+            [True, True],
+            [False, True],
+            [False, False],
+            [False, False],
+            [False, False],
+        ]
+    )
+
+    aaae(calculated, expected)
+
+
 def test_create_indexers_and_segments():
     mask = np.full((3, 3, 2), False)
     mask[1, 0, 0] = True
