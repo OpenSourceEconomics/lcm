@@ -3,10 +3,9 @@ name: lcm
 channels:
   - conda-forge
   - nodefaults
-  - opensourceeconomics
 
 dependencies:
-  - python >=3.7
+  - python=3.10
   - pip
   - setuptools_scm
   - toml
@@ -38,6 +37,7 @@ dependencies:
   - pydot
   - pytest
   - pytest-cov
+  - pytest-xdist
   - tox-conda
   - sphinx
   - sphinx-panels

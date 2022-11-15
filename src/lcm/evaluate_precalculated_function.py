@@ -16,7 +16,7 @@ class VariableInfo(NamedTuple):
     continuous: List[str] = []
 
 
-def get_precalculated_function_evaluator(grids, varinfo):  # noqa: U100
+def get_precalculated_function_evaluator(grid, varinfo):  # noqa: U100
     """Create a function to look-up and interpolate a function pre-calculated on a grid.
 
     An example of a pre-calculated function is a value or policy function. These are
@@ -25,12 +25,14 @@ def get_precalculated_function_evaluator(grids, varinfo):  # noqa: U100
 
     This function dynamically generates a function that looks up and interpolates values
     of the pre-calculated function. The arguments of the resulting function can be
-    split in two categories: 1. Helper arguments such as information about the grid,
-    indexer arrays and the pre-calculated values of the function. 2. The original
-    arguments of the function that was pre-calculated on the grid. After partialling
-    in all helper arguments, the resulting function will completely hide that it
-    is not analytical and feel like a normal function. In particular, it can be
-    jitted, differentiated and vmapped with jax.
+    split in two categories:
+    1. Helper arguments such as information about the grid, indexer arrays and the
+    pre-calculated values of the function.
+    2. The original arguments of the function that was pre-calculated on the grid.
+
+    After partialling in all helper arguments, the resulting function will completely
+    hide that it is not analytical and feel like a normal function. In particular, it
+    can be jitted, differentiated and vmapped with jax.
 
     The resulting function roughly does the following steps:
 
@@ -60,7 +62,75 @@ def get_precalculated_function_evaluator(grids, varinfo):  # noqa: U100
 
 
     """
-    pass
+    # dict of discrete variables and their labels
+
+    discrete_info = {
+        "retired": [True, False],
+        "working": [0, 20, 32, 40],
+    }
+
+    # infos on indexers that will be there: axis_order, out_name, indexer_name
+
+    indexer_info = {
+        "state_indexer": {"axis_order": ["retired"], "out_name": "sparse_state_pos"}
+    }
+
+    # info of the values array
+
+    name = "values_"
+    values_info = {
+        "axis_order": ["sparse_state_pos", "working", "wealth"],
+        "out_name": "policy",
+    }
+
+    # list of discrete axes of the values array
+    lookup_axes = ["sparse_state_pos"]
+
+    interpolation_axes = ["wealth"]
+
+    # fake return to make pre-commit happy
+    out = (
+        discrete_info,
+        indexer_info,
+        name,
+        values_info,
+        lookup_axes,
+        interpolation_axes,
+    )
+    return out
+
+
+def get_lookup_function(axis_order, in_name, out_name=None):
+    """Create a function tha enables name based lookups in an array.
+
+    The resulting function takes an array and one variable per dimension as optional
+    keyword arguments.
+
+    Args:
+        in_name (str): The name of the array. This will be the corresponding
+            argument name in the wrapper function.
+        axis_order (list): List of strings with names for each axis in the array.
+        out_name (str): Name of the output. This will be set as __name__ attribute
+            of the generated function.
+
+    Returns:
+        callable: A callable with the keyword-only arguments [axis_order] + [in_name]
+            that looks up values in an array called ``name``. All arguments that
+            correspond to axes are optional.
+
+    """
+    if out_name is None:
+        out_name = f"{in_name}_value"
+
+    @with_signature(kwargs=axis_order + [in_name])
+    def array_wrapper(**kwargs):
+        positions = tuple(kwargs.get(var, slice(None)) for var in axis_order)
+        arr = kwargs[in_name]
+        return arr[positions]
+
+    array_wrapper.__name__ = out_name
+
+    return array_wrapper
 
 
 def get_indexer_wrapper(indexer_name, axis_order, out_name=None):
@@ -96,7 +166,7 @@ def get_discrete_grid_position_finder(grid, in_name, out_name=None):
     """Create a function
 
     Args:
-        grids (jnp.ndarray): 1d jax array with grid values.
+        grid (jnp.ndarray): 1d jax array with grid values.
         in_name (str): Name of the variable the grid is representing.
 
     """

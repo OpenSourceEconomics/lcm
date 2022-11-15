@@ -17,7 +17,7 @@ from lcm.dispatchers import productmap
 
 
 class Grid(NamedTuple):
-    """Representation of a dense or sparse grid compatible with grimap."""
+    """Representation of a dense or sparse grid compatible with gridmap."""
 
     dense_vars: List[str]
     sparse_vars: List[str]

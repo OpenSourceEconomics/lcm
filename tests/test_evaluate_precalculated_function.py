@@ -1,11 +1,34 @@
 from functools import partial
 
 import jax.numpy as jnp
+import pytest
 from lcm.dispatchers import productmap
 from lcm.evaluate_precalculated_function import get_continuous_coordinate_finder
 from lcm.evaluate_precalculated_function import get_discrete_grid_position_finder
 from lcm.evaluate_precalculated_function import get_indexer_wrapper
 from lcm.evaluate_precalculated_function import get_interpolator
+from lcm.evaluate_precalculated_function import get_lookup_function
+from numpy.testing import assert_array_equal as aae
+
+
+@pytest.fixture()
+def arr():
+    shape = (2, 3, 4)
+    a = jnp.arange(jnp.prod(jnp.array(shape))).reshape(shape)
+    return a
+
+
+def test_get_lookup_function_all_axes_provided(arr):
+    axis_order = ["a", "b", "c"]
+    lookup = get_lookup_function(axis_order, in_name="arr", out_name="val")
+    assert lookup(a=1, c=1, b=2, arr=arr) == 21
+
+
+def test_get_lookup_function_some_axes_at_default(arr):
+    axis_order = ["a", "b", "c"]
+    lookup = get_lookup_function(axis_order, in_name="arr", out_name="val")
+    expected = jnp.array([13, 17, 21])
+    aae(lookup(a=1, c=1, arr=arr), expected)
 
 
 def test_get_indexer_wrapper():
