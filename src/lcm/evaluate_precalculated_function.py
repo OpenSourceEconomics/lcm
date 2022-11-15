@@ -198,7 +198,6 @@ def get_discrete_grid_position_finder(grid, in_name, out_name=None):
 
     return find_discrete_position
 
-
 def get_continuous_coordinate_finder(in_name, grid_type, grid_info=None, out_name=None):
 
     if out_name is None:
