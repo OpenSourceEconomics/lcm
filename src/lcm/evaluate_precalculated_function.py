@@ -1,22 +1,38 @@
 from functools import partial
 from typing import List
 from typing import NamedTuple
+from typing import Union
 
 import jax.numpy as jnp
 import lcm.grids as grids_module
 import numpy as np
+from dags import concatenate_functions
 from dags.signature import with_signature
 from jax.scipy.ndimage import map_coordinates
 
 
-class VariableInfo(NamedTuple):
-    order: List[str]
-    sparse_discrete: List[str] = []
-    dense_discrete: List[str] = []
-    continuous: List[str] = []
+class IndexerInfo(NamedTuple):
+    axis_order: List[str]
+    name: str
+    out_name: str
+    indexer: jnp.ndarray
 
 
-def get_precalculated_function_evaluator(grid, varinfo):  # noqa: U100
+class GridInfo(NamedTuple):
+    kind: str  # linspace, logspace, ordered, ...
+    static: bool
+    specs: Union[dict, np.ndarray, None]
+    name: Union[str, None] = None
+
+
+def get_precalculated_function_evaluator(
+    discrete_info,
+    continuous_info,
+    indexer_info,
+    axis_order,
+    data_name,
+    map_coordinates_kwargs=None,
+):
     """Create a function to look-up and interpolate a function pre-calculated on a grid.
 
     An example of a pre-calculated function is a value or policy function. These are
@@ -62,79 +78,63 @@ def get_precalculated_function_evaluator(grid, varinfo):  # noqa: U100
 
 
     """
-    # dict of discrete variables and their labels
 
-    discrete_info = {
-        "retired": [True, False],
-        "working": [0, 20, 32, 40],
-    }
+    functions = {}
 
-    # infos on indexers that will be there: axis_order, out_name, indexer_name
+    # create functions to look up position of discrete variables from labels
+    for var, labels in discrete_info.items():
+        _out_name = f"__{var}_pos__"
+        functions[_out_name] = get_label_translator(
+            labels=labels, in_name=var, out_name=_out_name
+        )
 
-    indexer_info = {
-        "state_indexer": {"axis_order": ["retired"], "out_name": "sparse_state_pos"}
-    }
-
-    # info of the values array
-
-    name = "values_"
-    values_info = {
-        "axis_order": ["sparse_state_pos", "working", "wealth"],
-        "out_name": "policy",
-    }
-
-    # list of discrete axes of the values array
-    lookup_axes = ["sparse_state_pos"]
-
-    interpolation_axes = ["wealth"]
-
-    # fake return to make pre-commit happy
-    out = (
-        discrete_info,
-        indexer_info,
-        name,
-        values_info,
-        lookup_axes,
-        interpolation_axes,
+    # wrap the indexer and put it into functions
+    _out_name = f"__{indexer_info.out_name}_pos__"
+    functions[_out_name] = get_lookup_function(
+        array_name=indexer_info.name,
+        axis_order=[f"__{var}_pos__" for var in indexer_info.axis_order],
+        out_name=_out_name,
     )
-    return out
+
+    # create a function for the discrete lookup
+    _internal_axes = [f"__{var}_pos__" for var in axis_order]
+    _lookup_axes = [var for var in _internal_axes if var in functions]
+
+    _out_name = "__interpolation_data__"
+    functions[_out_name] = get_lookup_function(
+        array_name=data_name,
+        axis_order=_lookup_axes,
+        out_name=_out_name,
+    )
+
+    # create functions to find coordinates for the interpolation
+    for var, grid_info in continuous_info.items():
+        _out_name = f"__{var}_coord__"
+        functions[_out_name] = get_coordinate_finder(
+            in_name=var,
+            grid_type=grid_info.kind,
+            grid_info=grid_info.specs,
+            out_name=_out_name,
+        )
+
+    # create interpolation function
+    functions["__fval__"] = get_interpolator(
+        value_name="__interpolation_data__",
+        axis_order=[f"__{var}_coord__" for var in continuous_info],
+        map_coordinates_kwargs=map_coordinates_kwargs,
+    )
+
+    # build the dag
+    evaluator = concatenate_functions(
+        functions=functions,
+        targets="__fval__",
+    )
+
+    return evaluator
 
 
-def get_lookup_function(axis_order, in_name, out_name=None):
+def get_lookup_function(array_name, axis_order, out_name=None):
     """Create a function tha enables name based lookups in an array.
-
-    The resulting function takes an array and one variable per dimension as optional
-    keyword arguments.
-
-    Args:
-        in_name (str): The name of the array. This will be the corresponding
-            argument name in the wrapper function.
-        axis_order (list): List of strings with names for each axis in the array.
-        out_name (str): Name of the output. This will be set as __name__ attribute
-            of the generated function.
-
-    Returns:
-        callable: A callable with the keyword-only arguments [axis_order] + [in_name]
-            that looks up values in an array called ``name``. All arguments that
-            correspond to axes are optional.
-
-    """
-    if out_name is None:
-        out_name = f"{in_name}_value"
-
-    @with_signature(kwargs=axis_order + [in_name])
-    def array_wrapper(**kwargs):
-        positions = tuple(kwargs.get(var, slice(None)) for var in axis_order)
-        arr = kwargs[in_name]
-        return arr[positions]
-
-    array_wrapper.__name__ = out_name
-
-    return array_wrapper
-
-
-def get_indexer_wrapper(indexer_name, axis_order, out_name=None):
-    """Create a function tha enables name based lookups in an indexer array.
 
     Args:
         indexer_name (str): The name of the indexer. This will be the corresponding
@@ -149,12 +149,12 @@ def get_indexer_wrapper(indexer_name, axis_order, out_name=None):
     """
 
     if out_name is None:
-        out_name = f"{indexer_name.replace('_indexer', '')}_pos"
+        out_name = f"{array_name.replace('_indexer', '')}_pos"
 
-    @with_signature(kwargs=axis_order + [indexer_name])
+    @with_signature(kwargs=axis_order + [array_name])
     def indexer_wrapper(**kwargs):
         positions = tuple(kwargs[var] for var in axis_order)
-        arr = kwargs[indexer_name]
+        arr = kwargs[array_name]
         return arr[positions]
 
     indexer_wrapper.__name__ = out_name
@@ -162,7 +162,7 @@ def get_indexer_wrapper(indexer_name, axis_order, out_name=None):
     return indexer_wrapper
 
 
-def get_discrete_grid_position_finder(grid, in_name, out_name=None):
+def get_label_translator(labels, in_name, out_name=None):
     """Create a function
 
     Args:
@@ -173,32 +173,33 @@ def get_discrete_grid_position_finder(grid, in_name, out_name=None):
     if out_name is None:
         out_name = f"{in_name}_pos"
 
-    if isinstance(grid, (np.ndarray, jnp.ndarray)):
+    if isinstance(labels, (np.ndarray, jnp.ndarray)):
         # tolist converts jax or numpy specific dtypes to python types
-        _grid = grid.tolist()
-    elif not isinstance(grid, list):
-        _grid = list(grid)
+        _grid = labels.tolist()
+    elif not isinstance(labels, list):
+        _grid = list(labels)
     else:
-        _grid = grid
+        _grid = labels
 
-    if _grid == list(range(len(grid))):
+    if _grid == list(range(len(labels))):
 
         @with_signature(kwargs=[in_name])
-        def find_discrete_position(**kwargs):
+        def translate_label(**kwargs):
             return kwargs[in_name]
 
     else:
-        val_to_pos = dict(zip(_grid, range(len(grid))))
+        val_to_pos = dict(zip(_grid, range(len(labels))))
 
         @with_signature(kwargs=[in_name])
-        def find_discrete_position(**kwargs):
+        def translate_label(**kwargs):
             return val_to_pos[kwargs[in_name]]
 
-    find_discrete_position.__name__ = out_name
+    translate_label.__name__ = out_name
 
-    return find_discrete_position
+    return translate_label
 
-def get_continuous_coordinate_finder(in_name, grid_type, grid_info=None, out_name=None):
+
+def get_coordinate_finder(in_name, grid_type, grid_info=None, out_name=None):
 
     if out_name is None:
         out_name = f"{in_name}_coordinate"
