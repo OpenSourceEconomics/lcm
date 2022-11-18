@@ -41,12 +41,14 @@ def test_get_precalculated_function_evaluator():
     }
 
     # create an indexer for the sparse discrete part
-    indexer_info = Indexer(
-        axis_order=["retired", "working"],
-        name="state_indexer",
-        out_name="state_index",
-        indexer=jnp.array([[-1, 0], [1, 2]]),
-    )
+    indexers = [
+        Indexer(
+            axis_order=["retired", "working"],
+            name="state_indexer",
+            out_name="state_index",
+            indexer=jnp.array([[-1, 0], [1, 2]]),
+        )
+    ]
 
     # create info on continuous grids
     continuous_grid_specs = {
@@ -66,7 +68,7 @@ def test_get_precalculated_function_evaluator():
     evaluator = get_precalculated_function_evaluator(
         discrete_info=discrete_labels,
         continuous_info=continuous_grid_specs,
-        indexer_info=indexer_info,
+        indexers=indexers,
         axis_order=axis_order,
         data_name="vf_arr",
     )
@@ -78,7 +80,7 @@ def test_get_precalculated_function_evaluator():
         insured="yes",
         wealth=600,
         human_capital=1.5,
-        state_indexer=indexer_info.indexer,
+        state_indexer=indexers[0].indexer,
         vf_arr=vf_arr,
     )
 
