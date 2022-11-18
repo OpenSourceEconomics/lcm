@@ -66,6 +66,7 @@ def get_function_evaluator(
     # check inputs
     # ==================================================================================
     _fail_if_interpolation_axes_are_not_last(space_info)
+    _need_interpolation = bool(space_info.interpolation_info)
 
     # ==================================================================================
     # create functions to look up position of discrete variables from labels
@@ -90,34 +91,36 @@ def get_function_evaluator(
     _internal_axes = [f"__{var}_pos__" for var in space_info.axis_names]
     _lookup_axes = [var for var in _internal_axes if var in funcs]
 
-    funcs["__interpolation_data__"] = _get_lookup_function(
+    _out_name = "__interpolation_data__" if _need_interpolation else "__fval__"
+    funcs[_out_name] = _get_lookup_function(
         array_name=data_name,
         axis_names=_lookup_axes,
     )
 
-    # ==================================================================================
-    # create functions to find coordinates for the interpolation
-    # ==================================================================================
-    for var, grid_info in space_info.interpolation_info.items():
-        funcs[f"__{var}_coord__"] = _get_coordinate_finder(
-            in_name=var,
-            grid_type=grid_info.kind,
-            grid_info=grid_info.specs,
-        )
+    if _need_interpolation:
+        # ==============================================================================
+        # create functions to find coordinates for the interpolation
+        # ==============================================================================
+        for var, grid_info in space_info.interpolation_info.items():
+            funcs[f"__{var}_coord__"] = _get_coordinate_finder(
+                in_name=var,
+                grid_type=grid_info.kind,
+                grid_info=grid_info.specs,
+            )
 
-    # ==================================================================================
-    # create interpolation function
-    # ==================================================================================
-    _interpolation_axes = [
-        f"__{var}_coord__"
-        for var in space_info.axis_names
-        if var in space_info.interpolation_info
-    ]
-    funcs["__fval__"] = _get_interpolator(
-        data_name="__interpolation_data__",
-        axis_names=_interpolation_axes,
-        map_coordinates_kwargs=interpolation_options,
-    )
+        # ==============================================================================
+        # create interpolation function
+        # ==============================================================================
+        _interpolation_axes = [
+            f"__{var}_coord__"
+            for var in space_info.axis_names
+            if var in space_info.interpolation_info
+        ]
+        funcs["__fval__"] = _get_interpolator(
+            data_name="__interpolation_data__",
+            axis_names=_interpolation_axes,
+            map_coordinates_kwargs=interpolation_options,
+        )
 
     # ==================================================================================
     # build the dag
@@ -256,8 +259,10 @@ def _get_interpolator(data_name, axis_names, map_coordinates_kwargs=None):
 def _fail_if_interpolation_axes_are_not_last(space_info):
     """Fail if the interpolation axes are not the last elements in axis_names."""
     common = set(space_info.interpolation_info) & set(space_info.axis_names)
-    n_common = len(common)
-    if sorted(common) != sorted(space_info.axis_names[-n_common:]):
-        raise ValueError(
-            "Interpolation axes need to be the last entries in axis_order."
-        )
+
+    if common:
+        n_common = len(common)
+        if sorted(common) != sorted(space_info.axis_names[-n_common:]):
+            raise ValueError(
+                "Interpolation axes need to be the last entries in axis_order."
+            )

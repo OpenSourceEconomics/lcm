@@ -7,12 +7,69 @@ from lcm.function_evaluator import _get_interpolator
 from lcm.function_evaluator import _get_label_translator
 from lcm.function_evaluator import _get_lookup_function
 from lcm.function_evaluator import get_function_evaluator
+from lcm.grids import linspace
 from lcm.state_space import Grid
 from lcm.state_space import IndexerInfo
 from lcm.state_space import SpaceInfo
 
 
-def test_get_function_evaluator():
+def test_function_evaluator_with_one_continuous_variable():
+
+    grid_specs = {"start": -3, "stop": 3, "n_points": 7}
+
+    space_info = SpaceInfo(
+        axis_names=["wealth"],
+        lookup_info={},
+        interpolation_info={
+            "wealth": Grid(kind="linspace", specs=grid_specs),
+        },
+        indexer_infos=[],
+    )
+
+    grid = linspace(**grid_specs)
+    vf_arr = jnp.pi * grid + 2
+
+    # create the evaluator
+    evaluator = get_function_evaluator(
+        space_info=space_info,
+        data_name="vf_arr",
+    )
+
+    # partial the function values into the evaluator
+    func = partial(evaluator, vf_arr=vf_arr)
+
+    # test the evaluator
+    got = func(wealth=0.5)
+    expected = 0.5 * jnp.pi + 2
+    assert jnp.allclose(got, expected)
+
+
+def test_function_evaluator_with_one_discrete_variable():
+
+    vf_arr = jnp.array([1, 2])
+
+    space_info = SpaceInfo(
+        axis_names=["working"],
+        lookup_info={"working": [True, False]},
+        interpolation_info={},
+        indexer_infos=[],
+    )
+
+    # create the evaluator
+    evaluator = get_function_evaluator(
+        space_info=space_info,
+        data_name="vf_arr",
+    )
+
+    # partial the function values into the evaluator
+    func = partial(evaluator, vf_arr=vf_arr)
+
+    # test the evaluator
+    assert func(working=True) == 1
+    assert func(working=False) == 2
+
+
+def test_function_evaluator():
     """Test get_precalculated_function_evaluator in simple example.
 
     - One sparse discrete state variable: retired (True, False)

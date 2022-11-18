@@ -44,14 +44,11 @@ class Grid(NamedTuple):
         kind (str): Name of a grid type implemented in lcm.grids.
         specs (dict, np.ndarray): Specification of the grid. E.g. {"start": float,
             "stop": float, "n_points": int} for a linspace.
-        name (str): Name of the grid. This will be axis names in an array that
-            represents a cartesian product of one dimensional grids.
 
     """
 
     kind: str
     specs: Union[dict, np.ndarray]
-    name: Union[str, None] = None
 
 
 class Space(NamedTuple):
