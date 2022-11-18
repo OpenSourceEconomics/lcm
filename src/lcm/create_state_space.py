@@ -16,28 +16,33 @@ from lcm.dispatchers import gridmap
 from lcm.dispatchers import productmap
 
 
+class Indexer(NamedTuple):
+    axis_order: List[str]
+    name: str
+    out_name: str
+    indexer: jnp.ndarray
+
+
 class Grid(NamedTuple):
-    """Representation of a dense or sparse grid compatible with gridmap."""
-
-    dense_vars: List[str]
-    sparse_vars: List[str]
-    grid: Dict[str, jnp.ndarray]
+    kind: str  # linspace, logspace, ordered
+    specs: Union[dict, np.ndarray]
+    name: Union[str, None] = None
 
 
-class StateChoiceInfo(NamedTuple):
-    """Info to work with a function evaluated on a state-choice grid.
+class Space(NamedTuple):
+    """Everything needed to evaluate a function on a space (e.g. state space)."""
 
-    Provides information to look up values, aggregate values over choice dimensions
-    or interpolate values over continuous dimensions.
+    sparse_vars: Dict
+    dense_vars: Dict
 
-    """
 
-    state_vars: List[str]
-    choice_vars: List[str]
-    state_indexer: jnp.ndarray
-    choice_indexer: Union[jnp.ndarray, None]
-    choice_segments: Union[jnp.ndarray, None]
-    gridspecs: Dict[str, Union[Dict, jnp.ndarray]]
+class SpaceInfo(NamedTuple):
+    """Everything needed to work with the output of a function evaluated on a space."""
+
+    axis_order: List[str]
+    lookup_axes: Dict[str, List[str]]
+    interpolation_axes: Dict[str, Grid]
+    indexers: List[Indexer]
 
 
 def create_state_choice_space(model):
@@ -122,6 +127,9 @@ def create_forward_mask(
 ):
     """Create a mask for combinations of grid values.
 
+    .. warning::
+        This function is extremely experimental and probably buggy
+
     Args:
         intitial (dict): Dict of arrays with valid combinations of variables.
         grids (dict): Dictionary containing a one-dimensional grid for each
@@ -137,7 +145,6 @@ def create_forward_mask(
             applying it.
 
     """
-    warnings.warn("This is extremely experimental and probably buggy!")
     # preparations
     _state_vars = [
         name for name in grids if f"next_{name}" in next_functions

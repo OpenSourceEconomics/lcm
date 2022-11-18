@@ -1,14 +1,14 @@
 from functools import partial
 
 import jax.numpy as jnp
+from lcm.create_state_space import Grid
+from lcm.create_state_space import Indexer
 from lcm.dispatchers import productmap
 from lcm.evaluate_precalculated_function import get_coordinate_finder
 from lcm.evaluate_precalculated_function import get_interpolator
 from lcm.evaluate_precalculated_function import get_label_translator
 from lcm.evaluate_precalculated_function import get_lookup_function
 from lcm.evaluate_precalculated_function import get_precalculated_function_evaluator
-from lcm.evaluate_precalculated_function import GridInfo
-from lcm.evaluate_precalculated_function import IndexerInfo
 
 
 def test_get_precalculated_function_evaluator():
@@ -41,7 +41,7 @@ def test_get_precalculated_function_evaluator():
     }
 
     # create an indexer for the sparse discrete part
-    indexer_info = IndexerInfo(
+    indexer_info = Indexer(
         axis_order=["retired", "working"],
         name="state_indexer",
         out_name="state_index",
@@ -50,13 +50,12 @@ def test_get_precalculated_function_evaluator():
 
     # create info on continuous grids
     continuous_grid_specs = {
-        "wealth": GridInfo(
+        "wealth": Grid(
             kind="linspace",
-            static=True,
             specs={"start": 100, "stop": 1100, "n_points": 6},
         ),
-        "human_capital": GridInfo(
-            kind="linspace", static=True, specs={"start": -3, "stop": 3, "n_points": 7}
+        "human_capital": Grid(
+            kind="linspace", specs={"start": -3, "stop": 3, "n_points": 7}
         ),
     }
 

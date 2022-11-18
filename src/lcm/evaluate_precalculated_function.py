@@ -1,7 +1,4 @@
 from functools import partial
-from typing import List
-from typing import NamedTuple
-from typing import Union
 
 import jax.numpy as jnp
 import lcm.grids as grids_module
@@ -11,27 +8,13 @@ from dags.signature import with_signature
 from jax.scipy.ndimage import map_coordinates
 
 
-class IndexerInfo(NamedTuple):
-    axis_order: List[str]
-    name: str
-    out_name: str
-    indexer: jnp.ndarray
-
-
-class GridInfo(NamedTuple):
-    kind: str  # linspace, logspace, ordered, ...
-    static: bool
-    specs: Union[dict, np.ndarray, None]
-    name: Union[str, None] = None
-
-
 def get_precalculated_function_evaluator(
     discrete_info,
     continuous_info,
     indexer_info,
     axis_order,
     data_name,
-    map_coordinates_kwargs=None,
+    interpolation_options=None,
 ):
     """Create a function to look-up and interpolate a function pre-calculated on a grid.
 
@@ -121,7 +104,7 @@ def get_precalculated_function_evaluator(
     functions["__fval__"] = get_interpolator(
         value_name="__interpolation_data__",
         axis_order=[f"__{var}_coord__" for var in continuous_info],
-        map_coordinates_kwargs=map_coordinates_kwargs,
+        map_coordinates_kwargs=interpolation_options,
     )
 
     # build the dag

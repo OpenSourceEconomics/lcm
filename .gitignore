@@ -14,8 +14,11 @@ _generated
 *.egg-info
 .eggs
 
+.*
 
 
 build
 dist
 src/lcm/_version.py
+
+sandbox/
