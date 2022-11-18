@@ -3,8 +3,8 @@ import itertools
 import jax.numpy as jnp
 import pytest
 from jax import config
-from lcm.dispatchers import gridmap
 from lcm.dispatchers import productmap
+from lcm.dispatchers import spacemap
 from numpy.testing import assert_array_almost_equal as aaae
 
 config.update("jax_enable_x64", True)
@@ -212,7 +212,9 @@ def expected_gridmap():
 def test_gridmap_all_arguments_mapped(setup_gridmap, expected_gridmap, dense_first):
     dense_vars, sparse_vars = setup_gridmap
 
-    decorated = gridmap(g, list(dense_vars), list(sparse_vars), dense_first=dense_first)
+    decorated = spacemap(
+        g, list(dense_vars), list(sparse_vars), dense_first=dense_first
+    )
     calculated = decorated(**dense_vars, **sparse_vars)
 
     if dense_first:
@@ -238,4 +240,4 @@ def test_gridmap_all_arguments_mapped(setup_gridmap, expected_gridmap, dense_fir
 )
 def test_gridmap_arguments_overlap(error_msg, dense_vars, sparse_vars):
     with pytest.raises(ValueError, match=error_msg):
-        gridmap(g, dense_vars, sparse_vars)
+        spacemap(g, dense_vars, sparse_vars)

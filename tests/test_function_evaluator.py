@@ -8,7 +8,7 @@ from lcm.function_evaluator import _get_label_translator
 from lcm.function_evaluator import _get_lookup_function
 from lcm.function_evaluator import get_function_evaluator
 from lcm.state_space import Grid
-from lcm.state_space import Indexer
+from lcm.state_space import IndexerInfo
 from lcm.state_space import SpaceInfo
 
 
@@ -43,14 +43,15 @@ def test_get_function_evaluator():
     }
 
     # create an indexer for the sparse discrete part
-    indexers = [
-        Indexer(
+    indexer_infos = [
+        IndexerInfo(
             axis_names=["retired", "working"],
             name="state_indexer",
             out_name="state_index",
-            indexer=jnp.array([[-1, 0], [1, 2]]),
         )
     ]
+
+    indexer_array = jnp.array([[-1, 0], [1, 2]])
 
     # create info on continuous grids
     interpolation_info = {
@@ -70,7 +71,7 @@ def test_get_function_evaluator():
         axis_names=axis_names,
         lookup_info=lookup_info,
         interpolation_info=interpolation_info,
-        indexers=indexers,
+        indexer_infos=indexer_infos,
     )
 
     # create the evaluator
@@ -86,7 +87,7 @@ def test_get_function_evaluator():
         insured="yes",
         wealth=600,
         human_capital=1.5,
-        state_indexer=indexers[0].indexer,
+        state_indexer=indexer_array,
         vf_arr=vf_arr,
     )
 

@@ -12,19 +12,22 @@ import numpy as np
 from dags import concatenate_functions
 from dags import get_ancestors
 from lcm import grids as grids_module
-from lcm.dispatchers import gridmap
 from lcm.dispatchers import productmap
+from lcm.dispatchers import spacemap
 
 
-class Indexer(NamedTuple):
+class IndexerInfo(NamedTuple):
+    """Information needed to work with an indexer array."""
+
     axis_names: List[str]
     name: str
     out_name: str
-    indexer: jnp.ndarray
 
 
 class Grid(NamedTuple):
-    kind: str  # linspace, logspace, ordered
+    """Information needed to define or interpret a grid."""
+
+    kind: str
     specs: Union[dict, np.ndarray]
     name: Union[str, None] = None
 
@@ -42,7 +45,7 @@ class SpaceInfo(NamedTuple):
     axis_names: List[str]
     lookup_info: Dict[str, List[str]]
     interpolation_info: Dict[str, Grid]
-    indexers: List[Indexer]
+    indexer_infos: List[IndexerInfo]
 
 
 def create_state_choice_space(model):
@@ -176,7 +179,7 @@ def create_forward_mask(
     # apply dispatcher
     needed_args = set(inspect.signature(_next).parameters)
     _needed_initial = {k: val for k, val in initial.items() if k in needed_args}
-    _gridmapped = gridmap(_next, dense_vars=[], sparse_vars=list(_needed_initial))
+    _gridmapped = spacemap(_next, dense_vars=[], sparse_vars=list(_needed_initial))
 
     # calculate next values
     if jit_next:

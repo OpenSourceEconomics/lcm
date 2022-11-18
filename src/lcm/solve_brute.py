@@ -1,5 +1,5 @@
 import jax.numpy as jnp
-from lcm.dispatchers import gridmap
+from lcm.dispatchers import spacemap
 
 
 def contsolve_last_period(
@@ -26,7 +26,7 @@ def contsolve_last_period(
 
     max_axes = tuple(range(n_dense, n_dense + n_cont_choices))
 
-    gridmapped = gridmap(
+    gridmapped = spacemap(
         func=utility_and_feasibility,
         dense_vars=list(state_choice_space["value_grid"])
         + list(continuous_choice_grids),

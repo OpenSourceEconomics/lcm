@@ -76,7 +76,7 @@ def get_function_evaluator(
     # ==================================================================================
     # wrap the indexers and put them it into funcs
     # ==================================================================================
-    for indexer in space_info.indexers:
+    for indexer in space_info.indexer_infos:
         funcs[f"__{indexer.out_name}_pos__"] = _get_lookup_function(
             array_name=indexer.name,
             axis_names=[f"__{var}_pos__" for var in indexer.axis_names],
