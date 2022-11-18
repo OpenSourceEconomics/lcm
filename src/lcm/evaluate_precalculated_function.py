@@ -60,14 +60,18 @@ def get_precalculated_function_evaluator(
     """
     funcs = {}
 
+    # ==================================================================================
     # create functions to look up position of discrete variables from labels
+    # ==================================================================================
     for var, labels in space_info.lookup_axes.items():
         _out_name = f"__{var}_pos__"
         funcs[_out_name] = get_label_translator(
             labels=labels, in_name=var, out_name=_out_name
         )
 
+    # ==================================================================================
     # wrap the indexers and put them it into funcs
+    # ==================================================================================
     for indexer in space_info.indexers:
         _out_name = f"__{indexer.out_name}_pos__"
         funcs[_out_name] = get_lookup_function(
@@ -76,7 +80,11 @@ def get_precalculated_function_evaluator(
             out_name=_out_name,
         )
 
+    # ==================================================================================
     # create a function for the discrete lookup
+    # ==================================================================================
+    # lookup is positional, so the inputs of the wrapper functions need to be the
+    # outcomes of tranlating labels into positions
     _internal_axes = [f"__{var}_pos__" for var in space_info.axis_order]
     _lookup_axes = [var for var in _internal_axes if var in funcs]
 
@@ -87,7 +95,9 @@ def get_precalculated_function_evaluator(
         out_name=_out_name,
     )
 
+    # ==================================================================================
     # create functions to find coordinates for the interpolation
+    # ==================================================================================
     for var, grid_info in space_info.interpolation_axes.items():
         _out_name = f"__{var}_coord__"
         funcs[_out_name] = get_coordinate_finder(
@@ -97,14 +107,23 @@ def get_precalculated_function_evaluator(
             out_name=_out_name,
         )
 
+    # ==================================================================================
     # create interpolation function
+    # ==================================================================================
+    _interpolation_axes = [
+        f"__{var}_coord__"
+        for var in space_info.axis_order
+        if var in space_info.interpolation_axes
+    ]
     funcs["__fval__"] = get_interpolator(
         value_name="__interpolation_data__",
-        axis_order=[f"__{var}_coord__" for var in space_info.interpolation_axes],
+        axis_order=_interpolation_axes,
         map_coordinates_kwargs=interpolation_options,
     )
 
+    # ==================================================================================
     # build the dag
+    # ==================================================================================
     evaluator = concatenate_functions(
         functions=funcs,
         targets="__fval__",
