@@ -61,6 +61,11 @@ def get_precalculated_function_evaluator(
     funcs = {}
 
     # ==================================================================================
+    # check inputs
+    # ==================================================================================
+    _fail_if_interpolation_axes_are_not_last(space_info)
+
+    # ==================================================================================
     # create functions to look up position of discrete variables from labels
     # ==================================================================================
     for var, labels in space_info.lookup_axes.items():
@@ -235,3 +240,12 @@ def get_interpolator(value_name, axis_order, map_coordinates_kwargs=None):
         return out
 
     return interpolate
+
+
+def _fail_if_interpolation_axes_are_not_last(space_info):
+    common = set(space_info.interpolation_axes) & set(space_info.axis_order)
+    n_common = len(common)
+    if sorted(common) != sorted(space_info.axis_order[-n_common:]):
+        raise ValueError(
+            "Interpolation axes need to be the last entries in axis_order."
+        )
