@@ -3,6 +3,7 @@ from functools import partial
 import jax.numpy as jnp
 from lcm.create_state_space import Grid
 from lcm.create_state_space import Indexer
+from lcm.create_state_space import SpaceInfo
 from lcm.dispatchers import productmap
 from lcm.evaluate_precalculated_function import get_coordinate_finder
 from lcm.evaluate_precalculated_function import get_interpolator
@@ -24,9 +25,10 @@ def test_get_precalculated_function_evaluator():
     The utility function is wealth + human_capital + c. c takes a different
     value for each discrete state choice combination.
 
+    The setup of space_info here is quite long. Usually these inputs will be generated
+    from a model specification.
 
     """
-
     # create a value function array
     discrete_part = jnp.arange(6).repeat(6 * 7).reshape((3, 2, 6, 7)) * 100
     cont_func = productmap(lambda x, y: x + y, ["x", "y"])
@@ -34,7 +36,7 @@ def test_get_precalculated_function_evaluator():
     vf_arr = discrete_part + cont_part
 
     # create info on discrete variables
-    discrete_labels = {
+    lookup_axes = {
         "retired": [True, False],
         "working": [0, 1],
         "insured": ["yes", "no"],
@@ -51,7 +53,7 @@ def test_get_precalculated_function_evaluator():
     ]
 
     # create info on continuous grids
-    continuous_grid_specs = {
+    interpolation_axes = {
         "wealth": Grid(
             kind="linspace",
             specs={"start": 100, "stop": 1100, "n_points": 6},
@@ -64,12 +66,16 @@ def test_get_precalculated_function_evaluator():
     # create info on axis of value function array
     axis_order = ["state_index", "insured", "wealth", "human_capital"]
 
+    space_info = SpaceInfo(
+        axis_order=axis_order,
+        lookup_axes=lookup_axes,
+        interpolation_axes=interpolation_axes,
+        indexers=indexers,
+    )
+
     # create the evaluator
     evaluator = get_precalculated_function_evaluator(
-        discrete_info=discrete_labels,
-        continuous_info=continuous_grid_specs,
-        indexers=indexers,
-        axis_order=axis_order,
+        space_info=space_info,
         data_name="vf_arr",
     )
 

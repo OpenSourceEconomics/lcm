@@ -9,10 +9,7 @@ from jax.scipy.ndimage import map_coordinates
 
 
 def get_precalculated_function_evaluator(
-    discrete_info,
-    continuous_info,
-    indexers,
-    axis_order,
+    space_info,
     data_name,
     interpolation_options=None,
 ):
@@ -61,18 +58,17 @@ def get_precalculated_function_evaluator(
 
 
     """
-
     funcs = {}
 
     # create functions to look up position of discrete variables from labels
-    for var, labels in discrete_info.items():
+    for var, labels in space_info.lookup_axes.items():
         _out_name = f"__{var}_pos__"
         funcs[_out_name] = get_label_translator(
             labels=labels, in_name=var, out_name=_out_name
         )
 
     # wrap the indexers and put them it into funcs
-    for indexer in indexers:
+    for indexer in space_info.indexers:
         _out_name = f"__{indexer.out_name}_pos__"
         funcs[_out_name] = get_lookup_function(
             array_name=indexer.name,
@@ -81,7 +77,7 @@ def get_precalculated_function_evaluator(
         )
 
     # create a function for the discrete lookup
-    _internal_axes = [f"__{var}_pos__" for var in axis_order]
+    _internal_axes = [f"__{var}_pos__" for var in space_info.axis_order]
     _lookup_axes = [var for var in _internal_axes if var in funcs]
 
     _out_name = "__interpolation_data__"
@@ -92,7 +88,7 @@ def get_precalculated_function_evaluator(
     )
 
     # create functions to find coordinates for the interpolation
-    for var, grid_info in continuous_info.items():
+    for var, grid_info in space_info.interpolation_axes.items():
         _out_name = f"__{var}_coord__"
         funcs[_out_name] = get_coordinate_finder(
             in_name=var,
@@ -104,7 +100,7 @@ def get_precalculated_function_evaluator(
     # create interpolation function
     funcs["__fval__"] = get_interpolator(
         value_name="__interpolation_data__",
-        axis_order=[f"__{var}_coord__" for var in continuous_info],
+        axis_order=[f"__{var}_coord__" for var in space_info.interpolation_axes],
         map_coordinates_kwargs=interpolation_options,
     )
 
