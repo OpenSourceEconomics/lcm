@@ -17,7 +17,7 @@ from lcm.dispatchers import productmap
 
 
 class Indexer(NamedTuple):
-    axis_order: List[str]
+    axis_names: List[str]
     name: str
     out_name: str
     indexer: jnp.ndarray
@@ -39,9 +39,9 @@ class Space(NamedTuple):
 class SpaceInfo(NamedTuple):
     """Everything needed to work with the output of a function evaluated on a space."""
 
-    axis_order: List[str]
-    lookup_axes: Dict[str, List[str]]
-    interpolation_axes: Dict[str, Grid]
+    axis_names: List[str]
+    lookup_info: Dict[str, List[str]]
+    interpolation_info: Dict[str, Grid]
     indexers: List[Indexer]
 
 

@@ -8,7 +8,7 @@ from dags.signature import with_signature
 from jax.scipy.ndimage import map_coordinates
 
 
-def get_precalculated_function_evaluator(
+def get_function_evaluator(
     space_info,
     data_name,
     interpolation_options=None,
@@ -16,7 +16,7 @@ def get_precalculated_function_evaluator(
     """Create a function to look-up and interpolate a function pre-calculated on a grid.
 
     An example of a pre-calculated function is a value or policy function. These are
-    evaluated on the grid of all sparse and dense discrete state variables as well as
+    evaluated on the space of all sparse and dense discrete state variables as well as
     all continuous state variables.
 
     This function dynamically generates a function that looks up and interpolates values
@@ -32,29 +32,31 @@ def get_precalculated_function_evaluator(
 
     The resulting function roughly does the following steps:
 
-    - Translate values of discrete variables into positions in a cartesian product
-      of all discrete variables.
-    - Translate the positions of sparse variables to the position in our internal sparse
-      array representation;
-    - Index into the ``values_`` array to extract only the part that is relevant for the
-      given values of discrete variables.
-    - Index into the ``grids_`` array to extract the grid that is relevant for the given
-      values of discrete variables.
-    - Translate the values of the continuous variables coordinates needed for
-      map_coordinates
+    - Translate values of discrete variables into positions
+    - Look up the position of sparse variables in an indexer array.
+    - Index into the array with the precalculated function values to extract only the
+      part on which interpolation is needed.
+    - Tranlate values of continuous variables into coordinates needed for interpolation
+      via scipy.ndimage.map_coordinates.
     - Do the actual interpolation.
 
     Depending on the grid, only a subset of these steps is relevant. The chosen
-    implementation of each step is also adjusted to the type of grid. The order
+    implementation of each step is also adjusted to the type of grid. In particular
+    we try to avoid searching for neighboring values on a grid and instead exploit
+    structure in the grid to calculate where those entries are. The order
     in which the functions are called is determined by a DAG.
 
-
-
     Args:
-
+        space_info (SpaceInfo): Namedtuple containing all information needed to
+            interpret the precalculated values of a function.
+        data_name (str): The name of the argument via which the precalculated values
+            will be passed into the resulting function.
+        interpolation_options (dict): Dictionary of keyword arguments for
+            interpolation via map_coordinates.
 
     Returns:
-        function:
+        callable: A callable that lets you evaluate a function defined be precalculated
+            values on space formed by discrete and continuous grids.
 
 
     """
@@ -68,21 +70,16 @@ def get_precalculated_function_evaluator(
     # ==================================================================================
     # create functions to look up position of discrete variables from labels
     # ==================================================================================
-    for var, labels in space_info.lookup_axes.items():
-        _out_name = f"__{var}_pos__"
-        funcs[_out_name] = get_label_translator(
-            labels=labels, in_name=var, out_name=_out_name
-        )
+    for var, labels in space_info.lookup_info.items():
+        funcs[f"__{var}_pos__"] = _get_label_translator(labels=labels, in_name=var)
 
     # ==================================================================================
     # wrap the indexers and put them it into funcs
     # ==================================================================================
     for indexer in space_info.indexers:
-        _out_name = f"__{indexer.out_name}_pos__"
-        funcs[_out_name] = get_lookup_function(
+        funcs[f"__{indexer.out_name}_pos__"] = _get_lookup_function(
             array_name=indexer.name,
-            axis_order=[f"__{var}_pos__" for var in indexer.axis_order],
-            out_name=_out_name,
+            axis_names=[f"__{var}_pos__" for var in indexer.axis_names],
         )
 
     # ==================================================================================
@@ -90,26 +87,22 @@ def get_precalculated_function_evaluator(
     # ==================================================================================
     # lookup is positional, so the inputs of the wrapper functions need to be the
     # outcomes of tranlating labels into positions
-    _internal_axes = [f"__{var}_pos__" for var in space_info.axis_order]
+    _internal_axes = [f"__{var}_pos__" for var in space_info.axis_names]
     _lookup_axes = [var for var in _internal_axes if var in funcs]
 
-    _out_name = "__interpolation_data__"
-    funcs[_out_name] = get_lookup_function(
+    funcs["__interpolation_data__"] = _get_lookup_function(
         array_name=data_name,
-        axis_order=_lookup_axes,
-        out_name=_out_name,
+        axis_names=_lookup_axes,
     )
 
     # ==================================================================================
     # create functions to find coordinates for the interpolation
     # ==================================================================================
-    for var, grid_info in space_info.interpolation_axes.items():
-        _out_name = f"__{var}_coord__"
-        funcs[_out_name] = get_coordinate_finder(
+    for var, grid_info in space_info.interpolation_info.items():
+        funcs[f"__{var}_coord__"] = _get_coordinate_finder(
             in_name=var,
             grid_type=grid_info.kind,
             grid_info=grid_info.specs,
-            out_name=_out_name,
         )
 
     # ==================================================================================
@@ -117,12 +110,12 @@ def get_precalculated_function_evaluator(
     # ==================================================================================
     _interpolation_axes = [
         f"__{var}_coord__"
-        for var in space_info.axis_order
-        if var in space_info.interpolation_axes
+        for var in space_info.axis_names
+        if var in space_info.interpolation_info
     ]
-    funcs["__fval__"] = get_interpolator(
-        value_name="__interpolation_data__",
-        axis_order=_interpolation_axes,
+    funcs["__fval__"] = _get_interpolator(
+        data_name="__interpolation_data__",
+        axis_names=_interpolation_axes,
         map_coordinates_kwargs=interpolation_options,
     )
 
@@ -137,46 +130,19 @@ def get_precalculated_function_evaluator(
     return evaluator
 
 
-def get_lookup_function(array_name, axis_order, out_name=None):
-    """Create a function tha enables name based lookups in an array.
+def _get_label_translator(labels, in_name):
+    """Create a function that translates a label into a position in a list of labels.
 
     Args:
-        indexer_name (str): The name of the indexer. This will be the corresponding
-            argument name in the wrapper function.
-        axis_order (list): List of strings with names for each axis in the indexer.
-
+        labels (list, np.ndarray): List of allowed labels.
+        in_name (str): Name of the variable that provides the label in the signature
+            of the resulting function.
 
     Returns:
-        callable: A callable with the keyword-only arguments [axis_order] + [name]
-            that looks up values in an indexer array called ``name``.
+        callable: A callable with the keyword only argument ``[in_name]`` that returns
+            converts a label into a position in a list of labels.
 
     """
-
-    if out_name is None:
-        out_name = f"{array_name.replace('_indexer', '')}_pos"
-
-    @with_signature(kwargs=axis_order + [array_name])
-    def indexer_wrapper(**kwargs):
-        positions = tuple(kwargs[var] for var in axis_order)
-        arr = kwargs[array_name]
-        return arr[positions]
-
-    indexer_wrapper.__name__ = out_name
-
-    return indexer_wrapper
-
-
-def get_label_translator(labels, in_name, out_name=None):
-    """Create a function
-
-    Args:
-        grid (jnp.ndarray): 1d jax array with grid values.
-        in_name (str): Name of the variable the grid is representing.
-
-    """
-    if out_name is None:
-        out_name = f"{in_name}_pos"
-
     if isinstance(labels, (np.ndarray, jnp.ndarray)):
         # tolist converts jax or numpy specific dtypes to python types
         _grid = labels.tolist()
@@ -198,16 +164,51 @@ def get_label_translator(labels, in_name, out_name=None):
         def translate_label(**kwargs):
             return val_to_pos[kwargs[in_name]]
 
-    translate_label.__name__ = out_name
-
     return translate_label
 
 
-def get_coordinate_finder(in_name, grid_type, grid_info=None, out_name=None):
+def _get_lookup_function(array_name, axis_names):
+    """Create a function that emulates indexing into an array via named axes.
 
-    if out_name is None:
-        out_name = f"{in_name}_coordinate"
+    Args:
+        array_name (str): The name of the array into which the function indexes.
+        axis_names (list): List of strings with names for each axis in the array.
 
+    Returns:
+        callable: A callable with the keyword-only arguments [axis_names] + [name]
+            that looks up values in an indexer array called ``name``.
+
+    """
+
+    @with_signature(kwargs=axis_names + [array_name])
+    def indexer_wrapper(**kwargs):
+        positions = tuple(kwargs[var] for var in axis_names)
+        arr = kwargs[array_name]
+        return arr[positions]
+
+    return indexer_wrapper
+
+
+def _get_coordinate_finder(in_name, grid_type, grid_info):
+    """Create a function that translates a value into coordinates on a grid.
+
+    The resulting coordinates can be used to do linear interpolation via
+    scipy.ndimage.map_coordinates.
+
+    Args:
+        in_name (str): Name via which the value to be translated into coordinates
+            will be passed into the resulting function.
+        grid_type (str): Type of the grid, e.g. "linspace" or "logspace". The type of
+            grid must be implemented in lcm.grids.
+        grid_info (dict): Dict with information that defines the grid. E.g. for a
+            linspace those are {"start": float, "stop": float, "n_points": int}. See
+            lcm.grids for details.
+
+    Returns:
+        callable: A callable with keyword-only argument [in_name] that translates a
+            value into coordinates on a grid.
+
+    """
     grid_info = {} if grid_info is None else grid_info
 
     raw_func = getattr(grids_module, f"get_{grid_type}_coordinate")
@@ -217,24 +218,34 @@ def get_coordinate_finder(in_name, grid_type, grid_info=None, out_name=None):
     def find_coordinate(**kwargs):
         return partialled_func(kwargs[in_name])
 
-    find_coordinate.__name__ = out_name
-
     return find_coordinate
 
 
-def get_interpolator(value_name, axis_order, map_coordinates_kwargs=None):
+def _get_interpolator(data_name, axis_names, map_coordinates_kwargs=None):
+    """Create a function interpolator via named axes.
 
+    Args:
+        data_name (str): Name of the argument via which function values on which the
+            interpolation is done are passed into the interpolator.
+        axis_names (str): Names of the axes in the data array.
+        map_coordinates_kwargs (dict): Keyword arguments for
+            scipy.ndimage.map_coordinates.
+
+    Returns:
+        callable: A callable that interpolates a function via named axes.
+
+    """
     kwargs = {"order": 1, "mode": "nearest"}
     if map_coordinates_kwargs is not None:
         kwargs = {**kwargs, **map_coordinates_kwargs}
 
     partialled_map_coordinates = partial(map_coordinates, **kwargs)
 
-    @with_signature(kwargs=[value_name] + axis_order)
+    @with_signature(kwargs=[data_name] + axis_names)
     def interpolate(**kwargs):
-        coordinates = jnp.array([kwargs[var] for var in axis_order])
+        coordinates = jnp.array([kwargs[var] for var in axis_names])
         out = partialled_map_coordinates(
-            input=kwargs[value_name],
+            input=kwargs[data_name],
             coordinates=coordinates,
         )
         return out
@@ -243,9 +254,10 @@ def get_interpolator(value_name, axis_order, map_coordinates_kwargs=None):
 
 
 def _fail_if_interpolation_axes_are_not_last(space_info):
-    common = set(space_info.interpolation_axes) & set(space_info.axis_order)
+    """Fail if the interpolation axes are not the last elements in axis_names."""
+    common = set(space_info.interpolation_info) & set(space_info.axis_names)
     n_common = len(common)
-    if sorted(common) != sorted(space_info.axis_order[-n_common:]):
+    if sorted(common) != sorted(space_info.axis_names[-n_common:]):
         raise ValueError(
             "Interpolation axes need to be the last entries in axis_order."
         )

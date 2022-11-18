@@ -1,12 +1,12 @@
 import jax.numpy as jnp
 import numpy as np
 import pytest
-from lcm.create_state_space import create_combination_grid
-from lcm.create_state_space import create_filter_mask
-from lcm.create_state_space import create_forward_mask
-from lcm.create_state_space import create_indexers_and_segments
-from lcm.create_state_space import create_state_choice_space
 from lcm.example_models import PHELPS_DEATON_WITH_SHOCKS
+from lcm.state_space import create_combination_grid
+from lcm.state_space import create_filter_mask
+from lcm.state_space import create_forward_mask
+from lcm.state_space import create_indexers_and_segments
+from lcm.state_space import create_state_choice_space
 from numpy.testing import assert_array_almost_equal as aaae
 
 
