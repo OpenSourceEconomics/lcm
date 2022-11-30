@@ -151,6 +151,88 @@ def test_function_evaluator():
     assert jnp.allclose(out, 1001.5)
 
 
+def test_function_evaluator_longer_indexer():
+    """Test get_precalculated_function_evaluator in an extended example.
+
+    - One sparse discrete state variable: retired ('working', 'part retired', retired)
+    - One sparse discrete choice variable: working (0, 1, 2)
+    - One dense discrete choice variable: insured ("yes", "no")
+    - Two dense continuous state variables:
+        - wealth (linspace(100, 1100, 6))
+        - human_capital (linspace(-3, 3, 7))
+
+    The utility function is wealth + human_capital + c. c takes a different
+    value for each discrete state choice combination.
+
+    The setup of space_info here is quite long. Usually these inputs will be generated
+    from a model specification.
+
+    """
+    # create a value function array
+    discrete_part = jnp.arange(10).repeat(6 * 7).reshape((5, 2, 6, 7)) * 100
+    cont_func = productmap(lambda x, y: x + y, ["x", "y"])
+    cont_part = cont_func(x=jnp.linspace(100, 1100, 6), y=jnp.linspace(-3, 3, 7))
+    vf_arr = discrete_part + cont_part
+
+    # create info on discrete variables
+    lookup_info = {
+        "retired": ["working", "part-retired",  "retired"],
+        "working": [0, 1, 2],
+        "insured": ["yes", "no"],
+    }
+
+    # create an indexer for the sparse discrete part
+    indexer_infos = [
+        IndexerInfo(
+            axis_names=["retired", "working"],
+            name="state_indexer",
+            out_name="state_index",
+        )
+    ]
+
+    indexer_array = jnp.array([[-1, 0, 1], [2, 3, -1], [4,-1,-1]])
+
+    # create info on continuous grids
+    interpolation_info = {
+        "wealth": Grid(
+            kind="linspace",
+            specs={"start": 100, "stop": 1100, "n_points": 6},
+        ),
+        "human_capital": Grid(
+            kind="linspace", specs={"start": -3, "stop": 3, "n_points": 7}
+        ),
+    }
+
+    # create info on axis of value function array
+    axis_names = ["state_index", "insured", "wealth", "human_capital"]
+
+    space_info = SpaceInfo(
+        axis_names=axis_names,
+        lookup_info=lookup_info,
+        interpolation_info=interpolation_info,
+        indexer_infos=indexer_infos,
+    )
+
+    # create the evaluator
+    evaluator = get_function_evaluator(
+        space_info=space_info,
+        data_name="vf_arr",
+    )
+
+    # test the evaluator
+    out = evaluator(
+        retired="working",
+        working=1,
+        insured="yes",
+        wealth=600,
+        human_capital=1.5,
+        state_indexer=indexer_array,
+        vf_arr=vf_arr,
+    )
+
+    assert jnp.allclose(out, 601.5)
+
+
 def test_get_label_translator():
     grid = jnp.array([9, 10, 13])
 
