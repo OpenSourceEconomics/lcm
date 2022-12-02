@@ -42,14 +42,14 @@ def aggregate_conditional_continuation_values(
             values correspond to dense choice variables.
         choice_segments (dict): Dictionary with the entries "segment_ids"
             and "num_segments". segment_ids are a 1d integer array that partitions the
-            last dimension of values into choice sets over which we need to aggregate.
+            first dimension of values into choice sets over which we need to aggregate.
             "num_segments" is the number of choice sets.
         shock_scale (float): The scale parameter of extreme value choice shocks.
 
     Returns:
         jax.numpy.ndarray: Multidimensional jax array with aggregated continuation
         values. Has less dimensions than values if choice_axes is not None and
-        is shorter in the last dimension if choice_segments is not None.
+        is shorter in the first dimension if choice_segments is not None.
 
     """
     out = values
@@ -57,14 +57,14 @@ def aggregate_conditional_continuation_values(
         if choice_axes is not None:
             out = out.max(axis=choice_axes)
         if choice_segments is not None:
-            out = _segment_max_over_last_axis(out, choice_segments)
+            out = _segment_max_over_first_axis(out, choice_segments)
 
     elif shock_type == "extreme_value":
         scale = shock_scale
         if choice_axes is not None:
             out = scale * jax.scipy.special.logsumexp(out / scale, axis=choice_axes)
         if choice_segments is not None:
-            out = _segment_extreme_value_emax_over_last_axis(
+            out = _segment_extreme_value_emax_over_first_axis(
                 out, scale, choice_segments
             )
     else:
@@ -73,35 +73,32 @@ def aggregate_conditional_continuation_values(
     return out
 
 
-def _segment_max_over_last_axis(a, segment_info):
-    """Calculate a segment_max over the last axis of a.
+def _segment_max_over_first_axis(a, segment_info):
+    """Calculate a segment_max over the first axis of a.
 
-    Works like ``jax.ops.segment_max`` but takes the max over the last axis instead of
-    the first one.
+    Wrapper around ``jax.ops.segment_max``.
 
     Args:
         a (jax.numpy.ndarray): Multidimensional jax array.
         segment_info (dict): Dictionary with the entries "segment_ids"
             and "num_segments". segment_ids are a 1d integer array that partitions the
-            last dimension of a. "num_segments" is the number of segments. The
+            first dimension of a. "num_segments" is the number of segments. The
             segment_ids are assumed to be sorted.
 
     Returns:
         jax.numpy.ndarray
 
     """
-    a_t = _put_last_axis_first(a)
-    segmax_t = jax.ops.segment_max(
-        data=a_t,
+    segmax = jax.ops.segment_max(
+        data=a,
         indices_are_sorted=True,
         **segment_info,
     )
-    segmax = _put_first_axis_last(segmax_t)
     return segmax
 
 
-def _segment_extreme_value_emax_over_last_axis(a, scale, segment_info):
-    """Calculate emax under iid extreme value assumption over segments of last axis.
+def _segment_extreme_value_emax_over_first_axis(a, scale, segment_info):
+    """Calculate emax under iid extreme value assumption over segments of first axis.
 
     Args:
         a (jax.numpy.ndarray): Multidimensional jax array.
@@ -115,11 +112,9 @@ def _segment_extreme_value_emax_over_last_axis(a, scale, segment_info):
         jax.numpy.ndarray
 
     """
-    a_t = _put_last_axis_first(a)
 
-    emax_t = scale * _segment_logsumexp(a_t / scale, segment_info)
+    emax = scale * _segment_logsumexp(a / scale, segment_info)
 
-    emax = _put_first_axis_last(emax_t)
     return emax
 
 
@@ -154,19 +149,4 @@ def _segment_logsumexp(a, segment_info):
         **segment_info,
     )
     out = segmax + jnp.log(summed)
-    return out
-
-
-def _put_last_axis_first(a):
-    """Transpose a such that the last axis becomes first."""
-    last_axis = a.ndim - 1
-    transpose_info = tuple([last_axis] + list(range(last_axis)))
-    out = jnp.transpose(a, transpose_info)
-    return out
-
-
-def _put_first_axis_last(a):
-    """Transpose a such that the first axis becomes the last."""
-    transpose_info = tuple(list(range(1, a.ndim)) + [0])
-    out = jnp.transpose(a, transpose_info)
     return out

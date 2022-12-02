@@ -2,8 +2,6 @@ from itertools import product
 
 import jax.numpy as jnp
 import pytest
-from lcm.aggregate_conditional_continuation_values import _put_first_axis_last
-from lcm.aggregate_conditional_continuation_values import _put_last_axis_first
 from lcm.aggregate_conditional_continuation_values import (
     aggregate_conditional_continuation_values,
 )
@@ -12,7 +10,10 @@ from numpy.testing import assert_array_almost_equal as aaae
 
 @pytest.fixture()
 def values():
-    return jnp.arange(20).reshape(2, 2, 5) / 2
+    v_t = jnp.arange(20).reshape(2, 2, 5) / 2
+    # reuse old test case from when segment axis was last
+    v = jnp.transpose(v_t, axes=(2, 0, 1))
+    return v
 
 
 @pytest.fixture()
@@ -27,11 +28,9 @@ def segment_info():
 test_cases = list(product([True, False], range(6)))
 
 
-@pytest.mark.parametrize("collapse, n_leading_axes", test_cases)
-def test_aggregation_without_shocks(values, segment_info, collapse, n_leading_axes):
-    values, agg_axes = _get_reshaped_values_and_agg_axes(
-        values, collapse, n_leading_axes
-    )
+@pytest.mark.parametrize("collapse, n_extra_axes", test_cases)
+def test_aggregation_without_shocks(values, segment_info, collapse, n_extra_axes):
+    values, agg_axes = _get_reshaped_values_and_agg_axes(values, collapse, n_extra_axes)
 
     calculated = aggregate_conditional_continuation_values(
         values=values,
@@ -42,13 +41,13 @@ def test_aggregation_without_shocks(values, segment_info, collapse, n_leading_ax
 
     expected = jnp.array([8, 9.5])
 
-    expected_shape = tuple([1] * n_leading_axes + [2])
+    expected_shape = tuple([2] + [1] * n_extra_axes)
     assert calculated.shape == expected_shape
     aaae(calculated.flatten(), expected)
 
 
 scaling_factors = [0.3, 0.6, 1, 2.5, 10]
-expected = [
+expected_results = [
     [8.051974, 9.560844],
     [8.225906, 9.800117],
     [8.559682, 10.265875],
@@ -56,19 +55,17 @@ expected = [
     [25.184761, 30.494621],
 ]
 test_cases = []
-for scale, expected in zip(scaling_factors, expected):
+for scale, exp in zip(scaling_factors, expected_results):
     for collapse in [True, False]:
         for n_axes in range(6):
-            test_cases.append((scale, expected, collapse, n_axes))
+            test_cases.append((scale, exp, collapse, n_axes))
 
 
-@pytest.mark.parametrize("scale, expected, collapse, n_leading_axes", test_cases)
+@pytest.mark.parametrize("scale, expected, collapse, n_extra_axes", test_cases)
 def test_aggregation_with_extreme_value_shocks(
-    values, segment_info, scale, expected, collapse, n_leading_axes
+    values, segment_info, scale, expected, collapse, n_extra_axes
 ):
-    values, agg_axes = _get_reshaped_values_and_agg_axes(
-        values, collapse, n_leading_axes
-    )
+    values, agg_axes = _get_reshaped_values_and_agg_axes(values, collapse, n_extra_axes)
 
     calculated = aggregate_conditional_continuation_values(
         values=values,
@@ -78,27 +75,19 @@ def test_aggregation_with_extreme_value_shocks(
         shock_scale=scale,
     )
 
-    expected_shape = tuple([1] * n_leading_axes + [2])
+    expected_shape = tuple([2] + [1] * n_extra_axes)
     assert calculated.shape == expected_shape
     aaae(calculated.flatten(), jnp.array(expected), decimal=5)
 
 
-@pytest.mark.parametrize("shape", [5, (4, 5), (3, 2, 5, 3, 8), (8, 4, 3)])
-def test_transposing_cancels_out(shape):
-    a = jnp.arange(jnp.prod(jnp.array(shape))).reshape(shape)
-    b = _put_last_axis_first(a)
-    c = _put_first_axis_last(b)
-    aaae(a, c)
-
-
-def _get_reshaped_values_and_agg_axes(values, collapse, n_leading_axes):
+def _get_reshaped_values_and_agg_axes(values, collapse, n_extra_axes):
     if collapse:
-        values = values.reshape(4, 5)
-        agg_axes = n_leading_axes
+        values = values.reshape(5, 4)
+        agg_axes = -1
     else:
-        agg_axes = (n_leading_axes, n_leading_axes + 1)
+        agg_axes = (-2, -1)
 
-    new_shape = tuple([1] * n_leading_axes + list(values.shape))
+    new_shape = tuple([values.shape[0]] + [1] * n_extra_axes + list(values.shape[1:]))
     values = values.reshape(new_shape)
 
     return values, agg_axes
