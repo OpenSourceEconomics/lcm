@@ -57,7 +57,9 @@ def spacemap(func, dense_vars, sparse_vars, dense_first=True):
         else:
             in_axes.append(None)
 
-    if dense_first:
+    if not sparse_vars:
+        vmapped = _product_map(func, dense_vars)
+    elif dense_first:
         vmapped = vmap(func, in_axes=in_axes)
         vmapped = _product_map(vmapped, dense_vars)
     else:

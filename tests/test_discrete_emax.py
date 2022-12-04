@@ -2,8 +2,8 @@ from itertools import product
 
 import jax.numpy as jnp
 import pytest
-from lcm.aggregate_conditional_continuation_values import (
-    aggregate_conditional_continuation_values,
+from lcm.discrete_emax import (
+    calculate_discrete_emax,
 )
 from numpy.testing import assert_array_almost_equal as aaae
 
@@ -25,14 +25,14 @@ def segment_info():
     return info
 
 
-test_cases = list(product([True, False], range(6)))
+test_cases = list(product([True, False], range(3)))
 
 
 @pytest.mark.parametrize("collapse, n_extra_axes", test_cases)
 def test_aggregation_without_shocks(values, segment_info, collapse, n_extra_axes):
     values, agg_axes = _get_reshaped_values_and_agg_axes(values, collapse, n_extra_axes)
 
-    calculated = aggregate_conditional_continuation_values(
+    calculated = calculate_discrete_emax(
         values=values,
         shock_type=None,
         choice_axes=agg_axes,
@@ -57,7 +57,7 @@ expected_results = [
 test_cases = []
 for scale, exp in zip(scaling_factors, expected_results):
     for collapse in [True, False]:
-        for n_axes in range(6):
+        for n_axes in range(3):
             test_cases.append((scale, exp, collapse, n_axes))
 
 
@@ -67,7 +67,7 @@ def test_aggregation_with_extreme_value_shocks(
 ):
     values, agg_axes = _get_reshaped_values_and_agg_axes(values, collapse, n_extra_axes)
 
-    calculated = aggregate_conditional_continuation_values(
+    calculated = calculate_discrete_emax(
         values=values,
         shock_type="extreme_value",
         choice_axes=agg_axes,

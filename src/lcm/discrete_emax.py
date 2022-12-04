@@ -25,7 +25,7 @@ import jax
 import jax.numpy as jnp
 
 
-def aggregate_conditional_continuation_values(
+def calculate_discrete_emax(
     values,
     shock_type,
     choice_axes=None,
