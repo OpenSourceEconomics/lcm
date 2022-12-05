@@ -53,23 +53,24 @@ def solve(
     # ==================================================================================
     n_periods = len(state_choice_spaces)
     last_period = n_periods - 1
-    beta = params["beta"]  # noqa: F841
 
     # ==================================================================================
     # initialize result lists
     # ==================================================================================
 
     vf_arrs = []
+    vf_arr = None
 
     # ==================================================================================
     # get last period solution
     # ==================================================================================
 
     # calculate continuation values conditional on a discrete choice
-    conditional_continuation_values = contsolve_last_period(
+    conditional_continuation_values = solve_continuous_problem(
         state_choice_space=state_choice_spaces[last_period],
         utility_and_feasibility=agent_functions[last_period],
         continuous_choice_grids=continuous_choice_grids[last_period],
+        vf_arr=vf_arr,
         params=params,
     )
 
@@ -99,24 +100,32 @@ def solve(
     return vf_arrs
 
 
-def contsolve_last_period(
+def solve_continuous_problem(
     state_choice_space,
     utility_and_feasibility,
     continuous_choice_grids,
+    vf_arr,
     params,
 ):
-    """Solve the agent's continuous choices problem problem in the last period.
+    """Solve the agent's continuous choices problem problem.
 
     Args:
         state_choice_space
         utility_and_feasibility (callable): Function that returns a tuple where the
             first entry is the utility and the second is a bool that indicates
-            feasibility. The function only depends on states, discret and continuous
-            choices. Parameters are already partialled in.
+            feasibility. The function depends on:
+            - discrete and continuous state variables
+            - discrete and continuous choice variables
+            - vf_arr
+            - params
+        continuous_choice_grids (dict)
+        vf_arr (jax.numpy.ndarray)
+        params (dict)
 
     Returns:
-        np.ndarray: Numpy array with continuation values for each state. The number
-            and order of dimensions is defined by the ``gridmap`` function.
+        np.ndarray: Numpy array with continuation values for each combination of a
+            state and a discrete choice. The number and order of dimensions is defined
+            by the ``gridmap`` function.
 
     """
     # ==================================================================================
@@ -146,13 +155,10 @@ def contsolve_last_period(
         **state_choice_space.dense_vars,
         **continuous_choice_grids,
         **state_choice_space.sparse_vars,
+        vf_arr=vf_arr,
         params=params,
     )
 
     best = utilities.max(axis=max_axes, where=feasibilities, initial=-jnp.inf)
 
     return best
-
-
-def contsolve_generic_period():
-    pass

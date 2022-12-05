@@ -1,8 +1,8 @@
 import jax.numpy as jnp
 import numpy as np
 from jax.scipy.ndimage import map_coordinates
-from lcm.solve_brute import contsolve_last_period
 from lcm.solve_brute import solve
+from lcm.solve_brute import solve_continuous_problem
 from lcm.state_space import Space
 from numpy.testing import assert_array_almost_equal as aaae
 
@@ -69,7 +69,9 @@ def test_solve_brute():
     # create the agent_functions that calculate utility, feasibility and next
     # ==================================================================================
 
-    def _generic_agent_func(consumption, lazy, wealth, working, params):  # noqa: U100
+    def _generic_agent_func(
+        consumption, lazy, wealth, working, vf_arr, params  # noqa: U100
+    ):
         """Calculate utility, feasibility and state transition.
 
         Args:
@@ -90,8 +92,10 @@ def test_solve_brute():
         _feasible = _next_wealth >= 0
         return _u, _feasible, {"wealth": _next_wealth, "lazy": _next_lazy}
 
-    def _last_period_agent_func(consumption, lazy, wealth, working, params):
-        _u, _f, _ = _generic_agent_func(consumption, lazy, wealth, working, params)
+    def _last_period_agent_func(consumption, lazy, wealth, working, vf_arr, params):
+        _u, _f, _ = _generic_agent_func(
+            consumption, lazy, wealth, working, vf_arr, params
+        )
         return _u, _f
 
     agent_functions = [_generic_agent_func, _last_period_agent_func]
@@ -125,13 +129,13 @@ def test_solve_brute():
     assert isinstance(solution, list)
 
 
-def test_contsolve_last_period():
+def test_solve_continious_problem_no_vf_arr():
     state_choice_space = Space(
         dense_vars={"a": jnp.array([0, 1.0]), "b": jnp.array([2, 3.0])},
         sparse_vars={"c": jnp.array([4, 5, 6])},
     )
 
-    def _utility_and_feasibility(a, c, b, d, params):  # noqa: U100
+    def _utility_and_feasibility(a, c, b, d, vf_arr, params):  # noqa: U100
         util = d
         feasib = d <= a + b + c
         return util, feasib
@@ -142,10 +146,11 @@ def test_contsolve_last_period():
     expected = np.transpose(expected, axes=(2, 0, 1))
 
     calculated = np.array(
-        contsolve_last_period(
+        solve_continuous_problem(
             state_choice_space,
             _utility_and_feasibility,
             continuous_choice_grids,
+            vf_arr=None,
             params={},
         )
     )
