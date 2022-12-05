@@ -1,5 +1,3 @@
-from functools import partial
-
 import jax.numpy as jnp
 from lcm.dispatchers import spacemap
 
@@ -7,10 +5,9 @@ from lcm.dispatchers import spacemap
 def solve(
     params,
     state_choice_spaces,
-    value_function_evaluators,
     state_indexers,
     continuous_choice_grids,
-    agent_functions,
+    utility_and_feasibility_functions,
     emax_calculators,
     choice_segments,
 ):
@@ -35,69 +32,52 @@ def solve(
             one or several state indexers.
         continuous_choice_grids (list): List of dicts with 1d grids for continuous
             choice variables.
-        agent_functions (list): List of functions needed to solve the agents problem.
-            The functions take state variables, choice variables and params as arguments
-            and return three things:
-            - float: The achieved utility
-            - bool: Whether the state choice combination is feasible
-            - dict: The next values of the state variables.
+        utility_and_feasibility_functions (list): List of functions needed to solve
+            the agent's problem. Each function depends on:
+            - discrete and continuous state variables
+            - discrete and continuous choice variables
+            - vf_arr
+            - one or several state_indexers
+            - params
         emax_calculators (list): List of functions that take continuation
             values for combinations of states and discrete choices and calculate the
             expected maximum over all discrete choices of a given state.
         choice_segments (list): List of arrays or None with the choice segments that
             indicate which sparse choice variables belong to one state.
 
+    Returns:
+        list: List with one value function array per period.
+
     """
-    # ==================================================================================
     # extract information
-    # ==================================================================================
     n_periods = len(state_choice_spaces)
-    last_period = n_periods - 1
-
-    # ==================================================================================
-    # initialize result lists
-    # ==================================================================================
-
-    vf_arrs = []
+    reversed_solution = []
     vf_arr = None
 
-    # ==================================================================================
-    # get last period solution
-    # ==================================================================================
-
-    # calculate continuation values conditional on a discrete choice
-    conditional_continuation_values = solve_continuous_problem(
-        state_choice_space=state_choice_spaces[last_period],
-        utility_and_feasibility=agent_functions[last_period],
-        continuous_choice_grids=continuous_choice_grids[last_period],
-        vf_arr=vf_arr,
-        params=params,
-    )
-
-    # calculate the expected maximum over the discrete choices in each state
-    calculate_emax = emax_calculators[last_period]
-    vf_arr = calculate_emax(
-        values=conditional_continuation_values,
-        choice_segments=choice_segments,
-        params=params,
-    )
-
-    # append the vf_arr to results and wrap it into a function evaluator for next step
-    vf_arrs.append(vf_arr)
-    value_function = partial(  # noqa: F841
-        value_function_evaluators[last_period],
-        vf_arr=vf_arr,
-        **state_indexers[last_period],
-    )
-
-    # ==================================================================================
     # backwards induction loop
-    # ==================================================================================
+    for period in reversed(range(n_periods)):
+        # solve continuous problem, conditional on discrete choices
+        conditional_continuation_values = solve_continuous_problem(
+            state_choice_space=state_choice_spaces[period],
+            utility_and_feasibility=utility_and_feasibility_functions[period],
+            continuous_choice_grids=continuous_choice_grids[period],
+            vf_arr=vf_arr,
+            state_indexers=state_indexers[period],
+            params=params,
+        )
 
-    # contsolve generic period
-    # emax aggregation
+        # solve discrete problem by calculating expected maximum over discrete choices
+        calculate_emax = emax_calculators[period]
+        vf_arr = calculate_emax(
+            values=conditional_continuation_values,
+            choice_segments=choice_segments,
+            params=params,
+        )
+        reversed_solution.append(vf_arr)
 
-    return vf_arrs
+    solution = list(reversed(reversed_solution))
+
+    return solution
 
 
 def solve_continuous_problem(
@@ -105,6 +85,7 @@ def solve_continuous_problem(
     utility_and_feasibility,
     continuous_choice_grids,
     vf_arr,
+    state_indexers,
     params,
 ):
     """Solve the agent's continuous choices problem problem.
@@ -117,6 +98,7 @@ def solve_continuous_problem(
             - discrete and continuous state variables
             - discrete and continuous choice variables
             - vf_arr
+            - one or several state_indexers
             - params
         continuous_choice_grids (dict)
         vf_arr (jax.numpy.ndarray)
@@ -155,6 +137,7 @@ def solve_continuous_problem(
         **state_choice_space.dense_vars,
         **continuous_choice_grids,
         **state_choice_space.sparse_vars,
+        **state_indexers,
         vf_arr=vf_arr,
         params=params,
     )

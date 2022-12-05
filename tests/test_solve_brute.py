@@ -37,21 +37,6 @@ def test_solve_brute():
     state_choice_spaces = [_scs] * 2
 
     # ==================================================================================
-    # create list of value function evaluators
-    # ==================================================================================
-    def _vfe(lazy, wealth, working, vf_arr):
-        continuous_part = vf_arr[lazy, working]
-        value = map_coordinates(
-            input=continuous_part,
-            coordinates=wealth,
-            order=1,
-            mode="nearest",
-        )
-        return value
-
-    value_function_evaluators = [_vfe] * 2
-
-    # ==================================================================================
     # create the state_indexers (trivial because we do not have sparsity)
     # ==================================================================================
     state_indexers = [{}, {}]
@@ -66,39 +51,39 @@ def test_solve_brute():
     continuous_choice_grids = [_ccg] * 2
 
     # ==================================================================================
-    # create the agent_functions that calculate utility, feasibility and next
+    # create the utility_and_feasibility functions
     # ==================================================================================
 
-    def _generic_agent_func(
-        consumption, lazy, wealth, working, vf_arr, params  # noqa: U100
-    ):
-        """Calculate utility, feasibility and state transition.
-
-        Args:
-            consumption (float): Value of the continuous choice variable consumption.
-            lazy (int): Value of the discrete state variable lazy
-            wealth (float): Value of the continuous state variable wealth
-            working (int): Value of the discrete choice variable working.
-
-        Returns:
-            float: The achieved utility
-            bool: Whether the state choice combination is feasible
-            dict: The next values of the state variables.
-
-        """
+    def _utility_and_feasibility(consumption, lazy, wealth, working, vf_arr, params):
         _u = consumption - 0.2 * lazy * working
         _next_wealth = wealth + working - consumption
         _next_lazy = lazy
         _feasible = _next_wealth >= 0
-        return _u, _feasible, {"wealth": _next_wealth, "lazy": _next_lazy}
 
-    def _last_period_agent_func(consumption, lazy, wealth, working, vf_arr, params):
-        _u, _f, _ = _generic_agent_func(
-            consumption, lazy, wealth, working, vf_arr, params
+        if vf_arr is None:
+            cont_value = 0
+        else:
+            cont_value = _get_continuation_value(
+                lazy=_next_lazy,
+                wealth=_next_wealth,
+                vf_arr=vf_arr,
+            )
+
+        beta = params["beta"]
+        _utility = _u + beta * cont_value
+        return _utility, _feasible
+
+    def _get_continuation_value(lazy, wealth, vf_arr):
+        continuous_part = vf_arr[lazy]
+        value = map_coordinates(
+            input=continuous_part,
+            coordinates=jnp.array([wealth]),
+            order=1,
+            mode="nearest",
         )
-        return _u, _f
+        return value
 
-    agent_functions = [_generic_agent_func, _last_period_agent_func]
+    utility_and_feasibility_functions = [_utility_and_feasibility] * 2
 
     # ==================================================================================
     # create emax aggregators and choice segments
@@ -118,10 +103,9 @@ def test_solve_brute():
     solution = solve(
         params=params,
         state_choice_spaces=state_choice_spaces,
-        value_function_evaluators=value_function_evaluators,
         state_indexers=state_indexers,
         continuous_choice_grids=continuous_choice_grids,
-        agent_functions=agent_functions,
+        utility_and_feasibility_functions=utility_and_feasibility_functions,
         emax_calculators=emax_calculators,
         choice_segments=choice_segments,
     )
@@ -151,6 +135,7 @@ def test_solve_continious_problem_no_vf_arr():
             _utility_and_feasibility,
             continuous_choice_grids,
             vf_arr=None,
+            state_indexers={},
             params={},
         )
     )
