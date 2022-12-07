@@ -1,10 +1,5 @@
 """Create a state space for a given model."""
 import inspect
-import warnings
-from typing import Dict
-from typing import List
-from typing import NamedTuple
-from typing import Union
 
 import jax
 import jax.numpy as jnp
@@ -16,82 +11,12 @@ from lcm.dispatchers import productmap
 from lcm.dispatchers import spacemap
 
 
-class IndexerInfo(NamedTuple):
-    """Information needed to work with an indexer array.
-
-    In particular, this contains enough information to wrap an indexer array into a
-    function that can be understood by dags.
-
-    Attributes:
-        axis_names (list): List of strings containing the names of the axes of the
-            indexer array.
-        name (str): The name of the indexer array. This will become an argument name
-            of the function we need for dags.
-        out_name (str): The name of the result of indexing into the indexer. This will
-            become the name of the function we need for dags.
-
-    """
-
-    axis_names: List[str]
-    name: str
-    out_name: str
-
-
-class Grid(NamedTuple):
-    """Information needed to define or interpret a grid.
-
-    Attributes:
-        kind (str): Name of a grid type implemented in lcm.grids.
-        specs (dict, np.ndarray): Specification of the grid. E.g. {"start": float,
-            "stop": float, "n_points": int} for a linspace.
-
-    """
-
-    kind: str
-    specs: Union[dict, np.ndarray]
-
-
-class Space(NamedTuple):
-    """Everything needed to evaluate a function on a space (e.g. state space).
-
-    Attributes:
-        sparse_vars (dict): Dictionary containing the names of sparse variables as keys
-            and arrays with values of those variables as values. Together, the arrays
-            define all feasible combinations of sparse variables.
-        dense_vars (dict): Dictionary containing one dimensional grids of
-            dense variables.
-
-    """
-
-    sparse_vars: Dict
-    dense_vars: Dict
-
-
-class SpaceInfo(NamedTuple):
-    """Everything needed to work with the output of a function evaluated on a space.
-
-    Attributes:
-        axis_names (list): List with axis names of an array that contains function
-            values for all elements in a space.
-        lookup_info (dict): Dict that defines the possible labels of all discrete
-            variables and their order.
-        interpolation_info (dict): Dict that defines information on the grids of all
-            continuous variables.
-        indexer_infos (list): List of IndexerInfo objects.
-
-    """
-
-    axis_names: List[str]
-    lookup_info: Dict[str, List[str]]
-    interpolation_info: Dict[str, Grid]
-    indexer_infos: List[IndexerInfo]
-
-
 def create_state_choice_space(model):
     """Create a state choice space for the model.
 
     A state_choice_space is a compressed representation of all feasible states and the
-    feasible choices within that state. We currently use the following compressions:
+    feasible discrete choices within that state. We currently use the following
+    compressions:
 
     We distinguish between dense and sparse variables (dense_vars and sparse_vars).
     Dense state or choice variables are those whose set of feasible values does not
@@ -100,17 +25,24 @@ def create_state_choice_space(model):
     grid of feasible values (value_grid), whereas for sparse variables all feasible
     combinations (combination_grid) have to be stored.
 
+    Args:
+        model (dict): A model specification.
+
+    Returns:
+        Space: Space object containing the sparse and dense variables. This can be used
+            to execute a function on an entire space.
+        SpaceInfo: A SpaceInfo object that contains all information needed to work with
+            the output of a function evaluated on the space.
+        dict: Dictionary containing state indexer arrays.
+        jnp.ndarray: Jax array containing the choice segments needed for the emax
+            calculations.
+
     """
     dense_vars, sparse_vars = _find_dense_and_sparse_variables(model)
     grids = _create_grids_from_gridspecs(model)
 
-    space = {
-        "combination_grid": _create_combination_grid(
-            grids, sparse_vars, model.get("filters", [])
-        ),
-        "value_grid": _create_value_grid(grids, dense_vars),
-    }
-    return space
+    # dummy return for pre-commits
+    return dense_vars, sparse_vars, grids
 
 
 def create_filter_mask(
@@ -359,29 +291,6 @@ def _create_grids_from_gridspecs(model):
             grids[name] = func(**spec)
 
     return grids
-
-
-def _create_combination_grid(grids, subset, filters):  # noqa: U100
-    """Create the ore state choice space.
-
-    Args:
-        grids (dict): Dictionary of grids for all variables in the model
-        sparse_vars (set): Names of the sparse_variables
-        filters (list): List of filter functions. A filter function depends on one or
-            more variables and returns True if a state is feasible.
-
-    Returns:
-        dict: Dictionary of arrays where each array represents a column of the core
-            state_choice_space.
-
-    """
-    warnings.warn("Outdated function. Just left here to keep a test running.")
-    if subset or filters:
-        # to-do: create state space and apply filters
-        raise NotImplementedError()
-    else:
-        out = {}
-    return out
 
 
 def _create_value_grid(grids, subset):

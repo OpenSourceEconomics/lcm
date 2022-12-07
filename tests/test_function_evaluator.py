@@ -8,9 +8,9 @@ from lcm.function_evaluator import _get_label_translator
 from lcm.function_evaluator import _get_lookup_function
 from lcm.function_evaluator import get_function_evaluator
 from lcm.grids import linspace
-from lcm.state_space import Grid
-from lcm.state_space import IndexerInfo
-from lcm.state_space import SpaceInfo
+from lcm.interfaces import Grid
+from lcm.interfaces import IndexerInfo
+from lcm.interfaces import SpaceInfo
 
 
 def test_function_evaluator_with_one_continuous_variable():
@@ -176,7 +176,7 @@ def test_function_evaluator_longer_indexer():
 
     # create info on discrete variables
     lookup_info = {
-        "retired": ["working", "part-retired",  "retired"],
+        "retired": ["working", "part-retired", "retired"],
         "working": [0, 1, 2],
         "insured": ["yes", "no"],
     }
@@ -190,7 +190,7 @@ def test_function_evaluator_longer_indexer():
         )
     ]
 
-    indexer_array = jnp.array([[-1, 0, 1], [2, 3, -1], [4,-1,-1]])
+    indexer_array = jnp.array([[-1, 0, 1], [2, 3, -1], [4, -1, -1]])
 
     # create info on continuous grids
     interpolation_info = {

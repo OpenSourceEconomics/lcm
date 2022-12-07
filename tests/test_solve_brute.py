@@ -1,9 +1,9 @@
 import jax.numpy as jnp
 import numpy as np
 from jax.scipy.ndimage import map_coordinates
+from lcm.interfaces import Space
 from lcm.solve_brute import solve
 from lcm.solve_brute import solve_continuous_problem
-from lcm.state_space import Space
 from numpy.testing import assert_array_almost_equal as aaae
 
 

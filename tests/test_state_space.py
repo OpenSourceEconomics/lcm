@@ -1,26 +1,11 @@
 import jax.numpy as jnp
 import numpy as np
 import pytest
-from lcm.example_models import PHELPS_DEATON_WITH_SHOCKS
 from lcm.state_space import create_combination_grid
 from lcm.state_space import create_filter_mask
 from lcm.state_space import create_forward_mask
 from lcm.state_space import create_indexers_and_segments
-from lcm.state_space import create_state_choice_space
 from numpy.testing import assert_array_almost_equal as aaae
-
-
-def test_create_state_choice_space_only_simple_variables():
-    calculated = create_state_choice_space(PHELPS_DEATON_WITH_SHOCKS)
-    expected_value_grid = {
-        "retirement": jnp.array([0, 1]),
-        "wealth": jnp.linspace(0, 1e4, 11),
-    }
-
-    assert calculated["combination_grid"] == {}
-    assert set(calculated["value_grid"]) == set(expected_value_grid)
-    for key, grid in calculated["value_grid"].items():
-        aaae(grid, expected_value_grid[key])
 
 
 @pytest.fixture()
