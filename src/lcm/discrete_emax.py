@@ -27,15 +27,14 @@ import jax
 import jax.numpy as jnp
 
 
-def get_emax_calculator(shock_type, choice_axes=None):
+def get_emax_calculator(shock_type, variable_info):
     """Return a function that calculates the expected maximum of continuation values.
 
     The maximum is taken over the discrete choice variables in each state.
 
     Args:
         shock_type (str or None): One of None, "extreme_value" and "nesed_logit".
-        choice_axes (int or tuple): Int or tuple of int, specifying which axes in
-            values correspond to dense choice variables.
+        variable_info (pd.DataFrame): DataFrame with information about the variables.
 
     Returns:
         callable: Function that calculates the expected maximum of conditional
@@ -48,6 +47,7 @@ def get_emax_calculator(shock_type, choice_axes=None):
             - params (dict): Dictionary with model parameters.
 
     """
+    choice_axes = _determine_discrete_choice_axes(variable_info)
     if shock_type is None:
         func = partial(_calculate_emax_no_shocks, choice_axes=choice_axes)
     elif shock_type == "extreme_value":
@@ -195,3 +195,33 @@ def _segment_logsumexp(a, segment_info):
     )
     out = segmax + jnp.log(summed)
     return out
+
+
+def _determine_discrete_choice_axes(variable_info):
+    """Determine which axes of a state_choice_space correspond to discrete choices.
+
+    Args:
+        state_choice_space (Space): Namedtuple with entries dense_vars and sparse_vars.
+        variable_info (dict): Dict with information about the variables in the model.
+
+    Returns:
+        int or tuple: Int or tuple of int, specifying which axes in a value function
+        correspond to discrete choices.
+
+    """
+    has_sparse = variable_info["is_sparse"].any()
+    dense_vars = variable_info.query("is_dense").index.tolist()
+
+    if has_sparse:
+        axes = ["__sparse__"] + dense_vars
+    else:
+        axes = dense_vars
+
+    choice_vars = set(variable_info.query("is_choice").index.tolist())
+
+    choice_indices = []
+    for i, ax in enumerate(axes):
+        if ax in choice_vars:
+            choice_indices.append(i)
+
+    return choice_indices

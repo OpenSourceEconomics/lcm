@@ -1,6 +1,7 @@
 from itertools import product
 
 import jax.numpy as jnp
+import pandas as pd
 import pytest
 from lcm.discrete_emax import get_emax_calculator
 from numpy.testing import assert_array_almost_equal as aaae
@@ -28,11 +29,13 @@ test_cases = list(product([True, False], range(3)))
 
 @pytest.mark.parametrize("collapse, n_extra_axes", test_cases)
 def test_aggregation_without_shocks(values, segment_info, collapse, n_extra_axes):
-    values, agg_axes = _get_reshaped_values_and_agg_axes(values, collapse, n_extra_axes)
+    values, var_info = _get_reshaped_values_and_variable_info(
+        values, collapse, n_extra_axes
+    )
 
     calculator = get_emax_calculator(
         shock_type=None,
-        choice_axes=agg_axes,
+        variable_info=var_info,
     )
 
     calculated = calculator(
@@ -67,11 +70,13 @@ for scale, exp in zip(scaling_factors, expected_results):
 def test_aggregation_with_extreme_value_shocks(
     values, segment_info, scale, expected, collapse, n_extra_axes
 ):
-    values, agg_axes = _get_reshaped_values_and_agg_axes(values, collapse, n_extra_axes)
+    values, var_info = _get_reshaped_values_and_variable_info(
+        values, collapse, n_extra_axes
+    )
 
     calculator = get_emax_calculator(
         shock_type="extreme_value",
-        choice_axes=agg_axes,
+        variable_info=var_info,
     )
 
     calculated = calculator(
@@ -85,14 +90,21 @@ def test_aggregation_with_extreme_value_shocks(
     aaae(calculated.flatten(), jnp.array(expected), decimal=5)
 
 
-def _get_reshaped_values_and_agg_axes(values, collapse, n_extra_axes):
+def _get_reshaped_values_and_variable_info(values, collapse, n_extra_axes):
+    n_variables = values.ndim + 1 + n_extra_axes - collapse
+    n_agg_axes = 1 if collapse else 2
+    names = [f"v{i}" for i in range(n_variables)]
+    is_choice = [False, True] + [False] * n_extra_axes + [True] * n_agg_axes
+    is_sparse = [True, True] + [False] * (n_variables - 2)
+    var_info = pd.DataFrame(index=names)
+    var_info["is_choice"] = is_choice
+    var_info["is_sparse"] = is_sparse
+    var_info["is_dense"] = ~var_info["is_sparse"]
+
     if collapse:
         values = values.reshape(5, 4)
-        agg_axes = -1
-    else:
-        agg_axes = (-2, -1)
 
     new_shape = tuple([values.shape[0]] + [1] * n_extra_axes + list(values.shape[1:]))
     values = values.reshape(new_shape)
 
-    return values, agg_axes
+    return values, var_info

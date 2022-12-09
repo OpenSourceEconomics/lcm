@@ -1,6 +1,7 @@
 from functools import partial
 
 from lcm.create_params import create_params
+from lcm.discrete_emax import get_emax_calculator
 from lcm.process_model import process_model
 from lcm.solve_brute import solve
 from lcm.state_space import create_state_choice_space
@@ -52,12 +53,24 @@ def get_lcm_function(model, targets="solve"):  # noqa: U100
     continuous_choice_grids = [_choice_grids] * _mod.n_periods
 
     # ==================================================================================
+    # create list of emax_calculators
+    # ==================================================================================
+    # for now they are the same in all periods but this will change.
+
+    _shock_type = _mod.shocks.get("additive_utility_shock", None)
+
+    calculator = get_emax_calculator(
+        shock_type=_shock_type,
+        variable_info=_mod.variable_info,
+    )
+    emax_calculators = [calculator] * _mod.n_periods
+
+    # ==================================================================================
     # Initialize other argument lists
     # ==================================================================================
     state_choice_spaces = []
     state_indexers = []
     utility_and_feasibility_functions = []
-    emax_calculators = []
     choice_segments = []
 
     for period in range(_mod.n_periods):
@@ -71,10 +84,6 @@ def get_lcm_function(model, targets="solve"):  # noqa: U100
         state_choice_spaces.append(sc_space)
         choice_segments.append(segments)
         state_indexers.append(state_indexer)
-
-        # ==============================================================================
-        # create the emax calculators and append to their list
-        # ==============================================================================
 
         # ==============================================================================
         # create the utility and feasibility functions and append to their list
