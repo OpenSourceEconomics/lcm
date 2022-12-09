@@ -91,6 +91,11 @@ class Model(NamedTuple):
             booleans that are True if the variable has the corresponding property. The
             columns are: is_state, is_choice, is_continuous, is_discrete, is_sparse,
             is_dense.
+    functions (dict): Dictionary that maps names of functions to functions.
+    function_info (pd.DataFrame): A table with information about all functions in the
+            model. The index contains the name of a function. The columns are booleans
+            that are True if the function has the corresponding property. The columns
+            are: is_filter, is_constraint, is_next.
 
     """
 
