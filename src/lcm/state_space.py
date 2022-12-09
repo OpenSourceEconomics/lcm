@@ -5,13 +5,14 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 from dags import concatenate_functions
-from dags import get_ancestors
-from lcm import grids as grids_module
 from lcm.dispatchers import productmap
 from lcm.dispatchers import spacemap
+from lcm.interfaces import IndexerInfo
+from lcm.interfaces import Space
+from lcm.interfaces import SpaceInfo
 
 
-def create_state_choice_space(model):
+def create_state_choice_space(model, period, jit_filter=False):
     """Create a state choice space for the model.
 
     A state_choice_space is a compressed representation of all feasible states and the
@@ -25,8 +26,16 @@ def create_state_choice_space(model):
     grid of feasible values (value_grid), whereas for sparse variables all feasible
     combinations (combination_grid) have to be stored.
 
+    Note:
+    -----
+
+    Need to add ability to pass fix inputs (e.g. period) to filters. Is period the
+    only possible variable I need?
+
     Args:
-        model (dict): A model specification.
+        model (Model): A processed model.
+        period (int): The period for which the state space is created.
+        jit_filter (bool): If True, the filter function is compiled with JAX.
 
     Returns:
         Space: Space object containing the sparse and dense variables. This can be used
@@ -38,19 +47,95 @@ def create_state_choice_space(model):
             calculations.
 
     """
-    dense_vars, sparse_vars = _find_dense_and_sparse_variables(model)
-    grids = _create_grids_from_gridspecs(model)
+    # ==================================================================================
+    # preparations
+    # ==================================================================================
+    grids = model.grids
+    vi = model.variable_info
+    has_sparse_states = len(vi.query("is_sparse & is_state")) > 0
+    # ==================================================================================
+    # create state choice space
+    # ==================================================================================
+    _value_grid = _create_value_grid(
+        grids=grids,
+        subset=vi.query("is_dense").index.tolist(),
+    )
+    _filter_mask = create_filter_mask(
+        model=model,
+        subset=vi.query("is_sparse").index.tolist(),
+        fixed_inputs={"period": period},
+        jit_filter=jit_filter,
+    )
 
-    # dummy return for pre-commits
-    return dense_vars, sparse_vars, grids
+    _combination_grid = create_combination_grid(
+        grids=grids,
+        masks=_filter_mask,
+        subset=vi.query("is_sparse").index.tolist(),
+    )
+
+    state_choice_space = Space(
+        sparse_vars=_combination_grid,
+        dense_vars=_value_grid,
+    )
+    # ==================================================================================
+    # create indexers and segments
+    # ==================================================================================
+
+    _state_indexer, _, choice_segments = create_indexers_and_segments(
+        mask=_filter_mask,
+        n_sparse_states=len(vi.query("is_sparse & is_state")),
+    )
+
+    if has_sparse_states:
+        state_indexers = {}
+    else:
+        state_indexers = {"state_indexer": _state_indexer}
+
+    # ==================================================================================
+    # create state space info
+    # ==================================================================================
+    # axis_names
+    axis_names = vi.query("is_dense & is_state").index.tolist()
+    if has_sparse_states:
+        axis_names = ["state_index"] + axis_names
+
+    # lookup_info
+    _discrete_states = set(vi.query("is_discrete & is_state").index.tolist())
+    lookup_info = {k: v for k, v in model.gridspecs.items() if k in _discrete_states}
+
+    # interpolation info
+    _cont_states = set(vi.query("is_continuous & is_state").index.tolist())
+    interpolation_info = {k: v for k, v in model.gridspecs.items() if k in _cont_states}
+
+    # indexer infos
+    indexer_infos = [
+        IndexerInfo(
+            axis_names=vi.query("is_sparse & is_state").index.tolist(),
+            name="state_indexer",
+            out_name="state_index",
+        )
+    ]
+
+    space_info = SpaceInfo(
+        axis_names=axis_names,
+        lookup_info=lookup_info,
+        interpolation_info=interpolation_info,
+        indexer_infos=indexer_infos,
+    )
+
+    return state_choice_space, space_info, state_indexers, choice_segments
 
 
-def create_filter_mask(
-    grids, filters, fixed_inputs=None, subset=None, aux_functions=None, jit_filter=True
-):
+def create_filter_mask(model, subset, fixed_inputs=None, jit_filter=False):
     """Create mask for combinations of grid values that is True if all filters are True.
 
     Args:
+        model (Model): A processed model.
+        subset (list): The subset of variables to be considered in the mask.
+        jit_filter (bool): Whether the aggregated filter function is jitted before
+            applying it.
+
+
         grids (dict): Dictionary containing a one-dimensional grid for each
             variable that is used as a basis to construct the higher dimensional
             grid.
@@ -58,11 +143,7 @@ def create_filter_mask(
             one or more variables and returns True if a state is feasible.
         fixed_inputs (dict): A dict of fixed inputs for the filters or
             aux_functions. An example would be a model period.
-        subset (list): The subset of variables to be considered in the mask.
-        aux_functions (dict): Auxiliary functions that calculate derived variables
-            needed in the filters.
-        jit_filter (bool): Whether the aggregated filter function is jitted before
-            applying it.
+
 
     Returns:
         jax.numpy.ndarray: Multi-Dimensional boolean array that is True
@@ -71,16 +152,16 @@ def create_filter_mask(
 
     """
     # preparations
-    _subset = list(grids) if subset is None else subset
-    _aux_functions = {} if aux_functions is None else aux_functions
-    _axis_names = [name for name in grids if name in _subset]
-    _grids = {name: jnp.array(grids[name]) for name in _axis_names}
-    _filter_names = list(filters)
+    if subset is None:
+        subset = model.variable_info.query("is_sparse").index.tolist()
+
+    fixed_inputs = {} if fixed_inputs is None else fixed_inputs
+    _axis_names = [name for name in model.grids if name in subset]
+    _filter_names = model.function_info.query("is_filter").index.tolist()
 
     # Create scalar dag function to evaluate all filters
-    _functions = {**filters, **_aux_functions}
     _scalar_filter = concatenate_functions(
-        functions=_functions,
+        functions=model.functions,
         targets=_filter_names,
         aggregator=jnp.logical_and,
     )
@@ -88,10 +169,15 @@ def create_filter_mask(
     # Apply dispatcher to get mask
     _filter = productmap(_scalar_filter, variables=_axis_names)
 
+    _valid_args = set(inspect.signature(_filter).parameters.keys())
+    _potential_kwargs = {**model.grids, **fixed_inputs}
+
+    kwargs = {k: v for k, v in _potential_kwargs.items() if k in _valid_args}
+
     # Calculate mask
     if jit_filter:
         _filter = jax.jit(_filter)
-    mask = _filter(**_grids, **fixed_inputs)
+    mask = _filter(**kwargs)
 
     return mask
 
@@ -176,7 +262,21 @@ def create_forward_mask(
 
 
 def create_combination_grid(grids, masks, subset=None):
-    # preparations
+    """Create a grid of all feasible combinations of variables.
+
+    Args:
+        grids (dict): Dictionary containing a one-dimensional grid for each
+            dimension of the combination grid.
+        masks (list): List of masks that define the feasible combinations.
+        subset (list): The subset of the variables that enter the combination grid.
+            By default all variables in grids are considered.
+
+    Returns:
+        dict: Dictionary containing a one-dimensional array for each variable in the
+            combination grid. Together these arrays store all feasible combinations
+            of variables.
+
+    """
     _subset = list(grids) if subset is None else subset
     _axis_names = [name for name in grids if name in _subset]
     _grids = {name: jnp.array(grids[name]) for name in _axis_names}
@@ -194,6 +294,15 @@ def create_combination_grid(grids, masks, subset=None):
 
 
 def _combine_masks(masks):
+    """Combine multiple masks into one.
+
+    Args:
+        masks (list): List of masks.
+
+    Returns:
+        np.ndarray: Combined mask.
+
+    """
     if isinstance(masks, (np.ndarray, jnp.ndarray)):
         _masks = [masks]
     else:
@@ -207,8 +316,14 @@ def _combine_masks(masks):
     return mask
 
 
-def create_indexers_and_segments(mask, n_states, fill_value=-1):
+def create_indexers_and_segments(mask, n_sparse_states, fill_value=-1):
     """Create indexers and segment info related to sparse states and choices.
+
+    Notes:
+    ------
+
+    - This probably does not work if there is not at least one sparse state variable
+    and at least one sparse choice variable.
 
     Args:
         mask (np.ndarray): Boolean array with one dimension per state
@@ -232,7 +347,7 @@ def create_indexers_and_segments(mask, n_states, fill_value=-1):
     """
     mask = np.array(mask)
 
-    choice_axes = tuple(range(n_states, mask.ndim))
+    choice_axes = tuple(range(n_sparse_states, mask.ndim))
     is_feasible_state = mask.any(axis=choice_axes)
     n_feasible_states = np.count_nonzero(is_feasible_state)
 
@@ -246,7 +361,7 @@ def create_indexers_and_segments(mask, n_states, fill_value=-1):
     state_choice_indexer = np.full(reduced_mask.shape, fill_value)
     state_choice_indexer[reduced_mask] = counter[reduced_mask]
 
-    new_choice_axes = tuple(range(1, mask.ndim - n_states + 1))
+    new_choice_axes = tuple(range(1, mask.ndim - n_sparse_states + 1))
     n_choices = np.count_nonzero(reduced_mask, new_choice_axes)
     segments = np.repeat(np.arange(n_feasible_states), n_choices)
 
@@ -255,42 +370,6 @@ def create_indexers_and_segments(mask, n_states, fill_value=-1):
         jnp.array(state_choice_indexer),
         jnp.array(segments),
     )
-
-
-def _find_dense_and_sparse_variables(model):
-    state_variables = list(model["states"])
-    discrete_choices = [
-        name for name, spec in model["choices"].items() if "options" in spec
-    ]
-    all_variables = set(state_variables + discrete_choices)
-
-    filtered_variables = {}
-    filters = model.get("state_filters", [])
-    for func in filters:
-        filtered_variables = filtered_variables.union(
-            get_ancestors(filters, func.__name__)
-        )
-
-    dense_vars = all_variables.difference(filtered_variables)
-    sparse_vars = all_variables.difference(dense_vars)
-    return dense_vars, sparse_vars
-
-
-def _create_grids_from_gridspecs(model):
-    gridspecs = {
-        **model["choices"],
-        **model["states"],
-    }
-    grids = {}
-    for name, spec in gridspecs.items():
-        if "options" in spec:
-            grids[name] = np.array(spec["options"])
-        else:
-            spec = spec.copy()
-            func = getattr(grids_module, spec.pop("grid_type"))
-            grids[name] = func(**spec)
-
-    return grids
 
 
 def _create_value_grid(grids, subset):

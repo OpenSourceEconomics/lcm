@@ -8,7 +8,7 @@ from lcm.function_evaluator import _get_label_translator
 from lcm.function_evaluator import _get_lookup_function
 from lcm.function_evaluator import get_function_evaluator
 from lcm.grids import linspace
-from lcm.interfaces import Grid
+from lcm.interfaces import GridSpec
 from lcm.interfaces import IndexerInfo
 from lcm.interfaces import SpaceInfo
 
@@ -21,7 +21,7 @@ def test_function_evaluator_with_one_continuous_variable():
         axis_names=["wealth"],
         lookup_info={},
         interpolation_info={
-            "wealth": Grid(kind="linspace", specs=grid_specs),
+            "wealth": GridSpec(kind="linspace", specs=grid_specs),
         },
         indexer_infos=[],
     )
@@ -112,11 +112,11 @@ def test_function_evaluator():
 
     # create info on continuous grids
     interpolation_info = {
-        "wealth": Grid(
+        "wealth": GridSpec(
             kind="linspace",
             specs={"start": 100, "stop": 1100, "n_points": 6},
         ),
-        "human_capital": Grid(
+        "human_capital": GridSpec(
             kind="linspace", specs={"start": -3, "stop": 3, "n_points": 7}
         ),
     }
@@ -194,11 +194,11 @@ def test_function_evaluator_longer_indexer():
 
     # create info on continuous grids
     interpolation_info = {
-        "wealth": Grid(
+        "wealth": GridSpec(
             kind="linspace",
             specs={"start": 100, "stop": 1100, "n_points": 6},
         ),
-        "human_capital": Grid(
+        "human_capital": GridSpec(
             kind="linspace", specs={"start": -3, "stop": 3, "n_points": 7}
         ),
     }

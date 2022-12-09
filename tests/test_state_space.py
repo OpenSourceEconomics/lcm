@@ -1,11 +1,21 @@
 import jax.numpy as jnp
 import numpy as np
+import pandas as pd
 import pytest
+from lcm.example_models import PHELPS_DEATON_WITH_FILTERS
+from lcm.interfaces import Model
+from lcm.process_model import process_model
 from lcm.state_space import create_combination_grid
 from lcm.state_space import create_filter_mask
 from lcm.state_space import create_forward_mask
 from lcm.state_space import create_indexers_and_segments
+from lcm.state_space import create_state_choice_space
 from numpy.testing import assert_array_almost_equal as aaae
+
+
+def test_create_state_choice_space():
+    _model = process_model(PHELPS_DEATON_WITH_FILTERS)
+    create_state_choice_space(model=_model, period=0, jit_filter=False)
 
 
 @pytest.fixture()
@@ -22,20 +32,37 @@ def filter_mask_inputs():
     def absorbing_retirement_filter(retirement, lagged_retirement):
         return jnp.logical_or(retirement == 1, lagged_retirement == 0)
 
-    filters = {
-        "mandatory_retirement": mandatory_retirement_filter,
-        "mandatory_lagged_retirement": mandatory_lagged_retirement_filter,
-        "absorbing_retirement": absorbing_retirement_filter,
-    }
-
     grids = {
         "lagged_retirement": jnp.array([0, 1]),
         "retirement": jnp.array([0, 1]),
     }
 
-    out = {"filters": filters, "grids": grids, "aux_functions": {"age": age}}
+    functions = {
+        "mandatory_retirement_filter": mandatory_retirement_filter,
+        "mandatory_lagged_retirement_filter": mandatory_lagged_retirement_filter,
+        "absorbing_retirement_filter": absorbing_retirement_filter,
+        "age": age,
+    }
 
-    return out
+    function_info = pd.DataFrame(
+        index=functions.keys(),
+        columns=["is_filter"],
+        data=[[True], [True], [True], [False]],
+    )
+
+    # create a model instance where some attributes are set to None because they
+    # are not needed for create_filter_mask
+    model = Model(
+        grids=grids,
+        gridspecs=None,
+        variable_info=None,
+        functions=functions,
+        function_info=function_info,
+        shocks=None,
+        n_periods=100,
+    )
+
+    return model
 
 
 PARAMETRIZATION = [
@@ -48,7 +75,9 @@ PARAMETRIZATION = [
 def test_create_filter_mask(filter_mask_inputs, period, expected):
 
     calculated = create_filter_mask(
-        fixed_inputs={"period": period}, **filter_mask_inputs
+        model=filter_mask_inputs,
+        subset=["lagged_retirement", "retirement"],
+        fixed_inputs={"period": period},
     )
 
     aaae(calculated, expected)
@@ -266,7 +295,7 @@ def test_create_indexers_and_segments():
     mask = jnp.array(mask)
 
     state_indexer, choice_indexer, segments = create_indexers_and_segments(
-        mask=mask, n_states=2
+        mask=mask, n_sparse_states=2
     )
 
     expected_state_indexer = jnp.array([[-1, -1, -1], [0, -1, 1], [2, 3, 4]])

@@ -35,11 +35,11 @@ def age(period):
 
 
 def mandatory_retirement_filter(retirement, age):
-    return retirement == 1 | age < 65
+    return jnp.logical_or(retirement == 1, age < 65)
 
 
 def absorbing_retirement_filter(retirement, lagged_retirement):
-    return retirement == 1 | lagged_retirement == 0
+    return jnp.logical_or(retirement == 1, lagged_retirement == 0)
 
 
 PHELPS_DEATON = {
@@ -83,6 +83,25 @@ PHELPS_DEATON_WITH_SHOCKS = {
 
 
 PHELPS_DEATON_WITH_FILTERS = {
-    **PHELPS_DEATON,
-    "state_filters": [mandatory_retirement_filter, absorbing_retirement_filter],
+    "functions": {
+        "utility": phelps_deaton_utility,
+        "next_wealth": next_wealth,
+        "next_wealth_constraint": next_wealth_constraint,
+        "working": working,
+        "absorbing_retirement_filter": absorbing_retirement_filter,
+    },
+    "choices": {
+        "retirement": {"options": [0, 1]},
+        "consumption": {
+            "grid_type": "linspace",
+            "start": 0,
+            "stop": 1e4,
+            "n_points": 11,
+        },
+    },
+    "states": {
+        "wealth": {"grid_type": "linspace", "start": 0, "stop": 1e4, "n_points": 11},
+        "lagged_retirement": {"options": [0, 1]},
+    },
+    "n_periods": 20,
 }

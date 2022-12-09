@@ -29,10 +29,11 @@ def get_lcm_function(model, targets="solve"):  # noqa: U100
         raise NotImplementedError()
 
     # call process_model
-    _mod = process_model(model)
+    _mod = process_model(model)  # noqa: F841
 
     # create params
-    params = create_params(_mod)
+    # todo: this needs to work with a processed model instead
+    params = create_params(model)
 
     # create state_choice_spaces and indexers
     # create choice segments

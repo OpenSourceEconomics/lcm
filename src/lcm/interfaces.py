@@ -4,6 +4,7 @@ from typing import NamedTuple
 from typing import Union
 
 import numpy as np
+import pandas as pd
 
 
 class IndexerInfo(NamedTuple):
@@ -27,7 +28,7 @@ class IndexerInfo(NamedTuple):
     out_name: str
 
 
-class Grid(NamedTuple):
+class GridSpec(NamedTuple):
     """Information needed to define or interpret a grid.
 
     Attributes:
@@ -73,5 +74,31 @@ class SpaceInfo(NamedTuple):
 
     axis_names: List[str]
     lookup_info: Dict[str, List[str]]
-    interpolation_info: Dict[str, Grid]
+    interpolation_info: Dict[str, GridSpec]
     indexer_infos: List[IndexerInfo]
+
+
+class Model(NamedTuple):
+    """Internal representation of a user model.
+
+    Attributes:
+    grids: Dictionary that maps names of model variables to grids of feasible values
+        for that variable.
+    gridspecs (dict): Dictionary that maps names of model variables to specifications
+        from which grids of feasible values can be built.
+    variable_info (pd.DataFrame): A table with information about all variables in the
+            model. The index contains the name of a model variable. The columns are
+            booleans that are True if the variable has the corresponding property. The
+            columns are: is_state, is_choice, is_continuous, is_discrete, is_sparse,
+            is_dense.
+
+    """
+
+    grids: Dict
+    gridspecs: Dict
+    variable_info: pd.DataFrame
+    functions: Dict
+    function_info: pd.DataFrame
+    # not really processed yet
+    shocks: Dict
+    n_periods: int
