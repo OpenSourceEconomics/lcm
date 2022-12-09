@@ -1,5 +1,9 @@
+from functools import partial
+
 from lcm.create_params import create_params
 from lcm.process_model import process_model
+from lcm.solve_brute import solve
+from lcm.state_space import create_state_choice_space
 
 
 def get_lcm_function(model, targets="solve"):  # noqa: U100
@@ -14,6 +18,10 @@ def get_lcm_function(model, targets="solve"):  # noqa: U100
     - Further targets could be "likelihood" or "simulate"
     - We might need additional arguments such as solver_options that we want to take
       separate from a model specification.
+    - create_params needs to work with a processed_model instead of a user model.
+    - currently all the preparations are hardcoded to generate the arguments needed
+      by solve_brute. In the long run, this needs to inspect the signature of the
+      solver, or generate only what is needed using dags.
 
     Args:
         model (dict): Model specification.
@@ -25,29 +33,64 @@ def get_lcm_function(model, targets="solve"):  # noqa: U100
         dict: A parameter dict where all parameter values are initialized to NaN.
 
     """
+    # ==================================================================================
+    # preparations
+    # ==================================================================================
     if targets != "solve":
         raise NotImplementedError()
 
-    # call process_model
-    _mod = process_model(model)  # noqa: F841
+    _mod = process_model(model)
 
-    # create params
-    # todo: this needs to work with a processed model instead
     params = create_params(model)
 
-    # create state_choice_spaces and indexers
-    # create choice segments
+    # ==================================================================================
+    # create list of continuous choice grids
+    # ==================================================================================
+    # for now they are the same in all periods but this will change.
+    _subset = _mod.variable_info.query("is_continuous & is_choice").index.tolist()
+    _choice_grids = {k: _mod.grids[k] for k in _subset}
+    continuous_choice_grids = [_choice_grids] * _mod.n_periods
 
-    # create continuous_choice_grids
+    # ==================================================================================
+    # Initialize other argument lists
+    # ==================================================================================
+    state_choice_spaces = []
+    state_indexers = []
+    utility_and_feasibility_functions = []
+    emax_calculators = []
+    choice_segments = []
 
-    # create emax_calculators
+    for period in range(_mod.n_periods):
+        # ==============================================================================
+        # call state space creation function, append trivial items to their lists
+        # ==============================================================================
+        sc_space, space_info, state_indexer, segments = create_state_choice_space(
+            model=_mod,
+            period=period,
+        )
+        state_choice_spaces.append(sc_space)
+        choice_segments.append(segments)
+        state_indexers.append(state_indexer)
 
-    # create utility_and_feasibility_functions
+        # ==============================================================================
+        # create the emax calculators and append to their list
+        # ==============================================================================
 
-    # create built_in_sovers
+        # ==============================================================================
+        # create the utility and feasibility functions and append to their list
+        # ==============================================================================
 
-    # select requested solver
+    # ==================================================================================
+    # select requested solver and partial arguments into it
+    # ==================================================================================
+    solve_model = partial(
+        solve,
+        state_choice_spaces=state_choice_spaces,
+        state_indexers=state_indexers,
+        continuous_choice_grids=continuous_choice_grids,
+        utility_and_feasibility_functions=utility_and_feasibility_functions,
+        emax_calculators=emax_calculators,
+        choice_segments=choice_segments,
+    )
 
-    # partial arguments into solver
-
-    return params
+    return solve_model, params

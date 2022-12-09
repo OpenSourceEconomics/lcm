@@ -29,8 +29,7 @@ def create_state_choice_space(model, period, jit_filter=False):
     Note:
     -----
 
-    Need to add ability to pass fix inputs (e.g. period) to filters. Is period the
-    only possible variable I need?
+    - We only use the filter mask, not the forward mask (yet).
 
     Args:
         model (Model): A processed model.
@@ -50,28 +49,31 @@ def create_state_choice_space(model, period, jit_filter=False):
     # ==================================================================================
     # preparations
     # ==================================================================================
-    grids = model.grids
     vi = model.variable_info
     has_sparse_states = len(vi.query("is_sparse & is_state")) > 0
+    has_sparse_vars = len(vi.query("is_sparse")) > 0
     # ==================================================================================
     # create state choice space
     # ==================================================================================
     _value_grid = _create_value_grid(
-        grids=grids,
+        grids=model.grids,
         subset=vi.query("is_dense").index.tolist(),
     )
-    _filter_mask = create_filter_mask(
-        model=model,
-        subset=vi.query("is_sparse").index.tolist(),
-        fixed_inputs={"period": period},
-        jit_filter=jit_filter,
-    )
+    if has_sparse_vars:
+        _filter_mask = create_filter_mask(
+            model=model,
+            subset=vi.query("is_sparse").index.tolist(),
+            fixed_inputs={"period": period},
+            jit_filter=jit_filter,
+        )
 
-    _combination_grid = create_combination_grid(
-        grids=grids,
-        masks=_filter_mask,
-        subset=vi.query("is_sparse").index.tolist(),
-    )
+        _combination_grid = create_combination_grid(
+            grids=model.grids,
+            masks=_filter_mask,
+            subset=vi.query("is_sparse").index.tolist(),
+        )
+    else:
+        _combination_grid = {}
 
     state_choice_space = Space(
         sparse_vars=_combination_grid,
@@ -80,11 +82,14 @@ def create_state_choice_space(model, period, jit_filter=False):
     # ==================================================================================
     # create indexers and segments
     # ==================================================================================
-
-    _state_indexer, _, choice_segments = create_indexers_and_segments(
-        mask=_filter_mask,
-        n_sparse_states=len(vi.query("is_sparse & is_state")),
-    )
+    if has_sparse_vars:
+        _state_indexer, _, choice_segments = create_indexers_and_segments(
+            mask=_filter_mask,
+            n_sparse_states=len(vi.query("is_sparse & is_state")),
+        )
+    else:
+        _state_indexer = None
+        choice_segments = None
 
     if has_sparse_states:
         state_indexers = {}
