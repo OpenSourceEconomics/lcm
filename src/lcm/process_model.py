@@ -16,7 +16,7 @@ def process_model(user_model):
 
     """
     _variable_info = _get_variable_info(user_model)
-    _gridspecs = _get_gridspecs(user_model)
+    _gridspecs = _get_gridspecs(user_model, variable_info=_variable_info)
     _grids = _get_grids(gridspecs=_gridspecs, variable_info=_variable_info)
     model = Model(
         grids=_grids,
@@ -78,7 +78,7 @@ def _get_variable_info(user_model):
     return info
 
 
-def _get_gridspecs(user_model):
+def _get_gridspecs(user_model, variable_info):
     """Create a dictionary of grid specifications for each variable in the model.
 
     Args:
@@ -102,7 +102,10 @@ def _get_gridspecs(user_model):
                 kind=spec["grid_type"],
                 specs={k: v for k, v in spec.items() if k != "grid_type"},
             )
-    return variables
+
+    order = variable_info.index.tolist()
+    out = {k: variables[k] for k in order}
+    return out
 
 
 def _get_grids(gridspecs, variable_info):
@@ -131,7 +134,10 @@ def _get_grids(gridspecs, variable_info):
         else:
             func = getattr(grids_module, grid_info.kind)
             grids[name] = func(**grid_info.specs)
-    return grids
+
+    order = variable_info.index.tolist()
+    out = {k: grids[k] for k in order}
+    return out
 
 
 def _get_function_info(user_model):
