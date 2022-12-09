@@ -7,7 +7,7 @@ from lcm.interfaces import Model
 
 
 def process_model(user_model):
-    """Process the user model.
+    """Process the user model.  
 
     This entails the following steps:
 
