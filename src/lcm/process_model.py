@@ -1,3 +1,4 @@
+import jax.numpy as jnp
 import lcm.grids as grids_module
 import pandas as pd
 from dags import get_ancestors
@@ -15,26 +16,33 @@ def process_model(user_model):
     - Check that the model specification is valid.
 
     """
-    _variable_info = _get_variable_info(user_model)
+    _functions = user_model["functions"]
+    _function_info = _get_function_info(user_model)
+
+    _variable_info = _get_variable_info(user_model, function_info=_function_info)
     _gridspecs = _get_gridspecs(user_model, variable_info=_variable_info)
     _grids = _get_grids(gridspecs=_gridspecs, variable_info=_variable_info)
     model = Model(
         grids=_grids,
         gridspecs=_gridspecs,
         variable_info=_variable_info,
-        functions=user_model["functions"],
-        function_info=_get_function_info(user_model),
+        functions=_functions,
+        function_info=_function_info,
         shocks=user_model.get("shocks", {}),
         n_periods=user_model["n_periods"],
     )
     return model
 
 
-def _get_variable_info(user_model):
+def _get_variable_info(user_model, function_info):
     """Derive information about all variables in the model.
 
     Args:
         model (dict): The model as provided by the user.
+        function_info (pandas.DataFrame): A table with information about all
+            functions in the model. The index contains the name of a function. The
+            columns are booleans that are True if the function has the corresponding
+            property. The columns are: is_filter, is_constraint, is_next.
 
     Returns:
         pandas.DataFrame: A table with information about all variables in the model.
@@ -57,11 +65,11 @@ def _get_variable_info(user_model):
     info["is_continuous"] = ~info["is_discrete"]
 
     _filtered_variables = set()
-    _filters = user_model.get("state_filters", {})
-    _all_functions = {**user_model["functions"], **_filters}
-    for name in _filters:
+    _filter_names = function_info.query("is_filter").index.tolist()
+
+    for name in _filter_names:
         _filtered_variables = _filtered_variables.union(
-            get_ancestors(_all_functions, name)
+            get_ancestors(user_model["functions"], name)
         )
 
     info["is_sparse"] = [var in _filtered_variables for var in _variables]
@@ -130,7 +138,7 @@ def _get_grids(gridspecs, variable_info):
     grids = {}
     for name, grid_info in gridspecs.items():
         if variable_info.loc[name, "is_discrete"]:
-            grids[name] = grid_info
+            grids[name] = jnp.array(grid_info)
         else:
             func = getattr(grids_module, grid_info.kind)
             grids[name] = func(**grid_info.specs)
