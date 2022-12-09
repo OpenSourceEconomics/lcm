@@ -21,30 +21,57 @@ functions. This will only become clear after implementing a few solvers.
 https://github.com/google/jax/issues/6265
 
 """
+from functools import partial
+
 import jax
 import jax.numpy as jnp
 
 
-def calculate_discrete_emax(
-    values,
-    shock_type,
-    choice_axes=None,
-    choice_segments=None,
-    shock_scale=None,
+def get_emax_calculator(shock_type, choice_axes=None):
+    """Return a function that calculates the expected maximum of continuation values.
+
+    The maximum is taken over the discrete choice variables in each state.
+
+    Args:
+        shock_type (str or None): One of None, "extreme_value" and "nesed_logit".
+        choice_axes (int or tuple): Int or tuple of int, specifying which axes in
+            values correspond to dense choice variables.
+
+    Returns:
+        callable: Function that calculates the expected maximum of conditional
+            continuation values. The function depends on:
+            - values (jax.numpy.ndarray): Multidimensional jax array with conditional
+                continuation values.
+            - choice_segments (jax.numpy.ndarray): Jax array with the indices of the
+                choice segments that indicate which sparse choice variables belong to
+                one state.
+            - params (dict): Dictionary with model parameters.
+
+    """
+    if shock_type is None:
+        func = partial(_calculate_emax_no_shocks, choice_axes=choice_axes)
+    elif shock_type == "extreme_value":
+        func = partial(_calculate_emax_extreme_value_shocks, choice_axes=choice_axes)
+    else:
+        raise ValueError("Invalid shock_type: {shock_type}.")
+    return func
+
+
+def _calculate_emax_no_shocks(
+    values, choice_axes, choice_segments, params  # noqa: U100
 ):
     """aggregate conditional continuation values over discrete choices.
 
     Args:
         values (jax.numpy.ndarray): Multidimensional jax array with conditional
             continuation values.
-        shock_type (str or None): One of None, "extreme_value" and "nesed_logit".
         choice_axes (int or tuple): Int or tuple of int, specifying which axes in
             values correspond to dense choice variables.
         choice_segments (dict): Dictionary with the entries "segment_ids"
             and "num_segments". segment_ids are a 1d integer array that partitions the
             first dimension of values into choice sets over which we need to aggregate.
             "num_segments" is the number of choice sets.
-        shock_scale (float): The scale parameter of extreme value choice shocks.
+        params (dict): Params dict that contains the schock_scale if necessary.
 
     Returns:
         jax.numpy.ndarray: Multidimensional jax array with aggregated continuation
@@ -53,22 +80,40 @@ def calculate_discrete_emax(
 
     """
     out = values
-    if shock_type is None:
-        if choice_axes is not None:
-            out = out.max(axis=choice_axes)
-        if choice_segments is not None:
-            out = _segment_max_over_first_axis(out, choice_segments)
+    if choice_axes is not None:
+        out = out.max(axis=choice_axes)
+    if choice_segments is not None:
+        out = _segment_max_over_first_axis(out, choice_segments)
 
-    elif shock_type == "extreme_value":
-        scale = shock_scale
-        if choice_axes is not None:
-            out = scale * jax.scipy.special.logsumexp(out / scale, axis=choice_axes)
-        if choice_segments is not None:
-            out = _segment_extreme_value_emax_over_first_axis(
-                out, scale, choice_segments
-            )
-    else:
-        raise ValueError("Invalid shock_type: {shock_type}.")
+    return out
+
+
+def _calculate_emax_extreme_value_shocks(values, choice_axes, choice_segments, params):
+    """aggregate conditional continuation values over discrete choices.
+
+    Args:
+        values (jax.numpy.ndarray): Multidimensional jax array with conditional
+            continuation values.
+        choice_axes (int or tuple): Int or tuple of int, specifying which axes in
+            values correspond to dense choice variables.
+        choice_segments (dict): Dictionary with the entries "segment_ids"
+            and "num_segments". segment_ids are a 1d integer array that partitions the
+            first dimension of values into choice sets over which we need to aggregate.
+            "num_segments" is the number of choice sets.
+        params (dict): Params dict that contains the schock_scale if necessary.
+
+    Returns:
+        jax.numpy.ndarray: Multidimensional jax array with aggregated continuation
+        values. Has less dimensions than values if choice_axes is not None and
+        is shorter in the first dimension if choice_segments is not None.
+
+    """
+    scale = params["additive_utility_shock"]["scale"]
+    out = values
+    if choice_axes is not None:
+        out = scale * jax.scipy.special.logsumexp(out / scale, axis=choice_axes)
+    if choice_segments is not None:
+        out = _segment_extreme_value_emax_over_first_axis(out, scale, choice_segments)
 
     return out
 

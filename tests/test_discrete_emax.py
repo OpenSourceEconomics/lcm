@@ -2,9 +2,7 @@ from itertools import product
 
 import jax.numpy as jnp
 import pytest
-from lcm.discrete_emax import (
-    calculate_discrete_emax,
-)
+from lcm.discrete_emax import get_emax_calculator
 from numpy.testing import assert_array_almost_equal as aaae
 
 
@@ -32,11 +30,15 @@ test_cases = list(product([True, False], range(3)))
 def test_aggregation_without_shocks(values, segment_info, collapse, n_extra_axes):
     values, agg_axes = _get_reshaped_values_and_agg_axes(values, collapse, n_extra_axes)
 
-    calculated = calculate_discrete_emax(
-        values=values,
+    calculator = get_emax_calculator(
         shock_type=None,
         choice_axes=agg_axes,
+    )
+
+    calculated = calculator(
+        values=values,
         choice_segments=segment_info,
+        params={},
     )
 
     expected = jnp.array([8, 9.5])
@@ -67,12 +69,15 @@ def test_aggregation_with_extreme_value_shocks(
 ):
     values, agg_axes = _get_reshaped_values_and_agg_axes(values, collapse, n_extra_axes)
 
-    calculated = calculate_discrete_emax(
-        values=values,
+    calculator = get_emax_calculator(
         shock_type="extreme_value",
         choice_axes=agg_axes,
+    )
+
+    calculated = calculator(
+        values=values,
         choice_segments=segment_info,
-        shock_scale=scale,
+        params={"additive_utility_shock": {"scale": scale}},
     )
 
     expected_shape = tuple([2] + [1] * n_extra_axes)
