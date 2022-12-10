@@ -12,15 +12,17 @@ def test_process_model_with_filters():
 
     # Variable Info
     assert (
-        model.variable_info["is_sparse"].values == np.array([True, True, False, False])
+        model.variable_info["is_sparse"].to_numpy()
+        == np.array([True, True, False, False])
     ).all()
 
     assert (
-        model.variable_info["is_state"].values == np.array([True, False, True, False])
+        model.variable_info["is_state"].to_numpy()
+        == np.array([True, False, True, False])
     ).all()
 
     assert (
-        model.variable_info["is_continuous"].values
+        model.variable_info["is_continuous"].to_numpy()
         == np.array([False, False, True, True])
     ).all()
 
@@ -40,24 +42,24 @@ def test_process_model_with_filters():
 
     # Functions
     assert (
-        model.function_info["is_next"].values
+        model.function_info["is_next"].to_numpy()
         == np.array([False, True, False, False, False])
     ).all()
-    assert ~model.function_info.loc["utility"].values.any()
+    assert ~model.function_info.loc["utility"].to_numpy().any()
 
 
 def test_process_model_base():
     model = process_model(PHELPS_DEATON)
 
     # Variable Info
-    assert ~(model.variable_info["is_sparse"].values).any()
+    assert ~(model.variable_info["is_sparse"].to_numpy()).any()
 
     assert (
-        model.variable_info["is_state"].values == np.array([True, False, False])
+        model.variable_info["is_state"].to_numpy() == np.array([True, False, False])
     ).all()
 
     assert (
-        model.variable_info["is_continuous"].values == np.array([True, False, True])
+        model.variable_info["is_continuous"].to_numpy() == np.array([True, False, True])
     ).all()
 
     # Grids
@@ -73,12 +75,13 @@ def test_process_model_base():
 
     # Functions
     assert (
-        model.function_info["is_next"].values == np.array([False, True, False, False])
+        model.function_info["is_next"].to_numpy()
+        == np.array([False, True, False, False])
     ).all()
 
     assert (
-        model.function_info["is_constraint"].values
+        model.function_info["is_constraint"].to_numpy()
         == np.array([False, False, True, False])
     ).all()
 
-    assert ~model.function_info.loc["utility"].values.any()
+    assert ~model.function_info.loc["utility"].to_numpy().any()
