@@ -100,6 +100,7 @@ def _get_reshaped_values_and_variable_info(values, collapse, n_extra_axes):
     var_info["is_choice"] = is_choice
     var_info["is_sparse"] = is_sparse
     var_info["is_dense"] = ~var_info["is_sparse"]
+    var_info["is_continuous"] = False
 
     if collapse:
         values = values.reshape(5, 4)

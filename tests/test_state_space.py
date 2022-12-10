@@ -307,4 +307,4 @@ def test_create_indexers_and_segments():
 
     aaae(state_indexer, expected_state_indexer)
     aaae(choice_indexer, expected_choice_indexer)
-    aaae(segments, expected_segments)
+    aaae(segments["segment_ids"], expected_segments)

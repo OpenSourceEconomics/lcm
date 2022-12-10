@@ -57,7 +57,7 @@ def create_state_choice_space(model, period, jit_filter=False):
     # ==================================================================================
     _value_grid = _create_value_grid(
         grids=model.grids,
-        subset=vi.query("is_dense").index.tolist(),
+        subset=vi.query("is_dense & ~(is_choice & is_continuous)").index.tolist(),
     )
     if has_sparse_vars:
         _filter_mask = create_filter_mask(
@@ -92,9 +92,9 @@ def create_state_choice_space(model, period, jit_filter=False):
         choice_segments = None
 
     if has_sparse_states:
-        state_indexers = {}
-    else:
         state_indexers = {"state_indexer": _state_indexer}
+    else:
+        state_indexers = {}
 
     # ==================================================================================
     # create state space info
@@ -113,13 +113,16 @@ def create_state_choice_space(model, period, jit_filter=False):
     interpolation_info = {k: v for k, v in model.gridspecs.items() if k in _cont_states}
 
     # indexer infos
-    indexer_infos = [
-        IndexerInfo(
-            axis_names=vi.query("is_sparse & is_state").index.tolist(),
-            name="state_indexer",
-            out_name="state_index",
-        )
-    ]
+    if has_sparse_states:
+        indexer_infos = [
+            IndexerInfo(
+                axis_names=vi.query("is_sparse & is_state").index.tolist(),
+                name="state_indexer",
+                out_name="state_index",
+            )
+        ]
+    else:
+        indexer_infos = []
 
     space_info = SpaceInfo(
         axis_names=axis_names,
@@ -348,6 +351,7 @@ def create_indexers_and_segments(mask, n_sparse_states, fill_value=-1):
             (n_feasible_states, n_c1, ..., n_cn). The entries are ``fill_value`` for
             infeasible state-choice combinations and count the feasible state-choice
             combinations otherwise.
+        dict: Dict with segment_info.
 
     """
     mask = np.array(mask)
@@ -373,7 +377,7 @@ def create_indexers_and_segments(mask, n_sparse_states, fill_value=-1):
     return (
         jnp.array(state_indexer),
         jnp.array(state_choice_indexer),
-        jnp.array(segments),
+        {"segment_ids": jnp.array(segments), "num_segments": n_feasible_states},
     )
 
 

@@ -210,7 +210,9 @@ def _determine_discrete_choice_axes(variable_info):
 
     """
     has_sparse = variable_info["is_sparse"].any()
-    dense_vars = variable_info.query("is_dense").index.tolist()
+    dense_vars = variable_info.query(
+        "is_dense & ~(is_choice & is_continuous)"
+    ).index.tolist()
 
     if has_sparse:
         axes = ["__sparse__"] + dense_vars
@@ -223,5 +225,8 @@ def _determine_discrete_choice_axes(variable_info):
     for i, ax in enumerate(axes):
         if ax in choice_vars:
             choice_indices.append(i)
+
+    if not choice_indices:
+        choice_indices = None
 
     return choice_indices

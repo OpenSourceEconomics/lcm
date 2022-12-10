@@ -43,7 +43,7 @@ def test_process_model_with_filters():
     # Functions
     assert (
         model.function_info["is_next"].to_numpy()
-        == np.array([False, True, False, False, False])
+        == np.array([False, True, False, False, False, True])
     ).all()
     assert ~model.function_info.loc["utility"].to_numpy().any()
 

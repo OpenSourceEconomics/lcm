@@ -70,7 +70,7 @@ def solve(
         calculate_emax = emax_calculators[period]
         vf_arr = calculate_emax(
             values=conditional_continuation_values,
-            choice_segments=choice_segments,
+            choice_segments=choice_segments[period],
             params=params,
         )
         reversed_solution.append(vf_arr)
@@ -120,7 +120,9 @@ def solve_continuous_problem(
     # ==================================================================================
     # find axes over which we want to take the maximum
     # ==================================================================================
-    offset = n_sparse + n_dense
+    offset = n_dense
+    if n_sparse > 0:
+        offset += 1
     max_axes = tuple(range(offset, offset + n_cont_choices))
 
     # ==================================================================================

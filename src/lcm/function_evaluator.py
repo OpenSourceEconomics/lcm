@@ -14,6 +14,7 @@ def get_function_evaluator(
     interpolation_options=None,
     return_type="function",
     input_prefix="",
+    out_name="__fval__",
 ):
     """Create a function to look-up and interpolate a function pre-calculated on a grid.
 
@@ -127,7 +128,7 @@ def get_function_evaluator(
             for var in space_info.axis_names
             if var in space_info.interpolation_info
         ]
-        funcs["__fval__"] = _get_interpolator(
+        funcs[out_name] = _get_interpolator(
             data_name="__interpolation_data__",
             axis_names=_interpolation_axes,
             map_coordinates_kwargs=interpolation_options,
@@ -139,10 +140,10 @@ def get_function_evaluator(
     if return_type == "function":
         out = concatenate_functions(
             functions=funcs,
-            targets="__fval__",
+            targets=out_name,
         )
     elif return_type == "dict":
-        out = {"functions": funcs, "targets": "__fval__"}
+        out = {"functions": funcs, "targets": out_name}
     else:
         raise ValueError(
             f"return_type must be either 'function' or 'dict', but got {return_type}."
@@ -202,12 +203,12 @@ def _get_lookup_function(array_name, axis_names):
     """
 
     @with_signature(kwargs=axis_names + [array_name])
-    def indexer_wrapper(**kwargs):
+    def lookup_wrapper(**kwargs):
         positions = tuple(kwargs[var] for var in axis_names)
         arr = kwargs[array_name]
         return arr[positions]
 
-    return indexer_wrapper
+    return lookup_wrapper
 
 
 def _get_coordinate_finder(in_name, grid_type, grid_info):
