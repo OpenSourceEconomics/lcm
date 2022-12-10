@@ -1,7 +1,12 @@
+import functools
+import inspect
+
 import jax.numpy as jnp
 import lcm.grids as grids_module
 import pandas as pd
 from dags import get_ancestors
+from dags.signature import with_signature
+from lcm.create_params import create_params
 from lcm.interfaces import GridSpec
 from lcm.interfaces import Model
 
@@ -16,9 +21,11 @@ def process_model(user_model):
     - Check that the model specification is valid.
 
     """
-    _functions = user_model["functions"]
+    _params = create_params(user_model)
     _function_info = _get_function_info(user_model)
-
+    _functions = _get_functions(
+        user_model, function_info=_function_info, params=_params
+    )
     _variable_info = _get_variable_info(user_model, function_info=_function_info)
     _gridspecs = _get_gridspecs(user_model, variable_info=_variable_info)
     _grids = _get_grids(gridspecs=_gridspecs, variable_info=_variable_info)
@@ -28,6 +35,7 @@ def process_model(user_model):
         variable_info=_variable_info,
         functions=_functions,
         function_info=_function_info,
+        params=_params,
         shocks=user_model.get("shocks", {}),
         n_periods=user_model["n_periods"],
     )
@@ -169,3 +177,66 @@ def _get_function_info(user_model):
     )
 
     return info
+
+
+def _get_functions(user_model, function_info, params):
+    """Process the user provided model functions.
+
+    Args:
+        model (dict): The model as provided by the user.
+        function_info (pd.DataFrame): A table with information about model functions.
+        params (dict): The parameters of the model.
+
+    Returns:
+        dict: Dictionary containing all functions of the model. The keys are
+            the names of the functions. The values are the processed functions.
+            The main difference between processed and unprocessed functions is that
+            processed functions take `params` as argument unless they are filter
+            functions.
+
+    """
+    functions = {}
+    for name, func in user_model["functions"].items():
+        is_filter = function_info.loc[name, "is_filter"]
+        if is_filter:
+            if params.get(name, {}):
+                raise ValueError("filters cannot depend on model parameters.")
+            processed_func = func
+        elif params[name]:
+            processed_func = _get_extracting_function(
+                func=func, params=params, name=name
+            )
+
+        else:
+            processed_func = _get_function_with_dummy_params(func=func)
+
+        functions[name] = processed_func
+
+    return functions
+
+
+def _get_extracting_function(func, params, name):
+    old_signature = list(inspect.signature(func).parameters)
+    new_kwargs = [p for p in old_signature if p not in params[name]] + ["params"]
+
+    @with_signature(kwargs=new_kwargs)
+    @functools.wraps(func)
+    def processed_func(**kwargs):
+        _kwargs = {k: v for k, v in kwargs.items() if k in new_kwargs and k != "params"}
+        return func(**_kwargs, **kwargs["params"][name])
+
+    return processed_func
+
+
+def _get_function_with_dummy_params(func):
+    old_signature = list(inspect.signature(func).parameters)
+
+    new_kwargs = old_signature + ["params"]
+
+    @with_signature(kwargs=new_kwargs)
+    @functools.wraps(func)
+    def processed_func(**kwargs):
+        _kwargs = {k: v for k, v in kwargs.items() if k != "params"}
+        return func(**_kwargs)
+
+    return processed_func

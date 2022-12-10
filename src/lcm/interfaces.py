@@ -82,20 +82,25 @@ class Model(NamedTuple):
     """Internal representation of a user model.
 
     Attributes:
-    grids: Dictionary that maps names of model variables to grids of feasible values
-        for that variable.
-    gridspecs (dict): Dictionary that maps names of model variables to specifications
-        from which grids of feasible values can be built.
-    variable_info (pd.DataFrame): A table with information about all variables in the
-            model. The index contains the name of a model variable. The columns are
+        grids: Dictionary that maps names of model variables to grids of feasible values
+            for that variable.
+        gridspecs (dict): Dictionary that maps names of model variables to
+            specifications from which grids of feasible values can be built.
+        variable_info (pd.DataFrame): A table with information about all variables in
+            the model. The index contains the name of a model variable. The columns are
             booleans that are True if the variable has the corresponding property. The
             columns are: is_state, is_choice, is_continuous, is_discrete, is_sparse,
             is_dense.
-    functions (dict): Dictionary that maps names of functions to functions.
-    function_info (pd.DataFrame): A table with information about all functions in the
-            model. The index contains the name of a function. The columns are booleans
-            that are True if the function has the corresponding property. The columns
-            are: is_filter, is_constraint, is_next.
+        functions (dict): Dictionary that maps names of functions to functions. The
+            functions differ from the user functions in that they all except the
+            filter functions take ``params`` as keyword argument. If the original
+            function depended on model parameters, those are automatically extracted
+            from ``params`` and passed to the original function. Otherwise, the
+            ``params`` argument is simply ignored.
+        function_info (pd.DataFrame): A table with information about all functions in
+            the model. The index contains the name of a function. The columns are
+            booleans that are True if the function has the corresponding property. The
+            columns are: is_filter, is_constraint, is_next.
 
     """
 
@@ -104,6 +109,7 @@ class Model(NamedTuple):
     variable_info: pd.DataFrame
     functions: Dict
     function_info: pd.DataFrame
+    params: Dict
     # not really processed yet
     shocks: Dict
     n_periods: int

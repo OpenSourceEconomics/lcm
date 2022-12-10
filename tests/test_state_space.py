@@ -60,6 +60,7 @@ def filter_mask_inputs():
         function_info=function_info,
         shocks=None,
         n_periods=100,
+        params={},
     )
 
     return model
