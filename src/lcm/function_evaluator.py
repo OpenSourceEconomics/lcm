@@ -134,8 +134,12 @@ def get_function_evaluator(
             functions=funcs,
             targets="__fval__",
         )
-    else:
+    elif return_type == "dict":
         out = {"functions": funcs, "targets": "__fval__"}
+    else:
+        raise ValueError(
+            f"return_type must be either 'function' or 'dict', but got {return_type}."
+        )
 
     return out
 

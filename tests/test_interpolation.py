@@ -26,7 +26,7 @@ def _calc_values_2d(a, b):
 
 
 def _calc_values_3d(a, b, c):
-    return 2 * a ** 3 + 3 * b ** 2 - c
+    return 2 * a**3 + 3 * b**2 - c
 
 
 def _calc_values_4d(a, b, c, d):
@@ -34,7 +34,7 @@ def _calc_values_4d(a, b, c, d):
 
 
 def _calc_values_5d(a, b, c, d, e):
-    return _calc_values_4d(a, b, c, d) + e ** 5
+    return _calc_values_4d(a, b, c, d) + e**5
 
 
 @pytest.mark.parametrize(

@@ -58,7 +58,6 @@ PHELPS_DEATON = {
             "n_points": 11,
         },
     },
-
     "states": {
         "wealth": {"grid_type": "linspace", "start": 0, "stop": 1e4, "n_points": 11}
     },
