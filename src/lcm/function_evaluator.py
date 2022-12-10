@@ -12,6 +12,7 @@ def get_function_evaluator(
     space_info,
     data_name,
     interpolation_options=None,
+    return_type="function",
 ):
     """Create a function to look-up and interpolate a function pre-calculated on a grid.
 
@@ -53,6 +54,9 @@ def get_function_evaluator(
             will be passed into the resulting function.
         interpolation_options (dict): Dictionary of keyword arguments for
             interpolation via map_coordinates.
+        return_type (str): Either "function" or "dict". If return_type="function",
+            return a function. If return_type="dict", return a dictionary with all
+            inputs needed to call `dags.concatenate_functions`.
 
     Returns:
         callable: A callable that lets you evaluate a function defined be precalculated
@@ -123,14 +127,17 @@ def get_function_evaluator(
         )
 
     # ==================================================================================
-    # build the dag
+    # prepare the output
     # ==================================================================================
-    evaluator = concatenate_functions(
-        functions=funcs,
-        targets="__fval__",
-    )
+    if return_type == "function":
+        out = concatenate_functions(
+            functions=funcs,
+            targets="__fval__",
+        )
+    else:
+        out = {"functions": funcs, "targets": "__fval__"}
 
-    return evaluator
+    return out
 
 
 def _get_label_translator(labels, in_name):
