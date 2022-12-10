@@ -13,6 +13,7 @@ def get_function_evaluator(
     data_name,
     interpolation_options=None,
     return_type="function",
+    input_prefix="",
 ):
     """Create a function to look-up and interpolate a function pre-calculated on a grid.
 
@@ -57,6 +58,10 @@ def get_function_evaluator(
         return_type (str): Either "function" or "dict". If return_type="function",
             return a function. If return_type="dict", return a dictionary with all
             inputs needed to call `dags.concatenate_functions`.
+        input_prefix (str): Prefix that will be added to all argument names of the
+            resulting function, except for the helpers arguments such as indexers
+            or value arrays. Default is the empty string. The prefix needs to contain
+            the separator. E.g. `next_` if an undescore should be used as separator.
 
     Returns:
         callable: A callable that lets you evaluate a function defined be precalculated
@@ -76,7 +81,9 @@ def get_function_evaluator(
     # create functions to look up position of discrete variables from labels
     # ==================================================================================
     for var, labels in space_info.lookup_info.items():
-        funcs[f"__{var}_pos__"] = _get_label_translator(labels=labels, in_name=var)
+        funcs[f"__{var}_pos__"] = _get_label_translator(
+            labels=labels, in_name=input_prefix + var
+        )
 
     # ==================================================================================
     # wrap the indexers and put them it into funcs
@@ -107,7 +114,7 @@ def get_function_evaluator(
         # ==============================================================================
         for var, grid_info in space_info.interpolation_info.items():
             funcs[f"__{var}_coord__"] = _get_coordinate_finder(
-                in_name=var,
+                in_name=input_prefix + var,
                 grid_type=grid_info.kind,
                 grid_info=grid_info.specs,
             )

@@ -31,15 +31,14 @@ def test_function_evaluator_with_one_continuous_variable():
 
     # create the evaluator
     evaluator = get_function_evaluator(
-        space_info=space_info,
-        data_name="vf_arr",
+        space_info=space_info, data_name="vf_arr", input_prefix="next_"
     )
 
     # partial the function values into the evaluator
     func = partial(evaluator, vf_arr=vf_arr)
 
     # test the evaluator
-    got = func(wealth=0.5)
+    got = func(next_wealth=0.5)
     expected = 0.5 * jnp.pi + 2
     assert jnp.allclose(got, expected)
 
@@ -57,16 +56,15 @@ def test_function_evaluator_with_one_discrete_variable():
 
     # create the evaluator
     evaluator = get_function_evaluator(
-        space_info=space_info,
-        data_name="vf_arr",
+        space_info=space_info, data_name="vf_arr", input_prefix="next_"
     )
 
     # partial the function values into the evaluator
     func = partial(evaluator, vf_arr=vf_arr)
 
     # test the evaluator
-    assert func(working=True) == 1
-    assert func(working=False) == 2
+    assert func(next_working=True) == 1
+    assert func(next_working=False) == 2
 
 
 def test_function_evaluator():
