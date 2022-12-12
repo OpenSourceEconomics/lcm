@@ -27,18 +27,31 @@ def test_process_model_with_filters():
     ).all()
 
     # Gridspecs
-    assert isinstance(model.gridspecs["wealth"], GridSpec)
-    assert isinstance(model.gridspecs["consumption"], GridSpec)
-    assert isinstance(model.gridspecs["retirement"], list)
-    assert isinstance(model.gridspecs["lagged_retirement"], list)
+    wealth_specs = GridSpec(
+        kind="linspace", specs={"start": 0, "stop": 100, "n_points": 11}
+    )
+
+    assert model.gridspecs["wealth"] == wealth_specs
+
+    consumption_specs = GridSpec(
+        kind="linspace", specs={"start": 1, "stop": 100, "n_points": 11}
+    )
+    assert model.gridspecs["consumption"] == consumption_specs
+
+    assert model.gridspecs["retirement"] == [0, 1]
+    assert model.gridspecs["lagged_retirement"] == [0, 1]
 
     # Grids
     func = getattr(grids_module, model.gridspecs["consumption"].kind)
     asserted = func(**model.gridspecs["consumption"].specs)
     assert (asserted == model.grids["consumption"]).all()
 
-    assert isinstance(model.grids["retirement"], jax.numpy.ndarray)
-    assert isinstance(model.grids["lagged_retirement"], jax.numpy.ndarray)
+    func = getattr(grids_module, model.gridspecs["wealth"].kind)
+    asserted = func(**model.gridspecs["wealth"].specs)
+    assert (asserted == model.grids["wealth"]).all()
+
+    assert (model.grids["retirement"] == jax.numpy.array([0, 1])).all()
+    assert (model.grids["lagged_retirement"] == jax.numpy.array([0, 1])).all()
 
     # Functions
     assert (
@@ -62,16 +75,30 @@ def test_process_model_base():
         model.variable_info["is_continuous"].to_numpy() == np.array([True, False, True])
     ).all()
 
-    # Grids
-    assert isinstance(model.gridspecs["wealth"], GridSpec)
-    assert isinstance(model.gridspecs["consumption"], GridSpec)
-    assert isinstance(model.gridspecs["retirement"], list)
+    # Gridspecs
+    wealth_specs = GridSpec(
+        kind="linspace", specs={"start": 0, "stop": 100, "n_points": 11}
+    )
+
+    assert model.gridspecs["wealth"] == wealth_specs
+
+    consumption_specs = GridSpec(
+        kind="linspace", specs={"start": 1, "stop": 100, "n_points": 11}
+    )
+    assert model.gridspecs["consumption"] == consumption_specs
+
+    assert model.gridspecs["retirement"] == [0, 1]
 
     # Grids
     func = getattr(grids_module, model.gridspecs["consumption"].kind)
     asserted = func(**model.gridspecs["consumption"].specs)
     assert (asserted == model.grids["consumption"]).all()
-    assert isinstance(model.grids["retirement"], jax.numpy.ndarray)
+
+    func = getattr(grids_module, model.gridspecs["wealth"].kind)
+    asserted = func(**model.gridspecs["wealth"].specs)
+    assert (asserted == model.grids["wealth"]).all()
+
+    assert (model.grids["retirement"] == jax.numpy.array([0, 1])).all()
 
     # Functions
     assert (
