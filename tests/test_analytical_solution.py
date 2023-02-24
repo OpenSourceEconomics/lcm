@@ -241,8 +241,7 @@ def params_analytical_solution():
         "next_wealth_constraint": np.NaN,
         "working": np.NaN,
     }
-    v, life_cycle_choices = simulate_lc(**params)
-    return v
+    return params
 
 
 def test_analytical_solution(params_analytical_solution):
