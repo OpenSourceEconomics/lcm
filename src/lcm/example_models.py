@@ -36,6 +36,10 @@ def next_wealth_constraint(next_wealth):
     return next_wealth >= 0
 
 
+def next_wealth_constraint_no_borrowing(next_wealth, wage, working):
+    return next_wealth >= wage * working
+
+
 def age(period):
     return period + 18
 
@@ -109,6 +113,28 @@ PHELPS_DEATON_WITH_FILTERS = {
     "states": {
         "wealth": {"grid_type": "linspace", "start": 0, "stop": 100, "n_points": 11},
         "lagged_retirement": {"options": [0, 1]},
+    },
+    "n_periods": 20,
+}
+
+PHELPS_DEATON_NO_BORROWING = {
+    "functions": {
+        "utility": phelps_deaton_utility,
+        "next_wealth": next_wealth,
+        "next_wealth_constraint": next_wealth_constraint_no_borrowing,
+        "working": working,
+    },
+    "choices": {
+        "retirement": {"options": [0, 1]},
+        "consumption": {
+            "grid_type": "linspace",
+            "start": 1,
+            "stop": 100,
+            "n_points": 11,
+        },
+    },
+    "states": {
+        "wealth": {"grid_type": "linspace", "start": 0, "stop": 100, "n_points": 11}
     },
     "n_periods": 20,
 }
