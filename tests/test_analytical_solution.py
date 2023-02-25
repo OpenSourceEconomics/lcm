@@ -71,12 +71,16 @@ def _compute_wealth_tresholds(v_prime, wage, r, beta, delta, tau, consumption_po
     Return wealth treshold for consumption policy decision given tau.
 
     Args:
-        V_prime (function): continuation value of value function
+        v_prime (function): continuation value of value function
         wage (float): labor income
         r (float): interest rate
         beta (float): discount factor
         delta (float): disutility of work
         tau (int): periods left until end of life
+        consumption_policy (list): consumption policy vector
+
+    Returns:
+        list: list of wealth thresholds
     """
     # Liquidity constraint threshold
     wealth_thresholds = [-np.inf, wage / ((1 + r) * beta)]
@@ -116,9 +120,10 @@ def _compute_wealth_tresholds(v_prime, wage, r, beta, delta, tau, consumption_po
 
 def _evaluate_piecewise_conditions(m, wealth_thresholds):
     """
-    Determine sub-function of policy function given M.
+    Determine sub-function of policy function given m.
 
     Args:
+        m (float): current wealth level
         wealth_thresholds (list): list of wealth thresholds
     Returns:
         list: list of booleans
@@ -137,12 +142,13 @@ def _construct_model(wage, r, num_periods, beta, delta):
     Args:
         wage (float): income
         r (float): interest rate
-        T (int): Length of life
+        num_periods (int): Length of life
         beta (float): discount factor
         delta (float): disutility of work
     Returns:
         list: list of value functions
         list: list of consumption policy functions
+        list: list of work decision functions
     """
 
     c_pol = [None] * num_periods
@@ -153,7 +159,7 @@ def _construct_model(wage, r, num_periods, beta, delta):
         if t == num_periods - 1:
             v[t] = lambda m: np.log(m)
             c_pol[t] = lambda m: m
-            work_dec[t] = lambda: 0
+            work_dec[t] = lambda: False
         else:
             # Generate consumption function
             policy_vec = _generate_policy_function_vector(
@@ -193,16 +199,12 @@ def simulate_lc(
     Simulate life cycle given parameters.
 
     Args:
-        wage (float): income
-        r (float): interest rate
-        T (int): Length of life
-        beta (float): discount factor
-        delta (float): disutility of work
-        A (float): initial wealth
+        num_periods (int): Length of life
+        a (float): initial wealth
+        params (dict): parameters
     Returns:
-        list: list of value functions
-        list: list of consumption policy functions
-        list: list of wealth
+        list: value functions
+        list: simulated life cycle decisions
     """
 
     # Unpack parameters
@@ -264,7 +266,7 @@ def test_analytical_solution(params_analytical_solution):
         for t in range(0, num_periods)
     ]
 
-    # Model
+    # Numerical Solution
     model = PHELPS_DEATON_NO_BORROWING
     model["n_periods"] = num_periods
     model["choices"]["consumption"]["n_points"] = 10000
