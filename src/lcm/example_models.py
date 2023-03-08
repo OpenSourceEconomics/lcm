@@ -2,6 +2,10 @@
 import jax.numpy as jnp
 
 
+def labor_income(wage, working):
+    return wage * working
+
+
 def phelps_deaton_utility_with_shock(
     consumption, working, delta, additive_utility_shock
 ):
@@ -28,16 +32,16 @@ def next_wealth_with_shock(
     return interest_rate * (wealth - consumption) + wage * wage_shock * working
 
 
-def next_wealth(wealth, consumption, working, wage, interest_rate):
-    return (1 + interest_rate) * (wealth - consumption) + wage * working
+def next_wealth(wealth, consumption, labor_income, interest_rate):
+    return (1 + interest_rate) * (wealth - consumption) + labor_income
 
 
 def next_wealth_constraint(next_wealth):
     return next_wealth >= 0
 
 
-def next_wealth_constraint_no_borrowing(next_wealth, wage, working):
-    return next_wealth >= wage * working
+def next_wealth_constraint_no_borrowing(next_wealth, labor_income):
+    return next_wealth >= labor_income
 
 
 def age(period):
