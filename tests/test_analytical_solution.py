@@ -102,9 +102,11 @@ def _compute_wealth_tresholds(v_prime, wage, r, beta, delta, tau, consumption_po
 
         sol = root_scalar(
             root_fct,
-            method="bisect",
+            method="brenth",
             bracket=[wealth_thresholds[i + 1], ret_threshold],
-            xtol=1e-15,
+            xtol=1e-10,
+            rtol=1e-10,
+            maxiter=1000,
         )
         assert sol.converged
         wealth_thresholds.append(sol.root)
@@ -209,9 +211,9 @@ def simulate_lc(
 
     # Unpack parameters
     beta = params["beta"]
-    wage = params["next_wealth"]["wage"]
-    r = params["next_wealth"]["interest_rate"]
-    delta = params["utility"]["delta"]
+    wage = params["wage"]
+    r = params["interest_rate"]
+    delta = params["delta"]
 
     v, c_pol, work_dec = _construct_model(
         wage=wage, r=r, num_periods=num_periods, beta=beta, delta=delta
@@ -236,20 +238,15 @@ def simulate_lc(
 def params_analytical_solution():
     params = {
         "beta": 0.98,
-        "utility": {
-            "delta": 1.0,
-        },
-        "next_wealth": {"wage": 20.0, "interest_rate": 0.0},
-        "next_wealth_constraint": np.NaN,
-        "working": np.NaN,
+        "delta": 1.0,
+        "wage": 20.0,
+        "interest_rate": 0.0,
+        "num_periods": 4,
     }
     return params
 
 
 def test_analytical_solution(params_analytical_solution):
-
-    # Number of periods
-    num_periods = 4
 
     # Specify grid
     wealth_grid_size = 1000
@@ -259,22 +256,32 @@ def test_analytical_solution(params_analytical_solution):
 
     # Analytical Solution
     v_function, life_cycle_choices = simulate_lc(
-        num_periods=num_periods, a=30, params=params_analytical_solution
+        num_periods=params_analytical_solution["num_periods"],
+        a=30,
+        params=params_analytical_solution,
     )
     v_analytical = [
         np.array([v_function[t](vals) for vals in grid_vals])
-        for t in range(0, num_periods)
+        for t in range(0, params_analytical_solution["num_periods"])
     ]
 
     # Numerical Solution
     model = PHELPS_DEATON_NO_BORROWING
-    model["n_periods"] = num_periods
-    model["choices"]["consumption"]["n_points"] = 10000
+    model["n_periods"] = params_analytical_solution["num_periods"]
+    model["choices"]["consumption"]["n_points"] = 1000
     model["states"]["wealth"]["start"] = wealth_grid_min
     model["states"]["wealth"]["stop"] = wealth_grid_max
     model["states"]["wealth"]["n_points"] = wealth_grid_size
 
     solve_model, params_template = get_lcm_function(model=model)
-    v_numerical = solve_model(params=params_analytical_solution)
+
+    params_template["beta"] = params_analytical_solution["beta"]
+    params_template["labor_income"]["wage"] = params_analytical_solution["wage"]
+    params_template["next_wealth"]["interest_rate"] = params_analytical_solution[
+        "interest_rate"
+    ]
+    params_template["utility"]["delta"] = params_analytical_solution["delta"]
+
+    v_numerical = solve_model(params=params_template)
 
     aaae(v_analytical, v_numerical, decimal=3)

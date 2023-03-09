@@ -127,6 +127,7 @@ PHELPS_DEATON_NO_BORROWING = {
         "next_wealth": next_wealth,
         "next_wealth_constraint": next_wealth_constraint_no_borrowing,
         "working": working,
+        "labor_income": labor_income,
     },
     "choices": {
         "retirement": {"options": [0, 1]},
