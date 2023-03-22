@@ -123,11 +123,13 @@ PHELPS_DEATON_WITH_FILTERS = {
 
 PHELPS_DEATON_NO_BORROWING = {
     "functions": {
-        "utility": phelps_deaton_utility,
+        "utility": phelps_deaton_utility_with_filter,
         "next_wealth": next_wealth,
         "next_wealth_constraint": next_wealth_constraint_no_borrowing,
         "working": working,
         "labor_income": labor_income,
+        "absorbing_retirement_filter": absorbing_retirement_filter,
+        "next_lagged_retirement": lambda retirement: retirement,
     },
     "choices": {
         "retirement": {"options": [0, 1]},
@@ -139,7 +141,8 @@ PHELPS_DEATON_NO_BORROWING = {
         },
     },
     "states": {
-        "wealth": {"grid_type": "linspace", "start": 0, "stop": 100, "n_points": 11}
+        "wealth": {"grid_type": "linspace", "start": 0, "stop": 100, "n_points": 11},
+        "lagged_retirement": {"options": [0, 1]},
     },
     "n_periods": 20,
 }
