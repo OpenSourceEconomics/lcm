@@ -264,7 +264,7 @@ def _construct_model(delta, num_periods, param_dict):
                 **param_dict,
             )
 
-            c_pol[t] = partial(_consumption, policy_dict=policy_dict)
+            c_pol[t] = partial(_consumption, policy_dict=policy_dict, wt=wt)
 
             # Determine retirement status
             work_dec_func[t] = partial(
@@ -316,7 +316,7 @@ def analytical_solution(grid, beta, wage, r, delta, num_periods):
         [
             [
                 list(map(v_fct[t], grid, [work_status] * len(grid)))
-                for work_status in [False]
+                for work_status in [True]
             ]
             for t in range(0, num_periods)
         ]
@@ -332,7 +332,7 @@ def params_analytical_solution():
         "delta": 0.3,
         "wage": float(10),
         "r": 0.0,
-        "num_periods": 2,
+        "num_periods": 3,
     }
     return params
 
@@ -341,7 +341,7 @@ def test_analytical_solution(params_analytical_solution):
 
     # Specify grid
     wealth_grid_size = 8_000
-    wealth_grid_min = 0
+    wealth_grid_min = 1
     wealth_grid_max = 100
     grid_vals = np.linspace(wealth_grid_min, wealth_grid_max, wealth_grid_size)
 
@@ -364,6 +364,6 @@ def test_analytical_solution(params_analytical_solution):
     params_template["labor_income"]["wage"] = params_analytical_solution["wage"]
     params_template["next_wealth"]["interest_rate"] = params_analytical_solution["r"]
     params_template["utility"]["delta"] = params_analytical_solution["delta"]
-    v_numerical = np.array(solve_model(params=params_template))[:, 1, :]
+    v_numerical = np.array(solve_model(params=params_template))[:, 0, :]
 
-    aaae(v_analytical, v_numerical, decimal=6)
+    aaae(x=v_analytical, y=v_numerical, decimal=6)
