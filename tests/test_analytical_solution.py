@@ -316,11 +316,11 @@ def analytical_solution(grid, beta, wage, r, delta, num_periods):
         [
             [
                 list(map(v_fct[t], grid, [work_status] * len(grid)))
-                for work_status in [True]
+                for work_status in [True, False]
             ]
             for t in range(0, num_periods)
         ]
-    )[:, 0, :]
+    )
 
     return v
 
@@ -329,7 +329,7 @@ def analytical_solution(grid, beta, wage, r, delta, num_periods):
 def params_analytical_solution():
     params = {
         "beta": 0.98,
-        "delta": 0.3,
+        "delta": 1.0,
         "wage": float(10),
         "r": 0.0,
         "num_periods": 3,
@@ -340,8 +340,8 @@ def params_analytical_solution():
 def test_analytical_solution(params_analytical_solution):
 
     # Specify grid
-    wealth_grid_size = 8_000
-    wealth_grid_min = 1
+    wealth_grid_size = 10_000
+    wealth_grid_min = 0
     wealth_grid_max = 100
     grid_vals = np.linspace(wealth_grid_min, wealth_grid_max, wealth_grid_size)
 
@@ -364,6 +364,6 @@ def test_analytical_solution(params_analytical_solution):
     params_template["labor_income"]["wage"] = params_analytical_solution["wage"]
     params_template["next_wealth"]["interest_rate"] = params_analytical_solution["r"]
     params_template["utility"]["delta"] = params_analytical_solution["delta"]
-    v_numerical = np.array(solve_model(params=params_template))[:, 0, :]
+    v_numerical = np.array(solve_model(params=params_template))
 
     aaae(x=v_analytical, y=v_numerical, decimal=6)
