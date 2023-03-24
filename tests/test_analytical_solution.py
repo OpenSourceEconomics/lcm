@@ -295,6 +295,7 @@ def analytical_solution(grid, beta, wage, r, delta, num_periods):
         r (float): interest rate
         delta (float): disutility of work
         num_periods (int): length of life
+        lagged_ret (list): lagged retirement status (True/False)
     Returns:
         list: values of value function
     """
@@ -312,45 +313,55 @@ def analytical_solution(grid, beta, wage, r, delta, num_periods):
         delta=delta, num_periods=num_periods, param_dict=param_dict
     )
 
-    v = np.array(
-        [
-            [
-                list(map(v_fct[t], grid, [work_status] * len(grid)))
-                for work_status in [True, False]
-            ]
-            for t in range(0, num_periods)
-        ]
-    )
+    v = {
+        k: [list(map(v_fct[t], grid, [v] * len(grid))) for t in range(0, num_periods)]
+        for (k, v) in [["worker", True], ["retired", False]]
+    }
 
     return v
 
 
-@pytest.fixture()
-def params_analytical_solution():
-    params = {
-        "beta": 0.98,
-        "delta": 1.0,
-        "wage": float(10),
-        "r": 0.0,
-        "num_periods": 3,
-    }
-    return params
+# Define test cases
+Iskhakov_2017 = {
+    "beta": 0.98,
+    "delta": 1.0,
+    "wage": float(20),
+    "r": 0.0,
+    "num_periods": 5,
+}
+low_delta = {
+    "beta": 0.98,
+    "delta": 0.1,
+    "wage": float(20),
+    "r": 0.0,
+    "num_periods": 3,
+}
+high_wage = {
+    "beta": 0.98,
+    "delta": 1.0,
+    "wage": float(100),
+    "r": 0.0,
+    "num_periods": 5,
+}
+
+test_cases = [Iskhakov_2017, low_delta, high_wage]
 
 
-def test_analytical_solution(params_analytical_solution):
+@pytest.mark.parametrize("params", test_cases)
+def test_analytical_solution(params):
 
     # Specify grid
     wealth_grid_size = 10_000
-    wealth_grid_min = 0
+    wealth_grid_min = 1
     wealth_grid_max = 100
     grid_vals = np.linspace(wealth_grid_min, wealth_grid_max, wealth_grid_size)
 
     # Analytical Solution
-    v_analytical = analytical_solution(grid=grid_vals, **params_analytical_solution)
+    v_analytical = analytical_solution(grid=grid_vals, **params)
 
     # Numerical Solution
     model = PHELPS_DEATON_NO_BORROWING
-    model["n_periods"] = params_analytical_solution["num_periods"]
+    model["n_periods"] = params["num_periods"]
     model["choices"]["consumption"]["start"] = wealth_grid_min
     model["choices"]["consumption"]["stop"] = wealth_grid_max
     model["choices"]["consumption"]["n_points"] = wealth_grid_size
@@ -360,10 +371,17 @@ def test_analytical_solution(params_analytical_solution):
 
     solve_model, params_template = get_lcm_function(model=model)
 
-    params_template["beta"] = params_analytical_solution["beta"]
-    params_template["labor_income"]["wage"] = params_analytical_solution["wage"]
-    params_template["next_wealth"]["interest_rate"] = params_analytical_solution["r"]
-    params_template["utility"]["delta"] = params_analytical_solution["delta"]
-    v_numerical = np.array(solve_model(params=params_template))
+    params_template["beta"] = params["beta"]
+    params_template["labor_income"]["wage"] = params["wage"]
+    params_template["next_wealth"]["interest_rate"] = params["r"]
+    params_template["utility"]["delta"] = params["delta"]
 
-    aaae(x=v_analytical, y=v_numerical, decimal=6)
+    numerical_solution = np.array(solve_model(params=params_template))
+
+    v_numerical = {
+        "worker": numerical_solution[:, 0, :],
+        "retired": numerical_solution[:, 1, :],
+    }
+
+    aaae(y=v_analytical["worker"], x=v_numerical["worker"], decimal=6)
+    aaae(y=v_analytical["retired"], x=v_numerical["retired"], decimal=6)
