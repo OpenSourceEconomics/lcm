@@ -5,11 +5,9 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 from dags import concatenate_functions
-from lcm.dispatchers import productmap
-from lcm.dispatchers import spacemap
-from lcm.interfaces import IndexerInfo
-from lcm.interfaces import Space
-from lcm.interfaces import SpaceInfo
+
+from lcm.dispatchers import productmap, spacemap
+from lcm.interfaces import IndexerInfo, Space, SpaceInfo
 
 
 def create_state_choice_space(model, period, jit_filter=False):
@@ -28,7 +26,6 @@ def create_state_choice_space(model, period, jit_filter=False):
 
     Note:
     -----
-
     - We only use the filter mask, not the forward mask (yet).
 
     Args:
@@ -91,10 +88,7 @@ def create_state_choice_space(model, period, jit_filter=False):
         _state_indexer = None
         choice_segments = None
 
-    if has_sparse_states:
-        state_indexers = {"state_indexer": _state_indexer}
-    else:
-        state_indexers = {}
+    state_indexers = {"state_indexer": _state_indexer} if has_sparse_states else {}
 
     # ==================================================================================
     # create state space info
@@ -102,7 +96,7 @@ def create_state_choice_space(model, period, jit_filter=False):
     # axis_names
     axis_names = vi.query("is_dense & is_state").index.tolist()
     if has_sparse_states:
-        axis_names = ["state_index"] + axis_names
+        axis_names = ["state_index", *axis_names]
 
     # lookup_info
     _discrete_states = set(vi.query("is_discrete & is_state").index.tolist())
@@ -119,7 +113,7 @@ def create_state_choice_space(model, period, jit_filter=False):
                 axis_names=vi.query("is_sparse & is_state").index.tolist(),
                 name="state_indexer",
                 out_name="state_index",
-            )
+            ),
         ]
     else:
         indexer_infos = []
@@ -191,7 +185,12 @@ def create_filter_mask(model, subset, fixed_inputs=None, jit_filter=False):
 
 
 def create_forward_mask(
-    initial, grids, next_functions, fixed_inputs=None, aux_functions=None, jit_next=True
+    initial,
+    grids,
+    next_functions,
+    fixed_inputs=None,
+    aux_functions=None,
+    jit_next=True,
 ):
     """Create a mask for combinations of grid values.
 
@@ -199,7 +198,7 @@ def create_forward_mask(
         This function is extremely experimental and probably buggy
 
     Args:
-        intitial (dict): Dict of arrays with valid combinations of variables.
+        initial (dict): Dict of arrays with valid combinations of variables.
         grids (dict): Dictionary containing a one-dimensional grid for each
             variable that is used as a basis to construct the higher dimensional
             grid.
@@ -252,7 +251,7 @@ def create_forward_mask(
     _next_values = _gridmapped(**_needed_initial, **_fixed_inputs)
 
     # create all-false mask
-    mask = np.full(_shape, False)
+    mask = np.full(_shape, fill_value=False)
 
     # fill with full slices to get indexers
     indices = []
@@ -329,7 +328,6 @@ def create_indexers_and_segments(mask, n_sparse_states, fill_value=-1):
 
     Notes:
     ------
-
     - This probably does not work if there is not at least one sparse state variable
     and at least one sparse choice variable.
 
@@ -338,7 +336,7 @@ def create_indexers_and_segments(mask, n_sparse_states, fill_value=-1):
             or choice variable that is True for feasible state-choice
             combinations. The state variables occupy the first dimensions.
             I.e. the shape is (n_s1, ..., n_sm, n_c1, ..., n_cm).
-        n_states (np.ndarray): Number of state variables.
+        n_sparse_states (np.ndarray): Number of sparse state variables.
         fill_value (np.ndarray): Value of the index array for infeasible
             states or choices.
 

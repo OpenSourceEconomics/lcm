@@ -27,10 +27,12 @@ def segment_info():
 test_cases = list(product([True, False], range(3)))
 
 
-@pytest.mark.parametrize("collapse, n_extra_axes", test_cases)
+@pytest.mark.parametrize(("collapse", "n_extra_axes"), test_cases)
 def test_aggregation_without_shocks(values, segment_info, collapse, n_extra_axes):
     values, var_info = _get_reshaped_values_and_variable_info(
-        values, collapse, n_extra_axes
+        values,
+        collapse,
+        n_extra_axes,
     )
 
     calculator = get_emax_calculator(
@@ -66,12 +68,19 @@ for scale, exp in zip(scaling_factors, expected_results):
             test_cases.append((scale, exp, collapse, n_axes))
 
 
-@pytest.mark.parametrize("scale, expected, collapse, n_extra_axes", test_cases)
+@pytest.mark.parametrize(("scale", "expected", "collapse", "n_extra_axes"), test_cases)
 def test_aggregation_with_extreme_value_shocks(
-    values, segment_info, scale, expected, collapse, n_extra_axes
+    values,
+    segment_info,
+    scale,
+    expected,
+    collapse,
+    n_extra_axes,
 ):
     values, var_info = _get_reshaped_values_and_variable_info(
-        values, collapse, n_extra_axes
+        values,
+        collapse,
+        n_extra_axes,
     )
 
     calculator = get_emax_calculator(

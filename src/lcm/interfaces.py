@@ -1,7 +1,4 @@
-from typing import Dict
-from typing import List
-from typing import NamedTuple
-from typing import Union
+from typing import Dict, List, NamedTuple, Union
 
 import numpy as np
 import pandas as pd

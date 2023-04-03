@@ -5,11 +5,13 @@ import pytest
 from lcm.example_models import PHELPS_DEATON_WITH_FILTERS
 from lcm.interfaces import Model
 from lcm.process_model import process_model
-from lcm.state_space import create_combination_grid
-from lcm.state_space import create_filter_mask
-from lcm.state_space import create_forward_mask
-from lcm.state_space import create_indexers_and_segments
-from lcm.state_space import create_state_choice_space
+from lcm.state_space import (
+    create_combination_grid,
+    create_filter_mask,
+    create_forward_mask,
+    create_indexers_and_segments,
+    create_state_choice_space,
+)
 from numpy.testing import assert_array_almost_equal as aaae
 
 
@@ -72,7 +74,7 @@ PARAMETRIZATION = [
 ]
 
 
-@pytest.mark.parametrize("period, expected", PARAMETRIZATION)
+@pytest.mark.parametrize(("period", "expected"), PARAMETRIZATION)
 def test_create_filter_mask(filter_mask_inputs, period, expected):
     calculated = create_filter_mask(
         model=filter_mask_inputs,
@@ -226,7 +228,7 @@ def test_create_forward_mask_multiple_next_funcs():
             [False, False],
             [False, False],
             [False, False],
-        ]
+        ],
     )
 
     aaae(calculated, expected)
@@ -280,21 +282,22 @@ def test_forward_mask_w_aux_function():
             [False, False],
             [False, False],
             [False, False],
-        ]
+        ],
     )
 
     aaae(calculated, expected)
 
 
 def test_create_indexers_and_segments():
-    mask = np.full((3, 3, 2), False)
+    mask = np.full((3, 3, 2), fill_value=False)
     mask[1, 0, 0] = True
     mask[1, -1, -1] = True
     mask[2] = True
     mask = jnp.array(mask)
 
     state_indexer, choice_indexer, segments = create_indexers_and_segments(
-        mask=mask, n_sparse_states=2
+        mask=mask,
+        n_sparse_states=2,
     )
 
     expected_state_indexer = jnp.array([[-1, -1, -1], [0, -1, 1], [2, 3, 4]])

@@ -3,11 +3,10 @@ import itertools
 import jax.numpy as jnp
 import pytest
 from jax import config
-from lcm.dispatchers import productmap
-from lcm.dispatchers import spacemap
+from lcm.dispatchers import productmap, spacemap
 from numpy.testing import assert_array_almost_equal as aaae
 
-config.update("jax_enable_x64", True)
+config.update("jax_enable_x64", val=True)
 
 
 def f(a, b, c):
@@ -76,7 +75,7 @@ def expected_productmap_g():
 
 
 @pytest.mark.parametrize(
-    "func, args, grids, expected",
+    ("func", "args", "grids", "expected"),
     [
         (f, ["a", "b", "c"], "setup_productmap_f", "expected_productmap_f"),
         (g, ["a", "b", "c", "d"], "setup_productmap_g", "expected_productmap_g"),
@@ -137,7 +136,7 @@ def test_productmap_with_all_arguments_mapped_some_scalar():
     }
 
     decorated = productmap(f, ["a", "b", "c"])
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="vmap was requested to map its argument"):
         decorated(*grids.values())
 
 
@@ -213,7 +212,10 @@ def test_gridmap_all_arguments_mapped(setup_gridmap, expected_gridmap, dense_fir
     dense_vars, sparse_vars = setup_gridmap
 
     decorated = spacemap(
-        g, list(dense_vars), list(sparse_vars), dense_first=dense_first
+        g,
+        list(dense_vars),
+        list(sparse_vars),
+        dense_first=dense_first,
     )
     calculated = decorated(**dense_vars, **sparse_vars)
 
@@ -224,7 +226,7 @@ def test_gridmap_all_arguments_mapped(setup_gridmap, expected_gridmap, dense_fir
 
 
 @pytest.mark.parametrize(
-    "error_msg, dense_vars, sparse_vars",
+    ("error_msg", "dense_vars", "sparse_vars"),
     [
         (
             "dense_vars and sparse_vars overlap",

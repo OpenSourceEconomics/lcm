@@ -2,8 +2,7 @@ import jax.numpy as jnp
 import numpy as np
 from jax.scipy.ndimage import map_coordinates
 from lcm.interfaces import Space
-from lcm.solve_brute import solve
-from lcm.solve_brute import solve_continuous_problem
+from lcm.solve_brute import solve, solve_continuous_problem
 from numpy.testing import assert_array_almost_equal as aaae
 
 
@@ -90,7 +89,7 @@ def test_solve_brute():
     # ==================================================================================
     choice_segments = [None, None]
 
-    def calculate_emax(values, choice_segments, params):  # noqa: U100
+    def calculate_emax(values, choice_segments, params):  # noqa: ARG001
         """Take max over axis that corresponds to working."""
         return values.max(axis=1)
 
@@ -119,7 +118,7 @@ def test_solve_continious_problem_no_vf_arr():
         sparse_vars={"c": jnp.array([4, 5, 6])},
     )
 
-    def _utility_and_feasibility(a, c, b, d, vf_arr, params):  # noqa: U100
+    def _utility_and_feasibility(a, c, b, d, vf_arr, params):  # noqa: ARG001
         util = d
         feasib = d <= a + b + c
         return util, feasib
@@ -137,7 +136,7 @@ def test_solve_continious_problem_no_vf_arr():
             vf_arr=None,
             state_indexers={},
             params={},
-        )
+        ),
     )
 
     aaae(calculated, expected)

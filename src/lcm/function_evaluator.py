@@ -1,11 +1,12 @@
 from functools import partial
 
 import jax.numpy as jnp
-import lcm.grids as grids_module
 import numpy as np
 from dags import concatenate_functions
 from dags.signature import with_signature
 from jax.scipy.ndimage import map_coordinates
+
+import lcm.grids as grids_module
 
 
 def get_function_evaluator(
@@ -63,6 +64,8 @@ def get_function_evaluator(
             resulting function, except for the helpers arguments such as indexers
             or value arrays. Default is the empty string. The prefix needs to contain
             the separator. E.g. `next_` if an undescore should be used as separator.
+        out_name (str): Name of the output of the resulting function. Default is
+            '__fval__'.
 
     Returns:
         callable: A callable that lets you evaluate a function defined be precalculated
@@ -82,7 +85,8 @@ def get_function_evaluator(
     # ==================================================================================
     for var, labels in space_info.lookup_info.items():
         funcs[f"__{var}_pos__"] = _get_label_translator(
-            labels=labels, in_name=input_prefix + var
+            labels=labels,
+            in_name=input_prefix + var,
         )
 
     # ==================================================================================
@@ -145,7 +149,7 @@ def get_function_evaluator(
         out = {"functions": funcs, "targets": out_name}
     else:
         raise ValueError(
-            f"return_type must be either 'function' or 'dict', but got {return_type}."
+            f"return_type must be either 'function' or 'dict', but got {return_type}.",
         )
 
     return out
@@ -201,7 +205,7 @@ def _get_lookup_function(array_name, axis_names):
 
     """
 
-    @with_signature(kwargs=axis_names + [array_name])
+    @with_signature(kwargs=[*axis_names, array_name])
     def lookup_wrapper(**kwargs):
         positions = tuple(kwargs[var] for var in axis_names)
         arr = kwargs[array_name]
@@ -262,7 +266,7 @@ def _get_interpolator(data_name, axis_names, map_coordinates_kwargs=None):
 
     partialled_map_coordinates = partial(map_coordinates, **kwargs)
 
-    @with_signature(kwargs=[data_name] + axis_names)
+    @with_signature(kwargs=[data_name, *axis_names])
     def interpolate(**kwargs):
         coordinates = jnp.array([kwargs[var] for var in axis_names])
         out = partialled_map_coordinates(
@@ -282,5 +286,5 @@ def _fail_if_interpolation_axes_are_not_last(space_info):
         n_common = len(common)
         if sorted(common) != sorted(space_info.axis_names[-n_common:]):
             raise ValueError(
-                "Interpolation axes need to be the last entries in axis_order."
+                "Interpolation axes need to be the last entries in axis_order.",
             )
