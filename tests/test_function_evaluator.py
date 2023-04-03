@@ -14,7 +14,6 @@ from lcm.interfaces import SpaceInfo
 
 
 def test_function_evaluator_with_one_continuous_variable():
-
     grid_specs = {"start": -3, "stop": 3, "n_points": 7}
 
     space_info = SpaceInfo(
@@ -44,7 +43,6 @@ def test_function_evaluator_with_one_continuous_variable():
 
 
 def test_function_evaluator_with_one_discrete_variable():
-
     vf_arr = jnp.array([1, 2])
 
     space_info = SpaceInfo(
@@ -252,7 +250,6 @@ def test_get_lookup_function():
 
 
 def test_get_coordinate_finder():
-
     find_coordinate = _get_coordinate_finder(
         in_name="wealth",
         grid_type="linspace",
@@ -264,7 +261,6 @@ def test_get_coordinate_finder():
 
 
 def test_get_interpolator():
-
     interpolate = _get_interpolator(data_name="vf", axis_names=["wealth", "working"])
 
     def _utility(wealth, working):

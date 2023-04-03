@@ -68,7 +68,6 @@ def get_function_evaluator(
         callable: A callable that lets you evaluate a function defined be precalculated
             values on space formed by discrete and continuous grids.
 
-
     """
     funcs = {}
 

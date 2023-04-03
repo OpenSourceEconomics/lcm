@@ -4,7 +4,6 @@ channels:
   - conda-forge
   - nodefaults
 dependencies:
-  - python=3.10
   - pip
   - setuptools_scm
   - toml
@@ -21,12 +20,6 @@ dependencies:
   - pybaum
 
   # Misc
-  - numba
-  - jupyterlab
-  - matplotlib
-  - pdbpp
-  - pre-commit
-  - pydot
   - pytest
   - pytest-cov
   - pytest-xdist

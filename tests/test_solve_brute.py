@@ -10,9 +10,9 @@ from numpy.testing import assert_array_almost_equal as aaae
 def test_solve_brute():
     """Test solve brute with hand written inputs.
 
-    Normally, these inputs would be created from a model specification. For now this
-    can be seen as reference of what the functions that process a model specification
-    need to produce.
+    Normally, these inputs would be created from a model specification. For now this can
+    be seen as reference of what the functions that process a model specification need
+    to produce.
 
     """
     # ==================================================================================
@@ -91,7 +91,7 @@ def test_solve_brute():
     choice_segments = [None, None]
 
     def calculate_emax(values, choice_segments, params):  # noqa: U100
-        """Take max over axis that corresponds to working"""
+        """Take max over axis that corresponds to working."""
         return values.max(axis=1)
 
     emax_calculators = [calculate_emax] * 2

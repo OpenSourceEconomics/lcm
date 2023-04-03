@@ -74,7 +74,6 @@ PARAMETRIZATION = [
 
 @pytest.mark.parametrize("period, expected", PARAMETRIZATION)
 def test_create_filter_mask(filter_mask_inputs, period, expected):
-
     calculated = create_filter_mask(
         model=filter_mask_inputs,
         subset=["lagged_retirement", "retirement"],
@@ -242,7 +241,6 @@ def test_forward_mask_w_aux_function():
     - People have to work at least part time if they have no previous experience
     - People get bad health after they work full time.
     - In bad health additional work experience does not add anything to experience.
-
 
     """
     grids = {

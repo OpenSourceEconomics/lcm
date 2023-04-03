@@ -1,78 +1,112 @@
+---
 repos:
--   repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.0.1
+  - repo: meta
     hooks:
-    -   id: check-added-large-files
-        args: ['--maxkb=25']
-    -   id: check-case-conflict
-    -   id: check-merge-conflict
-    -   id: check-vcs-permalinks
-    -   id: check-yaml
-    -   id: debug-statements
-    -   id: end-of-file-fixer
-    -   id: fix-byte-order-marker
-    -   id: forbid-new-submodules
-    -   id: mixed-line-ending
-    -   id: trailing-whitespace
--   repo: https://github.com/pre-commit/pygrep-hooks
-    rev: v1.9.0
+      - id: check-hooks-apply
+      - id: check-useless-excludes
+        # - id: identity  # Prints all files passed to pre-commits. Debugging.
+  - repo: https://github.com/lyz-code/yamlfix
+    rev: 1.9.0
     hooks:
-    -   id: python-check-blanket-noqa
-    -   id: python-check-mock-methods
-    -   id: python-no-eval
-    -   id: python-no-log-warn
-    -   id: python-use-type-annotations
-    -   id: rst-backticks
-    -   id: rst-directive-colons
-    -   id: rst-inline-touching-normal
-    -   id: text-unicode-replacement-char
--   repo: https://github.com/asottile/reorder_python_imports
-    rev: v2.5.0
+      - id: yamlfix
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
     hooks:
-    -   id: reorder-python-imports
--   repo: https://github.com/asottile/setup-cfg-fmt
-    rev: v1.17.0
+      - id: check-added-large-files
+        args:
+          - --maxkb=1300
+      - id: check-case-conflict
+      - id: check-merge-conflict
+      - id: check-vcs-permalinks
+      - id: check-yaml
+      - id: check-toml
+      - id: debug-statements
+      - id: end-of-file-fixer
+      - id: fix-byte-order-marker
+        types:
+          - text
+      - id: forbid-submodules
+      - id: mixed-line-ending
+        args:
+          - --fix=lf
+        description: Forces to replace line ending by the UNIX 'lf' character.
+      - id: name-tests-test
+        args:
+          - --pytest-test-first
+      - id: no-commit-to-branch
+        args:
+          - --branch
+          - main
+      - id: trailing-whitespace
+      - id: check-ast
+      - id: check-docstring-first
+  - repo: https://github.com/adrienverge/yamllint.git
+    rev: v1.29.0
     hooks:
-    -   id: setup-cfg-fmt
--   repo: https://github.com/psf/black
-    rev: 22.3.0
+      - id: yamllint
+  - repo: https://github.com/psf/black
+    rev: 23.1.0
     hooks:
-    -   id: black
--   repo: https://github.com/asottile/blacken-docs
-    rev: v1.10.0
+      - id: black
+        language_version: python3.10
+  - repo: https://github.com/asottile/blacken-docs
+    rev: 1.13.0
     hooks:
-    -   id: blacken-docs
-        additional_dependencies: [black==21.12b0]
--   repo: https://github.com/PyCQA/flake8
-    rev: 3.9.2
+      - id: blacken-docs
+  - repo: https://github.com/PyCQA/docformatter
+    rev: v1.5.1
     hooks:
-    -   id: flake8
-        additional_dependencies: [
-            flake8-alfred,
-            flake8-bugbear,
-            flake8-builtins,
-            flake8-comprehensions,
-            flake8-docstrings,
-            flake8-eradicate,
-            flake8-print,
-            flake8-pytest-style,
-            flake8-todo,
-            flake8-unused-arguments,
-            pep8-naming,
-            pydocstyle,
-            Pygments,
-        ]
--   repo: https://github.com/PyCQA/doc8
-    rev: 0.9.0a1
+      - id: docformatter
+        args:
+          - --in-place
+          - --wrap-summaries
+          - '88'
+          - --wrap-descriptions
+          - '88'
+          - --blank
+  - repo: https://github.com/charliermarsh/ruff-pre-commit
+    rev: v0.0.254
     hooks:
-    -   id: doc8
--   repo: https://github.com/econchick/interrogate
-    rev: 1.4.0
+      - id: ruff
+      #   args:
+      #     - --verbose
+  # - repo: https://github.com/kynan/nbstripout
+  #   rev: 0.6.1
+  #   hooks:
+  #     - id: nbstripout
+  #       args:
+  #         - --extra-keys
+  #         - metadata.kernelspec metadata.language_info.version metadata.vscode
+  - repo: https://github.com/nbQA-dev/nbQA
+    rev: 1.6.3
     hooks:
-    -   id: interrogate
-        args: [-v, --fail-under=10, src, tests]
--   repo: meta
+      - id: nbqa-black
+        exclude: src/lcm/sandbox/
+      - id: nbqa-ruff
+        exclude: src/lcm/sandbox/
+  - repo: https://github.com/executablebooks/mdformat
+    rev: 0.7.16
     hooks:
-    -   id: check-hooks-apply
-    -   id: check-useless-excludes
-    # -   id: identity  # Prints all files passed to pre-commits. Debugging.
+      - id: mdformat
+        additional_dependencies:
+          - mdformat-gfm
+          - mdformat-black
+        args:
+          - --wrap
+          - '88'
+        files: (README\.md)
+  - repo: https://github.com/asottile/setup-cfg-fmt
+    rev: v2.2.0
+    hooks:
+      - id: setup-cfg-fmt
+  - repo: https://github.com/mgedmin/check-manifest
+    rev: '0.49'
+    hooks:
+      - id: check-manifest
+        args:
+          - --no-build-isolation
+        additional_dependencies:
+          - setuptools-scm
+          - toml
+ci:
+  autoupdate_schedule: monthly
