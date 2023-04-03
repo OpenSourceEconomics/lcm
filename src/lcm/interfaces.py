@@ -1,4 +1,4 @@
-from typing import Dict, List, NamedTuple, Union
+from typing import NamedTuple
 
 import numpy as np
 import pandas as pd
@@ -20,7 +20,7 @@ class IndexerInfo(NamedTuple):
 
     """
 
-    axis_names: List[str]
+    axis_names: list[str]
     name: str
     out_name: str
 
@@ -36,7 +36,7 @@ class GridSpec(NamedTuple):
     """
 
     kind: str
-    specs: Union[dict, np.ndarray]
+    specs: dict | np.ndarray
 
 
 class Space(NamedTuple):
@@ -51,8 +51,8 @@ class Space(NamedTuple):
 
     """
 
-    sparse_vars: Dict
-    dense_vars: Dict
+    sparse_vars: dict
+    dense_vars: dict
 
 
 class SpaceInfo(NamedTuple):
@@ -69,10 +69,10 @@ class SpaceInfo(NamedTuple):
 
     """
 
-    axis_names: List[str]
-    lookup_info: Dict[str, List[str]]
-    interpolation_info: Dict[str, GridSpec]
-    indexer_infos: List[IndexerInfo]
+    axis_names: list[str]
+    lookup_info: dict[str, list[str]]
+    interpolation_info: dict[str, GridSpec]
+    indexer_infos: list[IndexerInfo]
 
 
 class Model(NamedTuple):
@@ -101,12 +101,12 @@ class Model(NamedTuple):
 
     """
 
-    grids: Dict
-    gridspecs: Dict
+    grids: dict
+    gridspecs: dict
     variable_info: pd.DataFrame
-    functions: Dict
+    functions: dict
     function_info: pd.DataFrame
-    params: Dict
+    params: dict
     # not really processed yet
-    shocks: Dict
+    shocks: dict
     n_periods: int

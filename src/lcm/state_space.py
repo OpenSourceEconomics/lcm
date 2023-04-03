@@ -310,7 +310,7 @@ def _combine_masks(masks):
         np.ndarray: Combined mask.
 
     """
-    if isinstance(masks, (np.ndarray, jnp.ndarray)):
+    if isinstance(masks, np.ndarray | jnp.ndarray):
         _masks = [masks]
     else:
         _masks = sorted(masks, key=lambda x: len(x.shape), reverse=True)

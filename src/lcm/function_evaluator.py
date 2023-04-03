@@ -168,7 +168,7 @@ def _get_label_translator(labels, in_name):
             converts a label into a position in a list of labels.
 
     """
-    if isinstance(labels, (np.ndarray, jnp.ndarray)):
+    if isinstance(labels, np.ndarray | jnp.ndarray):
         # tolist converts jax or numpy specific dtypes to python types
         _grid = labels.tolist()
     elif not isinstance(labels, list):
