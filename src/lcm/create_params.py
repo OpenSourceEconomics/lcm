@@ -1,3 +1,4 @@
+"""Create a parameters for a model specification."""
 import inspect
 
 import numpy as np

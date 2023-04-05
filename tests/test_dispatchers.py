@@ -2,11 +2,8 @@ import itertools
 
 import jax.numpy as jnp
 import pytest
-from jax import config
 from lcm.dispatchers import productmap, spacemap
 from numpy.testing import assert_array_almost_equal as aaae
-
-config.update("jax_enable_x64", val=True)
 
 
 def f(a, b, c):
