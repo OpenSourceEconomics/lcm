@@ -1,6 +1,8 @@
 """Define example model specifications."""
 import jax.numpy as jnp
 
+RETIREMENT_AGE = 65
+
 
 def phelps_deaton_utility_with_shock(
     consumption,
@@ -52,7 +54,7 @@ def age(period):
 
 
 def mandatory_retirement_filter(retirement, age):
-    return jnp.logical_or(retirement == 1, age < 65)
+    return jnp.logical_or(retirement == 1, age < RETIREMENT_AGE)
 
 
 def absorbing_retirement_filter(retirement, lagged_retirement):

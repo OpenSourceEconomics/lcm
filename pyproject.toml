@@ -44,9 +44,6 @@ extend-ignore = [
     # Too many arguments to function call
     "PLR0913",
 
-    # magic value used in comparison
-    "PLR2004",
-
     # unnecessary variable assignment before return
     "RET504",
 
@@ -59,7 +56,7 @@ extend-ignore = [
 
 [tool.ruff.per-file-ignores]
 "docs/source/conf.py" = ["E501", "ERA001", "DTZ005"]
-"src/lcm/parameters/kernel_transformations.py" = ["ARG001", "N806"]
+"tests/test_*.py" = ["PLR2004"]
 
 [tool.ruff.pydocstyle]
 convention = "google"
