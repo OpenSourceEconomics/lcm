@@ -41,9 +41,6 @@ extend-ignore = [
     # exception must not use an f-string literal
     "EM102",
 
-    # boolean default value in function definition
-    "FBT002",
-
     # Too many arguments to function call
     "PLR0913",
 

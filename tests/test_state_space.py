@@ -80,6 +80,7 @@ def test_create_filter_mask(filter_mask_inputs, period, expected):
         model=filter_mask_inputs,
         subset=["lagged_retirement", "retirement"],
         fixed_inputs={"period": period},
+        jit_filter=False,
     )
 
     aaae(calculated, expected)

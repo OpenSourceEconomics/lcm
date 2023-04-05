@@ -10,7 +10,7 @@ from lcm.dispatchers import productmap, spacemap
 from lcm.interfaces import IndexerInfo, Space, SpaceInfo
 
 
-def create_state_choice_space(model, period, jit_filter=False):
+def create_state_choice_space(model, period, *, jit_filter):
     """Create a state choice space for the model.
 
     A state_choice_space is a compressed representation of all feasible states and the
@@ -128,7 +128,7 @@ def create_state_choice_space(model, period, jit_filter=False):
     return state_choice_space, space_info, state_indexers, choice_segments
 
 
-def create_filter_mask(model, subset, fixed_inputs=None, jit_filter=False):
+def create_filter_mask(model, subset, fixed_inputs=None, *, jit_filter):
     """Create mask for combinations of grid values that is True if all filters are True.
 
     Args:
@@ -190,7 +190,8 @@ def create_forward_mask(
     next_functions,
     fixed_inputs=None,
     aux_functions=None,
-    jit_next=True,
+    *,
+    jit_next,
 ):
     """Create a mask for combinations of grid values.
 
@@ -243,7 +244,12 @@ def create_forward_mask(
     # apply dispatcher
     needed_args = set(inspect.signature(_next).parameters)
     _needed_initial = {k: val for k, val in initial.items() if k in needed_args}
-    _gridmapped = spacemap(_next, dense_vars=[], sparse_vars=list(_needed_initial))
+    _gridmapped = spacemap(
+        _next,
+        dense_vars=[],
+        sparse_vars=list(_needed_initial),
+        dense_first=True,
+    )
 
     # calculate next values
     if jit_next:

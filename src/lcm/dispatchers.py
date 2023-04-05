@@ -4,7 +4,7 @@ import inspect
 from jax import vmap
 
 
-def spacemap(func, dense_vars, sparse_vars, dense_first=True):
+def spacemap(func, dense_vars, sparse_vars, *, dense_first):
     """Apply vmap such that func is evaluated on a space of dense and sparse variables.
 
     This is achieved by applying a product map for all dense_vars and a vmap for the

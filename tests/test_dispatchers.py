@@ -242,4 +242,4 @@ def test_gridmap_all_arguments_mapped(setup_gridmap, expected_gridmap, dense_fir
 )
 def test_gridmap_arguments_overlap(error_msg, dense_vars, sparse_vars):
     with pytest.raises(ValueError, match=error_msg):
-        spacemap(g, dense_vars, sparse_vars)
+        spacemap(g, dense_vars, sparse_vars, dense_first=True)
