@@ -9,23 +9,21 @@ dependencies:
   - toml
 
   # Package dependencies
-  - estimagic
-  - numpy
-  - scipy
-  - pandas
+  - dags
   - jax>=0.3.0
   - jaxlib>=0.3.0
-  - networkx
-  - dags
+  - numpy
+  - pandas
+
+  # Testing dependencies
+  - scipy
   - pybaum
 
-  # Misc
+  # Testing infrastructure
   - pytest
   - pytest-cov
   - pytest-xdist
-  - sphinx
-  - sphinx-panels
-  - sphinxcontrib-bibtex
-  - pydata-sphinx-theme>=0.3.0
+
+  # Install lcm locally
   - pip:
       - -e ../
