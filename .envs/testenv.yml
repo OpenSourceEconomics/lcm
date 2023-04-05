@@ -4,7 +4,6 @@ channels:
   - conda-forge
   - nodefaults
 dependencies:
-  - python=3.10
   - pip
   - setuptools_scm
   - toml
@@ -25,21 +24,6 @@ dependencies:
   - pytest-cov
   - pytest-xdist
 
-  # Developer dependencies
-  - estimagic
-  - jupyterlab
-  - matplotlib
-  - numba
-  - pdbpp
-  - pre-commit
-  - pydot
-
-  # Documentation
-  - sphinx
-  - sphinx-panels
-  - sphinxcontrib-bibtex
-  - pydata-sphinx-theme>=0.3.0
-
   # Install lcm locally
   - pip:
-      - -e .
+      - -e ../

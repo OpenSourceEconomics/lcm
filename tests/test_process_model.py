@@ -1,8 +1,7 @@
 import jax
 import lcm.grids as grids_module
 import numpy as np
-from lcm.example_models import PHELPS_DEATON
-from lcm.example_models import PHELPS_DEATON_WITH_FILTERS
+from lcm.example_models import PHELPS_DEATON, PHELPS_DEATON_WITH_FILTERS
 from lcm.interfaces import GridSpec
 from lcm.process_model import process_model
 
@@ -28,13 +27,15 @@ def test_process_model_with_filters():
 
     # Gridspecs
     wealth_specs = GridSpec(
-        kind="linspace", specs={"start": 0, "stop": 100, "n_points": 11}
+        kind="linspace",
+        specs={"start": 0, "stop": 100, "n_points": 11},
     )
 
     assert model.gridspecs["wealth"] == wealth_specs
 
     consumption_specs = GridSpec(
-        kind="linspace", specs={"start": 1, "stop": 100, "n_points": 11}
+        kind="linspace",
+        specs={"start": 1, "stop": 100, "n_points": 11},
     )
     assert model.gridspecs["consumption"] == consumption_specs
 
@@ -77,13 +78,15 @@ def test_process_model_base():
 
     # Gridspecs
     wealth_specs = GridSpec(
-        kind="linspace", specs={"start": 0, "stop": 100, "n_points": 11}
+        kind="linspace",
+        specs={"start": 0, "stop": 100, "n_points": 11},
     )
 
     assert model.gridspecs["wealth"] == wealth_specs
 
     consumption_specs = GridSpec(
-        kind="linspace", specs={"start": 1, "stop": 100, "n_points": 11}
+        kind="linspace",
+        specs={"start": 1, "stop": 100, "n_points": 11},
     )
     assert model.gridspecs["consumption"] == consumption_specs
 

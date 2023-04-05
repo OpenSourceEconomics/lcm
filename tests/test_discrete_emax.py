@@ -11,26 +11,26 @@ from numpy.testing import assert_array_almost_equal as aaae
 def values():
     v_t = jnp.arange(20).reshape(2, 2, 5) / 2
     # reuse old test case from when segment axis was last
-    v = jnp.transpose(v_t, axes=(2, 0, 1))
-    return v
+    return jnp.transpose(v_t, axes=(2, 0, 1))
 
 
 @pytest.fixture()
 def segment_info():
-    info = {
+    return {
         "segment_ids": jnp.array([0, 0, 1, 1, 1]),
         "num_segments": 2,
     }
-    return info
 
 
 test_cases = list(product([True, False], range(3)))
 
 
-@pytest.mark.parametrize("collapse, n_extra_axes", test_cases)
+@pytest.mark.parametrize(("collapse", "n_extra_axes"), test_cases)
 def test_aggregation_without_shocks(values, segment_info, collapse, n_extra_axes):
     values, var_info = _get_reshaped_values_and_variable_info(
-        values, collapse, n_extra_axes
+        values,
+        collapse,
+        n_extra_axes,
     )
 
     calculator = get_emax_calculator(
@@ -60,18 +60,25 @@ expected_results = [
     [25.184761, 30.494621],
 ]
 test_cases = []
-for scale, exp in zip(scaling_factors, expected_results):
+for scale, exp in zip(scaling_factors, expected_results, strict=True):
     for collapse in [True, False]:
         for n_axes in range(3):
             test_cases.append((scale, exp, collapse, n_axes))
 
 
-@pytest.mark.parametrize("scale, expected, collapse, n_extra_axes", test_cases)
+@pytest.mark.parametrize(("scale", "expected", "collapse", "n_extra_axes"), test_cases)
 def test_aggregation_with_extreme_value_shocks(
-    values, segment_info, scale, expected, collapse, n_extra_axes
+    values,
+    segment_info,
+    scale,
+    expected,
+    collapse,
+    n_extra_axes,
 ):
     values, var_info = _get_reshaped_values_and_variable_info(
-        values, collapse, n_extra_axes
+        values,
+        collapse,
+        n_extra_axes,
     )
 
     calculator = get_emax_calculator(

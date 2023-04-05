@@ -1,5 +1,6 @@
 import dags
 import jax.numpy as jnp
+
 from lcm.function_evaluator import get_function_evaluator
 
 
@@ -20,7 +21,6 @@ def get_utility_and_feasibility_function(
 
     Notes:
     ------
-
     - The is last period currently sets continuation values to zero. Needs to be changed
       to accomodate bequest motives.
     - the fake big_u function for last period takes vf_arr, just to make things run for
@@ -33,8 +33,8 @@ def get_utility_and_feasibility_function(
             interpret the precalculated values of a function.
         data_name (str): The name of the argument via which the precalculated values
             will be passed into the resulting function.
-        interpolation_options (dict): Dictionary of keyword arguments for
-            interpolation via map_coordinates.
+        interpolation_options (dict): Dictionary of keyword arguments for interpolation
+            via map_coordinates.
         is_last_period (bool): Whether the function is created for the last period.
 
     Returns:
@@ -42,8 +42,9 @@ def get_utility_and_feasibility_function(
 
     """
     if is_last_period:
-        # vf_arr is there just so the final function takes a vf_arr, without using it.
-        def _big_u(utility, vf_arr):  # noqa: U100
+        # vf_arr is there just so the final period function takes a vf_arr, without
+        # using it.
+        def _big_u(utility, vf_arr):  # noqa: ARG001
             return utility
 
     else:
@@ -64,15 +65,13 @@ def get_utility_and_feasibility_function(
                 return_type="dict",
                 input_prefix="next_",
                 out_name="continuation_value",
-            )["functions"]
+            )["functions"],
         )
 
-    out = dags.concatenate_functions(
+    return dags.concatenate_functions(
         functions=func_dict,
         targets=["__big_u__", "feasibility"],
     )
-
-    return out
 
 
 def get_combined_constraint(model):
@@ -87,10 +86,8 @@ def get_combined_constraint(model):
     """
     targets = model.function_info.query("is_constraint").index.tolist()
 
-    out = dags.concatenate_functions(
+    return dags.concatenate_functions(
         functions=model.functions,
         targets=targets,
         aggregator=jnp.logical_and,
     )
-
-    return out

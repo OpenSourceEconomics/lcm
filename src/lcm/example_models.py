@@ -1,9 +1,14 @@
 """Define example model specifications."""
 import jax.numpy as jnp
 
+RETIREMENT_AGE = 65
+
 
 def phelps_deaton_utility_with_shock(
-    consumption, working, delta, additive_utility_shock
+    consumption,
+    working,
+    delta,
+    additive_utility_shock,
 ):
     return jnp.log(consumption) + additive_utility_shock - delta * working
 
@@ -13,7 +18,10 @@ def phelps_deaton_utility(consumption, working, delta):
 
 
 def phelps_deaton_utility_with_filter(
-    consumption, working, delta, lagged_retirement  # noqa: U100
+    consumption,
+    working,
+    delta,
+    lagged_retirement,  # noqa: ARG001
 ):
     return jnp.log(consumption) - delta * working
 
@@ -23,7 +31,12 @@ def working(retirement):
 
 
 def next_wealth_with_shock(
-    wealth, consumption, working, wage, wage_shock, interest_rate
+    wealth,
+    consumption,
+    working,
+    wage,
+    wage_shock,
+    interest_rate,
 ):
     return interest_rate * (wealth - consumption) + wage * wage_shock * working
 
@@ -41,7 +54,7 @@ def age(period):
 
 
 def mandatory_retirement_filter(retirement, age):
-    return jnp.logical_or(retirement == 1, age < 65)
+    return jnp.logical_or(retirement == 1, age < RETIREMENT_AGE)
 
 
 def absorbing_retirement_filter(retirement, lagged_retirement):
@@ -65,7 +78,7 @@ PHELPS_DEATON = {
         },
     },
     "states": {
-        "wealth": {"grid_type": "linspace", "start": 0, "stop": 100, "n_points": 11}
+        "wealth": {"grid_type": "linspace", "start": 0, "stop": 100, "n_points": 11},
     },
     "n_periods": 20,
 }
