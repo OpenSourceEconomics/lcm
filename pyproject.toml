@@ -65,30 +65,8 @@ black = "pyproject.toml"
 [tool.nbqa.mutate]
 black = 1
 
-[tool.pytask]
-infer_latex_dependencies = true
-
 
 [tool.pytest.ini_options]
-filterwarnings = [
-    "ignore:Using or importing the ABCs from 'collections'",
-    "ignore:the imp module is deprecated",
-    "ignore:indexing past lexsort depth may impact performance.",
-    "ignore:Method .ptp is deprecated and will be removed in a future version. Use numpy.ptp instead.",
-    "ignore:In a future version of pandas all arguments of concat except for the argument 'objs' will be keyword-only",
-    "ignore:Please use `MemoizeJac` from the `scipy.optimize` namespace",
-    "ignore:Some algorithms did not converge. Their walltime has been set to a very high value instead of infinity because Timedeltas do notsupport infinite values",
-    "ignore:In a future version, the Index constructor will not infer numeric dtypes when passed object-dtype sequences",
-    "ignore:distutils Version classes are deprecated. Use packaging.version instead",
-    "ignore:Standard matrix inversion failed due to LinAlgError",
-    "ignore:Tranquilo is extremely experimental",
-    "ignore:delta_grad == 0.0",
-    "ignore:Widget._active_widgets is deprecated",
-    "ignore:Widget._widget_types is deprecated",
-    "ignore:Widget.widget_types is deprecated",
-    "ignore:Widget.widgets is deprecated",
-]
-addopts = ["--doctest-modules"]
 markers = [
     "wip: Tests that are work-in-progress.",
     "slow: Tests that take a long time to run and are skipped in continuous integration.",
