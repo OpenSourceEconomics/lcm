@@ -2,19 +2,18 @@ from functools import partial
 
 import jax.numpy as jnp
 from lcm.dispatchers import productmap
-from lcm.function_evaluator import _get_coordinate_finder
-from lcm.function_evaluator import _get_interpolator
-from lcm.function_evaluator import _get_label_translator
-from lcm.function_evaluator import _get_lookup_function
-from lcm.function_evaluator import get_function_evaluator
+from lcm.function_evaluator import (
+    _get_coordinate_finder,
+    _get_interpolator,
+    _get_label_translator,
+    _get_lookup_function,
+    get_function_evaluator,
+)
 from lcm.grids import linspace
-from lcm.interfaces import GridSpec
-from lcm.interfaces import IndexerInfo
-from lcm.interfaces import SpaceInfo
+from lcm.interfaces import GridSpec, IndexerInfo, SpaceInfo
 
 
 def test_function_evaluator_with_one_continuous_variable():
-
     grid_specs = {"start": -3, "stop": 3, "n_points": 7}
 
     space_info = SpaceInfo(
@@ -31,7 +30,9 @@ def test_function_evaluator_with_one_continuous_variable():
 
     # create the evaluator
     evaluator = get_function_evaluator(
-        space_info=space_info, data_name="vf_arr", input_prefix="next_"
+        space_info=space_info,
+        data_name="vf_arr",
+        input_prefix="next_",
     )
 
     # partial the function values into the evaluator
@@ -44,7 +45,6 @@ def test_function_evaluator_with_one_continuous_variable():
 
 
 def test_function_evaluator_with_one_discrete_variable():
-
     vf_arr = jnp.array([1, 2])
 
     space_info = SpaceInfo(
@@ -56,7 +56,9 @@ def test_function_evaluator_with_one_discrete_variable():
 
     # create the evaluator
     evaluator = get_function_evaluator(
-        space_info=space_info, data_name="vf_arr", input_prefix="next_"
+        space_info=space_info,
+        data_name="vf_arr",
+        input_prefix="next_",
     )
 
     # partial the function values into the evaluator
@@ -103,7 +105,7 @@ def test_function_evaluator():
             axis_names=["retired", "working"],
             name="state_indexer",
             out_name="state_index",
-        )
+        ),
     ]
 
     indexer_array = jnp.array([[-1, 0], [1, 2]])
@@ -115,7 +117,8 @@ def test_function_evaluator():
             specs={"start": 100, "stop": 1100, "n_points": 6},
         ),
         "human_capital": GridSpec(
-            kind="linspace", specs={"start": -3, "stop": 3, "n_points": 7}
+            kind="linspace",
+            specs={"start": -3, "stop": 3, "n_points": 7},
         ),
     }
 
@@ -185,7 +188,7 @@ def test_function_evaluator_longer_indexer():
             axis_names=["retired", "working"],
             name="state_indexer",
             out_name="state_index",
-        )
+        ),
     ]
 
     indexer_array = jnp.array([[-1, 0, 1], [2, 3, -1], [4, -1, -1]])
@@ -197,7 +200,8 @@ def test_function_evaluator_longer_indexer():
             specs={"start": 100, "stop": 1100, "n_points": 6},
         ),
         "human_capital": GridSpec(
-            kind="linspace", specs={"start": -3, "stop": 3, "n_points": 7}
+            kind="linspace",
+            specs={"start": -3, "stop": 3, "n_points": 7},
         ),
     }
 
@@ -252,7 +256,6 @@ def test_get_lookup_function():
 
 
 def test_get_coordinate_finder():
-
     find_coordinate = _get_coordinate_finder(
         in_name="wealth",
         grid_type="linspace",
@@ -264,7 +267,6 @@ def test_get_coordinate_finder():
 
 
 def test_get_interpolator():
-
     interpolate = _get_interpolator(data_name="vf", axis_names=["wealth", "working"])
 
     def _utility(wealth, working):

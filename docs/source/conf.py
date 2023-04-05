@@ -1,22 +1,23 @@
-# Configuration file for the Sphinx documentation builder.
-#
-# This file only contains a selection of the most common options. For a full
-# list see the documentation:
-# https://www.sphinx-doc.org/en/master/usage/configuration.html
-# -- Path setup --------------------------------------------------------------
-# If extensions (or modules to document with autodoc) are in another directory,
-# add these directories to sys.path here. If the directory is relative to the
-# documentation root, use os.path.abspath to make it absolute, like shown here.
-#
-import os
+"""Configuration file for the Sphinx documentation builder.
+
+This file only contains a selection of the most common options. For a full
+list see the documentation:
+https://www.sphinx-doc.org/en/master/usage/configuration.html
+-- Path setup --------------------------------------------------------------
+If extensions (or modules to document with autodoc) are in another directory,
+add these directories to sys.path here. If the directory is relative to the
+documentation root, use os.path.abspath to make it absolute, like shown here.
+
+"""
+import pathlib
 import sys
 
-sys.path.insert(0, os.path.abspath("."))
+sys.path.insert(0, pathlib.Path.resolve("."))
 # -- Project information -----------------------------------------------------
 
 project = "lcm"
-copyright = "2021, Janoś Gabler, Hans-Martin von Gaudecker"  # noqa: A001
-author = "Janoś Gabler, Hans-Martin von Gaudecker"
+copyright = "2023, Janoś Gabler, Tim Mensinger, Hans-Martin von Gaudecker"  # noqa: A001
+author = "Janoś Gabler, Tim Mensinger, Hans-Martin von Gaudecker"
 
 # The full version, including alpha/beta/rc tags
 release = "0.0.1"
@@ -69,4 +70,4 @@ html_theme = "alabaster"
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ["_static"]
+html_static_path = []

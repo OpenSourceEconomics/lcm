@@ -1,4 +1,5 @@
 import jax.numpy as jnp
+
 from lcm.dispatchers import spacemap
 
 
@@ -13,9 +14,8 @@ def solve(
 ):
     """Solve a model by brute force.
 
-    Notes
+    Notes:
     -----
-
     - For now, do not do any caching. Later lists with large objects can be replaced
       by file paths to cached versions.
     - For simplicity, we always have lists of length n_periods with state_spaces, ...
@@ -91,7 +91,7 @@ def solve_continuous_problem(
     """Solve the agent's continuous choices problem problem.
 
     Args:
-        state_choice_space
+        state_choice_space (Space): Namedtuple with entries dense_vars and sparse_vars.
         utility_and_feasibility (callable): Function that returns a tuple where the
             first entry is the utility and the second is a bool that indicates
             feasibility. The function depends on:
@@ -100,9 +100,12 @@ def solve_continuous_problem(
             - vf_arr
             - one or several state_indexers
             - params
-        continuous_choice_grids (dict)
-        vf_arr (jax.numpy.ndarray)
-        params (dict)
+        continuous_choice_grids (list): List of dicts with 1d grids for continuous
+            choice variables.
+        vf_arr (jax.numpy.ndarray): Value function array.
+        state_indexers (list): List of dicts with length n_periods. Each dict contains
+            one or several state indexers.
+        params (dict): Dict of model parameters.
 
     Returns:
         np.ndarray: Numpy array with continuation values for each combination of a
