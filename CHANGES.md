@@ -7,5 +7,5 @@ chronological order. We follow [semantic versioning](https://semver.org/).
 
 ## 0.0.1
 
-- {gh}`4` update package infrastructure
-- {gh}`2` implement prototype
+- {gh}`4` update package infrastructure  ({ghuser}`timmens`)
+- {gh}`2` implement prototype ({ghuser}`janosg`)

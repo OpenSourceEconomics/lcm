@@ -42,7 +42,8 @@ def get_utility_and_feasibility_function(
 
     """
     if is_last_period:
-        # vf_arr is there just so the final function takes a vf_arr, without using it.
+        # vf_arr is there just so the final period function takes a vf_arr, without
+        # using it.
         def _big_u(utility, vf_arr):  # noqa: ARG001
             return utility
 
