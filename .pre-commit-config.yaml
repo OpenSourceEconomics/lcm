@@ -41,11 +41,11 @@ repos:
       - id: check-ast
       - id: check-docstring-first
   - repo: https://github.com/adrienverge/yamllint.git
-    rev: v1.29.0
+    rev: v1.30.0
     hooks:
       - id: yamllint
   - repo: https://github.com/psf/black
-    rev: 23.1.0
+    rev: 23.3.0
     hooks:
       - id: black
         language_version: python3.10
@@ -65,7 +65,7 @@ repos:
           - '88'
           - --blank
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.0.254
+    rev: v0.0.261
     hooks:
       - id: ruff
       #   args:
@@ -78,7 +78,7 @@ repos:
   #         - --extra-keys
   #         - metadata.kernelspec metadata.language_info.version metadata.vscode
   - repo: https://github.com/nbQA-dev/nbQA
-    rev: 1.6.3
+    rev: 1.7.0
     hooks:
       - id: nbqa-black
         exclude: src/lcm/sandbox/
