@@ -28,12 +28,11 @@ def g(a, b, c, d):
 
 @pytest.fixture()
 def setup_productmap_f():
-    grids = {
+    return {
         "a": jnp.linspace(-5, 5, 10),
         "b": jnp.linspace(0, 3, 7),
         "c": jnp.linspace(1, 5, 5),
     }
-    return grids
 
 
 @pytest.fixture()
@@ -45,19 +44,17 @@ def expected_productmap_f():
     }
 
     helper = jnp.array(list(itertools.product(*grids.values()))).T
-    expected_result = f(*helper).reshape(10, 7, 5)
-    return expected_result
+    return f(*helper).reshape(10, 7, 5)
 
 
 @pytest.fixture()
 def setup_productmap_g():
-    grids = {
+    return {
         "a": jnp.linspace(-5, 5, 10),
         "b": jnp.linspace(0, 3, 7),
         "c": jnp.linspace(1, 5, 5),
         "d": jnp.linspace(1, 3, 4),
     }
-    return grids
 
 
 @pytest.fixture()
@@ -70,8 +67,7 @@ def expected_productmap_g():
     }
 
     helper = jnp.array(list(itertools.product(*grids.values()))).T
-    expected_result = g(*helper).reshape(10, 7, 5, 4)
-    return expected_result
+    return g(*helper).reshape(10, 7, 5, 4)
 
 
 @pytest.mark.parametrize(
@@ -203,8 +199,7 @@ def expected_gridmap():
     all_grids = {**value_grid, **combination_grid}
     helper = jnp.array(list(itertools.product(*all_grids.values()))).T
 
-    expected_result = g(*helper).reshape(3, 2, 4 * 5)
-    return expected_result
+    return g(*helper).reshape(3, 2, 4 * 5)
 
 
 @pytest.mark.parametrize("dense_first", [True, False])

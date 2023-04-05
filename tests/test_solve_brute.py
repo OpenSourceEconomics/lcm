@@ -74,13 +74,12 @@ def test_solve_brute():
 
     def _get_continuation_value(lazy, wealth, vf_arr):
         continuous_part = vf_arr[lazy]
-        value = map_coordinates(
+        return map_coordinates(
             input=continuous_part,
             coordinates=jnp.array([wealth]),
             order=1,
             mode="nearest",
         )
-        return value
 
     utility_and_feasibility_functions = [_utility_and_feasibility] * 2
 

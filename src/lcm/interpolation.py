@@ -11,11 +11,9 @@ def linear_interpolation(values, point, grid_info):
         mapped_values.append(func(point[i], *args))
 
     mapped_point = jnp.array(mapped_values)
-    res = map_coordinates(
+    return map_coordinates(
         input=values,
         coordinates=mapped_point,
         order=1,
         mode="nearest",
     )
-
-    return res

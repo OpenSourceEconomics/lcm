@@ -136,12 +136,11 @@ def _segment_max_over_first_axis(a, segment_info):
         jax.numpy.ndarray
 
     """
-    segmax = jax.ops.segment_max(
+    return jax.ops.segment_max(
         data=a,
         indices_are_sorted=True,
         **segment_info,
     )
-    return segmax
 
 
 def _segment_extreme_value_emax_over_first_axis(a, scale, segment_info):
@@ -159,9 +158,7 @@ def _segment_extreme_value_emax_over_first_axis(a, scale, segment_info):
         jax.numpy.ndarray
 
     """
-    emax = scale * _segment_logsumexp(a / scale, segment_info)
-
-    return emax
+    return scale * _segment_logsumexp(a / scale, segment_info)
 
 
 def _segment_logsumexp(a, segment_info):
@@ -194,8 +191,7 @@ def _segment_logsumexp(a, segment_info):
         indices_are_sorted=True,
         **segment_info,
     )
-    out = segmax + jnp.log(summed)
-    return out
+    return segmax + jnp.log(summed)
 
 
 def _determine_discrete_choice_axes(variable_info):

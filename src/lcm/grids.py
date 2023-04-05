@@ -28,8 +28,7 @@ def linspace(start, stop, n_points):
 def get_linspace_coordinate(value, start, stop, n_points):
     """Map a value into the input needed for map_coordinates."""
     step_length = (stop - start) / (n_points - 1)
-    mapped_point = (value - start) / step_length
-    return mapped_point
+    return (value - start) / step_length
 
 
 def logspace(start, stop, n_points):

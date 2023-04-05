@@ -68,12 +68,10 @@ def get_utility_and_feasibility_function(
             )["functions"],
         )
 
-    out = dags.concatenate_functions(
+    return dags.concatenate_functions(
         functions=func_dict,
         targets=["__big_u__", "feasibility"],
     )
-
-    return out
 
 
 def get_combined_constraint(model):
@@ -88,10 +86,8 @@ def get_combined_constraint(model):
     """
     targets = model.function_info.query("is_constraint").index.tolist()
 
-    out = dags.concatenate_functions(
+    return dags.concatenate_functions(
         functions=model.functions,
         targets=targets,
         aggregator=jnp.logical_and,
     )
-
-    return out

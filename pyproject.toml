@@ -44,9 +44,6 @@ extend-ignore = [
     # Too many arguments to function call
     "PLR0913",
 
-    # unnecessary variable assignment before return
-    "RET504",
-
     # use of `assert` detected
     "S101",
 

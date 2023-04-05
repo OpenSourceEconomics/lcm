@@ -75,9 +75,7 @@ def solve(
         )
         reversed_solution.append(vf_arr)
 
-    solution = list(reversed(reversed_solution))
-
-    return solution
+    return list(reversed(reversed_solution))
 
 
 def solve_continuous_problem(
@@ -147,6 +145,4 @@ def solve_continuous_problem(
         params=params,
     )
 
-    best = utilities.max(axis=max_axes, where=feasibilities, initial=-jnp.inf)
-
-    return best
+    return utilities.max(axis=max_axes, where=feasibilities, initial=-jnp.inf)

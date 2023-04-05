@@ -54,7 +54,7 @@ def filter_mask_inputs():
 
     # create a model instance where some attributes are set to None because they
     # are not needed for create_filter_mask
-    model = Model(
+    return Model(
         grids=grids,
         gridspecs=None,
         variable_info=None,
@@ -64,8 +64,6 @@ def filter_mask_inputs():
         n_periods=100,
         params={},
     )
-
-    return model
 
 
 PARAMETRIZATION = [

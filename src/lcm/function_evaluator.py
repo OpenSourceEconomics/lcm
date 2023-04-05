@@ -269,11 +269,10 @@ def _get_interpolator(data_name, axis_names, map_coordinates_kwargs=None):
     @with_signature(kwargs=[data_name, *axis_names])
     def interpolate(**kwargs):
         coordinates = jnp.array([kwargs[var] for var in axis_names])
-        out = partialled_map_coordinates(
+        return partialled_map_coordinates(
             input=kwargs[data_name],
             coordinates=coordinates,
         )
-        return out
 
     return interpolate
 

@@ -11,17 +11,15 @@ from numpy.testing import assert_array_almost_equal as aaae
 def values():
     v_t = jnp.arange(20).reshape(2, 2, 5) / 2
     # reuse old test case from when segment axis was last
-    v = jnp.transpose(v_t, axes=(2, 0, 1))
-    return v
+    return jnp.transpose(v_t, axes=(2, 0, 1))
 
 
 @pytest.fixture()
 def segment_info():
-    info = {
+    return {
         "segment_ids": jnp.array([0, 0, 1, 1, 1]),
         "num_segments": 2,
     }
-    return info
 
 
 test_cases = list(product([True, False], range(3)))

@@ -179,9 +179,8 @@ def create_filter_mask(model, subset, fixed_inputs=None, *, jit_filter):
     # Calculate mask
     if jit_filter:
         _filter = jax.jit(_filter)
-    mask = _filter(**kwargs)
 
-    return mask
+    return _filter(**kwargs)
 
 
 def create_forward_mask(
@@ -301,11 +300,9 @@ def create_combination_grid(grids, masks, subset=None):
     _all_combis = jnp.meshgrid(*_grids.values(), indexing="ij")
 
     # Flatten meshgrid entries
-    combi_grid = {
+    return {
         name: arr[_mask_np] for name, arr in zip(_axis_names, _all_combis, strict=True)
     }
-
-    return combi_grid
 
 
 def _combine_masks(masks):

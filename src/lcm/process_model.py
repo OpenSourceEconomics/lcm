@@ -31,7 +31,7 @@ def process_model(user_model):
     _variable_info = _get_variable_info(user_model, function_info=_function_info)
     _gridspecs = _get_gridspecs(user_model, variable_info=_variable_info)
     _grids = _get_grids(gridspecs=_gridspecs, variable_info=_variable_info)
-    model = Model(
+    return Model(
         grids=_grids,
         gridspecs=_gridspecs,
         variable_info=_variable_info,
@@ -41,7 +41,6 @@ def process_model(user_model):
         shocks=user_model.get("shocks", {}),
         n_periods=user_model["n_periods"],
     )
-    return model
 
 
 def _get_variable_info(user_model, function_info):
@@ -128,8 +127,7 @@ def _get_gridspecs(user_model, variable_info):
             )
 
     order = variable_info.index.tolist()
-    out = {k: variables[k] for k in order}
-    return out
+    return {k: variables[k] for k in order}
 
 
 def _get_grids(gridspecs, variable_info):
@@ -160,8 +158,7 @@ def _get_grids(gridspecs, variable_info):
             grids[name] = func(**grid_info.specs)
 
     order = variable_info.index.tolist()
-    out = {k: grids[k] for k in order}
-    return out
+    return {k: grids[k] for k in order}
 
 
 def _get_function_info(user_model):
