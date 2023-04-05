@@ -183,7 +183,7 @@ def _get_label_translator(labels, in_name):
             return kwargs[in_name]
 
     else:
-        val_to_pos = dict(zip(_grid, range(len(labels))))
+        val_to_pos = dict(zip(_grid, range(len(labels)), strict=True))
 
         @with_signature(kwargs=[in_name])
         def translate_label(**kwargs):

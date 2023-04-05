@@ -26,9 +26,6 @@ extend-ignore = [
     # missing return type annotation for private function
     "ANN202",
 
-    # `zip()` without an explicit `strict` parameter
-    "B905",
-
     # Missing docstring in public module
     "D100",
 

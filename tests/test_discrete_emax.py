@@ -62,7 +62,7 @@ expected_results = [
     [25.184761, 30.494621],
 ]
 test_cases = []
-for scale, exp in zip(scaling_factors, expected_results):
+for scale, exp in zip(scaling_factors, expected_results, strict=True):
     for collapse in [True, False]:
         for n_axes in range(3):
             test_cases.append((scale, exp, collapse, n_axes))

@@ -295,7 +295,9 @@ def create_combination_grid(grids, masks, subset=None):
     _all_combis = jnp.meshgrid(*_grids.values(), indexing="ij")
 
     # Flatten meshgrid entries
-    combi_grid = {name: arr[_mask_np] for name, arr in zip(_axis_names, _all_combis)}
+    combi_grid = {
+        name: arr[_mask_np] for name, arr in zip(_axis_names, _all_combis, strict=True)
+    }
 
     return combi_grid
 
