@@ -1,358 +1,29 @@
-"""Implementation of analytical solution by Iskhakov et al (2017)."""
-from functools import partial
+"""
+Testing against the analytical solution by Iskhakov et al (2017).
+"""
+import pickle
+from pathlib import Path
 
 import numpy as np
 import pytest
 from lcm.entry_point import get_lcm_function
 from lcm.example_models import PHELPS_DEATON_NO_BORROWING
 from numpy.testing import assert_array_almost_equal as aaae
-from scipy.optimize import root_scalar
+
+# Path to analytical solution
+DATA = Path(__file__).parent.resolve() / "analytical_solution"
 
 
-def _u(c, work_dec, delta):
-    """Utility function.
-
-    Args:
-        c (float): consumption
-        work_dec (float): work indicator (True or False)
-        delta (float): disutility of work
-    Returns:
-        float: utility.
-    """
-    if c > 0:
-        return np.log(c) - work_dec * delta
-    else:
-        return -np.inf
-
-
-def _generate_policy_function_vector(wage, r, beta, tau):
-    """Gererate consumption policy function vector given tau.
-
-    This function returns the functions that are used in the
-    piecewise consumption function.
-
-    Args:
-        wage (float): income
-        r (float): interest rate
-        beta (float): discount factor
-        tau (int): periods left until end of life
-
-    Returns:
-        dict: consumption policy dict
-    """
-    policy_vec_worker = [lambda m: m]
-
-    # Generate liquidity constraint kink functions
-    for i in range(1, tau + 1):
-        policy_vec_worker.append(
-            lambda m, i=i: (
-                m + wage * (np.sum([(1 + r) ** (-j) for j in range(1, i + 1)]))
-            )
-            / (np.sum([beta**j for j in range(0, i + 1)])),
-        )
-
-    # Generate retirement discontinuity functions
-    for i in reversed(range(1, tau)):
-        policy_vec_worker.append(
-            lambda m, i=i, tau=tau: (
-                m + wage * (np.sum([(1 + r) ** (-j) for j in range(1, i + 1)]))
-            )
-            / (np.sum([beta**j for j in range(0, tau + 1)])),
-        )
-    policy_vec_worker.append(
-        lambda m, tau=tau: m / (np.sum([beta**j for j in range(0, tau + 1)])),
-    )
-
-    # Generate function for retirees
-    policy_retiree = lambda m, tau=tau: m / (  # noqa: E731
-        np.sum([beta**j for j in range(0, tau + 1)])
-    )
-
-    return {"worker": policy_vec_worker, "retired": policy_retiree}
-
-
-def _compute_wealth_tresholds(v_prime, wage, r, beta, delta, tau, consumption_policy):
-    """Compute wealth treshold for piecewise consumption function.
-
-    Args:
-        v_prime (function): continuation value of value function
-        wage (float): labor income
-        r (float): interest rate
-        beta (float): discount factor
-        delta (float): disutility of work
-        tau (int): periods left until end of life
-        consumption_policy (list): consumption policy vector
-
-    Returns:
-        list: list of wealth thresholds
-    """
-    # Liquidity constraint threshold
-    wealth_thresholds = [-np.inf, wage / ((1 + r) * beta)]
-
-    # Retirement threshold
-    k = delta * np.sum([beta**j for j in range(0, tau + 1)]) ** (-1)
-    ret_threshold = ((wage / (1 + r)) * np.exp(-k)) / (1 - np.exp(-k))
-
-    # Other kinks and discontinuities: Root finding
-    for i in range(0, (tau - 1) * 2):
-        c_l = consumption_policy[i + 1]
-        c_u = consumption_policy[i + 2]
-        def root_fct(m, c_l=c_l, c_u=c_u):
-            return _u(c=c_l(m), work_dec=True, delta=delta) - _u(c=c_u(m), work_dec=True, delta=delta) + beta * v_prime((1 + r) * (m - c_l(m)) + wage, work_status=True) - beta * v_prime((1 + r) * (m - c_u(m)) + wage, work_status=True)
-
-        sol = root_scalar(
-            root_fct,
-            method="brentq",
-            bracket=[wealth_thresholds[i + 1], ret_threshold],
-            xtol=1e-10,
-            rtol=1e-10,
-            maxiter=1000,
-        )
-        assert sol.converged
-        wealth_thresholds.append(sol.root)
-
-    # Add retirement threshold
-    wealth_thresholds.append(ret_threshold)
-
-    # Add upper bound
-    wealth_thresholds.append(np.inf)
-
-    return wealth_thresholds
-
-
-def _evaluate_piecewise_conditions(m, wealth_thresholds):
-    """Determine correct sub-function of policy function given wealth m.
-
-    Args:
-        m (float): current wealth level
-        wealth_thresholds (list): list of wealth thresholds
-    Returns:
-        list: list of booleans
-    """
-    cond_list = [
-        m >= lb and m < ub
-        for lb, ub in zip(wealth_thresholds[:-1], wealth_thresholds[1:])
-    ]
-    return cond_list
-
-
-def work_decision(m, work_status, wealth_thresholds):
-    """Determine work decision given current wealth level.
-
-    Args:
-        m (float): current wealth level
-        work_status (bool): work status from last period
-        wealth_thresholds (list): list of wealth thresholds
-    Returns:
-        bool: work decision
-    """
-    if work_status is not False:
-        return m < wealth_thresholds[-2]
-    else:
-        return False
-
-
-def _consumption(m, work_status, policy_dict, wt):
-    """Determine consumption given current wealth level.
-
-    Args:
-        m (float): current wealth level
-        work_status (bool): work status from last period
-        policy_dict (dict): dictionary of consumption policy functions
-        wt (list): list of wealth thresholds
-    Returns:
-        float: consumption
-    """
-    if work_status is False:
-        cons = policy_dict["retired"](m)
-        return cons
-    else:
-        condlist = _evaluate_piecewise_conditions(m, wealth_thresholds=wt)
-        cons = np.piecewise(x=m, condlist=condlist, funclist=policy_dict["worker"])
-        return cons
-
-
-def _value_function(
-    m, work_status, work_dec_func, c_pol, v_prime, beta, delta, tau, r, wage,
-):
-    """Determine value function given current wealth level and retirement status.
-
-    Args:
-        m (float): current wealth level
-        work_status (bool): work decision from last period
-        work_dec_func (function): work decision function
-        c_pol (function): consumption policy function
-        v_prime (function): continuation value of value function
-        beta (float): discount factor
-        delta (float): disutility of work
-        tau (int): periods left until end of life
-        r (float): interest rate
-        wage (float): labor income
-    Returns:
-        float: value function
-    """
-    if m == 0:
-        return -np.inf
-    elif work_status is False:
-        a = np.log(m) * np.sum([beta**j for j in range(0, tau + 1)])
-        b = -np.log(np.sum([beta**j for j in range(0, tau + 1)]))
-        c = np.sum([beta**j for j in range(0, tau + 1)])
-        d = beta * (np.log(beta) + np.log(1 + r))
-        e = np.sum(
-            [
-                beta**j * np.sum([beta**i for i in range(0, tau - j)])
-                for j in range(0, tau)
-            ],
-        )
-        v = a + b * c + d * e
-    else:
-        work_dec = work_dec_func(m=m, work_status=work_status)
-        cons = c_pol(m=m, work_status=work_status)
-
-        inst_util = _u(c=cons, work_dec=work_dec, delta=delta)
-        cont_val = v_prime((1 + r) * (m - cons) + wage * work_dec, work_status=work_dec)
-
-        v = inst_util + beta * cont_val
-
-    return v
-
-
-def _construct_model(delta, num_periods, param_dict):
-    """Construct model given parameters via backward inducton.
-
-    Args:
-        delta (float): disutility of work
-        num_periods (int): length of life
-        param_dict (dict): dictionary of parameters
-    Returns:
-        list: list of value functions
-    """
-    c_pol = [None] * num_periods
-    v = [None] * num_periods
-    work_dec_func = [None] * num_periods
-
-    for t in reversed(range(0, num_periods)):
-        if t == num_periods - 1:
-            v[t] = lambda m, work_status: np.log(m) if m > 0 else -np.inf
-            c_pol[t] = lambda m, work_status: m
-            work_dec_func[t] = lambda m, work_status: False
-        else:
-            # Time left until retirement
-            param_dict["tau"] = num_periods - t - 1
-
-            # Generate consumption function
-            policy_dict = _generate_policy_function_vector(**param_dict)
-
-            wt = _compute_wealth_tresholds(
-                v_prime=v[t + 1],
-                consumption_policy=policy_dict["worker"],
-                delta=delta,
-                **param_dict,
-            )
-
-            c_pol[t] = partial(_consumption, policy_dict=policy_dict, wt=wt)
-
-            # Determine retirement status
-            work_dec_func[t] = partial(
-                work_decision,
-                wealth_thresholds=wt,
-            )
-
-            # Calculate V
-            v[t] = partial(
-                _value_function,
-                work_dec_func=work_dec_func[t],
-                c_pol=c_pol[t],
-                v_prime=v[t + 1],
-                delta=delta,
-                **param_dict,
-            )
-    return v
-
-
-def analytical_solution(grid, beta, wage, r, delta, num_periods):
-    """Compute value function analytically on a grid.
-
-    Args:
-        grid (list): grid of wealth levels
-        beta (float): discount factor
-        wage (float): labor income
-        r (float): interest rate
-        delta (float): disutility of work
-        num_periods (int): length of life
-        lagged_ret (list): lagged retirement status (True/False)
-
-
-    Returns:
-        list: values of value function
-    """
-    # Unpack parameters
-
-    param_dict = {
-        "beta": beta,
-        "wage": wage,
-        "r": r,
-        "tau": None,
-    }
-
-    v_fct = _construct_model(
-        delta=delta, num_periods=num_periods, param_dict=param_dict,
-    )
-
-    v = {
-        k: [list(map(v_fct[t], grid, [v] * len(grid))) for t in range(0, num_periods)]
-        for (k, v) in [["worker", True], ["retired", False]]
-    }
-
-    return v
-
-
-# Define test cases
-Iskhakov_2017 = {
-    "beta": 0.98,
-    "delta": 1.0,
-    "wage": float(20),
-    "r": 0.0,
-    "num_periods": 5,
-}
-low_delta = {
-    "beta": 0.98,
-    "delta": 0.1,
-    "wage": float(20),
-    "r": 0.0,
-    "num_periods": 3,
-}
-high_wage = {
-    "beta": 0.98,
-    "delta": 1.0,
-    "wage": float(100),
-    "r": 0.0,
-    "num_periods": 5,
-}
-
-test_cases = [Iskhakov_2017, low_delta, high_wage]
-
-
-@pytest.mark.parametrize("params", test_cases)
-def test_analytical_solution(params):
-    # Specify grid
-    wealth_grid_size = 10_000
-    wealth_grid_min = 1
-    wealth_grid_max = 100
-    grid_vals = np.linspace(wealth_grid_min, wealth_grid_max, wealth_grid_size)
-
-    # Analytical Solution
-    v_analytical = analytical_solution(grid=grid_vals, **params)
-
-    # Numerical Solution
+def numerical_solution(params):
+    """Numerical solution."""
     model = PHELPS_DEATON_NO_BORROWING
     model["n_periods"] = params["num_periods"]
-    model["choices"]["consumption"]["start"] = wealth_grid_min
-    model["choices"]["consumption"]["stop"] = wealth_grid_max
-    model["choices"]["consumption"]["n_points"] = wealth_grid_size
-    model["states"]["wealth"]["start"] = wealth_grid_min
-    model["states"]["wealth"]["stop"] = wealth_grid_max
-    model["states"]["wealth"]["n_points"] = wealth_grid_size
+    model["choices"]["consumption"]["start"] = 1
+    model["choices"]["consumption"]["stop"] = 100
+    model["choices"]["consumption"]["n_points"] = 10_000
+    model["states"]["wealth"]["start"] = 1
+    model["states"]["wealth"]["stop"] = 100
+    model["states"]["wealth"]["n_points"] = 10_000
 
     solve_model, params_template = get_lcm_function(model=model)
 
@@ -363,10 +34,45 @@ def test_analytical_solution(params):
 
     numerical_solution = np.array(solve_model(params=params_template))
 
-    v_numerical = {
+    return {
         "worker": numerical_solution[:, 0, :],
         "retired": numerical_solution[:, 1, :],
     }
+
+
+# Define test cases
+test_cases = {
+    "iskhakov_2017": {
+        "beta": 0.98,
+        "delta": 1.0,
+        "wage": float(20),
+        "r": 0.0,
+        "num_periods": 5,
+    },
+    "low_delta": {
+        "beta": 0.98,
+        "delta": 0.1,
+        "wage": float(20),
+        "r": 0.0,
+        "num_periods": 3,
+    },
+    "high_wage": {
+        "beta": 0.98,
+        "delta": 1.0,
+        "wage": float(100),
+        "r": 0.0,
+        "num_periods": 5,
+    },
+}
+
+
+@pytest.mark.parametrize("test_case, params", test_cases.items())
+def test_analytical_solution(params, test_case):
+
+    with open(DATA / f"{test_case}.p", "rb") as f:
+        v_analytical = pickle.load(f)
+
+    v_numerical = numerical_solution(params)
 
     aaae(y=v_analytical["worker"], x=v_numerical["worker"], decimal=6)
     aaae(y=v_analytical["retired"], x=v_numerical["retired"], decimal=6)
