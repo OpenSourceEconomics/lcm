@@ -1,6 +1,4 @@
-"""
-Testing against the analytical solution by Iskhakov et al (2017).
-"""
+"""Testing against the analytical solution by Iskhakov et al (2017)."""
 import pickle
 from pathlib import Path
 
@@ -66,9 +64,8 @@ test_cases = {
 }
 
 
-@pytest.mark.parametrize("test_case, params", test_cases.items())
+@pytest.mark.parametrize(("test_case", "params"), test_cases.items())
 def test_analytical_solution(params, test_case):
-
     with open(DATA / f"{test_case}.p", "rb") as f:
         v_analytical = pickle.load(f)
 
