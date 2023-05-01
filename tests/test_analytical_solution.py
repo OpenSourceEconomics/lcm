@@ -1,6 +1,4 @@
-"""
-Implementation of analytical solution by Iskhakov et al (2017).
-"""
+"""Implementation of analytical solution by Iskhakov et al (2017)."""
 from functools import partial
 
 import numpy as np
@@ -12,14 +10,14 @@ from scipy.optimize import root_scalar
 
 
 def _u(c, work_dec, delta):
-    """
-    Utility function.
+    """Utility function.
+
     Args:
         c (float): consumption
         work_dec (float): work indicator (True or False)
         delta (float): disutility of work
     Returns:
-        float: utility
+        float: utility.
     """
     if c > 0:
         return np.log(c) - work_dec * delta
@@ -28,11 +26,11 @@ def _u(c, work_dec, delta):
 
 
 def _generate_policy_function_vector(wage, r, beta, tau):
-    """
-    Gererate consumption policy function vector given tau.
+    """Gererate consumption policy function vector given tau.
 
     This function returns the functions that are used in the
     piecewise consumption function.
+
     Args:
         wage (float): income
         r (float): interest rate
@@ -42,7 +40,6 @@ def _generate_policy_function_vector(wage, r, beta, tau):
     Returns:
         dict: consumption policy dict
     """
-
     policy_vec_worker = [lambda m: m]
 
     # Generate liquidity constraint kink functions
@@ -51,7 +48,7 @@ def _generate_policy_function_vector(wage, r, beta, tau):
             lambda m, i=i: (
                 m + wage * (np.sum([(1 + r) ** (-j) for j in range(1, i + 1)]))
             )
-            / (np.sum([beta**j for j in range(0, i + 1)]))
+            / (np.sum([beta**j for j in range(0, i + 1)])),
         )
 
     # Generate retirement discontinuity functions
@@ -60,10 +57,10 @@ def _generate_policy_function_vector(wage, r, beta, tau):
             lambda m, i=i, tau=tau: (
                 m + wage * (np.sum([(1 + r) ** (-j) for j in range(1, i + 1)]))
             )
-            / (np.sum([beta**j for j in range(0, tau + 1)]))
+            / (np.sum([beta**j for j in range(0, tau + 1)])),
         )
     policy_vec_worker.append(
-        lambda m, tau=tau: m / (np.sum([beta**j for j in range(0, tau + 1)]))
+        lambda m, tau=tau: m / (np.sum([beta**j for j in range(0, tau + 1)])),
     )
 
     # Generate function for retirees
@@ -75,8 +72,7 @@ def _generate_policy_function_vector(wage, r, beta, tau):
 
 
 def _compute_wealth_tresholds(v_prime, wage, r, beta, delta, tau, consumption_policy):
-    """
-    Compute wealth treshold for piecewise consumption function.
+    """Compute wealth treshold for piecewise consumption function.
 
     Args:
         v_prime (function): continuation value of value function
@@ -101,12 +97,8 @@ def _compute_wealth_tresholds(v_prime, wage, r, beta, delta, tau, consumption_po
     for i in range(0, (tau - 1) * 2):
         c_l = consumption_policy[i + 1]
         c_u = consumption_policy[i + 2]
-        root_fct = (
-            lambda m, c_l=c_l, c_u=c_u: _u(c=c_l(m), work_dec=True, delta=delta)
-            - _u(c=c_u(m), work_dec=True, delta=delta)
-            + beta * v_prime((1 + r) * (m - c_l(m)) + wage, work_status=True)
-            - beta * v_prime((1 + r) * (m - c_u(m)) + wage, work_status=True)
-        )
+        def root_fct(m, c_l=c_l, c_u=c_u):
+            return _u(c=c_l(m), work_dec=True, delta=delta) - _u(c=c_u(m), work_dec=True, delta=delta) + beta * v_prime((1 + r) * (m - c_l(m)) + wage, work_status=True) - beta * v_prime((1 + r) * (m - c_u(m)) + wage, work_status=True)
 
         sol = root_scalar(
             root_fct,
@@ -129,8 +121,7 @@ def _compute_wealth_tresholds(v_prime, wage, r, beta, delta, tau, consumption_po
 
 
 def _evaluate_piecewise_conditions(m, wealth_thresholds):
-    """
-    Determine correct sub-function of policy function given wealth m.
+    """Determine correct sub-function of policy function given wealth m.
 
     Args:
         m (float): current wealth level
@@ -146,8 +137,7 @@ def _evaluate_piecewise_conditions(m, wealth_thresholds):
 
 
 def work_decision(m, work_status, wealth_thresholds):
-    """
-    Determine work decision given current wealth level.
+    """Determine work decision given current wealth level.
 
     Args:
         m (float): current wealth level
@@ -157,14 +147,13 @@ def work_decision(m, work_status, wealth_thresholds):
         bool: work decision
     """
     if work_status is not False:
-        return True if m < wealth_thresholds[-2] else False
+        return m < wealth_thresholds[-2]
     else:
         return False
 
 
 def _consumption(m, work_status, policy_dict, wt):
-    """
-    Determine consumption given current wealth level.
+    """Determine consumption given current wealth level.
 
     Args:
         m (float): current wealth level
@@ -184,10 +173,9 @@ def _consumption(m, work_status, policy_dict, wt):
 
 
 def _value_function(
-    m, work_status, work_dec_func, c_pol, v_prime, beta, delta, tau, r, wage
+    m, work_status, work_dec_func, c_pol, v_prime, beta, delta, tau, r, wage,
 ):
-    """
-    Determine value function given current wealth level and retirement status.
+    """Determine value function given current wealth level and retirement status.
 
     Args:
         m (float): current wealth level
@@ -214,7 +202,7 @@ def _value_function(
             [
                 beta**j * np.sum([beta**i for i in range(0, tau - j)])
                 for j in range(0, tau)
-            ]
+            ],
         )
         v = a + b * c + d * e
     else:
@@ -230,8 +218,7 @@ def _value_function(
 
 
 def _construct_model(delta, num_periods, param_dict):
-    """
-    Construct model given parameters via backward inducton.
+    """Construct model given parameters via backward inducton.
 
     Args:
         delta (float): disutility of work
@@ -240,16 +227,15 @@ def _construct_model(delta, num_periods, param_dict):
     Returns:
         list: list of value functions
     """
-
     c_pol = [None] * num_periods
     v = [None] * num_periods
     work_dec_func = [None] * num_periods
 
     for t in reversed(range(0, num_periods)):
         if t == num_periods - 1:
-            v[t] = lambda m, work_status: np.log(m) if m > 0 else -np.inf  # noqa: U100
-            c_pol[t] = lambda m, work_status: m  # noqa: U100
-            work_dec_func[t] = lambda m, work_status: False  # noqa: U100
+            v[t] = lambda m, work_status: np.log(m) if m > 0 else -np.inf
+            c_pol[t] = lambda m, work_status: m
+            work_dec_func[t] = lambda m, work_status: False
         else:
             # Time left until retirement
             param_dict["tau"] = num_periods - t - 1
@@ -285,8 +271,7 @@ def _construct_model(delta, num_periods, param_dict):
 
 
 def analytical_solution(grid, beta, wage, r, delta, num_periods):
-    """
-    Compute value function analytically on a grid.
+    """Compute value function analytically on a grid.
 
     Args:
         grid (list): grid of wealth levels
@@ -296,10 +281,11 @@ def analytical_solution(grid, beta, wage, r, delta, num_periods):
         delta (float): disutility of work
         num_periods (int): length of life
         lagged_ret (list): lagged retirement status (True/False)
+
+
     Returns:
         list: values of value function
     """
-
     # Unpack parameters
 
     param_dict = {
@@ -310,7 +296,7 @@ def analytical_solution(grid, beta, wage, r, delta, num_periods):
     }
 
     v_fct = _construct_model(
-        delta=delta, num_periods=num_periods, param_dict=param_dict
+        delta=delta, num_periods=num_periods, param_dict=param_dict,
     )
 
     v = {
@@ -349,7 +335,6 @@ test_cases = [Iskhakov_2017, low_delta, high_wage]
 
 @pytest.mark.parametrize("params", test_cases)
 def test_analytical_solution(params):
-
     # Specify grid
     wealth_grid_size = 10_000
     wealth_grid_min = 1
