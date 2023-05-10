@@ -2,7 +2,7 @@ import itertools
 
 import jax.numpy as jnp
 import pytest
-from lcm.dispatchers import productmap, spacemap
+from lcm.dispatchers import allow_kwargs, convert_kwargs_to_args, productmap, spacemap
 from numpy.testing import assert_array_almost_equal as aaae
 
 
@@ -156,12 +156,12 @@ def test_productmap_with_some_argument_mapped_twice():
 
 
 # ======================================================================================
-# gridmap
+# spacemap
 # ======================================================================================
 
 
 @pytest.fixture()
-def setup_gridmap():
+def setup_spacemap():
     value_grid = {
         "a": jnp.array([1.0, 2, 3]),
         "b": jnp.array([3.0, 4]),
@@ -182,7 +182,7 @@ def setup_gridmap():
 
 
 @pytest.fixture()
-def expected_gridmap():
+def expected_spacemap():
     value_grid = {
         "a": jnp.array([1.0, 2, 3]),
         "b": jnp.array([3.0, 4]),
@@ -200,8 +200,8 @@ def expected_gridmap():
 
 
 @pytest.mark.parametrize("dense_first", [True, False])
-def test_gridmap_all_arguments_mapped(setup_gridmap, expected_gridmap, dense_first):
-    dense_vars, sparse_vars = setup_gridmap
+def test_spacemap_all_arguments_mapped(setup_spacemap, expected_spacemap, dense_first):
+    dense_vars, sparse_vars = setup_spacemap
 
     decorated = spacemap(
         g,
@@ -212,9 +212,9 @@ def test_gridmap_all_arguments_mapped(setup_gridmap, expected_gridmap, dense_fir
     calculated = decorated(**dense_vars, **sparse_vars)
 
     if dense_first:
-        aaae(calculated, expected_gridmap)
+        aaae(calculated, expected_spacemap)
     else:
-        aaae(calculated, jnp.transpose(expected_gridmap, axes=(2, 0, 1)))
+        aaae(calculated, jnp.transpose(expected_spacemap, axes=(2, 0, 1)))
 
 
 @pytest.mark.parametrize(
@@ -232,6 +232,35 @@ def test_gridmap_all_arguments_mapped(setup_gridmap, expected_gridmap, dense_fir
         ),
     ],
 )
-def test_gridmap_arguments_overlap(error_msg, dense_vars, sparse_vars):
+def test_spacemap_arguments_overlap(error_msg, dense_vars, sparse_vars):
     with pytest.raises(ValueError, match=error_msg):
         spacemap(g, dense_vars, sparse_vars, dense_first=True)
+
+
+# ======================================================================================
+# convert kwargs to args
+# ======================================================================================
+
+
+def test_convert_kwargs_to_args():
+    kwargs = {"a": 1, "b": 2, "c": 3}
+    parameters = ["c", "a", "b"]
+    exp = [3, 1, 2]
+    got = convert_kwargs_to_args(kwargs, parameters)
+    assert got == exp
+
+
+# ======================================================================================
+# allow kwargs
+# ======================================================================================
+
+
+def test_allow_kwargs():
+    def f(a, /, b):
+        # a is positional-only
+        return a + b
+
+    with pytest.raises(TypeError):
+        f(a=1, b=2)
+
+    assert allow_kwargs(f)(a=1, b=2) == 3

@@ -1,21 +1,21 @@
 """Functions to aggregate conditional continuation values over discrete choices.
 
 By conditional_continuation_value we mean continuation values conditional on a discrete
-choice, i.e. the result of solving the continuous choice problem conditional on
-the discrete choice.
+choice, i.e. the result of solving the continuous choice problem conditional on the
+discrete choice.
 
-By aggregate we mean calculating the expected maximum of the continuation values,
-given based on the distribution of choice shocks. In the long run we plan to support
-Three shock distributions (currently only the first two):
+By aggregate we mean calculating the expected maximum of the continuation values, given
+based on the distribution of choice shocks. In the long run we plan to support Three
+shock distributions (currently only the first two):
 
 - no shocks -> simply take the maximum of the continuation values
 - iid extreme value shocks -> do a logsum calculation
 - nested logit shocks -> ???
 
 Notes:
-- It is possible that we split the aggregate_conditional_continuation values on
-one function per shock type, so we can inspect the signatures of the individual
-functions. This will only become clear after implementing a few solvers.
+- It is possible that we split the aggregate_conditional_continuation values on one
+function per shock type, so we can inspect the signatures of the individual functions.
+This will only become clear after implementing a few solvers.
 - Hopefully, there will be a better way to do segment_logsumexp soon:
 https://github.com/google/jax/issues/6265
 
@@ -144,7 +144,7 @@ def _segment_max_over_first_axis(a, segment_info):
 
 
 def _segment_extreme_value_emax_over_first_axis(a, scale, segment_info):
-    """Calculate emax under iid extreme value assumption over segments of first axis.
+    """Calculate emax under iid extreme value assumption over segments of first a>xis.
 
     Args:
         a (jax.numpy.ndarray): Multidimensional jax array.

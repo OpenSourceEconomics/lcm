@@ -1,4 +1,9 @@
-"""Collection of distributions for shocks."""
+"""Collection of distributions for shocks.
+
+WARNING: This is currently only a placeholder before we implement the distributions
+in JAX.
+
+"""
 import numpy as np
 
 
