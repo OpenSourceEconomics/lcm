@@ -20,6 +20,12 @@ def process_model(user_model):
     - Generate derived information
     - Check that the model specification is valid.
 
+    Args:
+        user_model (dict): The model as provided by the user.
+
+    Returns:
+        lcm.interfaces.Model: The processed model.
+
     """
     _params = create_params(user_model)
     _function_info = _get_function_info(user_model)
