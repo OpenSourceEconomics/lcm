@@ -5,6 +5,14 @@ from numpy.testing import assert_array_almost_equal as aaae
 from scipy.interpolate import RegularGridInterpolator
 
 
+def test_linear_interpolation_1d():
+    values = np.linspace(0, 1, 11) ** 2
+    grid_info = [("linspace", (0, 1, 11))]
+    point = np.array([0.45])
+    got = linear_interpolation(values=values, point=point, grid_info=grid_info)
+    assert got == (0.4**2 + 0.5**2) / 2
+
+
 def assert_point_wise(grids, grid_info, points, values):
     for point in points:
         calculated = linear_interpolation(
