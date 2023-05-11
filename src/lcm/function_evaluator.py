@@ -24,8 +24,8 @@ def get_function_evaluator(
     all continuous state variables.
 
     This function dynamically generates a function that looks up and interpolates values
-    of the pre-calculated function. The arguments of the resulting function can be
-    split in two categories:
+    of the pre-calculated function. The arguments of the resulting function can be split
+    in two categories:
     1. Helper arguments such as information about the grid, indexer arrays and the
     pre-calculated values of the function.
     2. The original arguments of the function that was pre-calculated on the grid.
@@ -41,14 +41,14 @@ def get_function_evaluator(
     - Index into the array with the precalculated function values to extract only the
       part on which interpolation is needed.
     - Tranlate values of continuous variables into coordinates needed for interpolation
-      via scipy.ndimage.map_coordinates.
+      via jax.scipy.ndimage.map_coordinates.
     - Do the actual interpolation.
 
     Depending on the grid, only a subset of these steps is relevant. The chosen
-    implementation of each step is also adjusted to the type of grid. In particular
-    we try to avoid searching for neighboring values on a grid and instead exploit
-    structure in the grid to calculate where those entries are. The order
-    in which the functions are called is determined by a DAG.
+    implementation of each step is also adjusted to the type of grid. In particular we
+    try to avoid searching for neighboring values on a grid and instead exploit
+    structure in the grid to calculate where those entries are. The order in which the
+    functions are called is determined by a DAG.
 
     Args:
         space_info (SpaceInfo): Namedtuple containing all information needed to
@@ -159,13 +159,13 @@ def _get_label_translator(labels, in_name):
     """Create a function that translates a label into a position in a list of labels.
 
     Args:
-        labels (list, np.ndarray): List of allowed labels.
+        labels (list, np.ndarray, jnp.array): List of allowed labels.
         in_name (str): Name of the variable that provides the label in the signature
             of the resulting function.
 
     Returns:
-        callable: A callable with the keyword only argument ``[in_name]`` that returns
-            converts a label into a position in a list of labels.
+        callable: A callable with the keyword only argument ``in_name`` that converts a
+            label into a position in a list of labels.
 
     """
     if isinstance(labels, np.ndarray | jnp.ndarray):
@@ -200,8 +200,8 @@ def _get_lookup_function(array_name, axis_names):
         axis_names (list): List of strings with names for each axis in the array.
 
     Returns:
-        callable: A callable with the keyword-only arguments [axis_names] + [name]
-            that looks up values in an indexer array called ``name``.
+        callable: A callable with the keyword-only arguments [axis_names] + [array_name]
+            that looks up values in an indexer array called ``array_name``.
 
     """
 
@@ -218,7 +218,7 @@ def _get_coordinate_finder(in_name, grid_type, grid_info):
     """Create a function that translates a value into coordinates on a grid.
 
     The resulting coordinates can be used to do linear interpolation via
-    scipy.ndimage.map_coordinates.
+    jax.scipy.ndimage.map_coordinates.
 
     Args:
         in_name (str): Name via which the value to be translated into coordinates
@@ -254,7 +254,7 @@ def _get_interpolator(data_name, axis_names, map_coordinates_kwargs=None):
             interpolation is done are passed into the interpolator.
         axis_names (str): Names of the axes in the data array.
         map_coordinates_kwargs (dict): Keyword arguments for
-            scipy.ndimage.map_coordinates.
+            jax.scipy.ndimage.map_coordinates.
 
     Returns:
         callable: A callable that interpolates a function via named axes.
@@ -278,7 +278,16 @@ def _get_interpolator(data_name, axis_names, map_coordinates_kwargs=None):
 
 
 def _fail_if_interpolation_axes_are_not_last(space_info):
-    """Fail if the interpolation axes are not the last elements in axis_names."""
+    """Fail if the interpolation axes are not the last elements in axis_names.
+
+    Args:
+        space_info (SpaceInfo): Namedtuple containing all information needed to
+            interpret the precalculated values of a function.
+
+    Raises:
+        ValueError: If the interpolation axes are not the last elements in axis_names.
+
+    """
     common = set(space_info.interpolation_info) & set(space_info.axis_names)
 
     if common:
