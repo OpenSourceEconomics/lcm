@@ -32,7 +32,7 @@ def get_emax_calculator(shock_type, variable_info):
     The maximum is taken over the discrete choice variables in each state.
 
     Args:
-        shock_type (str or None): One of None, "extreme_value" and "nesed_logit".
+        shock_type (str or None): One of None, "extreme_value" and "nested_logit".
         variable_info (pd.DataFrame): DataFrame with information about the variables.
 
     Returns:
@@ -51,6 +51,8 @@ def get_emax_calculator(shock_type, variable_info):
         func = partial(_calculate_emax_no_shocks, choice_axes=choice_axes)
     elif shock_type == "extreme_value":
         func = partial(_calculate_emax_extreme_value_shocks, choice_axes=choice_axes)
+    elif shock_type == "nested_logit":
+        raise ValueError("Nested logit shocks are not yet supported.")
     else:
         raise ValueError(f"Invalid shock_type: {shock_type}.")
     return func
@@ -77,8 +79,8 @@ def _calculate_emax_no_shocks(
 
     Returns:
         jax.numpy.ndarray: Multidimensional jax array with aggregated continuation
-        values. Has less dimensions than values if choice_axes is not None and
-        is shorter in the first dimension if choice_segments is not None.
+            values. Has less dimensions than values if choice_axes is not None and
+            is shorter in the first dimension if choice_segments is not None.
 
     """
     out = values
@@ -144,7 +146,9 @@ def _segment_max_over_first_axis(a, segment_info):
 
 
 def _segment_extreme_value_emax_over_first_axis(a, scale, segment_info):
-    """Calculate emax under iid extreme value assumption over segments of first a>xis.
+    """Calculate emax under iid extreme value assumption over segments of first axis.
+
+    TODO: Explain in more detail how this function is related to EMAX under IID EV.
 
     Args:
         a (jax.numpy.ndarray): Multidimensional jax array.
@@ -198,12 +202,11 @@ def _determine_discrete_choice_axes(variable_info):
     """Determine which axes of a state_choice_space correspond to discrete choices.
 
     Args:
-        state_choice_space (Space): Namedtuple with entries dense_vars and sparse_vars.
-        variable_info (dict): Dict with information about the variables in the model.
+        variable_info (pd.DataFrame): DataFrame with information about the variables.
 
     Returns:
-        int or tuple: Int or tuple of int, specifying which axes in a value function
-        correspond to discrete choices.
+        list[int]: Specifies which axes in a value function correspond to discrete
+            choices.
 
     """
     has_sparse = variable_info["is_sparse"].any()
