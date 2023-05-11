@@ -47,8 +47,10 @@ def create_state_choice_space(model, period, *, jit_filter):
     # preparations
     # ==================================================================================
     vi = model.variable_info
-    has_sparse_states = len(vi.query("is_sparse & is_state")) > 0
-    has_sparse_vars = len(vi.query("is_sparse")) > 0
+
+    has_sparse_states = (vi.is_sparse & vi.is_state).any()
+    has_sparse_vars = vi.is_sparse.any()
+
     # ==================================================================================
     # create state choice space
     # ==================================================================================
