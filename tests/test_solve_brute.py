@@ -86,9 +86,8 @@ def test_solve_brute():
     # ==================================================================================
     # create emax aggregators and choice segments
     # ==================================================================================
-    choice_segments = [None, None]
 
-    def calculate_emax(values, choice_segments, params):  # noqa: ARG001
+    def calculate_emax(values):
         """Take max over axis that corresponds to working."""
         return values.max(axis=1)
 
@@ -105,7 +104,6 @@ def test_solve_brute():
         continuous_choice_grids=continuous_choice_grids,
         utility_and_feasibility_functions=utility_and_feasibility_functions,
         emax_calculators=emax_calculators,
-        choice_segments=choice_segments,
     )
 
     assert isinstance(solution, list)

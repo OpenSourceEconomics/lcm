@@ -10,7 +10,6 @@ def solve(
     continuous_choice_grids,
     utility_and_feasibility_functions,
     emax_calculators,
-    choice_segments,
 ):
     """Solve a model by brute force.
 
@@ -42,8 +41,6 @@ def solve(
         emax_calculators (list): List of functions that take continuation
             values for combinations of states and discrete choices and calculate the
             expected maximum over all discrete choices of a given state.
-        choice_segments (list): List of arrays or None with the choice segments that
-            indicate which sparse choice variables belong to one state.
 
     Returns:
         list: List with one value function array per period.
@@ -68,11 +65,7 @@ def solve(
 
         # solve discrete problem by calculating expected maximum over discrete choices
         calculate_emax = emax_calculators[period]
-        vf_arr = calculate_emax(
-            values=conditional_continuation_values,
-            choice_segments=choice_segments[period],
-            params=params,
-        )
+        vf_arr = calculate_emax(conditional_continuation_values)
         reversed_solution.append(vf_arr)
 
     return list(reversed(reversed_solution))

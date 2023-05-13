@@ -59,19 +59,6 @@ def get_lcm_function(model, targets="solve", interpolation_options=None):
     continuous_choice_grids = [_choice_grids] * _mod.n_periods
 
     # ==================================================================================
-    # create list of emax_calculators
-    # ==================================================================================
-    # for now they are the same in all periods but this will change.
-
-    _shock_type = _mod.shocks.get("additive_utility_shock", None)
-
-    calculator = get_emax_calculator(
-        shock_type=_shock_type,
-        variable_info=_mod.variable_info,
-    )
-    emax_calculators = [calculator] * _mod.n_periods
-
-    # ==================================================================================
     # Initialize other argument lists
     # ==================================================================================
     state_choice_spaces = []
@@ -110,6 +97,22 @@ def get_lcm_function(model, targets="solve", interpolation_options=None):
         utility_and_feasibility_functions.append(u_and_f)
 
     # ==================================================================================
+    # create list of emax_calculators
+    # ==================================================================================
+    # for now they are the same in all periods but this will change.
+
+    _shock_type = _mod.shocks.get("additive_utility_shock", None)
+
+    calculator = get_emax_calculator(
+        shock_type=_shock_type,
+        variable_info=_mod.variable_info,
+    )
+    emax_calculators = [
+        partial(calculator, choice_segments=choice_segments[period], params=_mod.params)
+        for period in range(_mod.n_periods)
+    ]
+
+    # ==================================================================================
     # select requested solver and partial arguments into it
     # ==================================================================================
     solve_model = partial(
@@ -119,7 +122,6 @@ def get_lcm_function(model, targets="solve", interpolation_options=None):
         continuous_choice_grids=continuous_choice_grids,
         utility_and_feasibility_functions=utility_and_feasibility_functions,
         emax_calculators=emax_calculators,
-        choice_segments=choice_segments,
     )
 
     return solve_model, _mod.params
