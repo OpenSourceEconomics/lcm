@@ -3,6 +3,7 @@ import inspect
 import jax.numpy as jnp
 from dags import concatenate_functions
 
+from lcm.dispatchers import vmap_1d
 from lcm.interfaces import Space
 
 # ======================================================================================
@@ -26,8 +27,8 @@ def create_data_state_choice_space(
 
     if state_names != set(initial_states.keys()):
         raise ValueError(
-            "You need to provide an initial state for each state in the model. "
-            f"Missing initial states: {state_names - set(initial_states.keys())}",
+            "You need to provide an initial value for each state variable in the model."
+            f" Missing initial states: {state_names - set(initial_states.keys())}",
         )
 
     # get sparse and dense choices
@@ -62,7 +63,7 @@ def create_data_state_choice_space(
         for name, choice in sc_product.items():
             _combination_grid[name] = jnp.repeat(choice, repeats=n_initial_states)
 
-        # create filter
+        # create filter mask
         # ==============================================================================
         filter_names = model.function_info.query("is_filter").index.tolist()
 
@@ -72,16 +73,13 @@ def create_data_state_choice_space(
             aggregator=jnp.logical_and,
         )
 
-        filter_parameters = list(inspect.signature(scalar_filter).parameters)
-
+        parameters = list(inspect.signature(scalar_filter).parameters)
         kwargs = {
-            # TODO: there are no dense variables in _combination_grid!
-            name: grid
-            for name, grid in _combination_grid.items()
-            if name in filter_parameters
+            key: val for key, val in _combination_grid.items() if key in parameters
         }
 
-        mask = scalar_filter(**kwargs)
+        _filter = vmap_1d(scalar_filter, variables=parameters)
+        mask = _filter(**kwargs)
 
         # filter infeasible combinations
         # ==============================================================================
@@ -132,11 +130,7 @@ def dict_product(d):
 
     Returns:
         - dict: Dictionary with same keys but values correspond to rows of product.
-        - jax.ndarray: The product in array format.
-
-    Example:
-        d = {"a": jnp.array([0, 1]), "b": jnp.array([2, 3])}
-        dict_product(d) = {"a": jnp.array([0, 0, 1, 1]), "b": jnp.array([2, 3, 2, 3])}
+        - int: Number of all combinations.
 
     """
     arrays = list(d.values())

@@ -128,6 +128,25 @@ def _product_map(func, product_axes):
     return vmapped
 
 
+def vmap_1d(func, variables):
+    if len(variables) != len(set(variables)):
+        raise ValueError("Same argument provided more than once.")
+
+    signature = inspect.signature(func)
+    parameters = list(signature.parameters)
+
+    positions = [parameters.index(var) for var in variables]
+
+    in_axes = len(parameters) * [None]
+    for pos in positions:
+        in_axes[pos] = 0
+
+    vmapped = vmap(func, in_axes=in_axes)
+    vmapped.__signature__ = signature
+
+    return allow_kwargs(vmapped)
+
+
 def allow_kwargs(func):
     @functools.wraps(func)
     def allow_kwargs_wrapper(*args, **kwargs):

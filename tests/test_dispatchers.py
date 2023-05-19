@@ -3,7 +3,7 @@ import itertools
 import jax.numpy as jnp
 import pytest
 from jax import config
-from lcm.dispatchers import productmap, spacemap
+from lcm.dispatchers import productmap, spacemap, vmap_1d
 from numpy.testing import assert_array_almost_equal as aaae
 
 config.update("jax_enable_x64", val=True)
@@ -238,3 +238,20 @@ def test_gridmap_all_arguments_mapped(setup_gridmap, expected_gridmap, dense_fir
 def test_gridmap_arguments_overlap(error_msg, dense_vars, sparse_vars):
     with pytest.raises(ValueError, match=error_msg):
         spacemap(g, dense_vars, sparse_vars, dense_first=True)
+
+
+# ======================================================================================
+# vmap_1d
+# ======================================================================================
+
+
+def test_vmap_1d():
+    def func(a, b, c):
+        return c * (a + b)
+
+    vmapped = vmap_1d(func, variables=["a", "b"])
+    a = jnp.array([1, 2])
+    got = vmapped(a=a, b=a, c=-1)
+    exp = jnp.array([-2, -4])
+
+    aaae(got, exp)
