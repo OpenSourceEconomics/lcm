@@ -4,7 +4,7 @@ import jax.numpy as jnp
 from dags import concatenate_functions
 
 from lcm.dispatchers import vmap_1d
-from lcm.interfaces import Space
+from lcm.interfaces import IndexerInfo, Space, SpaceInfo
 
 # ======================================================================================
 # Data State Choice Space
@@ -74,9 +74,7 @@ def create_data_state_choice_space(
         )
 
         parameters = list(inspect.signature(scalar_filter).parameters)
-        kwargs = {
-            key: val for key, val in _combination_grid.items() if key in parameters
-        }
+        kwargs = {k: v for k, v in _combination_grid.items() if k in parameters}
 
         _filter = vmap_1d(scalar_filter, variables=parameters)
         mask = _filter(**kwargs)
@@ -90,7 +88,42 @@ def create_data_state_choice_space(
     else:
         combination_grid = initial_states
 
-    return Space(sparse_vars=combination_grid, dense_vars=dense_choices)
+    state_choice_space = Space(sparse_vars=combination_grid, dense_vars=dense_choices)
+
+    # ==================================================================================
+    # create indexers and segments
+    # ==================================================================================
+
+    # TODO
+
+    # ==================================================================================
+    # create state space info
+    # ==================================================================================
+    # lookup_info
+    _discrete_states = set(vi.query("is_discrete & is_state").index.tolist())
+    lookup_info = {k: v for k, v in model.gridspecs.items() if k in _discrete_states}
+
+    # interpolation info
+    _cont_states = set(vi.query("is_continuous & is_state").index.tolist())
+    interpolation_info = {k: v for k, v in model.gridspecs.items() if k in _cont_states}
+
+    # indexer infos
+    indexer_infos = [
+        IndexerInfo(
+            axis_names=list(initial_states.keys()),
+            name="state_indexer",
+            out_name="state_index",
+        ),
+    ]
+
+    space_info = SpaceInfo(
+        axis_names=["state_index"],
+        lookup_info=lookup_info,
+        interpolation_info=interpolation_info,
+        indexer_infos=indexer_infos,
+    )
+
+    return state_choice_space, space_info
 
 
 # ======================================================================================
