@@ -4,7 +4,8 @@ import jax.numpy as jnp
 from dags import concatenate_functions
 
 from lcm.dispatchers import vmap_1d
-from lcm.interfaces import IndexerInfo, Space, SpaceInfo
+from lcm.interfaces import Space
+from lcm.state_space import create_indexers_and_segments
 
 # ======================================================================================
 # Data State Choice Space
@@ -20,6 +21,8 @@ def create_data_state_choice_space(
     vi = model.variable_info
 
     has_sparse_choice_vars = len(vi.query("is_sparse & is_choice")) > 0
+
+    n_initial_states = len(list(initial_states.values())[0])
 
     # check that all states have an initial value
     # ==================================================================================
@@ -39,20 +42,12 @@ def create_data_state_choice_space(
         if name in vi.query("is_sparse & is_choice").index.tolist()
     }
 
-    dense_choices = {
-        name: grid
-        for name, grid in model.grids.items()
-        if name in vi.query("is_dense & is_choice").index.tolist()
-    }
-
     # create sparse choice state product
     # ==================================================================================
     if has_sparse_choice_vars:
         # create sparse choice product
         # ==============================================================================
         sc_product, n_sc_product_combinations = dict_product(sparse_choices)
-
-        n_initial_states = len(list(initial_states.values())[0])
 
         # create full sparse choice state product
         # ==============================================================================
@@ -87,43 +82,27 @@ def create_data_state_choice_space(
 
     else:
         combination_grid = initial_states
+        choice_segments = None
 
-    state_choice_space = Space(sparse_vars=combination_grid, dense_vars=dense_choices)
-
-    # ==================================================================================
-    # create indexers and segments
-    # ==================================================================================
-
-    # TODO
+    data_state_choice_space = Space(sparse_vars=combination_grid, dense_vars={})
 
     # ==================================================================================
-    # create state space info
+    # create choice segments
     # ==================================================================================
-    # lookup_info
-    _discrete_states = set(vi.query("is_discrete & is_state").index.tolist())
-    lookup_info = {k: v for k, v in model.gridspecs.items() if k in _discrete_states}
 
-    # interpolation info
-    _cont_states = set(vi.query("is_continuous & is_state").index.tolist())
-    interpolation_info = {k: v for k, v in model.gridspecs.items() if k in _cont_states}
+    if has_sparse_choice_vars:
+        _, _, choice_segments = create_indexers_and_segments(
+            mask=mask,
+            n_sparse_states=len(initial_states),
+        )
+        choice_segments = create_choice_segments(
+            mask=mask,
+            n_sparse_states=len(initial_states),
+        )
+    else:
+        choice_segments = None
 
-    # indexer infos
-    indexer_infos = [
-        IndexerInfo(
-            axis_names=list(initial_states.keys()),
-            name="state_indexer",
-            out_name="state_index",
-        ),
-    ]
-
-    space_info = SpaceInfo(
-        axis_names=["state_index"],
-        lookup_info=lookup_info,
-        interpolation_info=interpolation_info,
-        indexer_infos=indexer_infos,
-    )
-
-    return state_choice_space, space_info
+    return data_state_choice_space, choice_segments
 
 
 # ======================================================================================
@@ -170,3 +149,27 @@ def dict_product(d):
     grid = jnp.meshgrid(*arrays, indexing="ij")
     stacked = jnp.stack(grid, axis=-1).reshape(-1, len(arrays))
     return dict(zip(d.keys(), list(stacked.T), strict=True)), len(stacked)
+
+
+def create_choice_segments(mask, n_sparse_states):
+    """Create choice segment info related to sparse states and choices.
+
+    Args:
+        mask (jnp.ndarray): Boolean 1d array, where each entry corresponds to a
+            data-state-choice combination.
+        n_sparse_states (np.ndarray): Number of sparse state variables.
+
+    Returns:
+        dict: Dict with segment_info.
+
+    """
+    n_sc_product_combinations = len(mask) // n_sparse_states
+    state_indexer = jnp.tile(
+        jnp.arange(n_sparse_states),
+        reps=n_sc_product_combinations,
+    )
+    segments = state_indexer[mask]
+    return {
+        "segment_ids": jnp.array(segments),
+        "num_segments": len(jnp.unique(segments)),
+    }

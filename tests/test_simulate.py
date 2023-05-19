@@ -5,15 +5,21 @@ from lcm.simulate import create_data_state_choice_space, dict_product
 from numpy.testing import assert_array_equal
 
 
-def test_create_sata_state_choice_space():
+def test_create_data_state_choice_space():
     model = process_model(PHELPS_DEATON_WITH_FILTERS)
-    create_data_state_choice_space(
+    got_space, got_segment_info = create_data_state_choice_space(
         initial_states={
-            "wealth": jnp.array([0.0, 10.0, 10.0, 20.0]),
-            "lagged_retirement": jnp.array([0, 0, 1, 1]),
+            "wealth": jnp.array([10.0, 20.0]),
+            "lagged_retirement": jnp.array([0, 1]),
         },
         model=model,
     )
+    assert got_space.dense_vars == {}
+    assert_array_equal(got_space.sparse_vars["wealth"], jnp.array([10.0, 10.0, 20.0]))
+    assert_array_equal(got_space.sparse_vars["lagged_retirement"], jnp.array([0, 0, 1]))
+    assert_array_equal(got_space.sparse_vars["retirement"], jnp.array([0, 1, 1]))
+    assert_array_equal(got_segment_info["segment_ids"], jnp.array([0, 0, 1]))
+    assert got_segment_info["num_segments"] == 2
 
 
 def test_dict_product():
