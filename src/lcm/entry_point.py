@@ -3,6 +3,7 @@ from functools import partial
 from lcm.discrete_emax import get_emax_calculator
 from lcm.model_functions import get_utility_and_feasibility_function
 from lcm.process_model import process_model
+from lcm.simulate import simulate
 from lcm.solve_brute import solve
 from lcm.state_space import create_state_choice_space
 
@@ -41,7 +42,7 @@ def get_lcm_function(model, targets="solve", interpolation_options=None):
     # ==================================================================================
     # preparations
     # ==================================================================================
-    if targets != "solve":
+    if targets not in {"solve", "simulation"}:
         raise NotImplementedError
 
     _mod = process_model(model)
@@ -124,4 +125,16 @@ def get_lcm_function(model, targets="solve", interpolation_options=None):
         emax_calculators=emax_calculators,
     )
 
-    return solve_model, _mod.params
+    simulate_model = partial(
+        simulate,
+        state_choice_spaces=state_choice_spaces,
+        state_indexers=state_indexers,
+        continuous_choice_grids=continuous_choice_grids,
+        utility_and_feasibility_functions=utility_and_feasibility_functions,
+        emax_calculators=emax_calculators,
+        model=_mod,
+    )
+
+    _target = solve_model if targets == "solve" else simulate_model
+
+    return _target, _mod.params
