@@ -1,5 +1,3 @@
-import jax.numpy as jnp
-
 from lcm.dispatchers import spacemap
 
 
@@ -8,7 +6,7 @@ def solve(
     state_choice_spaces,
     state_indexers,
     continuous_choice_grids,
-    utility_and_feasibility_functions,
+    compute_ccv_functions,
     emax_calculators,
 ):
     """Solve a model by brute force.
@@ -31,8 +29,8 @@ def solve(
             one or several state indexers.
         continuous_choice_grids (list): List of dicts with 1d grids for continuous
             choice variables.
-        utility_and_feasibility_functions (list): List of functions needed to solve
-            the agent's problem. Each function depends on:
+        compute_ccv_functions (list): List of functions needed to solve the agent's
+            problem. Each function depends on:
             - discrete and continuous state variables
             - discrete and continuous choice variables
             - vf_arr
@@ -56,7 +54,7 @@ def solve(
         # solve continuous problem, conditional on discrete choices
         conditional_continuation_values = solve_continuous_problem(
             state_choice_space=state_choice_spaces[period],
-            utility_and_feasibility=utility_and_feasibility_functions[period],
+            compute_ccv=compute_ccv_functions[period],
             continuous_choice_grids=continuous_choice_grids[period],
             vf_arr=vf_arr,
             state_indexers=state_indexers[period],
@@ -73,7 +71,7 @@ def solve(
 
 def solve_continuous_problem(
     state_choice_space,
-    utility_and_feasibility,
+    compute_ccv,
     continuous_choice_grids,
     vf_arr,
     state_indexers,
@@ -83,9 +81,9 @@ def solve_continuous_problem(
 
     Args:
         state_choice_space (Space): Namedtuple with entries dense_vars and sparse_vars.
-        utility_and_feasibility (callable): Function that returns a tuple where the
-            first entry is the utility and the second is a bool that indicates
-            feasibility. The function depends on:
+        compute_ccv (callable): Function that returns the conditional continuation
+            values for a given combination of states and discrete choices. The function
+            depends on:
             - discrete and continuous state variables
             - discrete and continuous choice variables
             - vf_arr
@@ -104,32 +102,14 @@ def solve_continuous_problem(
             by the ``gridmap`` function.
 
     """
-    # ==================================================================================
-    # extract information
-    # ==================================================================================
-    n_sparse = len(state_choice_space.sparse_vars)
-    n_dense = len(state_choice_space.dense_vars)
-    n_cont_choices = len(continuous_choice_grids)
-
-    # ==================================================================================
-    # find axes over which we want to take the maximum
-    # ==================================================================================
-    offset = n_dense
-    if n_sparse > 0:
-        offset += 1
-    max_axes = tuple(range(offset, offset + n_cont_choices))
-
-    # ==================================================================================
-    # apply dispatcher
-    # ==================================================================================
     gridmapped = spacemap(
-        func=utility_and_feasibility,
-        dense_vars=list(state_choice_space.dense_vars) + list(continuous_choice_grids),
+        func=compute_ccv,
+        dense_vars=list(state_choice_space.dense_vars),
         sparse_vars=list(state_choice_space.sparse_vars),
         dense_first=False,
     )
 
-    utilities, feasibilities = gridmapped(
+    return gridmapped(
         **state_choice_space.dense_vars,
         **continuous_choice_grids,
         **state_choice_space.sparse_vars,
@@ -137,5 +117,3 @@ def solve_continuous_problem(
         vf_arr=vf_arr,
         params=params,
     )
-
-    return utilities.max(axis=max_axes, where=feasibilities, initial=-jnp.inf)

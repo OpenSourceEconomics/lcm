@@ -1,6 +1,10 @@
+import functools
 from functools import partial
 
+import jax.numpy as jnp
+
 from lcm.discrete_emax import get_emax_calculator
+from lcm.dispatchers import productmap
 from lcm.model_functions import get_utility_and_feasibility_function
 from lcm.process_model import process_model
 from lcm.simulate import simulate
@@ -64,7 +68,7 @@ def get_lcm_function(model, targets="solve", interpolation_options=None):
     # ==================================================================================
     state_choice_spaces = []
     state_indexers = []
-    utility_and_feasibility_functions = []
+    compute_ccv_functions = []
     choice_segments = []
 
     for period in range(_mod.n_periods):
@@ -86,7 +90,7 @@ def get_lcm_function(model, targets="solve", interpolation_options=None):
             state_indexers.append(state_indexer)
 
         # ==============================================================================
-        # create the utility and feasibility functions and append to their list
+        # create the compute conditional continuation value functions and append to list
         # ==============================================================================
         u_and_f = get_utility_and_feasibility_function(
             model=_mod,
@@ -95,7 +99,11 @@ def get_lcm_function(model, targets="solve", interpolation_options=None):
             interpolation_options=interpolation_options,
             is_last_period=is_last_period,
         )
-        utility_and_feasibility_functions.append(u_and_f)
+        compute_ccv = create_compute_conditional_continuation_value(
+            utility_and_feasibility=u_and_f,
+            continuous_choice_variables=list(_choice_grids),
+        )
+        compute_ccv_functions.append(compute_ccv)
 
     # ==================================================================================
     # create list of emax_calculators
@@ -121,7 +129,7 @@ def get_lcm_function(model, targets="solve", interpolation_options=None):
         state_choice_spaces=state_choice_spaces,
         state_indexers=state_indexers,
         continuous_choice_grids=continuous_choice_grids,
-        utility_and_feasibility_functions=utility_and_feasibility_functions,
+        compute_ccv_functions=compute_ccv_functions,
         emax_calculators=emax_calculators,
     )
 
@@ -130,11 +138,46 @@ def get_lcm_function(model, targets="solve", interpolation_options=None):
         state_choice_spaces=state_choice_spaces,
         state_indexers=state_indexers,
         continuous_choice_grids=continuous_choice_grids,
-        utility_and_feasibility_functions=utility_and_feasibility_functions,
+        compute_ccv_functions=compute_ccv_functions,
         emax_calculators=emax_calculators,
         model=_mod,
     )
 
     _target = solve_model if targets == "solve" else simulate_model
-
     return _target, _mod.params
+
+
+def create_compute_conditional_continuation_value(
+    utility_and_feasibility,
+    continuous_choice_variables,
+):
+    """Create a function that computes the conditional continuation value.
+
+    Note:
+    -----
+    This function solves the continuous choice problem conditional on the a
+    state-(discrete-)choice combination.
+
+    Args:
+        utility_and_feasibility (callable): A function that takes a state-choice
+            combination and return the utility of that combination (float) and whether
+            the state-choice combination is feasible (bool).
+        continuous_choice_variables (list): List of choice variable names that are
+            continuous.
+
+    Returns:
+        callable: A function that takes a state-choice combination and returns the
+            conditional continuation value over the continuous choices.
+
+    """
+    u_and_f_mapped_over_cont_choices = productmap(
+        func=utility_and_feasibility,
+        variables=continuous_choice_variables,
+    )
+
+    @functools.wraps(u_and_f_mapped_over_cont_choices)
+    def compute_ccv(*args, **kwargs):
+        u, f = u_and_f_mapped_over_cont_choices(*args, **kwargs)
+        return u.max(where=f, initial=-jnp.inf)
+
+    return compute_ccv

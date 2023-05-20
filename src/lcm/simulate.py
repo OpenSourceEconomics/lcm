@@ -17,7 +17,7 @@ def simulate(
     state_choice_spaces,  # noqa: ARG001
     state_indexers,
     continuous_choice_grids,
-    utility_and_feasibility_functions,
+    compute_ccv_functions,
     emax_calculators,  # noqa: ARG001
     model,
     # output from solution
@@ -47,7 +47,7 @@ def simulate(
         tuple(range(offset, offset + n_cont_choices))
 
         gridmapped = spacemap(
-            func=utility_and_feasibility_functions[period],
+            func=compute_ccv_functions[period],
             dense_vars=list(data_state_choice_space.dense_vars)
             + list(continuous_choice_grids[period]),
             sparse_vars=list(data_state_choice_space.sparse_vars),
