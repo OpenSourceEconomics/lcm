@@ -1,8 +1,11 @@
 import inspect
+from functools import partial
 
+import jax
 import jax.numpy as jnp
 from dags import concatenate_functions
 
+from lcm.discrete_emax import _determine_discrete_choice_axes
 from lcm.dispatchers import spacemap, vmap_1d
 from lcm.interfaces import Space
 from lcm.state_space import create_indexers_and_segments
@@ -14,19 +17,15 @@ from lcm.state_space import create_indexers_and_segments
 
 def simulate(
     params,
-    state_choice_spaces,  # noqa: ARG001
     state_indexers,
     continuous_choice_grids,
-    compute_ccv_functions,
-    emax_calculators,  # noqa: ARG001
+    compute_ccv_argmax_functions,
     model,
     # output from solution
     vf_arr_list,
     # input to simulate
     initial_states,
 ):
-    raise NotImplementedError
-
     data_state_choice_space, data_choice_segments = create_data_state_choice_space(
         initial_states=initial_states,
         model=model,
@@ -35,26 +34,23 @@ def simulate(
     # extract information
     n_periods = len(vf_arr_list)
 
+    # container
+    optimal_choices = []
+
+    compute_discrete_argmax = get_compute_discrete_argmax(
+        variable_info=model.variable_info,
+    )
+
     # forward loop
     for period in range(n_periods):
-        n_sparse = len(data_state_choice_space.sparse_vars)
-        n_dense = len(data_state_choice_space.dense_vars)
-        n_cont_choices = len(continuous_choice_grids[period])
-
-        offset = n_dense
-        if n_sparse > 0:
-            offset += 1
-        tuple(range(offset, offset + n_cont_choices))
-
         gridmapped = spacemap(
-            func=compute_ccv_functions[period],
-            dense_vars=list(data_state_choice_space.dense_vars)
-            + list(continuous_choice_grids[period]),
+            func=compute_ccv_argmax_functions[period],
+            dense_vars=list(data_state_choice_space.dense_vars),
             sparse_vars=list(data_state_choice_space.sparse_vars),
             dense_first=False,
         )
 
-        utilities, feasibilities = gridmapped(
+        choice, choice_value = gridmapped(
             **data_state_choice_space.dense_vars,
             **continuous_choice_grids[period],
             **data_state_choice_space.sparse_vars,
@@ -63,7 +59,13 @@ def simulate(
             params=params,
         )
 
-        # do stuff
+        calculator = partial(
+            compute_discrete_argmax,
+            choice_segments=data_choice_segments,
+        )
+        discrete_max, discrete_argmax = calculator(choice_value)
+
+    return optimal_choices
 
 
 # ======================================================================================
@@ -172,6 +174,51 @@ def create_data_state_choice_space(
         data_choice_segments = None
 
     return data_state_choice_space, data_choice_segments
+
+
+# ======================================================================================
+# Discrete argmax
+# ======================================================================================
+
+
+def get_compute_discrete_argmax(variable_info):
+    choice_axes = tuple(_determine_discrete_choice_axes(variable_info))
+
+    def _calculate_emax_no_shocks(values, choice_axes, choice_segments):
+        out = values
+        if choice_axes is not None:
+            _max = out.max(axis=choice_axes, keepdims=True)
+            _argmax = jnp.argwhere(out == _max)
+            out = out.max(axis=choice_axes)
+        if choice_segments is not None:
+            out = _segment_max_over_first_axis(out, choice_segments)
+            _argmax = None
+        return out, _argmax
+
+    return partial(_calculate_emax_no_shocks, choice_axes=choice_axes)
+
+
+def _segment_max_over_first_axis(a, segment_info):
+    """Calculate a segment_max over the first axis of a.
+
+    Wrapper around ``jax.ops.segment_max``.
+
+    Args:
+        a (jax.numpy.ndarray): Multidimensional jax array.
+        segment_info (dict): Dictionary with the entries "segment_ids"
+            and "num_segments". segment_ids are a 1d integer array that partitions the
+            first dimension of a. "num_segments" is the number of segments. The
+            segment_ids are assumed to be sorted.
+
+    Returns:
+        jax.numpy.ndarray
+
+    """
+    return jax.ops.segment_max(
+        data=a,
+        indices_are_sorted=True,
+        **segment_info,
+    )
 
 
 # ======================================================================================

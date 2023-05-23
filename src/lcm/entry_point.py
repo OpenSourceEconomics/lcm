@@ -46,7 +46,7 @@ def get_lcm_function(model, targets="solve", interpolation_options=None):
     # ==================================================================================
     # preparations
     # ==================================================================================
-    if targets not in {"solve", "simulation"}:
+    if targets not in {"solve", "simulate"}:
         raise NotImplementedError
 
     _mod = process_model(model)
@@ -69,6 +69,7 @@ def get_lcm_function(model, targets="solve", interpolation_options=None):
     state_choice_spaces = []
     state_indexers = []
     compute_ccv_functions = []
+    compute_ccv_argmax_functions = []
     choice_segments = []
 
     for period in range(_mod.n_periods):
@@ -105,6 +106,12 @@ def get_lcm_function(model, targets="solve", interpolation_options=None):
         )
         compute_ccv_functions.append(compute_ccv)
 
+        compute_ccv_argmax = create_compute_conditional_continuation_value_argmax(
+            utility_and_feasibility=u_and_f,
+            continuous_choice_variables=list(_choice_grids),
+        )
+        compute_ccv_argmax_functions.append(compute_ccv_argmax)
+
     # ==================================================================================
     # create list of emax_calculators
     # ==================================================================================
@@ -135,11 +142,9 @@ def get_lcm_function(model, targets="solve", interpolation_options=None):
 
     simulate_model = partial(
         simulate,
-        state_choice_spaces=state_choice_spaces,
         state_indexers=state_indexers,
         continuous_choice_grids=continuous_choice_grids,
-        compute_ccv_functions=compute_ccv_functions,
-        emax_calculators=emax_calculators,
+        compute_ccv_argmax_functions=compute_ccv_argmax_functions,
         model=_mod,
     )
 
@@ -155,8 +160,8 @@ def create_compute_conditional_continuation_value(
 
     Note:
     -----
-    This function solves the continuous choice problem conditional on the a
-    state-(discrete-)choice combination.
+    This function solves the continuous choice problem conditional on a state-
+    (discrete-)choice combination.
 
     Args:
         utility_and_feasibility (callable): A function that takes a state-choice
@@ -181,3 +186,41 @@ def create_compute_conditional_continuation_value(
         return u.max(where=f, initial=-jnp.inf)
 
     return compute_ccv
+
+
+def create_compute_conditional_continuation_value_argmax(
+    utility_and_feasibility,
+    continuous_choice_variables,
+):
+    """Create a function that computes the conditional continuation value argmax.
+
+    Note:
+    -----
+    This function solves the continuous choice problem conditional on a state-
+    (discrete-)choice combination.
+
+    Args:
+        utility_and_feasibility (callable): A function that takes a state-choice
+            combination and return the utility of that combination (float) and whether
+            the state-choice combination is feasible (bool).
+        continuous_choice_variables (list): List of choice variable names that are
+            continuous.
+
+    Returns:
+        callable: A function that takes a state-choice combination and returns the
+            conditional continuation value over the continuous choices, and the index
+            that maximizes the conditional continuation value.
+
+    """
+    u_and_f_mapped_over_cont_choices = productmap(
+        func=utility_and_feasibility,
+        variables=continuous_choice_variables,
+    )
+
+    @functools.wraps(u_and_f_mapped_over_cont_choices)
+    def compute_ccv_argmax(*args, **kwargs):
+        u, f = u_and_f_mapped_over_cont_choices(*args, **kwargs)
+        argmax = jnp.where(f, u, -jnp.inf).argmax()
+        return argmax, u[argmax]
+
+    return compute_ccv_argmax
