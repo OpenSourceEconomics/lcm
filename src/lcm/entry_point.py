@@ -3,6 +3,7 @@ from functools import partial
 
 import jax.numpy as jnp
 
+from lcm.argmax import argmax
 from lcm.discrete_emax import get_emax_calculator
 from lcm.dispatchers import productmap
 from lcm.model_functions import get_utility_and_feasibility_function
@@ -220,7 +221,7 @@ def create_compute_conditional_continuation_value_argmax(
     @functools.wraps(u_and_f_mapped_over_cont_choices)
     def compute_ccv_argmax(*args, **kwargs):
         u, f = u_and_f_mapped_over_cont_choices(*args, **kwargs)
-        argmax = jnp.where(f, u, -jnp.inf).argmax()
-        return argmax, u[argmax]
+        _argmax, _max = argmax(u, where=f, initial=-jnp.inf)
+        return _argmax, _max
 
     return compute_ccv_argmax

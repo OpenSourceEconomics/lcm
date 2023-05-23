@@ -19,7 +19,6 @@ def test_get_lcm_function_with_solve_target(user_model):
     solve_model(params)
 
 
-@pytest.mark.skip(reason="Known bugs.")
 @pytest.mark.parametrize("user_model", list(MODELS.values()), ids=list(MODELS))
 def test_get_lcm_function_with_simulation_target(user_model):
     # solve model

@@ -1,10 +1,10 @@
 import inspect
 from functools import partial
 
-import jax
 import jax.numpy as jnp
 from dags import concatenate_functions
 
+from lcm.argmax import argmax, segment_argmax
 from lcm.discrete_emax import _determine_discrete_choice_axes
 from lcm.dispatchers import spacemap, vmap_1d
 from lcm.interfaces import Space
@@ -63,7 +63,7 @@ def simulate(
             compute_discrete_argmax,
             choice_segments=data_choice_segments,
         )
-        discrete_max, discrete_argmax = calculator(choice_value)
+        dense_argmax, sparse_argmax, discrete_value = calculator(choice_value)
 
     return optimal_choices
 
@@ -185,40 +185,23 @@ def get_compute_discrete_argmax(variable_info):
     choice_axes = tuple(_determine_discrete_choice_axes(variable_info))
 
     def _calculate_emax_no_shocks(values, choice_axes, choice_segments):
-        out = values
+        _max = values
+
+        # find maximum over dense choices
         if choice_axes is not None:
-            _max = out.max(axis=choice_axes, keepdims=True)
-            _argmax = jnp.argwhere(out == _max)
-            out = out.max(axis=choice_axes)
+            dense_argmax, _max = argmax(_max, axis=choice_axes)
+        else:
+            dense_argmax = None
+
+        # find maxmimum over sparse choices
         if choice_segments is not None:
-            out = _segment_max_over_first_axis(out, choice_segments)
-            _argmax = None
-        return out, _argmax
+            sparse_argmax, _max = segment_argmax(_max, choice_segments)
+        else:
+            sparse_argmax = None
+
+        return dense_argmax, sparse_argmax, _max
 
     return partial(_calculate_emax_no_shocks, choice_axes=choice_axes)
-
-
-def _segment_max_over_first_axis(a, segment_info):
-    """Calculate a segment_max over the first axis of a.
-
-    Wrapper around ``jax.ops.segment_max``.
-
-    Args:
-        a (jax.numpy.ndarray): Multidimensional jax array.
-        segment_info (dict): Dictionary with the entries "segment_ids"
-            and "num_segments". segment_ids are a 1d integer array that partitions the
-            first dimension of a. "num_segments" is the number of segments. The
-            segment_ids are assumed to be sorted.
-
-    Returns:
-        jax.numpy.ndarray
-
-    """
-    return jax.ops.segment_max(
-        data=a,
-        indices_are_sorted=True,
-        **segment_info,
-    )
 
 
 # ======================================================================================
