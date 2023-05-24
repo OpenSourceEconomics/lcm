@@ -1,4 +1,9 @@
+import jax
 import jax.numpy as jnp
+
+# ======================================================================================
+# argmax
+# ======================================================================================
 
 
 def argmax(a, axis=None, initial=None, where=None):
@@ -29,19 +34,24 @@ def argmax(a, axis=None, initial=None, where=None):
     not_considered = tuple(set(range(a.ndim)) - set(axis))
     new_shape = tuple(a.shape[dim] for dim in not_considered)
 
-    # Move axis over which to compute the argmax to the back
+    # Move axis over which to compute the argmax to the back and flatten last dims
     # ==================================================================================
-    a = a.transpose((*not_considered, *axis))
-
-    # Flatten axis over which to compute the argmax
-    # ==================================================================================
-    a = a.reshape(*new_shape, -1)
+    a = _transpose_and_reshape(
+        a,
+        first_dims=not_considered,
+        last_dims=axis,
+        shape=new_shape,
+    )
 
     # Do same transformation for where
     # ==================================================================================
     if where is not None:
-        where = where.transpose((*not_considered, *axis))
-        where = where.reshape(*new_shape, -1)
+        where = _transpose_and_reshape(
+            where,
+            first_dims=not_considered,
+            last_dims=axis,
+            shape=new_shape,
+        )
 
     # Compute argmax over last dimension
     # ==================================================================================
@@ -54,5 +64,73 @@ def argmax(a, axis=None, initial=None, where=None):
     return argmax, _max.reshape(argmax.shape)
 
 
-def segment_argmax(a, sement_ids, num_segments):  # noqa: ARG001
-    pass
+def _transpose_and_reshape(a, first_dims, last_dims, shape):
+    transposed = a.transpose((*first_dims, *last_dims))
+    return transposed.reshape(*shape, -1)
+
+
+# ======================================================================================
+# segment argmax
+# ======================================================================================
+
+
+def segment_argmax(a, segment_ids, num_segments):
+    """Calculate a segment argmax over the first axis of a.
+
+    Args:
+        a (jax.numpy.ndarray): Multidimensional jax array.
+        segment_ids (jax.numpy.ndarray): 1d integer array that partitions the first
+        num_segments (int): ...
+
+    Returns:
+        jax.numpy.ndarray: Array with shape (num_segments, *a.shape[1:]). The value
+            for the k-th segment will be in jnp.arange(segment_ids[k]).
+
+    """
+    # Preparation
+    # ==================================================================================
+    bincount = jnp.bincount(segment_ids, length=num_segments)
+    # create index arrays for each segment
+    segment_indices = jnp.split(jnp.arange(len(segment_ids)), jnp.cumsum(bincount))[:-1]
+
+    # Compute segment maximum and bring to the same shape as a
+    # ==================================================================================
+    seg_max = jax.ops.segment_max(
+        data=a,
+        segment_ids=segment_ids,
+        num_segments=num_segments,
+        indices_are_sorted=True,
+    )
+    seg_max = jnp.repeat(seg_max, bincount, axis=0)
+
+    # Check where the array attains its maximum and create segment lists
+    # ==================================================================================
+    where_max = a == seg_max
+
+    seg_where_max = [where_max[idx] for idx in segment_indices]
+    seg_argmax_id = [_nd_arange(count, shape=a.shape[1:]) for count in bincount]
+
+    # Select argmax indices for each segment
+    # ==================================================================================
+    seg_argmax = [
+        jnp.select(_where_max, _argmax_id)
+        for _where_max, _argmax_id in zip(seg_where_max, seg_argmax_id, strict=True)
+    ]
+
+    return jnp.stack(seg_argmax)
+
+
+def _nd_arange(stop, shape):
+    """Create an array with shape (stop, *shape) where the first axis is an arange.
+
+    Args:
+        stop (int): Stop value for the arange.
+        shape (tuple): Shape of the last dimensions of the array.
+
+    Returns:
+        jax.numpy.ndarray: Array with shape (stop, *shape) where the first axis is an
+            arange.
+
+    """
+    arr = jnp.arange(stop).reshape((stop,) + (1,) * len(shape))
+    return jnp.broadcast_to(arr, shape=(stop, *shape))
