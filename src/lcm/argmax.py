@@ -19,9 +19,9 @@ def argmax(a, axis=None, initial=None, where=None):
             for which where is True are considered for the argmax.
 
     Returns:
-        jax.numpy.ndarray: Array with the same shape as a, except for the dimensions
-            specified in axis, which are dropped. The value corresponds to an index
-            that can be translated into a tuple of indices using jnp.unravel_index.
+        - jax.numpy.ndarray: Array with the same shape as a, except for the dimensions
+          specified in axis, which are dropped. The value corresponds to an index
+          that can be translated into a tuple of indices using jnp.unravel_index.
 
     """
     # Preparation
@@ -79,58 +79,78 @@ def segment_argmax(a, segment_ids, num_segments):
 
     Args:
         a (jax.numpy.ndarray): Multidimensional jax array.
-        segment_ids (jax.numpy.ndarray): 1d integer array that partitions the first
-        num_segments (int): ...
+        segment_ids (jax.numpy.ndarray): 1d array with segment identifiers. See
+            jax.ops.segment_max.
+        num_segments (int): Total number of segments. See jax.ops.segment_max.
 
     Returns:
         jax.numpy.ndarray: Array with shape (num_segments, *a.shape[1:]). The value
             for the k-th segment will be in jnp.arange(segment_ids[k]).
 
     """
-    # Preparation
-    # ==================================================================================
-    bincount = jnp.bincount(segment_ids, length=num_segments)
-    # create index arrays for each segment
-    segment_indices = jnp.split(jnp.arange(len(segment_ids)), jnp.cumsum(bincount))[:-1]
-
     # Compute segment maximum and bring to the same shape as a
     # ==================================================================================
-    seg_max = jax.ops.segment_max(
+    segment_max = jax.ops.segment_max(
         data=a,
         segment_ids=segment_ids,
         num_segments=num_segments,
         indices_are_sorted=True,
     )
-    seg_max = jnp.repeat(seg_max, bincount, axis=0)
+    segment_max_expanded = segment_max[segment_ids]
 
-    # Check where the array attains its maximum and create segment lists
+    # Check where the array attains its maximum
     # ==================================================================================
-    where_max = a == seg_max
+    max_value_mask = a == segment_max_expanded
 
-    seg_where_max = [where_max[idx] for idx in segment_indices]
-    seg_argmax_id = [_nd_arange(count, shape=a.shape[1:]) for count in bincount]
+    # Create index array with argmax indices for each segment (has same shape as a)
+    # ==================================================================================
+    segment_argmax_ids = _create_segment_nd_arange(
+        segment_ids,
+        num_segments,
+        shape=a.shape,
+    )
+
+    # Set indices to zero that do not correspond to a maximum
+    # ==================================================================================
+    max_value_indices = max_value_mask * segment_argmax_ids
 
     # Select argmax indices for each segment
+    # ----------------------------------------------------------------------------------
+    # Note: If multiple maxima exist, this approach will select the last index.
     # ==================================================================================
-    seg_argmax = [
-        jnp.select(_where_max, _argmax_id)
-        for _where_max, _argmax_id in zip(seg_where_max, seg_argmax_id, strict=True)
-    ]
+    return jax.ops.segment_max(
+        data=max_value_indices,
+        segment_ids=segment_ids,
+        num_segments=num_segments,
+        indices_are_sorted=True,
+    )
 
-    return jnp.stack(seg_argmax)
 
-
-def _nd_arange(stop, shape):
-    """Create an array with shape (stop, *shape) where the first axis is an arange.
+def _create_segment_nd_arange(segment_ids, num_segments, shape):
+    """Create an nd-arange for each segment.
 
     Args:
-        stop (int): Stop value for the arange.
-        shape (tuple): Shape of the last dimensions of the array.
+        segment_ids (jax.numpy.ndarray): 1d array with segment identifiers. See
+            jax.ops.segment_max.
+        num_segments (int): Total number of segments. See jax.ops.segment_max.
+        shape (tuple): The shape to which the index map should be broadcasted. The first
+            dimension must coincide with len(segment_ids).
 
     Returns:
-        jax.numpy.ndarray: Array with shape (stop, *shape) where the first axis is an
-            arange.
+        jax.numpy.ndarray: An array of shape 'shape' containing an arange in the first
+            dimension for each segment, and repeating this value along the remaining
+            shape[1:] dimensions.
 
     """
-    arr = jnp.arange(stop).reshape((stop,) + (1,) * len(shape))
-    return jnp.broadcast_to(arr, shape=(stop, *shape))
+    bincount = jnp.bincount(segment_ids, length=num_segments)
+    cumsum = jnp.cumsum(bincount)
+
+    # shift the cumulative sum to the right and pad with zero at the beginning
+    shifted_cumsum = jnp.pad(cumsum[:-1], (1, 0), constant_values=0)
+
+    # create an array of indices for each segment
+    arange = jnp.arange(shape[0]) - shifted_cumsum[segment_ids]
+
+    # reshape the array of indices to be broadcastable to the desired shape
+    arange_reshaped = arange.reshape(-1, *((1,) * (len(shape) - 1)))
+    return jnp.broadcast_to(arange_reshaped, shape)
