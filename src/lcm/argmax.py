@@ -31,42 +31,35 @@ def argmax(a, axis=None, initial=None, where=None):
     elif isinstance(axis, int):
         axis = (axis,)
 
-    not_considered = tuple(set(range(a.ndim)) - set(axis))
-    new_shape = tuple(a.shape[dim] for dim in not_considered)
-
     # Move axis over which to compute the argmax to the back and flatten last dims
     # ==================================================================================
-    a = _transpose_and_reshape(
-        a,
-        first_dims=not_considered,
-        last_dims=axis,
-        shape=new_shape,
-    )
+    a = _move_axes_to_back(a, axes=axis)
+    a = _flatten_last_n_axes(a, n=len(axis))
 
     # Do same transformation for where
     # ==================================================================================
     if where is not None:
-        where = _transpose_and_reshape(
-            where,
-            first_dims=not_considered,
-            last_dims=axis,
-            shape=new_shape,
-        )
+        where = _move_axes_to_back(where, axes=axis)
+        where = _flatten_last_n_axes(where, n=len(axis))
 
     # Compute argmax over last dimension
     # ==================================================================================
     _max = jnp.max(a, axis=-1, keepdims=True, initial=initial, where=where)
-    helper = a == _max
+    max_value_mask = a == _max
     if where is not None:
-        helper = helper & where
-    argmax = jnp.argmax(helper, axis=-1)
+        max_value_mask = max_value_mask & where
+    argmax = jnp.argmax(max_value_mask, axis=-1)
 
     return argmax, _max.reshape(argmax.shape)
 
 
-def _transpose_and_reshape(a, first_dims, last_dims, shape):
-    transposed = a.transpose((*first_dims, *last_dims))
-    return transposed.reshape(*shape, -1)
+def _move_axes_to_back(a, axes):
+    front_axes = tuple(set(range(a.ndim)) - set(axes))
+    return a.transpose((*front_axes, *axes))
+
+
+def _flatten_last_n_axes(a, n):
+    return a.reshape(*a.shape[:-n], -1)
 
 
 # ======================================================================================
@@ -118,12 +111,14 @@ def segment_argmax(a, segment_ids, num_segments):
     # ----------------------------------------------------------------------------------
     # Note: If multiple maxima exist, this approach will select the last index.
     # ==================================================================================
-    return jax.ops.segment_max(
+    segment_argmax = jax.ops.segment_max(
         data=max_value_indices,
         segment_ids=segment_ids,
         num_segments=num_segments,
         indices_are_sorted=True,
     )
+
+    return segment_argmax, segment_max
 
 
 def _create_segment_nd_arange(segment_ids, num_segments, shape):
@@ -149,8 +144,8 @@ def _create_segment_nd_arange(segment_ids, num_segments, shape):
     shifted_cumsum = jnp.pad(cumsum[:-1], (1, 0), constant_values=0)
 
     # create an array of indices for each segment
-    arange = jnp.arange(shape[0]) - shifted_cumsum[segment_ids]
+    segment_arange = jnp.arange(shape[0]) - shifted_cumsum[segment_ids]
 
     # reshape the array of indices to be broadcastable to the desired shape
-    arange_reshaped = arange.reshape(-1, *((1,) * (len(shape) - 1)))
-    return jnp.broadcast_to(arange_reshaped, shape)
+    reshaped = segment_arange.reshape(-1, *((1,) * (len(shape) - 1)))
+    return jnp.broadcast_to(reshaped, shape)

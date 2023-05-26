@@ -65,6 +65,8 @@ def simulate(
         )
         dense_argmax, sparse_argmax, discrete_value = calculator(choice_value)
 
+        optimal_choices.append((choice, dense_argmax, sparse_argmax))
+
     return optimal_choices
 
 

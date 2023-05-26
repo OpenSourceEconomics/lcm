@@ -109,15 +109,17 @@ def test_argmax_3d_no_mask():
 def test_segment_argmax_1d():
     a = jnp.arange(10)
     segment_ids = jnp.array([0, 0, 0, 1, 1, 2, 2, 2, 2, 2])
-    got = segment_argmax(a, segment_ids, num_segments=3)
-    assert_array_equal(got, jnp.array([2, 1, 4]))
+    _argmax, _max = segment_argmax(a, segment_ids, num_segments=3)
+    assert_array_equal(_argmax, jnp.array([2, 1, 4]))
+    assert_array_equal(_max, jnp.array([2, 4, 9]))
 
 
 def test_segment_argmax_2d():
     a = jnp.arange(10).reshape(5, 2)
     segment_ids = jnp.array([0, 0, 0, 1, 1])
-    got = segment_argmax(a, segment_ids, num_segments=2)
-    assert_array_equal(got, jnp.array([[2, 2], [1, 1]]))
+    _argmax, _max = segment_argmax(a, segment_ids, num_segments=2)
+    assert_array_equal(_argmax, jnp.array([[2, 2], [1, 1]]))
+    assert_array_equal(_max, jnp.array([[4, 5], [8, 9]]))
 
 
 def test_segment_argmax_3d():
@@ -129,6 +131,6 @@ def test_segment_argmax_3d():
         ],
     )
     segment_ids = jnp.array([0, 0, 1])
-    got = segment_argmax(a, segment_ids, num_segments=2)
-    exp = jnp.array([[[1, 0], [0, 1]], [[0, 0], [0, 0]]])
-    assert_array_equal(got, exp)
+    _argmax, _max = segment_argmax(a, segment_ids, num_segments=2)
+    assert_array_equal(_argmax, jnp.array([[[1, 0], [0, 1]], [[0, 0], [0, 0]]]))
+    assert_array_equal(_max, jnp.array([[[1, 5], [3, 0]], [[0, 0], [0, 0]]]))
