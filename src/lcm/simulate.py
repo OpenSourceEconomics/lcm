@@ -34,14 +34,22 @@ def simulate(
     # extract information
     n_periods = len(vf_arr_list)
 
-    # container
-    optimal_choices = []
-
     compute_discrete_argmax = get_compute_discrete_argmax(
         variable_info=model.variable_info,
     )
 
-    # forward loop
+    discrete_argmax_calculator = partial(
+        compute_discrete_argmax,
+        choice_segments=data_choice_segments,
+    )
+
+    dense_choice_grid_shape = tuple(
+        len(grid) for grid in data_state_choice_space.dense_vars.values()
+    )
+
+    # output container
+    optimal_choices_and_value = []
+
     for period in range(n_periods):
         gridmapped = spacemap(
             func=compute_ccv_argmax_functions[period],
@@ -50,7 +58,9 @@ def simulate(
             dense_first=False,
         )
 
-        choice, choice_value = gridmapped(
+        # Compute optimal continuous choice conditional on discrete choices
+        # ==============================================================================
+        conditional_cont_choice_argmax, conditional_continuation_value = gridmapped(
             **data_state_choice_space.dense_vars,
             **continuous_choice_grids[period],
             **data_state_choice_space.sparse_vars,
@@ -59,15 +69,110 @@ def simulate(
             params=params,
         )
 
-        calculator = partial(
-            compute_discrete_argmax,
-            choice_segments=data_choice_segments,
+        # Get optimal discrete choice given the optimal conditional continuous choices
+        # ==============================================================================
+        dense_argmax, sparse_argmax, value = discrete_argmax_calculator(
+            conditional_continuation_value,
         )
-        dense_argmax, sparse_argmax, discrete_value = calculator(choice_value)
 
-        optimal_choices.append((choice, dense_argmax, sparse_argmax))
+        # Select optimal continuous choice corresponding to optimal discrete choice
+        # ==============================================================================
+        cont_choice_argmax = select_cont_choice_argmax_given_dense_argmax(
+            conditional_cont_choice_argmax,
+            dense_argmax,
+            dense_choice_grid_shape,
+        )
+        cont_choice_argmax = select_cont_choice_argmax_given_sparse_argmax(
+            cont_choice_argmax,
+            sparse_argmax,
+        )
 
-    return optimal_choices
+        # Convert optimal choice indices to actual choice values
+        # ==============================================================================
+        dense_choices = retrieve_dense_choices(
+            dense_argmax,
+            data_state_choice_space.dense_vars,
+            dense_choice_grid_shape,
+        )
+        sparse_choices = retrieve_sparse_choices(sparse_argmax)
+
+        cont_choice_grid_shape = tuple(
+            len(grid) for grid in continuous_choice_grids[period].values()
+        )
+        cont_choices = retrieve_cont_choices(
+            cont_choice_argmax,
+            continuous_choice_grids[period],
+            cont_choice_grid_shape,
+        )
+
+        # Store results
+        # ==============================================================================
+        choices = {**dense_choices, **sparse_choices, **cont_choices}
+        choices["value"] = value
+        optimal_choices_and_value.append(choices)
+
+    return optimal_choices_and_value
+
+
+@partial(vmap_1d, variables=["conditional_cont_choice_argmax", "dense_argmax"])
+def select_cont_choice_argmax_given_dense_argmax(
+    conditional_cont_choice_argmax,
+    dense_argmax,
+    dense_vars_grid_shape,
+):
+    if dense_argmax is None:
+        out = conditional_cont_choice_argmax
+    else:
+        indices = jnp.unravel_index(dense_argmax, shape=dense_vars_grid_shape)
+        out = conditional_cont_choice_argmax[indices]
+    return out
+
+
+def select_cont_choice_argmax_given_sparse_argmax(
+    conditional_cont_choice_argmax,
+    sparse_argmax,
+):
+    return conditional_cont_choice_argmax if sparse_argmax is None else None
+
+
+@partial(vmap_1d, variables=["dense_argmax"])
+def retrieve_dense_choices(dense_argmax, dense_vars, dense_choice_grid_shape):
+    if dense_argmax is None:
+        out = {}
+    else:
+        indices = jnp.unravel_index(dense_argmax, shape=dense_choice_grid_shape)
+        out = {
+            name: grid[index]
+            for (name, grid), index in zip(dense_vars.items(), indices, strict=True)
+        }
+    return out
+
+
+def retrieve_sparse_choices(sparse_argmax):
+    if sparse_argmax is None:
+        return {}
+    return None
+
+
+@partial(vmap_1d, variables=["cont_choice_argmax"])
+def retrieve_cont_choices(
+    cont_choice_argmax,
+    continuous_choice_grid,
+    cont_choice_grid_shape,
+):
+    if cont_choice_argmax is None:
+        out = {}
+    else:
+        indices = jnp.unravel_index(cont_choice_argmax, shape=cont_choice_grid_shape)
+        out = {
+            name: grid[index]
+            for (name, grid), index in zip(
+                continuous_choice_grid.items(),
+                indices,
+                strict=True,
+            )
+        }
+    return out
 
 
 # ======================================================================================
@@ -184,18 +289,37 @@ def create_data_state_choice_space(
 
 
 def get_compute_discrete_argmax(variable_info):
+    """Return a function that calculates the argmax and max of continuation values.
+
+    The argmax is taken over the discrete choice variables in each state.
+
+    Args:
+        variable_info (pd.DataFrame): DataFrame with information about the variables.
+
+    Returns:
+        callable: Function that calculates the argmax of the conditional continuation
+            values. The function depends on:
+            - values (jax.numpy.ndarray): Multidimensional jax array with conditional
+                continuation values.
+            - choice_segments (jax.numpy.ndarray): Jax array with the indices of the
+                choice segments that indicate which sparse choice variables belong to
+                one state.
+
+    """
     choice_axes = tuple(_determine_discrete_choice_axes(variable_info))
 
-    def _calculate_emax_no_shocks(values, choice_axes, choice_segments):
+    def _calculate_discrete_argmax(values, choice_axes, choice_segments):
         _max = values
 
-        # find maximum over dense choices
+        # Determine argmax and max over dense choices
+        # ==============================================================================
         if choice_axes is not None:
             dense_argmax, _max = argmax(_max, axis=choice_axes)
         else:
             dense_argmax = None
 
-        # find maxmimum over sparse choices
+        # Determine argmax and max over sparse choices
+        # ==============================================================================
         if choice_segments is not None:
             sparse_argmax, _max = segment_argmax(_max, choice_segments)
         else:
@@ -203,7 +327,7 @@ def get_compute_discrete_argmax(variable_info):
 
         return dense_argmax, sparse_argmax, _max
 
-    return partial(_calculate_emax_no_shocks, choice_axes=choice_axes)
+    return partial(_calculate_discrete_argmax, choice_axes=choice_axes)
 
 
 # ======================================================================================
