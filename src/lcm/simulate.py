@@ -5,7 +5,6 @@ import jax.numpy as jnp
 from dags import concatenate_functions
 
 from lcm.argmax import argmax, segment_argmax
-from lcm.discrete_emax import _determine_discrete_choice_axes
 from lcm.dispatchers import spacemap, vmap_1d
 from lcm.interfaces import Space
 
@@ -26,34 +25,68 @@ def simulate(
     # input to simulate
     initial_states,
 ):
+    """Simulate the model forward in time.
+
+    Args:
+        params (dict): Dict of model parameters.
+        state_indexers: ...
+        continuous_choice_grids (list): List of dicts with 1d grids for continuous
+            choice variables.
+        compute_ccv_argmax_functions (list): List of functions that compute the
+            conditional continuation value dependent on the discrete choices.
+        model (Model): Model instance.
+        next_state (callable): Function that returns the next state given the current
+            state and choice variables.
+        vf_arr_list (list): List of value function arrays for each period. Is the output
+            of the solution.
+        initial_states (list): List of initial states from which we iterate.
+
+    Returns:
+        list: List of optimal choices for each initial state per period.
+
+    """
+    # Preparations
+    # ==================================================================================
     next_state = partial(next_state, params=params)
 
-    # extract information
     n_periods = len(vf_arr_list)
 
-    compute_discrete_argmax = get_compute_discrete_argmax(
+    _discrete_arg_emax_calculator = get_discrete_arg_emax_calculator(
         variable_info=model.variable_info,
     )
 
     sparse_choice_variables = model.variable_info.query("is_choice & is_sparse").index
 
-    # output container
-    optimal_choices = []
-
     states = initial_states
 
+    # Forward simulation
+    # ==================================================================================
+    result = []
+
     for period in range(n_periods):
+        # Create data state choice space
+        # ------------------------------------------------------------------------------
+        # Initial states are treated as sparse variables, so that the sparse variables
+        # in the data-state-choice-space correspond to the feasible product of sparse
+        # choice variables and initial states. The space has to be created in each
+        # iteration because the states change over time.
+        # ==============================================================================
         data_state_choice_space, data_choice_segments = create_data_state_choice_space(
             states=states,
             model=model,
         )
 
-        dense_choice_grid_shape = tuple(
+        # Compute quantities dependent on data-state-choice-space
+        # ==============================================================================
+        dense_vars_grid_shape = tuple(
             len(grid) for grid in data_state_choice_space.dense_vars.values()
         )
+        cont_choice_grid_shape = tuple(
+            len(grid) for grid in continuous_choice_grids[period].values()
+        )
 
-        discrete_argmax_calculator = partial(
-            compute_discrete_argmax,
+        discrete_arg_emax_calculator = partial(
+            _discrete_arg_emax_calculator,
             choice_segments=data_choice_segments,
         )
 
@@ -77,7 +110,7 @@ def simulate(
 
         # Get optimal discrete choice given the optimal conditional continuous choices
         # ==============================================================================
-        dense_argmax, sparse_argmax, value = discrete_argmax_calculator(
+        dense_argmax, sparse_argmax, value = discrete_arg_emax_calculator(
             conditional_continuation_value,
         )
 
@@ -85,8 +118,8 @@ def simulate(
         # ==============================================================================
         cont_choice_argmax = select_cont_choice_argmax_given_dense_argmax(
             conditional_cont_choice_argmax,
-            dense_argmax,
-            dense_choice_grid_shape,
+            dense_argmax=dense_argmax,
+            dense_vars_grid_shape=dense_vars_grid_shape,
         )
         if sparse_argmax is not None:
             cont_choice_argmax = cont_choice_argmax[sparse_argmax]
@@ -96,44 +129,42 @@ def simulate(
         if dense_argmax is None:
             dense_choices = {}
         else:
-            dense_choices = retrieve_dense_choices(
-                dense_argmax,
-                data_state_choice_space.dense_vars,
-                dense_choice_grid_shape,
+            dense_choices = retrieve_non_sparse_choices(
+                indices=dense_argmax,
+                grids=data_state_choice_space.dense_vars,
+                grid_shape=dense_vars_grid_shape,
             )
 
-        if sparse_argmax is None:
-            sparse_choices = {}
+        if cont_choice_argmax is None:
+            cont_choices = {}
         else:
-            sparse_choices = retrieve_sparse_choices(
-                sparse_argmax,
-                sparse_vars={
-                    key: val
-                    for key, val in data_state_choice_space.sparse_vars.items()
-                    if key in sparse_choice_variables
-                },
+            cont_choices = retrieve_non_sparse_choices(
+                indices=cont_choice_argmax,
+                grids=continuous_choice_grids[period],
+                grid_shape=cont_choice_grid_shape,
             )
 
-        cont_choice_grid_shape = tuple(
-            len(grid) for grid in continuous_choice_grids[period].values()
-        )
-        cont_choices = retrieve_cont_choices(
-            cont_choice_argmax,
-            continuous_choice_grids[period],
-            cont_choice_grid_shape,
-        )
+        sparse_choices = {
+            key: data_state_choice_space.sparse_vars[key][sparse_argmax]
+            for key in sparse_choice_variables
+        }
 
         # Store results
         # ==============================================================================
         choices = {**dense_choices, **sparse_choices, **cont_choices}
-        optimal_choices.append(choices)
+        result.append(
+            {
+                "choices": choices,
+                "value": value,
+            },
+        )
 
         # Update states
         # ==============================================================================
         states = next_state(**choices, **states)
-        states = {key.replace("next_", ""): val for key, val in states.items()}
+        states = {key.lstrip("next_"): val for key, val in states.items()}
 
-    return optimal_choices
+    return result
 
 
 @partial(vmap_1d, variables=["conditional_cont_choice_argmax", "dense_argmax"])
@@ -150,39 +181,24 @@ def select_cont_choice_argmax_given_dense_argmax(
     return out
 
 
-@partial(vmap_1d, variables=["dense_argmax"])
-def retrieve_dense_choices(dense_argmax, dense_vars, dense_choice_grid_shape):
-    indices = jnp.unravel_index(dense_argmax, shape=dense_choice_grid_shape)
+@partial(vmap_1d, variables=["indices"])
+def retrieve_non_sparse_choices(indices, grids, grid_shape):
+    """Retrieve dense or continuous choices given indices.
+
+    Args:
+        indices (int): General index. Represents the index of the flattened grid.
+        grids (dict): Dictionary of grids.
+        grid_shape (tuple): Shape of the grids. Is used to unravel the index.
+
+    Returns:
+        dict: Dictionary of choices.
+
+    """
+    indices = jnp.unravel_index(indices, shape=grid_shape)
     return {
         name: grid[index]
-        for (name, grid), index in zip(dense_vars.items(), indices, strict=True)
+        for (name, grid), index in zip(grids.items(), indices, strict=True)
     }
-
-
-@partial(vmap_1d, variables=["sparse_argmax"])
-def retrieve_sparse_choices(sparse_argmax, sparse_vars):
-    return {name: grid[sparse_argmax] for name, grid in sparse_vars.items()}
-
-
-@partial(vmap_1d, variables=["cont_choice_argmax"])
-def retrieve_cont_choices(
-    cont_choice_argmax,
-    continuous_choice_grid,
-    cont_choice_grid_shape,
-):
-    if cont_choice_argmax is None:
-        out = {}
-    else:
-        indices = jnp.unravel_index(cont_choice_argmax, shape=cont_choice_grid_shape)
-        out = {
-            name: grid[index]
-            for (name, grid), index in zip(
-                continuous_choice_grid.items(),
-                indices,
-                strict=True,
-            )
-        }
-    return out
 
 
 # ======================================================================================
@@ -294,7 +310,7 @@ def create_data_state_choice_space(
 # ======================================================================================
 
 
-def get_compute_discrete_argmax(variable_info):
+def get_discrete_arg_emax_calculator(variable_info):
     """Return a function that calculates the argmax and max of continuation values.
 
     The argmax is taken over the discrete choice variables in each state.
@@ -312,9 +328,7 @@ def get_compute_discrete_argmax(variable_info):
                 one state.
 
     """
-    choice_axes = _determine_discrete_choice_axes(variable_info)
-    if choice_axes is not None:
-        choice_axes = tuple(choice_axes)
+    choice_axes = determine_discrete_dense_choice_axes(variable_info)
 
     def _calculate_discrete_argmax(values, choice_axes, choice_segments):
         _max = values
@@ -384,3 +398,30 @@ def create_choice_segments(mask, n_sparse_states):
         "segment_ids": jnp.array(segments),
         "num_segments": len(jnp.unique(segments)),
     }
+
+
+def determine_discrete_dense_choice_axes(variable_info):
+    """Determine which axes correspond to discrete and dense choices.
+
+    Args:
+        variable_info (pd.DataFrame): DataFrame with information about the variables.
+
+    Returns:
+        tuple: Tuple of ints, specifying which axes in a value function correspond to
+            discrete and dense choices.
+
+    """
+    dense_vars = variable_info.query(
+        "is_dense & ~(is_choice & is_continuous)",
+    ).index.tolist()
+
+    choice_vars = set(variable_info.query("is_choice").index.tolist())
+
+    choice_indices = []
+    for i, ax in enumerate(dense_vars):
+        if ax in choice_vars:
+            choice_indices.append(i)
+
+    choice_indices = None if not choice_indices else tuple(choice_indices)
+
+    return choice_indices

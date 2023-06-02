@@ -6,7 +6,7 @@ from numpy.testing import assert_array_equal
 # Test jitted functions
 # ======================================================================================
 jitted_segment_argmax = jit(segment_argmax, static_argnums=2)
-jitted_argmax = jit(argmax, static_argnums=[1, 2, 3])
+jitted_argmax = jit(argmax, static_argnums=[1, 2])
 
 
 # ======================================================================================
