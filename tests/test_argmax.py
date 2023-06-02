@@ -6,7 +6,7 @@ from numpy.testing import assert_array_equal
 # Test jitted functions
 # ======================================================================================
 jitted_segment_argmax = jit(segment_argmax, static_argnums=2)
-jitted_argmax = jit(argmax, static_argnums=[1, 2, 4])
+jitted_argmax = jit(argmax, static_argnums=[1, 2, 3])
 
 
 # ======================================================================================
@@ -109,16 +109,16 @@ def test_argmax_3d_no_mask():
 def test_segment_argmax_1d():
     a = jnp.arange(10)
     segment_ids = jnp.array([0, 0, 0, 1, 1, 2, 2, 2, 2, 2])
-    _argmax, _max = segment_argmax(a, segment_ids, num_segments=3)
-    assert_array_equal(_argmax, jnp.array([2, 1, 4]))
+    _argmax, _max = jitted_segment_argmax(a, segment_ids, num_segments=3)
+    assert_array_equal(_argmax, jnp.array([2, 4, 9]))
     assert_array_equal(_max, jnp.array([2, 4, 9]))
 
 
 def test_segment_argmax_2d():
     a = jnp.arange(10).reshape(5, 2)
     segment_ids = jnp.array([0, 0, 0, 1, 1])
-    _argmax, _max = segment_argmax(a, segment_ids, num_segments=2)
-    assert_array_equal(_argmax, jnp.array([[2, 2], [1, 1]]))
+    _argmax, _max = jitted_segment_argmax(a, segment_ids, num_segments=2)
+    assert_array_equal(_argmax, jnp.array([[2, 2], [4, 4]]))
     assert_array_equal(_max, jnp.array([[4, 5], [8, 9]]))
 
 
@@ -131,6 +131,6 @@ def test_segment_argmax_3d():
         ],
     )
     segment_ids = jnp.array([0, 0, 1])
-    _argmax, _max = segment_argmax(a, segment_ids, num_segments=2)
-    assert_array_equal(_argmax, jnp.array([[[1, 0], [0, 1]], [[0, 0], [0, 0]]]))
+    _argmax, _max = jitted_segment_argmax(a, segment_ids, num_segments=2)
+    assert_array_equal(_argmax, jnp.array([[[1, 0], [0, 1]], [[2, 2], [2, 2]]]))
     assert_array_equal(_max, jnp.array([[[1, 5], [3, 0]], [[0, 0], [0, 0]]]))

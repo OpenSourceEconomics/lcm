@@ -95,13 +95,11 @@ def segment_argmax(a, segment_ids, num_segments):
     # ==================================================================================
     max_value_mask = a == segment_max_expanded
 
-    # Create index array with argmax indices for each segment (has same shape as a)
+    # Create index array of argmax indices for each segment (has same shape as a)
     # ==================================================================================
-    segment_argmax_ids = _create_segment_nd_arange(
-        segment_ids,
-        num_segments,
-        shape=a.shape,
-    )
+    arange = jnp.arange(a.shape[0])
+    reshaped = arange.reshape(-1, *((1,) * (len(a.shape) - 1)))
+    segment_argmax_ids = jnp.broadcast_to(reshaped, a.shape)
 
     # Set indices to zero that do not correspond to a maximum
     # ==================================================================================

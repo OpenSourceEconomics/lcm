@@ -2,6 +2,7 @@ import functools
 from functools import partial
 
 import jax.numpy as jnp
+from dags import concatenate_functions
 
 from lcm.argmax import argmax
 from lcm.discrete_emax import get_emax_calculator
@@ -141,12 +142,15 @@ def get_lcm_function(model, targets="solve", interpolation_options=None):
         emax_calculators=emax_calculators,
     )
 
+    next_state = get_next_state_function(model=_mod)
+
     simulate_model = partial(
         simulate,
         state_indexers=state_indexers,
         continuous_choice_grids=continuous_choice_grids,
         compute_ccv_argmax_functions=compute_ccv_argmax_functions,
         model=_mod,
+        next_state=next_state,
     )
 
     _target = solve_model if targets == "solve" else simulate_model
@@ -225,3 +229,28 @@ def create_compute_conditional_continuation_value_argmax(
         return _argmax, _max
 
     return compute_ccv_argmax
+
+
+# ======================================================================================
+# Next state
+# ======================================================================================
+
+
+def get_next_state_function(model):
+    """Combine the next state functions into one function.
+
+    Args:
+        model (Model): Model instance.
+
+    Returns:
+        function: Combined next state function.
+
+    """
+    targets = model.function_info.query("is_next").index.tolist()
+
+    return concatenate_functions(
+        functions=model.functions,
+        targets=targets,
+        return_type="dict",
+        enforce_signature=False,
+    )

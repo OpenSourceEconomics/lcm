@@ -13,7 +13,7 @@ from numpy.testing import assert_array_equal
 def test_create_data_state_choice_space():
     model = process_model(PHELPS_DEATON_WITH_FILTERS)
     got_space, got_segment_info = create_data_state_choice_space(
-        initial_states={
+        states={
             "wealth": jnp.array([10.0, 20.0]),
             "lagged_retirement": jnp.array([0, 1]),
         },
