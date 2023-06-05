@@ -10,6 +10,11 @@ MODELS = {
 }
 
 
+# ======================================================================================
+# Solve
+# ======================================================================================
+
+
 @pytest.mark.parametrize("user_model", list(MODELS.values()), ids=list(MODELS))
 def test_get_lcm_function_with_solve_target(user_model):
     solve_model, params_template = get_lcm_function(model=user_model)
@@ -20,7 +25,7 @@ def test_get_lcm_function_with_solve_target(user_model):
 
 
 # ======================================================================================
-# Simulate - Test functionality
+# Simulate
 # ======================================================================================
 
 
@@ -65,42 +70,3 @@ def test_get_lcm_function_with_simulation_target_with_filters(user_model):
             "lagged_retirement": jnp.array([0, 1, 1]),
         },
     )
-
-
-# ======================================================================================
-# Simulate - Test correctness
-# ======================================================================================
-
-
-def test_get_lcm_function_with_simulation_three_periods():
-    user_model = {**PHELPS_DEATON, "n_periods": 3}
-
-    # solve model
-    solve_model, params_template = get_lcm_function(model=user_model)
-
-    # set parameters
-    params = params_template.copy()
-    params["beta"] = 0.95
-    params["utility"]["delta"] = 1.0
-    params["next_wealth"]["interest_rate"] = 1 / 0.95 - 1
-    params["next_wealth"]["wage"] = 20.0
-
-    vf_arr_list = solve_model(params)
-
-    # simulate using solution
-    simulate_model, _ = get_lcm_function(model=user_model, targets="simulate")
-
-    res = simulate_model(
-        params,
-        vf_arr_list=vf_arr_list,
-        initial_states={
-            "wealth": jnp.array([20, 40, 60, 100.0]),
-        },
-    )
-
-    # assert that value is increasing in initial wealth
-    for period in range(3):
-        assert jnp.all(jnp.diff(res[period]["value"]) >= 0)
-
-    # assert that no one works in the last period
-    assert jnp.all(res[2]["choices"]["retirement"] == 1)

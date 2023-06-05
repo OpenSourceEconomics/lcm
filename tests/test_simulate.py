@@ -1,20 +1,86 @@
 import jax.numpy as jnp
+import pytest
 from jax import random
-from lcm.example_models import PHELPS_DEATON_WITH_FILTERS
+from lcm.entry_point import get_lcm_function
+from lcm.example_models import PHELPS_DEATON, PHELPS_DEATON_WITH_FILTERS
 from lcm.process_model import process_model
 from lcm.simulate import (
+    _retrieve_non_sparse_choices,
     create_choice_segments,
     create_data_state_choice_space,
     dict_product,
-    retrieve_non_sparse_choices,
     select_cont_choice_argmax_given_dense_argmax,
 )
 from numpy.testing import assert_array_equal
 
+# ======================================================================================
+# Simulate
+# ======================================================================================
+
+
+@pytest.fixture()
+def phelps_deaton_three_period_solution():
+    user_model = {**PHELPS_DEATON, "n_periods": 3}
+
+    # solve model
+    solve_model, params_template = get_lcm_function(model=user_model)
+
+    # set parameters
+    params = params_template.copy()
+    params["beta"] = 0.95
+    params["utility"]["delta"] = 1.0
+    params["next_wealth"]["interest_rate"] = 1 / 0.95 - 1
+    params["next_wealth"]["wage"] = 20.0
+
+    vf_arr_list = solve_model(params)
+    return vf_arr_list, params
+
+
+def test_simulate_has_same_value_as_solution(phelps_deaton_three_period_solution):
+    vf_arr_list, params = phelps_deaton_three_period_solution
+
+    simulate_model, _ = get_lcm_function(model=PHELPS_DEATON, targets="simulate")
+
+    res = simulate_model(
+        params,
+        vf_arr_list=vf_arr_list,
+        initial_states={
+            "wealth": jnp.array([20, 40, 60, 100.0]),
+        },
+    )
+    wealth_grid_index = jnp.array([2, 4, 6, 10])
+    assert jnp.all(vf_arr_list[0][wealth_grid_index] == res[0]["value"])
+
+
+def test_simulate_correct_choices(phelps_deaton_three_period_solution):
+    vf_arr_list, params = phelps_deaton_three_period_solution
+
+    simulate_model, _ = get_lcm_function(model=PHELPS_DEATON, targets="simulate")
+
+    res = simulate_model(
+        params,
+        vf_arr_list=vf_arr_list,
+        initial_states={
+            "wealth": jnp.array([20, 40, 60, 100.0]),
+        },
+    )
+
+    # assert that value is increasing in initial wealth
+    for period in range(3):
+        assert jnp.all(jnp.diff(res[period]["value"]) >= 0)
+
+    # assert that no one works in the last period
+    assert jnp.all(res[2]["choices"]["retirement"] == 1)
+
+
+# ======================================================================================
+# Helper functions
+# ======================================================================================
+
 
 def test_retrieve_non_sparse_choices():
-    got = retrieve_non_sparse_choices(
-        indices=jnp.array([0, 3, 7]),
+    got = _retrieve_non_sparse_choices(
+        index=jnp.array([0, 3, 7]),
         grids={"a": jnp.linspace(0, 1, 5), "b": jnp.linspace(10, 20, 6)},
         grid_shape=(5, 6),
     )

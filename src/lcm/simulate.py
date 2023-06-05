@@ -20,16 +20,15 @@ def simulate(
     compute_ccv_argmax_functions,
     model,
     next_state,
-    # output from solution
     vf_arr_list,
-    # input to simulate
     initial_states,
 ):
     """Simulate the model forward in time.
 
     Args:
         params (dict): Dict of model parameters.
-        state_indexers: ...
+        state_indexers (list): List of dicts with length n_periods. Each dict contains
+            one or several state indexers.
         continuous_choice_grids (list): List of dicts with 1d grids for continuous
             choice variables.
         compute_ccv_argmax_functions (list): List of functions that compute the
@@ -57,7 +56,7 @@ def simulate(
 
     sparse_choice_variables = model.variable_info.query("is_choice & is_sparse").index
 
-    states = initial_states
+    states = initial_states  # will be updated in the forward simulation
 
     # Forward simulation
     # ==================================================================================
@@ -76,7 +75,7 @@ def simulate(
             model=model,
         )
 
-        # Compute quantities dependent on data-state-choice-space
+        # Compute objects dependent on data-state-choice-space
         # ==============================================================================
         dense_vars_grid_shape = tuple(
             len(grid) for grid in data_state_choice_space.dense_vars.values()
@@ -115,6 +114,10 @@ def simulate(
         )
 
         # Select optimal continuous choice corresponding to optimal discrete choice
+        # ------------------------------------------------------------------------------
+        # The conditional continuous choice argmax is computed for each discrete choice
+        # in the data-state-choice-space. Here we select the the optimal continuous
+        # choice corresponding to the optimal discrete choice (dense and sparse).
         # ==============================================================================
         cont_choice_argmax = select_cont_choice_argmax_given_dense_argmax(
             conditional_cont_choice_argmax,
@@ -126,23 +129,17 @@ def simulate(
 
         # Convert optimal choice indices to actual choice values
         # ==============================================================================
-        if dense_argmax is None:
-            dense_choices = {}
-        else:
-            dense_choices = retrieve_non_sparse_choices(
-                indices=dense_argmax,
-                grids=data_state_choice_space.dense_vars,
-                grid_shape=dense_vars_grid_shape,
-            )
+        dense_choices = retrieve_non_sparse_choices(
+            indices=dense_argmax,
+            grids=data_state_choice_space.dense_vars,
+            grid_shape=dense_vars_grid_shape,
+        )
 
-        if cont_choice_argmax is None:
-            cont_choices = {}
-        else:
-            cont_choices = retrieve_non_sparse_choices(
-                indices=cont_choice_argmax,
-                grids=continuous_choice_grids[period],
-                grid_shape=cont_choice_grid_shape,
-            )
+        cont_choices = retrieve_non_sparse_choices(
+            indices=cont_choice_argmax,
+            grids=continuous_choice_grids[period],
+            grid_shape=cont_choice_grid_shape,
+        )
 
         sparse_choices = {
             key: data_state_choice_space.sparse_vars[key][sparse_argmax]
@@ -173,6 +170,18 @@ def select_cont_choice_argmax_given_dense_argmax(
     dense_argmax,
     dense_vars_grid_shape,
 ):
+    """Select optimal continuous choice index given optimal discrete choice.
+
+    Args:
+        conditional_cont_choice_argmax (jax.numpy.ndarray): Index array of optimal
+            continous choices conditional on discrete choices.
+        dense_argmax (jax.numpy.array): Index array of optimal dense choices.
+        dense_vars_grid_shape (tuple): Shape of the dense variables grid.
+
+    Returns:
+        jax.numpy.ndarray: Index array of optimal continuous choices.
+
+    """
     if dense_argmax is None:
         out = conditional_cont_choice_argmax
     else:
@@ -181,12 +190,11 @@ def select_cont_choice_argmax_given_dense_argmax(
     return out
 
 
-@partial(vmap_1d, variables=["indices"])
 def retrieve_non_sparse_choices(indices, grids, grid_shape):
     """Retrieve dense or continuous choices given indices.
 
     Args:
-        indices (int): General index. Represents the index of the flattened grid.
+        indices (int): General indices. Represents the index of the flattened grid.
         grids (dict): Dictionary of grids.
         grid_shape (tuple): Shape of the grids. Is used to unravel the index.
 
@@ -194,7 +202,27 @@ def retrieve_non_sparse_choices(indices, grids, grid_shape):
         dict: Dictionary of choices.
 
     """
-    indices = jnp.unravel_index(indices, shape=grid_shape)
+    if indices is None:
+        out = {}
+    else:
+        out = _retrieve_non_sparse_choices(indices, grids, grid_shape)
+    return out
+
+
+@partial(vmap_1d, variables=["index"])
+def _retrieve_non_sparse_choices(index, grids, grid_shape):
+    """Retrieve dense or continuous choices given index.
+
+    Args:
+        index (int): General index. Represents the index of the flattened grid.
+        grids (dict): Dictionary of grids.
+        grid_shape (tuple): Shape of the grids. Is used to unravel the index.
+
+    Returns:
+        dict: Dictionary of choices.
+
+    """
+    indices = jnp.unravel_index(index, shape=grid_shape)
     return {
         name: grid[index]
         for (name, grid), index in zip(grids.items(), indices, strict=True)
