@@ -6,8 +6,37 @@ from lcm.simulate import (
     create_choice_segments,
     create_data_state_choice_space,
     dict_product,
+    retrieve_non_sparse_choices,
+    select_cont_choice_argmax_given_dense_argmax,
 )
 from numpy.testing import assert_array_equal
+
+
+def test_retrieve_non_sparse_choices():
+    got = retrieve_non_sparse_choices(
+        indices=jnp.array([0, 3, 7]),
+        grids={"a": jnp.linspace(0, 1, 5), "b": jnp.linspace(10, 20, 6)},
+        grid_shape=(5, 6),
+    )
+    assert_array_equal(got["a"], jnp.array([0, 0, 0.25]))
+    assert_array_equal(got["b"], jnp.array([10, 16, 12]))
+
+
+def test_select_cont_choice_argmax_given_dense_argmax():
+    ccc_argmax = jnp.array(
+        [
+            [0, 1],
+            [1, 0],
+        ],
+    )
+    dense_argmax = jnp.array([0, 1])
+    dense_vars_grid_shape = (2,)
+    got = select_cont_choice_argmax_given_dense_argmax(
+        conditional_cont_choice_argmax=ccc_argmax,
+        dense_argmax=dense_argmax,
+        dense_vars_grid_shape=dense_vars_grid_shape,
+    )
+    assert jnp.all(got == jnp.array([0, 0]))
 
 
 def test_create_data_state_choice_space():

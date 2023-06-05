@@ -306,7 +306,7 @@ def create_data_state_choice_space(
 
 
 # ======================================================================================
-# Discrete argmax
+# Discrete arg emax
 # ======================================================================================
 
 
@@ -316,7 +316,8 @@ def get_discrete_arg_emax_calculator(variable_info):
     The argmax is taken over the discrete choice variables in each state.
 
     Args:
-        variable_info (pd.DataFrame): DataFrame with information about the variables.
+        variable_info (pd.DataFrame): DataFrame with information about the model
+            variables.
 
     Returns:
         callable: Function that calculates the argmax of the conditional continuation
