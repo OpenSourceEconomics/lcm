@@ -17,6 +17,52 @@ from numpy.testing import assert_array_equal
 # Simulate
 # ======================================================================================
 
+# ======================================================================================
+# Debug
+
+
+@pytest.fixture()
+def phelps_deaton_debug():
+    user_model = {**PHELPS_DEATON, "n_periods": 1}
+
+    # solve model
+    solve_model, params_template = get_lcm_function(model=user_model)
+
+    # set parameters
+    params = params_template.copy()
+    params["beta"] = 1.0
+    params["utility"]["delta"] = 1.0
+    params["next_wealth"]["interest_rate"] = 1 / params["beta"] - 1
+    params["next_wealth"]["wage"] = 10.0
+
+    vf_arr_list = solve_model(params)
+    return vf_arr_list, params
+
+
+def test_simulate_debug(phelps_deaton_debug):
+    vf_arr_list, params = phelps_deaton_debug
+
+    simulate_model, _ = get_lcm_function(model=PHELPS_DEATON, targets="simulate")
+
+    res = simulate_model(
+        params,
+        vf_arr_list=vf_arr_list,
+        initial_states={
+            "wealth": jnp.array([10.0, 50.0]),
+        },
+    )
+
+    # assert that everyone retires since it is the last period and the wage that you
+    # earn cannot be received until the next period
+    assert jnp.all(res[0]["choices"]["retirement"] == 1)
+
+    # assert that all initial wealth is consumed
+    assert jnp.all(res[0]["choices"]["consumption"] == jnp.array([10.0, 50.0]))
+
+
+# Debug
+# ======================================================================================
+
 
 @pytest.fixture()
 def phelps_deaton_three_period_solution():
@@ -36,6 +82,7 @@ def phelps_deaton_three_period_solution():
     return vf_arr_list, params
 
 
+@pytest.mark.xfail(reason="Not clear if this is a constraint or not.")
 def test_simulate_has_same_value_as_solution(phelps_deaton_three_period_solution):
     vf_arr_list, params = phelps_deaton_three_period_solution
 

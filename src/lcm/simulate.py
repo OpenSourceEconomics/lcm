@@ -194,7 +194,8 @@ def retrieve_non_sparse_choices(indices, grids, grid_shape):
     """Retrieve dense or continuous choices given indices.
 
     Args:
-        indices (int): General indices. Represents the index of the flattened grid.
+        indices (jnp.numpy.ndarray or None): General indices. Represents the index of
+            the flattened grid.
         grids (dict): Dictionary of grids.
         grid_shape (tuple): Shape of the grids. Is used to unravel the index.
 
