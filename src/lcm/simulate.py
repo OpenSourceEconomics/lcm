@@ -50,7 +50,7 @@ def simulate(
 
     n_periods = len(vf_arr_list)
 
-    _discrete_arg_emax_calculator = get_discrete_arg_emax_calculator(
+    _discrete_policy_calculator = get_discrete_policy_calculator(
         variable_info=model.variable_info,
     )
 
@@ -70,7 +70,7 @@ def simulate(
         # choice variables and initial states. The space has to be created in each
         # iteration because the states change over time.
         # ==============================================================================
-        data_state_choice_space, data_choice_segments = create_data_state_choice_space(
+        data_scs, data_choice_segments = create_data_scs(
             states=states,
             model=model,
         )
@@ -78,30 +78,30 @@ def simulate(
         # Compute objects dependent on data-state-choice-space
         # ==============================================================================
         dense_vars_grid_shape = tuple(
-            len(grid) for grid in data_state_choice_space.dense_vars.values()
+            len(grid) for grid in data_scs.dense_vars.values()
         )
         cont_choice_grid_shape = tuple(
             len(grid) for grid in continuous_choice_grids[period].values()
         )
 
-        discrete_arg_emax_calculator = partial(
-            _discrete_arg_emax_calculator,
+        discrete_policy_calculator = partial(
+            _discrete_policy_calculator,
             choice_segments=data_choice_segments,
         )
 
         gridmapped = spacemap(
             func=compute_ccv_argmax_functions[period],
-            dense_vars=list(data_state_choice_space.dense_vars),
-            sparse_vars=list(data_state_choice_space.sparse_vars),
+            dense_vars=list(data_scs.dense_vars),
+            sparse_vars=list(data_scs.sparse_vars),
             dense_first=False,
         )
 
         # Compute optimal continuous choice conditional on discrete choices
         # ==============================================================================
-        conditional_cont_choice_argmax, conditional_continuation_value = gridmapped(
-            **data_state_choice_space.dense_vars,
+        ccv_policy, ccv = gridmapped(
+            **data_scs.dense_vars,
             **continuous_choice_grids[period],
-            **data_state_choice_space.sparse_vars,
+            **data_scs.sparse_vars,
             **state_indexers[period],
             vf_arr=vf_arr_list[period],
             params=params,
@@ -109,9 +109,7 @@ def simulate(
 
         # Get optimal discrete choice given the optimal conditional continuous choices
         # ==============================================================================
-        dense_argmax, sparse_argmax, value = discrete_arg_emax_calculator(
-            conditional_continuation_value,
-        )
+        dense_argmax, sparse_argmax, value = discrete_policy_calculator(ccv)
 
         # Select optimal continuous choice corresponding to optimal discrete choice
         # ------------------------------------------------------------------------------
@@ -119,8 +117,8 @@ def simulate(
         # in the data-state-choice-space. Here we select the the optimal continuous
         # choice corresponding to the optimal discrete choice (dense and sparse).
         # ==============================================================================
-        cont_choice_argmax = select_cont_choice_argmax_given_dense_argmax(
-            conditional_cont_choice_argmax,
+        cont_choice_argmax = filter_ccv_policy(
+            ccv_policy,
             dense_argmax=dense_argmax,
             dense_vars_grid_shape=dense_vars_grid_shape,
         )
@@ -131,7 +129,7 @@ def simulate(
         # ==============================================================================
         dense_choices = retrieve_non_sparse_choices(
             indices=dense_argmax,
-            grids=data_state_choice_space.dense_vars,
+            grids=data_scs.dense_vars,
             grid_shape=dense_vars_grid_shape,
         )
 
@@ -142,7 +140,7 @@ def simulate(
         )
 
         sparse_choices = {
-            key: data_state_choice_space.sparse_vars[key][sparse_argmax]
+            key: data_scs.sparse_vars[key][sparse_argmax]
             for key in sparse_choice_variables
         }
 
@@ -164,17 +162,17 @@ def simulate(
     return result
 
 
-@partial(vmap_1d, variables=["conditional_cont_choice_argmax", "dense_argmax"])
-def select_cont_choice_argmax_given_dense_argmax(
-    conditional_cont_choice_argmax,
+@partial(vmap_1d, variables=["ccv_policy", "dense_argmax"])
+def filter_ccv_policy(
+    ccv_policy,
     dense_argmax,
     dense_vars_grid_shape,
 ):
     """Select optimal continuous choice index given optimal discrete choice.
 
     Args:
-        conditional_cont_choice_argmax (jax.numpy.ndarray): Index array of optimal
-            continous choices conditional on discrete choices.
+        ccv_policy (jax.numpy.ndarray): Index array of optimal continous choices
+            conditional on discrete choices.
         dense_argmax (jax.numpy.array): Index array of optimal dense choices.
         dense_vars_grid_shape (tuple): Shape of the dense variables grid.
 
@@ -183,10 +181,10 @@ def select_cont_choice_argmax_given_dense_argmax(
 
     """
     if dense_argmax is None:
-        out = conditional_cont_choice_argmax
+        out = ccv_policy
     else:
         indices = jnp.unravel_index(dense_argmax, shape=dense_vars_grid_shape)
-        out = conditional_cont_choice_argmax[indices]
+        out = ccv_policy[indices]
     return out
 
 
@@ -235,10 +233,21 @@ def _retrieve_non_sparse_choices(index, grids, grid_shape):
 # ======================================================================================
 
 
-def create_data_state_choice_space(
+def create_data_scs(
     states,
     model,
 ):
+    """Create data state choice space.
+
+    Args:
+        states (dict): Dict with initial states.
+        model (Model): Model instance.
+
+    Returns:
+        - Space: Data state choice space.
+        - dict: Dict with choice segments.
+
+    """
     # preparations
     # ==================================================================================
     vi = model.variable_info
@@ -316,7 +325,7 @@ def create_data_state_choice_space(
         combination_grid = states
         data_choice_segments = None
 
-    data_state_choice_space = Space(
+    data_scs = Space(
         sparse_vars=combination_grid,
         dense_vars=dense_choices,
     )
@@ -331,15 +340,15 @@ def create_data_state_choice_space(
     else:
         data_choice_segments = None
 
-    return data_state_choice_space, data_choice_segments
+    return data_scs, data_choice_segments
 
 
 # ======================================================================================
-# Discrete arg emax
+# Discrete policy
 # ======================================================================================
 
 
-def get_discrete_arg_emax_calculator(variable_info):
+def get_discrete_policy_calculator(variable_info):
     """Return a function that calculates the argmax and max of continuation values.
 
     The argmax is taken over the discrete choice variables in each state.

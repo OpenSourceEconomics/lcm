@@ -7,9 +7,9 @@ from lcm.process_model import process_model
 from lcm.simulate import (
     _retrieve_non_sparse_choices,
     create_choice_segments,
-    create_data_state_choice_space,
+    create_data_scs,
     dict_product,
-    select_cont_choice_argmax_given_dense_argmax,
+    filter_ccv_policy,
 )
 from numpy.testing import assert_array_equal
 
@@ -144,7 +144,7 @@ def test_select_cont_choice_argmax_given_dense_argmax():
     )
     dense_argmax = jnp.array([0, 1])
     dense_vars_grid_shape = (2,)
-    got = select_cont_choice_argmax_given_dense_argmax(
+    got = filter_ccv_policy(
         conditional_cont_choice_argmax=ccc_argmax,
         dense_argmax=dense_argmax,
         dense_vars_grid_shape=dense_vars_grid_shape,
@@ -154,7 +154,7 @@ def test_select_cont_choice_argmax_given_dense_argmax():
 
 def test_create_data_state_choice_space():
     model = process_model(PHELPS_DEATON_WITH_FILTERS)
-    got_space, got_segment_info = create_data_state_choice_space(
+    got_space, got_segment_info = create_data_scs(
         states={
             "wealth": jnp.array([10.0, 20.0]),
             "lagged_retirement": jnp.array([0, 1]),
