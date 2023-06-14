@@ -108,7 +108,7 @@ def get_lcm_function(model, targets="solve", interpolation_options=None):
         )
         compute_ccv_functions.append(compute_ccv)
 
-        compute_ccv_argmax = create_compute_conditional_continuation_value_argmax(
+        compute_ccv_argmax = create_compute_conditional_continuation_policy(
             utility_and_feasibility=u_and_f,
             continuous_choice_variables=list(_choice_grids),
         )
@@ -193,11 +193,11 @@ def create_compute_conditional_continuation_value(
     return compute_ccv
 
 
-def create_compute_conditional_continuation_value_argmax(
+def create_compute_conditional_continuation_policy(
     utility_and_feasibility,
     continuous_choice_variables,
 ):
-    """Create a function that computes the conditional continuation value argmax.
+    """Create a function that computes the conditional continuation policy.
 
     Note:
     -----
@@ -223,12 +223,12 @@ def create_compute_conditional_continuation_value_argmax(
     )
 
     @functools.wraps(u_and_f_mapped_over_cont_choices)
-    def compute_ccv_argmax(*args, **kwargs):
+    def compute_ccv_policy(*args, **kwargs):
         u, f = u_and_f_mapped_over_cont_choices(*args, **kwargs)
         _argmax, _max = argmax(u, where=f, initial=-jnp.inf)
         return _argmax, _max
 
-    return compute_ccv_argmax
+    return compute_ccv_policy
 
 
 # ======================================================================================

@@ -1,8 +1,19 @@
 import jax.numpy as jnp
 import pytest
-from lcm.entry_point import get_lcm_function, get_next_state_function
-from lcm.example_models import PHELPS_DEATON, PHELPS_DEATON_WITH_FILTERS
+from lcm.entry_point import (
+    create_compute_conditional_continuation_policy,
+    create_compute_conditional_continuation_value,
+    get_lcm_function,
+    get_next_state_function,
+)
+from lcm.example_models import (
+    PHELPS_DEATON,
+    PHELPS_DEATON_WITH_FILTERS,
+    phelps_deaton_utility,
+)
+from lcm.model_functions import get_utility_and_feasibility_function
 from lcm.process_model import process_model
+from lcm.state_space import create_state_choice_space
 from pybaum import tree_map
 
 MODELS = {
@@ -71,6 +82,99 @@ def test_get_lcm_function_with_simulation_target_with_filters(user_model):
             "lagged_retirement": jnp.array([0, 1, 1]),
         },
     )
+
+
+# ======================================================================================
+# Create compute conditional continuation value
+# ======================================================================================
+
+
+def test_create_compute_conditional_continuation_value():
+    model = process_model(PHELPS_DEATON)
+
+    params = {
+        "beta": 1.0,
+        "utility": {"delta": 1.0},
+        "next_wealth": {
+            "interest_rate": 0.05,
+            "wage": 1.0,
+        },
+    }
+
+    _, space_info, _, _ = create_state_choice_space(
+        model=model,
+        period=0,
+        jit_filter=False,
+    )
+
+    u_and_f = get_utility_and_feasibility_function(
+        model=model,
+        space_info=space_info,
+        data_name="vf_arr",
+        interpolation_options={},
+        is_last_period=True,
+    )
+
+    compute_ccv = create_compute_conditional_continuation_value(
+        utility_and_feasibility=u_and_f,
+        continuous_choice_variables=["consumption"],
+    )
+
+    val = compute_ccv(
+        consumption=jnp.array([10, 20, 30.0]),
+        retirement=1,
+        wealth=30,
+        params=params,
+        vf_arr=None,
+    )
+    assert val == phelps_deaton_utility(consumption=30.0, working=0, delta=1.0)
+
+
+# ======================================================================================
+# Create compute conditional continuation policy
+# ======================================================================================
+
+
+def test_create_compute_conditional_continuation_policy():
+    model = process_model(PHELPS_DEATON)
+
+    params = {
+        "beta": 1.0,
+        "utility": {"delta": 1.0},
+        "next_wealth": {
+            "interest_rate": 0.05,
+            "wage": 1.0,
+        },
+    }
+
+    _, space_info, _, _ = create_state_choice_space(
+        model=model,
+        period=0,
+        jit_filter=False,
+    )
+
+    u_and_f = get_utility_and_feasibility_function(
+        model=model,
+        space_info=space_info,
+        data_name="vf_arr",
+        interpolation_options={},
+        is_last_period=True,
+    )
+
+    compute_ccv_policy = create_compute_conditional_continuation_policy(
+        utility_and_feasibility=u_and_f,
+        continuous_choice_variables=["consumption"],
+    )
+
+    policy, val = compute_ccv_policy(
+        consumption=jnp.array([10, 20, 30.0]),
+        retirement=1,
+        wealth=30,
+        params=params,
+        vf_arr=None,
+    )
+    assert policy == 2
+    assert val == phelps_deaton_utility(consumption=30.0, working=0, delta=1.0)
 
 
 # ======================================================================================
