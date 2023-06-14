@@ -54,11 +54,31 @@ def argmax(a, axis=None, initial=None, where=None):
 
 
 def _move_axes_to_back(a, axes):
-    front_axes = tuple(set(range(a.ndim)) - set(axes))
+    """Move specified axes to the back of the array.
+
+    Args:
+        a (jax.numpy.ndarray): Multidimensional jax array.
+        axes (tuple): Axes to move to the back.
+
+    Returns:
+        jax.numpy.ndarray: Array a with shifted axes.
+
+    """
+    front_axes = sorted(set(range(a.ndim)) - set(axes))
     return a.transpose((*front_axes, *axes))
 
 
 def _flatten_last_n_axes(a, n):
+    """Flatten the last n axes of a to 1 dimension.
+
+    Args:
+        a (jax.numpy.ndarray): Multidimensional jax array.
+        n (int): Number of axes to flatten.
+
+    Returns:
+        jax.numpy.ndarray: Array a with flattened last n axes.
+
+    """
     return a.reshape(*a.shape[:-n], -1)
 
 

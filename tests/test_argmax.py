@@ -1,6 +1,6 @@
 import jax.numpy as jnp
 from jax import jit
-from lcm.argmax import argmax, segment_argmax
+from lcm.argmax import _flatten_last_n_axes, _move_axes_to_back, argmax, segment_argmax
 from numpy.testing import assert_array_equal
 
 # Test jitted functions
@@ -134,3 +134,66 @@ def test_segment_argmax_3d():
     _argmax, _max = jitted_segment_argmax(a, segment_ids, num_segments=2)
     assert_array_equal(_argmax, jnp.array([[[1, 0], [0, 1]], [[2, 2], [2, 2]]]))
     assert_array_equal(_max, jnp.array([[[1, 5], [3, 0]], [[0, 0], [0, 0]]]))
+
+
+# ======================================================================================
+# Move axes to back
+# ======================================================================================
+
+
+def test_move_axes_to_back_1d():
+    a = jnp.arange(4)
+    got = _move_axes_to_back(a, axes=(0,))
+    assert_array_equal(got, a)
+
+
+def test_move_axes_to_back_2d():
+    a = jnp.arange(4).reshape(2, 2)
+    got = _move_axes_to_back(a, axes=(0,))
+    assert_array_equal(got, a.transpose(1, 0))
+
+
+def test_move_axes_to_back_3d():
+    # 2 dimensions in back
+    a = jnp.arange(8).reshape(2, 2, 2)
+    got = _move_axes_to_back(a, axes=(0, 1))
+    assert_array_equal(got, a.transpose(2, 0, 1))
+
+    # 2 dimensions in front
+    a = jnp.arange(8).reshape(2, 2, 2)
+    got = _move_axes_to_back(a, axes=(1,))
+    assert_array_equal(got, a.transpose(0, 2, 1))
+
+
+# ======================================================================================
+# Flatten last n axes
+# ======================================================================================
+
+
+def test_flatten_last_n_axes_1d():
+    a = jnp.arange(4)
+    got = _flatten_last_n_axes(a, n=1)
+    assert_array_equal(got, a)
+
+
+def test_flatten_last_n_axes_2d():
+    a = jnp.arange(4).reshape(2, 2)
+
+    got = _flatten_last_n_axes(a, n=1)
+    assert_array_equal(got, a)
+
+    got = _flatten_last_n_axes(a, n=2)
+    assert_array_equal(got, a.reshape(4))
+
+
+def test_flatten_last_n_axes_3d():
+    a = jnp.arange(8).reshape(2, 2, 2)
+
+    got = _flatten_last_n_axes(a, n=1)
+    assert_array_equal(got, a)
+
+    got = _flatten_last_n_axes(a, n=2)
+    assert_array_equal(got, a.reshape(2, 4))
+
+    got = _flatten_last_n_axes(a, n=3)
+    assert_array_equal(got, a.reshape(8))
