@@ -71,7 +71,7 @@ def get_lcm_function(model, targets="solve", interpolation_options=None):
     state_choice_spaces = []
     state_indexers = []
     compute_ccv_functions = []
-    compute_ccv_argmax_functions = []
+    compute_ccv_policy_functions = []
     choice_segments = []
 
     for period in range(_mod.n_periods):
@@ -112,7 +112,7 @@ def get_lcm_function(model, targets="solve", interpolation_options=None):
             utility_and_feasibility=u_and_f,
             continuous_choice_variables=list(_choice_grids),
         )
-        compute_ccv_argmax_functions.append(compute_ccv_argmax)
+        compute_ccv_policy_functions.append(compute_ccv_argmax)
 
     # ==================================================================================
     # create list of emax_calculators
@@ -148,7 +148,7 @@ def get_lcm_function(model, targets="solve", interpolation_options=None):
         simulate,
         state_indexers=state_indexers,
         continuous_choice_grids=continuous_choice_grids,
-        compute_ccv_argmax_functions=compute_ccv_argmax_functions,
+        compute_ccv_policy_functions=compute_ccv_policy_functions,
         model=_mod,
         next_state=next_state,
     )

@@ -8,16 +8,12 @@ from lcm.argmax import argmax, segment_argmax
 from lcm.dispatchers import spacemap, vmap_1d
 from lcm.interfaces import Space
 
-# ======================================================================================
-# Simulate
-# ======================================================================================
-
 
 def simulate(
     params,
     state_indexers,
     continuous_choice_grids,
-    compute_ccv_argmax_functions,
+    compute_ccv_policy_functions,
     model,
     next_state,
     vf_arr_list,
@@ -31,7 +27,7 @@ def simulate(
             one or several state indexers.
         continuous_choice_grids (list): List of dicts with 1d grids for continuous
             choice variables.
-        compute_ccv_argmax_functions (list): List of functions that compute the
+        compute_ccv_policy_functions (list): List of functions that compute the
             conditional continuation value dependent on the discrete choices.
         model (Model): Model instance.
         next_state (callable): Function that returns the next state given the current
@@ -90,7 +86,7 @@ def simulate(
         )
 
         gridmapped = spacemap(
-            func=compute_ccv_argmax_functions[period],
+            func=compute_ccv_policy_functions[period],
             dense_vars=list(data_scs.dense_vars),
             sparse_vars=list(data_scs.sparse_vars),
             dense_first=False,
