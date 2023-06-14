@@ -83,7 +83,8 @@ def test_simulate():
 @pytest.fixture()
 def phelps_deaton_debug():
     # solve model
-    solve_model, _ = get_lcm_function(model=PHELPS_DEATON)
+    model = {**PHELPS_DEATON, "n_periods": 1}
+    solve_model, _ = get_lcm_function(model=model)
 
     params = {
         "beta": 1.0,
@@ -107,16 +108,16 @@ def test_simulate_debug(phelps_deaton_debug):
         params,
         vf_arr_list=vf_arr_list,
         initial_states={
-            "wealth": jnp.array([10.9, 50.5]),
+            "wealth": jnp.array([1, 50.5]),
         },
     )
 
     # assert that everyone retires since it is the last period and the wage that you
     # earn cannot be received until the next period
-    assert jnp.all(res[-1]["choices"]["retirement"] == 1)
+    assert_array_equal(res[-1]["choices"]["retirement"], 1)
 
     # assert that all initial wealth is consumed
-    assert jnp.all(res[-1]["choices"]["consumption"] == jnp.array([10.9, 50.5]))
+    assert_array_equal(res[-1]["choices"]["consumption"], jnp.array([1, 50.5]))
 
 
 # Debug
