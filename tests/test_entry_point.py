@@ -1,7 +1,8 @@
 import jax.numpy as jnp
 import pytest
-from lcm.entry_point import get_lcm_function
+from lcm.entry_point import get_lcm_function, get_next_state_function
 from lcm.example_models import PHELPS_DEATON, PHELPS_DEATON_WITH_FILTERS
+from lcm.process_model import process_model
 from pybaum import tree_map
 
 MODELS = {
@@ -70,3 +71,28 @@ def test_get_lcm_function_with_simulation_target_with_filters(user_model):
             "lagged_retirement": jnp.array([0, 1, 1]),
         },
     )
+
+
+# ======================================================================================
+# Next state
+# ======================================================================================
+
+
+def test_get_next_state_function():
+    model = process_model(PHELPS_DEATON)
+    next_state = get_next_state_function(model)
+
+    params = {
+        "beta": 1.0,
+        "utility": {"delta": 1.0},
+        "next_wealth": {
+            "interest_rate": 0.05,
+            "wage": 1.0,
+        },
+    }
+
+    choice = {"retirement": 1, "consumption": 10}
+    state = {"wealth": 20}
+
+    _next_state = next_state(**choice, **state, params=params)
+    assert _next_state == {"next_wealth": 1.05 * (20 - 10)}

@@ -135,8 +135,8 @@ def test_retrieve_non_sparse_choices():
     assert_array_equal(got["b"], jnp.array([10, 16, 12]))
 
 
-def test_select_cont_choice_argmax_given_dense_argmax():
-    ccc_argmax = jnp.array(
+def test_filter_ccv_policy():
+    ccc_policy = jnp.array(
         [
             [0, 1],
             [1, 0],
@@ -145,7 +145,7 @@ def test_select_cont_choice_argmax_given_dense_argmax():
     dense_argmax = jnp.array([0, 1])
     dense_vars_grid_shape = (2,)
     got = filter_ccv_policy(
-        conditional_cont_choice_argmax=ccc_argmax,
+        ccv_policy=ccc_policy,
         dense_argmax=dense_argmax,
         dense_vars_grid_shape=dense_vars_grid_shape,
     )
