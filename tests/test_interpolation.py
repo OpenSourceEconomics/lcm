@@ -80,7 +80,7 @@ def _calc_values_5d(a, b, c, d, e):
 )
 def test_linear_interpolation_monotone_grid(info, points, calc_values):
     grids = [np.linspace(*i) for i in info]
-    grid_info = [("linspace",) + (i,) for i in info]
+    grid_info = [("linspace", i) for i in info]
 
     values = calc_values(*np.meshgrid(*grids, indexing="ij", sparse=False))
 
@@ -118,7 +118,7 @@ def test_linear_interpolation_monotone_grid(info, points, calc_values):
 )
 def test_linear_interpolation_logarithmic_scale(grid, info, points, calc_values):
     grids = [np.logspace(*g) for g in grid]
-    grid_info = [("logspace",) + (i,) for i in info]
+    grid_info = [("logspace", i) for i in info]
 
     values = calc_values(*np.meshgrid(*grids, indexing="ij", sparse=False))
 
