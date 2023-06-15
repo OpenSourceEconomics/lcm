@@ -40,8 +40,8 @@ def next_wealth_constraint(next_wealth):
     return next_wealth >= 0
 
 
-def next_wealth_constraint_no_borrowing(next_wealth, labor_income):
-    return next_wealth >= labor_income
+def consumption_constraint(consumption, wealth):
+    return wealth >= consumption
 
 
 def age(period):
@@ -125,7 +125,8 @@ PHELPS_DEATON_NO_BORROWING = {
     "functions": {
         "utility": phelps_deaton_utility_with_filter,
         "next_wealth": next_wealth,
-        "next_wealth_constraint": next_wealth_constraint_no_borrowing,
+        "next_wealth_constraint": next_wealth_constraint,
+        "consumption_constraint": consumption_constraint,
         "working": working,
         "labor_income": labor_income,
         "absorbing_retirement_filter": absorbing_retirement_filter,
