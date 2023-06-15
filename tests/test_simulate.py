@@ -134,6 +134,7 @@ def test_simulate_using_get_lcm_function(phelps_deaton_model_solution, n_periods
         # The following does not work. I.e. the continuation value in each period is not
         # weakly increasing in wealth. It is unclear if this needs to hold.
         # ------------------------------------------------------------------------------
+        # assert jnp.all(jnp.diff(res[period]["value"]) >= 0)  # noqa: ERA001
 
 
 @pytest.mark.xfail(reason="Not clear if this is a constraint or not.")
