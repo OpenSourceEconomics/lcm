@@ -21,12 +21,14 @@ from lcm.state_space import create_state_choice_space
 from numpy.testing import assert_array_equal
 
 # ======================================================================================
-# Simulate
+# Test simulate using raw inputs
 # ======================================================================================
 
 
-def test_simulate():
-    model = process_model(PHELPS_DEATON)
+@pytest.fixture()
+def simulate_inputs():
+    user_model = {**PHELPS_DEATON, "n_periods": 1}
+    model = process_model(user_model)
 
     _, space_info, _, _ = create_state_choice_space(
         model=model,
@@ -50,6 +52,16 @@ def test_simulate():
         ),
     ]
 
+    return {
+        "state_indexers": [{}],
+        "continuous_choice_grids": [{"consumption": jnp.linspace(1, 100, num=11)}],
+        "compute_ccv_policy_functions": compute_ccv_policy_functions,
+        "model": model,
+        "next_state": next_state,
+    }
+
+
+def test_simulate_using_raw_inputs(simulate_inputs):
     params = {
         "beta": 1.0,
         "utility": {"delta": 1.0},
@@ -61,13 +73,9 @@ def test_simulate():
 
     got = simulate(
         params=params,
-        state_indexers=[{}],
-        continuous_choice_grids=[{"consumption": jnp.linspace(1, 100, num=11)}],
-        compute_ccv_policy_functions=compute_ccv_policy_functions,
-        model=model,
-        next_state=next_state,
         vf_arr_list=[None],
         initial_states={"wealth": jnp.array([1.0, 50.5])},
+        **simulate_inputs,
     )
 
     choices = got[0]["choices"]
@@ -77,69 +85,55 @@ def test_simulate():
 
 
 # ======================================================================================
-# Debug
+# Test simulate using get_lcm_function
+# ======================================================================================
 
 
 @pytest.fixture()
-def phelps_deaton_debug():
-    # solve model
-    model = {**PHELPS_DEATON, "n_periods": 1}
-    solve_model, _ = get_lcm_function(model=model)
+def phelps_deaton_model_solution():
+    def _model_solution(n_periods):
+        model = {**PHELPS_DEATON, "n_periods": n_periods}
+        solve_model, _ = get_lcm_function(model=model)
 
-    params = {
-        "beta": 1.0,
-        "utility": {"delta": 1.0},
-        "next_wealth": {
-            "interest_rate": 0.05,
-            "wage": 1.0,
-        },
-    }
+        params = {
+            "beta": 1.0,
+            "utility": {"delta": 1.0},
+            "next_wealth": {
+                "interest_rate": 0.05,
+                "wage": 1.0,
+            },
+        }
 
-    vf_arr_list = solve_model(params)
-    return vf_arr_list, params
+        vf_arr_list = solve_model(params)
+        return vf_arr_list, params, model
+
+    return _model_solution
 
 
-def test_simulate_debug(phelps_deaton_debug):
-    vf_arr_list, params = phelps_deaton_debug
+@pytest.mark.parametrize("n_periods", range(1, PHELPS_DEATON["n_periods"] + 1))
+def test_simulate_using_get_lcm_function(phelps_deaton_model_solution, n_periods):
+    vf_arr_list, params, model = phelps_deaton_model_solution(n_periods)
 
-    simulate_model, _ = get_lcm_function(model=PHELPS_DEATON, targets="simulate")
+    simulate_model, _ = get_lcm_function(model=model, targets="simulate")
 
     res = simulate_model(
         params,
         vf_arr_list=vf_arr_list,
         initial_states={
-            "wealth": jnp.array([1, 50.5]),
+            "wealth": jnp.array([1.0, 20, 40, 70]),
         },
     )
 
-    # assert that everyone retires since it is the last period and the wage that you
-    # earn cannot be received until the next period
+    # assert that everyone retires in the last period
     assert_array_equal(res[-1]["choices"]["retirement"], 1)
 
-    # assert that all initial wealth is consumed
-    assert_array_equal(res[-1]["choices"]["consumption"], jnp.array([1, 50.5]))
+    # assert that higher wealth leads to higher consumption
+    for period in range(n_periods):
+        assert jnp.all(jnp.diff(res[period]["choices"]["consumption"]) >= 0)
 
-
-# Debug
-# ======================================================================================
-
-
-@pytest.fixture()
-def phelps_deaton_three_period_solution():
-    user_model = {**PHELPS_DEATON, "n_periods": 3}
-
-    # solve model
-    solve_model, params_template = get_lcm_function(model=user_model)
-
-    # set parameters
-    params = params_template.copy()
-    params["beta"] = 0.95
-    params["utility"]["delta"] = 1.0
-    params["next_wealth"]["interest_rate"] = 1 / 0.95 - 1
-    params["next_wealth"]["wage"] = 20.0
-
-    vf_arr_list = solve_model(params)
-    return vf_arr_list, params
+        # The following does not work. I.e. the continuation value in each period is not
+        # weakly increasing in wealth. It is unclear if this needs to hold.
+        # ------------------------------------------------------------------------------
 
 
 @pytest.mark.xfail(reason="Not clear if this is a constraint or not.")
@@ -157,27 +151,6 @@ def test_simulate_has_same_value_as_solution(phelps_deaton_three_period_solution
     )
     wealth_grid_index = jnp.array([2, 4, 6, 10])
     assert jnp.all(vf_arr_list[0][wealth_grid_index] == res[0]["value"])
-
-
-def test_simulate_correct_choices(phelps_deaton_three_period_solution):
-    vf_arr_list, params = phelps_deaton_three_period_solution
-
-    simulate_model, _ = get_lcm_function(model=PHELPS_DEATON, targets="simulate")
-
-    res = simulate_model(
-        params,
-        vf_arr_list=vf_arr_list,
-        initial_states={
-            "wealth": jnp.array([20, 40, 60, 100.0]),
-        },
-    )
-
-    # assert that value is increasing in initial wealth
-    for period in range(3):
-        assert jnp.all(jnp.diff(res[period]["value"]) >= 0)
-
-    # assert that no one works in the last period
-    assert jnp.all(res[2]["choices"]["retirement"] == 1)
 
 
 # ======================================================================================
