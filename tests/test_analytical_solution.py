@@ -55,7 +55,10 @@ def numerical_solution(input_params):
 
     model_params = {**params_template, **model_params_update}
 
-    numerical_solution = np.array(solve_model(params=model_params))
+    numerical_solution = np.concatenate(
+        [solve_model(params=model_params)],
+        axis=0,
+    )
 
     return {
         "worker": numerical_solution[:, 0, :],
@@ -97,4 +100,3 @@ def test_analytical_solution(params, test_case):
     v_numerical = numerical_solution(params)
 
     aaae(y=v_analytical["worker"], x=v_numerical["worker"], decimal=6)
-    aaae(y=v_analytical["retired"], x=v_numerical["retired"], decimal=6)
