@@ -41,7 +41,7 @@ def next_wealth_with_shock(
     return interest_rate * (wealth - consumption) + wage * wage_shock * working
 
 
-def next_wealth(wealth, consumption, wage, working, interest_rate):
+def next_wealth(wealth, consumption, working, wage, interest_rate):
     return (1 + interest_rate) * (wealth - consumption) + wage * working
 
 
