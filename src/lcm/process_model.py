@@ -2,13 +2,13 @@ import functools
 import inspect
 
 import jax.numpy as jnp
-import lcm.grids as grids_module
 import pandas as pd
 from dags import get_ancestors
 from dags.signature import with_signature
+
+import lcm.grids as grids_module
 from lcm.create_params import create_params
-from lcm.interfaces import GridSpec
-from lcm.interfaces import Model
+from lcm.interfaces import GridSpec, Model
 
 
 def process_model(user_model):
@@ -24,12 +24,14 @@ def process_model(user_model):
     _params = create_params(user_model)
     _function_info = _get_function_info(user_model)
     _functions = _get_functions(
-        user_model, function_info=_function_info, params=_params
+        user_model,
+        function_info=_function_info,
+        params=_params,
     )
     _variable_info = _get_variable_info(user_model, function_info=_function_info)
     _gridspecs = _get_gridspecs(user_model, variable_info=_variable_info)
     _grids = _get_grids(gridspecs=_gridspecs, variable_info=_variable_info)
-    model = Model(
+    return Model(
         grids=_grids,
         gridspecs=_gridspecs,
         variable_info=_variable_info,
@@ -39,14 +41,13 @@ def process_model(user_model):
         shocks=user_model.get("shocks", {}),
         n_periods=user_model["n_periods"],
     )
-    return model
 
 
 def _get_variable_info(user_model, function_info):
     """Derive information about all variables in the model.
 
     Args:
-        model (dict): The model as provided by the user.
+        user_model (dict): The model as provided by the user.
         function_info (pandas.DataFrame): A table with information about all
             functions in the model. The index contains the name of a function. The
             columns are booleans that are True if the function has the corresponding
@@ -77,7 +78,7 @@ def _get_variable_info(user_model, function_info):
 
     for name in _filter_names:
         _filtered_variables = _filtered_variables.union(
-            get_ancestors(user_model["functions"], name)
+            get_ancestors(user_model["functions"], name),
         )
 
     info["is_sparse"] = [var in _filtered_variables for var in _variables]
@@ -88,7 +89,8 @@ def _get_variable_info(user_model, function_info):
     order += info.query("is_dense & is_state").index.tolist()
     order += info.query("is_dense & is_choice").index.tolist()
 
-    assert set(order) == set(info.index)
+    if set(order) != set(info.index):
+        raise ValueError("Order and index do not match.")
 
     info = info.loc[order]
     return info
@@ -98,7 +100,12 @@ def _get_gridspecs(user_model, variable_info):
     """Create a dictionary of grid specifications for each variable in the model.
 
     Args:
-        model (dict): The model as provided by the user.
+        user_model (dict): The model as provided by the user.
+        variable_info (pandas.DataFrame): A table with information about all
+            variables in the model. The index contains the name of a model variable.
+            The columns are booleans that are True if the variable has the
+            corresponding property. The columns are: is_state, is_choice, is_continuous,
+            is_discrete, is_sparse, is_dense.
 
     Returns:
         dict: Dictionary containing all variables of the model. The keys are
@@ -120,8 +127,7 @@ def _get_gridspecs(user_model, variable_info):
             )
 
     order = variable_info.index.tolist()
-    out = {k: variables[k] for k in order}
-    return out
+    return {k: variables[k] for k in order}
 
 
 def _get_grids(gridspecs, variable_info):
@@ -152,15 +158,14 @@ def _get_grids(gridspecs, variable_info):
             grids[name] = func(**grid_info.specs)
 
     order = variable_info.index.tolist()
-    out = {k: grids[k] for k in order}
-    return out
+    return {k: grids[k] for k in order}
 
 
 def _get_function_info(user_model):
     """Derive information about all functions in the model.
 
     Args:
-        model (dict): The model as provided by the user.
+        user_model (dict): The model as provided by the user.
 
     Returns:
         pandas.DataFrame: A table with information about all functions in the model.
@@ -183,7 +188,7 @@ def _get_functions(user_model, function_info, params):
     """Process the user provided model functions.
 
     Args:
-        model (dict): The model as provided by the user.
+        user_model (dict): The model as provided by the user.
         function_info (pd.DataFrame): A table with information about model functions.
         params (dict): The parameters of the model.
 
@@ -204,7 +209,9 @@ def _get_functions(user_model, function_info, params):
             processed_func = func
         elif params[name]:
             processed_func = _get_extracting_function(
-                func=func, params=params, name=name
+                func=func,
+                params=params,
+                name=name,
             )
 
         else:
@@ -231,7 +238,7 @@ def _get_extracting_function(func, params, name):
 def _get_function_with_dummy_params(func):
     old_signature = list(inspect.signature(func).parameters)
 
-    new_kwargs = old_signature + ["params"]
+    new_kwargs = [*old_signature, "params"]
 
     @with_signature(kwargs=new_kwargs)
     @functools.wraps(func)

@@ -3,11 +3,10 @@ import itertools
 import jax.numpy as jnp
 import pytest
 from jax import config
-from lcm.dispatchers import productmap
-from lcm.dispatchers import spacemap
+from lcm.dispatchers import productmap, spacemap
 from numpy.testing import assert_array_almost_equal as aaae
 
-config.update("jax_enable_x64", True)
+config.update("jax_enable_x64", val=True)
 
 
 def f(a, b, c):
@@ -29,12 +28,11 @@ def g(a, b, c, d):
 
 @pytest.fixture()
 def setup_productmap_f():
-    grids = {
+    return {
         "a": jnp.linspace(-5, 5, 10),
         "b": jnp.linspace(0, 3, 7),
         "c": jnp.linspace(1, 5, 5),
     }
-    return grids
 
 
 @pytest.fixture()
@@ -46,19 +44,17 @@ def expected_productmap_f():
     }
 
     helper = jnp.array(list(itertools.product(*grids.values()))).T
-    expected_result = f(*helper).reshape(10, 7, 5)
-    return expected_result
+    return f(*helper).reshape(10, 7, 5)
 
 
 @pytest.fixture()
 def setup_productmap_g():
-    grids = {
+    return {
         "a": jnp.linspace(-5, 5, 10),
         "b": jnp.linspace(0, 3, 7),
         "c": jnp.linspace(1, 5, 5),
         "d": jnp.linspace(1, 3, 4),
     }
-    return grids
 
 
 @pytest.fixture()
@@ -71,12 +67,11 @@ def expected_productmap_g():
     }
 
     helper = jnp.array(list(itertools.product(*grids.values()))).T
-    expected_result = g(*helper).reshape(10, 7, 5, 4)
-    return expected_result
+    return g(*helper).reshape(10, 7, 5, 4)
 
 
 @pytest.mark.parametrize(
-    "func, args, grids, expected",
+    ("func", "args", "grids", "expected"),
     [
         (f, ["a", "b", "c"], "setup_productmap_f", "expected_productmap_f"),
         (g, ["a", "b", "c", "d"], "setup_productmap_g", "expected_productmap_g"),
@@ -137,7 +132,7 @@ def test_productmap_with_all_arguments_mapped_some_scalar():
     }
 
     decorated = productmap(f, ["a", "b", "c"])
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="vmap was requested to map its argument"):
         decorated(*grids.values())
 
 
@@ -204,8 +199,7 @@ def expected_gridmap():
     all_grids = {**value_grid, **combination_grid}
     helper = jnp.array(list(itertools.product(*all_grids.values()))).T
 
-    expected_result = g(*helper).reshape(3, 2, 4 * 5)
-    return expected_result
+    return g(*helper).reshape(3, 2, 4 * 5)
 
 
 @pytest.mark.parametrize("dense_first", [True, False])
@@ -213,7 +207,10 @@ def test_gridmap_all_arguments_mapped(setup_gridmap, expected_gridmap, dense_fir
     dense_vars, sparse_vars = setup_gridmap
 
     decorated = spacemap(
-        g, list(dense_vars), list(sparse_vars), dense_first=dense_first
+        g,
+        list(dense_vars),
+        list(sparse_vars),
+        dense_first=dense_first,
     )
     calculated = decorated(**dense_vars, **sparse_vars)
 
@@ -224,7 +221,7 @@ def test_gridmap_all_arguments_mapped(setup_gridmap, expected_gridmap, dense_fir
 
 
 @pytest.mark.parametrize(
-    "error_msg, dense_vars, sparse_vars",
+    ("error_msg", "dense_vars", "sparse_vars"),
     [
         (
             "dense_vars and sparse_vars overlap",
@@ -240,4 +237,4 @@ def test_gridmap_all_arguments_mapped(setup_gridmap, expected_gridmap, dense_fir
 )
 def test_gridmap_arguments_overlap(error_msg, dense_vars, sparse_vars):
     with pytest.raises(ValueError, match=error_msg):
-        spacemap(g, dense_vars, sparse_vars)
+        spacemap(g, dense_vars, sparse_vars, dense_first=True)

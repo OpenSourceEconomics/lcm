@@ -14,7 +14,9 @@ def assert_point_wise(grids, grid_info, points, values):
         )
 
         scipy_func = RegularGridInterpolator(
-            points=grids, values=values, method="linear"
+            points=grids,
+            values=values,
+            method="linear",
         )
         scipy_res = scipy_func(point)
 
@@ -38,7 +40,7 @@ def _calc_values_5d(a, b, c, d, e):
 
 
 @pytest.mark.parametrize(
-    "info, points, calc_values",
+    ("info", "points", "calc_values"),
     [
         (
             [(1, 5, 5), (2, 4, 3)],
@@ -62,7 +64,7 @@ def _calc_values_5d(a, b, c, d, e):
                     [2.1, 6.2, 8.3, 10.4, -3],
                     [3.3, 5.2, 7.1, 10, 0],
                     [2.7, 4.3, 7, 11.0, -1.7],
-                ]
+                ],
             ),
             _calc_values_5d,
         ),
@@ -70,7 +72,7 @@ def _calc_values_5d(a, b, c, d, e):
 )
 def test_linear_interpolation_monotone_grid(info, points, calc_values):
     grids = [np.linspace(*i) for i in info]
-    grid_info = [("linspace",) + (i,) for i in info]
+    grid_info = [("linspace", i) for i in info]
 
     values = calc_values(*np.meshgrid(*grids, indexing="ij", sparse=False))
 
@@ -78,7 +80,7 @@ def test_linear_interpolation_monotone_grid(info, points, calc_values):
 
 
 @pytest.mark.parametrize(
-    "grid, info, points, calc_values",
+    ("grid", "info", "points", "calc_values"),
     [
         (
             [(np.log10(1), np.log10(10), 7), (np.log10(1), np.log10(10), 3)],
@@ -100,7 +102,7 @@ def test_linear_interpolation_monotone_grid(info, points, calc_values):
                     [2.1, 6.2, 8.3, 10.4, 3],
                     [3.3, 5.2, 7.1, 10, 3.6],
                     [2.7, 4.3, 7, 10.5, 4],
-                ]
+                ],
             ),
             _calc_values_5d,
         ),
@@ -108,7 +110,7 @@ def test_linear_interpolation_monotone_grid(info, points, calc_values):
 )
 def test_linear_interpolation_logarithmic_scale(grid, info, points, calc_values):
     grids = [np.logspace(*g) for g in grid]
-    grid_info = [("logspace",) + (i,) for i in info]
+    grid_info = [("logspace", i) for i in info]
 
     values = calc_values(*np.meshgrid(*grids, indexing="ij", sparse=False))
 

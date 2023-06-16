@@ -4,7 +4,7 @@ import inspect
 from jax import vmap
 
 
-def spacemap(func, dense_vars, sparse_vars, dense_first=True):
+def spacemap(func, dense_vars, sparse_vars, *, dense_first):
     """Apply vmap such that func is evaluated on a space of dense and sparse variables.
 
     This is achieved by applying a product map for all dense_vars and a vmap for the
@@ -67,9 +67,8 @@ def spacemap(func, dense_vars, sparse_vars, dense_first=True):
         vmapped = vmap(vmapped, in_axes=in_axes)
 
     vmapped.__signature__ = signature
-    vmapped_with_kwargs = allow_kwargs(vmapped)
 
-    return vmapped_with_kwargs
+    return allow_kwargs(vmapped)
 
 
 def productmap(func, variables):
@@ -103,9 +102,8 @@ def productmap(func, variables):
     signature = inspect.signature(func)
     vmapped = _product_map(func, variables)
     vmapped.__signature__ = signature
-    vmapped_with_kwargs = allow_kwargs(vmapped)
 
-    return vmapped_with_kwargs
+    return allow_kwargs(vmapped)
 
 
 def _product_map(func, product_axes):
@@ -150,5 +148,4 @@ def allow_kwargs(func):
 
 def convert_kwargs_to_args(kwargs, parameters):
     sorted_kwargs = dict(sorted(kwargs.items(), key=lambda kw: parameters.index(kw[0])))
-    args = list(sorted_kwargs.values())
-    return args
+    return list(sorted_kwargs.values())

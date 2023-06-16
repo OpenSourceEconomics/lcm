@@ -1,7 +1,7 @@
-"""Create a parameters DataFrame fora model specification."""
 import inspect
 
 import numpy as np
+
 from lcm import distributions
 
 

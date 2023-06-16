@@ -13,7 +13,6 @@ Three shock distributions (currently only the first two):
 - nested logit shocks -> ???
 
 Notes:
-
 - It is possible that we split the aggregate_conditional_continuation values on
 one function per shock type, so we can inspect the signatures of the individual
 functions. This will only become clear after implementing a few solvers.
@@ -53,14 +52,17 @@ def get_emax_calculator(shock_type, variable_info):
     elif shock_type == "extreme_value":
         func = partial(_calculate_emax_extreme_value_shocks, choice_axes=choice_axes)
     else:
-        raise ValueError("Invalid shock_type: {shock_type}.")
+        raise ValueError(f"Invalid shock_type: {shock_type}.")
     return func
 
 
 def _calculate_emax_no_shocks(
-    values, choice_axes, choice_segments, params  # noqa: U100
+    values,
+    choice_axes,
+    choice_segments,
+    params,  # noqa: ARG001
 ):
-    """aggregate conditional continuation values over discrete choices.
+    """Aggregate conditional continuation values over discrete choices.
 
     Args:
         values (jax.numpy.ndarray): Multidimensional jax array with conditional
@@ -89,7 +91,7 @@ def _calculate_emax_no_shocks(
 
 
 def _calculate_emax_extreme_value_shocks(values, choice_axes, choice_segments, params):
-    """aggregate conditional continuation values over discrete choices.
+    """Aggregate conditional continuation values over discrete choices.
 
     Args:
         values (jax.numpy.ndarray): Multidimensional jax array with conditional
@@ -134,12 +136,11 @@ def _segment_max_over_first_axis(a, segment_info):
         jax.numpy.ndarray
 
     """
-    segmax = jax.ops.segment_max(
+    return jax.ops.segment_max(
         data=a,
         indices_are_sorted=True,
         **segment_info,
     )
-    return segmax
 
 
 def _segment_extreme_value_emax_over_first_axis(a, scale, segment_info):
@@ -157,10 +158,7 @@ def _segment_extreme_value_emax_over_first_axis(a, scale, segment_info):
         jax.numpy.ndarray
 
     """
-
-    emax = scale * _segment_logsumexp(a / scale, segment_info)
-
-    return emax
+    return scale * _segment_logsumexp(a / scale, segment_info)
 
 
 def _segment_logsumexp(a, segment_info):
@@ -193,8 +191,7 @@ def _segment_logsumexp(a, segment_info):
         indices_are_sorted=True,
         **segment_info,
     )
-    out = segmax + jnp.log(summed)
-    return out
+    return segmax + jnp.log(summed)
 
 
 def _determine_discrete_choice_axes(variable_info):
@@ -211,13 +208,10 @@ def _determine_discrete_choice_axes(variable_info):
     """
     has_sparse = variable_info["is_sparse"].any()
     dense_vars = variable_info.query(
-        "is_dense & ~(is_choice & is_continuous)"
+        "is_dense & ~(is_choice & is_continuous)",
     ).index.tolist()
 
-    if has_sparse:
-        axes = ["__sparse__"] + dense_vars
-    else:
-        axes = dense_vars
+    axes = ["__sparse__", *dense_vars] if has_sparse else dense_vars
 
     choice_vars = set(variable_info.query("is_choice").index.tolist())
 

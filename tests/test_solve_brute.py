@@ -2,17 +2,16 @@ import jax.numpy as jnp
 import numpy as np
 from jax.scipy.ndimage import map_coordinates
 from lcm.interfaces import Space
-from lcm.solve_brute import solve
-from lcm.solve_brute import solve_continuous_problem
+from lcm.solve_brute import solve, solve_continuous_problem
 from numpy.testing import assert_array_almost_equal as aaae
 
 
 def test_solve_brute():
     """Test solve brute with hand written inputs.
 
-    Normally, these inputs would be created from a model specification. For now this
-    can be seen as reference of what the functions that process a model specification
-    need to produce.
+    Normally, these inputs would be created from a model specification. For now this can
+    be seen as reference of what the functions that process a model specification need
+    to produce.
 
     """
     # ==================================================================================
@@ -75,13 +74,12 @@ def test_solve_brute():
 
     def _get_continuation_value(lazy, wealth, vf_arr):
         continuous_part = vf_arr[lazy]
-        value = map_coordinates(
+        return map_coordinates(
             input=continuous_part,
             coordinates=jnp.array([wealth]),
             order=1,
             mode="nearest",
         )
-        return value
 
     utility_and_feasibility_functions = [_utility_and_feasibility] * 2
 
@@ -90,8 +88,8 @@ def test_solve_brute():
     # ==================================================================================
     choice_segments = [None, None]
 
-    def calculate_emax(values, choice_segments, params):  # noqa: U100
-        """Take max over axis that corresponds to working"""
+    def calculate_emax(values, choice_segments, params):  # noqa: ARG001
+        """Take max over axis that corresponds to working."""
         return values.max(axis=1)
 
     emax_calculators = [calculate_emax] * 2
@@ -119,7 +117,7 @@ def test_solve_continious_problem_no_vf_arr():
         sparse_vars={"c": jnp.array([4, 5, 6])},
     )
 
-    def _utility_and_feasibility(a, c, b, d, vf_arr, params):  # noqa: U100
+    def _utility_and_feasibility(a, c, b, d, vf_arr, params):  # noqa: ARG001
         util = d
         feasib = d <= a + b + c
         return util, feasib
@@ -137,7 +135,7 @@ def test_solve_continious_problem_no_vf_arr():
             vf_arr=None,
             state_indexers={},
             params={},
-        )
+        ),
     )
 
     aaae(calculated, expected)

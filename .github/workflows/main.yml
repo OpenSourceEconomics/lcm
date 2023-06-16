@@ -1,0 +1,46 @@
+---
+name: main
+# Automatically cancel a previous run.
+concurrency:
+  group: ${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - '*'
+jobs:
+  run-tests:
+    name: Run tests for ${{ matrix.os }} on ${{ matrix.python-version }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+        python-version:
+          - '3.10'
+          - '3.11'
+    steps:
+      - uses: actions/checkout@v3
+      - name: create build environment
+        uses: mamba-org/provision-with-micromamba@main
+        with:
+          environment-file: ./.envs/testenv.yml
+          environment-name: lcm
+          cache-env: true
+          extra-specs: |
+            python=${{ matrix.python-version }}
+      - name: run pytest
+        shell: bash -l {0}
+        run: |
+          micromamba activate lcm
+          pytest --cov-report=xml --cov=./
+      - name: Upload coverage report.
+        if: runner.os == 'Linux' && matrix.python-version == '3.10'
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
