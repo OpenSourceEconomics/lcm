@@ -26,7 +26,7 @@ def numerical_solution(params):
     solve_model, params_template = get_lcm_function(model=model)
 
     params_template["beta"] = params["beta"]
-    params_template["labor_income"]["wage"] = params["wage"]
+    params_template["next_wealth"]["wage"] = params["wage"]
     params_template["next_wealth"]["interest_rate"] = params["r"]
     params_template["utility"]["delta"] = params["delta"]
 
@@ -66,7 +66,7 @@ test_cases = {
 
 @pytest.mark.parametrize(("test_case", "params"), test_cases.items())
 def test_analytical_solution(params, test_case):
-    with open(DATA / f"{test_case}.p", "rb") as f:
+    with open(DATA / f"{test_case}_v.pkl", "rb") as f:
         v_analytical = pickle.load(f)
 
     v_numerical = numerical_solution(params)
