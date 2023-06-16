@@ -134,7 +134,6 @@ PHELPS_DEATON_NO_BORROWING = {
     "functions": {
         "utility": phelps_deaton_utility_with_filter,
         "next_wealth": next_wealth,
-        "next_wealth_constraint": next_wealth_constraint,
         "consumption_constraint": consumption_constraint,
         "working": working,
         "absorbing_retirement_filter": absorbing_retirement_filter,
