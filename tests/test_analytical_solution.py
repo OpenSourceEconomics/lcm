@@ -12,25 +12,50 @@ from numpy.testing import assert_array_almost_equal as aaae
 DATA = Path(__file__).parent.resolve() / "analytical_solution"
 
 
-def numerical_solution(params):
+def numerical_solution(input_params):
     """Numerical solution."""
-    model = PHELPS_DEATON_NO_BORROWING
-    model["n_periods"] = params["num_periods"]
-    model["choices"]["consumption"]["start"] = 1
-    model["choices"]["consumption"]["stop"] = 100
-    model["choices"]["consumption"]["n_points"] = 10_000
-    model["states"]["wealth"]["start"] = 1
-    model["states"]["wealth"]["stop"] = 100
-    model["states"]["wealth"]["n_points"] = 10_000
-
+    config_update = {
+        "n_periods": input_params["n_periods"],
+        "choices": {
+            "consumption": {
+                "grid_type": "linspace",
+                "start": 1,
+                "stop": 100,
+                "n_points": 10_000,
+            },
+            "retirement": {
+                "options": [0, 1],
+            },
+        },
+        "states": {
+            "lagged_retirement": {
+                "options": [0, 1],
+            },
+            "wealth": {
+                "grid_type": "linspace",
+                "start": 1,
+                "stop": 100,
+                "n_points": 10_000,
+            },
+        },
+    }
+    model = {**PHELPS_DEATON_NO_BORROWING, **config_update}
     solve_model, params_template = get_lcm_function(model=model)
 
-    params_template["beta"] = params["beta"]
-    params_template["next_wealth"]["wage"] = params["wage"]
-    params_template["next_wealth"]["interest_rate"] = params["r"]
-    params_template["utility"]["delta"] = params["delta"]
+    model_params_update = {
+        "beta": input_params["beta"],
+        "next_wealth": {
+            "wage": input_params["wage"],
+            "interest_rate": input_params["r"],
+        },
+        "utility": {
+            "delta": input_params["delta"],
+        },
+    }
 
-    numerical_solution = np.array(solve_model(params=params_template))
+    model_params = {**params_template, **model_params_update}
+
+    numerical_solution = np.array(solve_model(params=model_params))
 
     return {
         "worker": numerical_solution[:, 0, :],
@@ -45,29 +70,29 @@ test_cases = {
         "delta": 1.0,
         "wage": float(20),
         "r": 0.0,
-        "num_periods": 5,
+        "n_periods": 5,
     },
     "low_delta": {
         "beta": 0.98,
         "delta": 0.1,
         "wage": float(20),
         "r": 0.0,
-        "num_periods": 3,
+        "n_periods": 3,
     },
     "high_wage": {
         "beta": 0.98,
         "delta": 1.0,
         "wage": float(100),
         "r": 0.0,
-        "num_periods": 5,
+        "n_periods": 5,
     },
 }
 
 
 @pytest.mark.parametrize(("test_case", "params"), test_cases.items())
 def test_analytical_solution(params, test_case):
-    with open(DATA / f"{test_case}_v.pkl", "rb") as f:
-        v_analytical = pickle.load(f)
+    with Path.open(DATA / f"{test_case}_v.pkl", "rb") as f:
+        v_analytical = pickle.load(f)  # noqa: S301
 
     v_numerical = numerical_solution(params)
 
