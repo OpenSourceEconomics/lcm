@@ -1,7 +1,6 @@
 """Define example model specifications."""
 import jax.numpy as jnp
 
-
 RETIREMENT_AGE = 65
 
 
