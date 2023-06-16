@@ -1,11 +1,6 @@
 """Define example model specifications."""
 import jax.numpy as jnp
 
-
-def labor_income(wage, working):
-    return wage * working
-
-
 def phelps_deaton_utility_with_shock(
     consumption, working, delta, additive_utility_shock
 ):
@@ -32,8 +27,8 @@ def next_wealth_with_shock(
     return interest_rate * (wealth - consumption) + wage * wage_shock * working
 
 
-def next_wealth(wealth, consumption, labor_income, interest_rate):
-    return (1 + interest_rate) * (wealth - consumption) + labor_income
+def next_wealth(wealth, consumption, wage, working, interest_rate):
+    return (1 + interest_rate) * (wealth - consumption) + wage * working
 
 
 def next_wealth_constraint(next_wealth):
@@ -60,7 +55,7 @@ PHELPS_DEATON = {
     "functions": {
         "utility": phelps_deaton_utility,
         "next_wealth": next_wealth,
-        "next_wealth_constraint": next_wealth_constraint,
+        "consumption_constraint": consumption_constraint,
         "working": working,
     },
     "choices": {
@@ -128,7 +123,6 @@ PHELPS_DEATON_NO_BORROWING = {
         "next_wealth_constraint": next_wealth_constraint,
         "consumption_constraint": consumption_constraint,
         "working": working,
-        "labor_income": labor_income,
         "absorbing_retirement_filter": absorbing_retirement_filter,
         "next_lagged_retirement": lambda retirement: retirement,
     },
