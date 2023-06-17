@@ -79,6 +79,11 @@ def test_analytical_solution(test_id, params, test_model):
     with DATA.joinpath(f"{test_id}_v.pkl").open("rb") as file:
         analytical = pickle.load(file)  # noqa: S301
 
+    if test_id == "low_delta":
+        # nothing intersting happens in periods 4 and 5, so we skip them
+        # to save runtime
+        test_model["n_periods"] = 3
+
     # Prepare config parameters
     solve_model, params_template = get_lcm_function(model=test_model)
 
