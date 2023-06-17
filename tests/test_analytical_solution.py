@@ -7,96 +7,91 @@ import pytest
 from lcm.entry_point import get_lcm_function
 from lcm.example_models import PHELPS_DEATON_NO_BORROWING
 from numpy.testing import assert_array_almost_equal as aaae
+from pybaum import tree_update
 
-# Path to analytical solution
-DATA = Path(__file__).parent.resolve() / "analytical_solution"
+DATA = Path(__file__).parent.resolve().joinpath("analytical_solution")
 
 
-def numerical_solution(input_params):
-    """Numerical solution."""
+@pytest.fixture()
+def test_model():
     config_update = {
-        "n_periods": input_params["n_periods"],
+        "n_periods": 5,
         "choices": {
             "consumption": {
-                "grid_type": "linspace",
-                "start": 1,
-                "stop": 100,
                 "n_points": 10_000,
-            },
-            "retirement": {
-                "options": [0, 1],
             },
         },
         "states": {
-            "lagged_retirement": {
-                "options": [0, 1],
-            },
             "wealth": {
-                "grid_type": "linspace",
-                "start": 1,
-                "stop": 100,
                 "n_points": 10_000,
             },
         },
     }
-    model = {**PHELPS_DEATON_NO_BORROWING, **config_update}
-    solve_model, params_template = get_lcm_function(model=model)
+    return tree_update(PHELPS_DEATON_NO_BORROWING, config_update)
 
-    model_params_update = {
-        "beta": input_params["beta"],
+
+TEST_CASES = {
+    "iskhakov_2017": {
+        # Tests against the analytical solution by Iskhakov et al (2017).
+        "beta": 0.98,
         "next_wealth": {
-            "wage": input_params["wage"],
-            "interest_rate": input_params["r"],
+            "wage": 20.0,
+            "interest_rate": 0.0,
         },
         "utility": {
-            "delta": input_params["delta"],
+            "delta": 1.0,
         },
-    }
-
-    model_params = {**params_template, **model_params_update}
-
-    numerical_solution = np.concatenate(
-        [solve_model(params=model_params)],
-        axis=0,
-    )
-
-    return {
-        "worker": numerical_solution[:, 0, :],
-        "retired": numerical_solution[:, 1, :],
-    }
-
-
-# Define test cases
-test_cases = {
-    "iskhakov_2017": {
-        "beta": 0.98,
-        "delta": 1.0,
-        "wage": float(20),
-        "r": 0.0,
-        "n_periods": 5,
     },
     "low_delta": {
+        # For very low values of delta we expect that most individuals work their entire
+        # life.
         "beta": 0.98,
-        "delta": 0.1,
-        "wage": float(20),
-        "r": 0.0,
-        "n_periods": 3,
+        "next_wealth": {
+            "wage": 20.0,
+            "interest_rate": 0.0,
+        },
+        "utility": {
+            "delta": 0.1,
+        },
     },
     "high_wage": {
+        # For high wage we ...
         "beta": 0.98,
-        "delta": 1.0,
-        "wage": float(100),
-        "r": 0.0,
-        "n_periods": 5,
+        "next_wealth": {
+            "wage": 100.0,
+            "interest_rate": 0.0,
+        },
+        "utility": {
+            "delta": 0.1,
+        },
     },
 }
 
 
-@pytest.mark.parametrize(("test_case", "params"), test_cases.items())
-def test_analytical_solution(params, test_case):
-    with Path.open(DATA / f"{test_case}_v.pkl", "rb") as f:
-        v_analytical = pickle.load(f)  # noqa: S301
+@pytest.mark.parametrize(("test_id", "params"), TEST_CASES.items())
+def test_analytical_solution(test_id, params, test_model):
+    """Test that the numerical solution matches the analytical solution.
 
-    v_numerical = numerical_solution(params)
+    The analytical solution is from Iskhakov et al (2017) and is generated
+    in the development repository: github.com/opensourceeconomics/lcm-dev.
 
-    aaae(y=v_analytical["worker"], x=v_numerical["worker"], decimal=6)
+    """
+    with DATA.joinpath(f"{test_id}_v.pkl").open("rb") as file:
+        analytical = pickle.load(file)  # noqa: S301
+
+    # Prepare config parameters
+    solve_model, params_template = get_lcm_function(model=test_model)
+
+    params = tree_update(params_template, params)
+
+    # Solve model using LCM
+    vf_arr_list = solve_model(params=params)
+    numerical_solution = np.stack(vf_arr_list)
+
+    numerical = {
+        "worker": numerical_solution[:, 0, :],
+        "retired": numerical_solution[:, 1, :],
+    }
+
+    aaae(y=analytical["worker"], x=numerical["worker"], decimal=6)
+    aaae(y=analytical["retired"], x=numerical["retired"], decimal=6)
