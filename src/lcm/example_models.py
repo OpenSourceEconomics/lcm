@@ -2,7 +2,8 @@
 import jax.numpy as jnp
 
 RETIREMENT_AGE = 65
-N_GRID_POINTS = 500
+N_CHOICE_GRID_POINTS = 500
+N_STATE_GRID_POINTS = 100
 
 
 def phelps_deaton_utility_with_shock(
@@ -79,7 +80,7 @@ PHELPS_DEATON = {
             "grid_type": "linspace",
             "start": 0,
             "stop": 100,
-            "n_points": N_GRID_POINTS,
+            "n_points": N_CHOICE_GRID_POINTS,
         },
     },
     "states": {
@@ -87,7 +88,7 @@ PHELPS_DEATON = {
             "grid_type": "linspace",
             "start": 0,
             "stop": 100,
-            "n_points": N_GRID_POINTS,
+            "n_points": N_STATE_GRID_POINTS,
         },
     },
     "n_periods": 20,
@@ -126,7 +127,7 @@ PHELPS_DEATON_WITH_FILTERS = {
             "grid_type": "linspace",
             "start": 1,
             "stop": 100,
-            "n_points": N_GRID_POINTS,
+            "n_points": N_CHOICE_GRID_POINTS,
         },
     },
     "states": {
@@ -134,7 +135,7 @@ PHELPS_DEATON_WITH_FILTERS = {
             "grid_type": "linspace",
             "start": 0,
             "stop": 100,
-            "n_points": N_GRID_POINTS,
+            "n_points": N_STATE_GRID_POINTS,
         },
         "lagged_retirement": {"options": [0, 1]},
     },

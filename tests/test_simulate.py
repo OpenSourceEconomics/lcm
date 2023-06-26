@@ -6,7 +6,11 @@ from lcm.entry_point import (
     get_lcm_function,
     get_next_state_function,
 )
-from lcm.example_models import PHELPS_DEATON, PHELPS_DEATON_WITH_FILTERS
+from lcm.example_models import (
+    N_CHOICE_GRID_POINTS,
+    PHELPS_DEATON,
+    PHELPS_DEATON_WITH_FILTERS,
+)
 from lcm.model_functions import get_utility_and_feasibility_function
 from lcm.process_model import process_model
 from lcm.simulate import (
@@ -18,7 +22,7 @@ from lcm.simulate import (
     simulate,
 )
 from lcm.state_space import create_state_choice_space
-from numpy.testing import assert_array_equal
+from numpy.testing import assert_array_almost_equal, assert_array_equal
 
 # ======================================================================================
 # Test simulate using raw inputs
@@ -54,7 +58,9 @@ def simulate_inputs():
 
     return {
         "state_indexers": [{}],
-        "continuous_choice_grids": [{"consumption": jnp.linspace(1, 100, num=11)}],
+        "continuous_choice_grids": [
+            {"consumption": jnp.linspace(1, 100, num=N_CHOICE_GRID_POINTS)},
+        ],
         "compute_ccv_policy_functions": compute_ccv_policy_functions,
         "model": model,
         "next_state": next_state,
@@ -74,14 +80,14 @@ def test_simulate_using_raw_inputs(simulate_inputs):
     got = simulate(
         params=params,
         vf_arr_list=[None],
-        initial_states={"wealth": jnp.array([1.0, 50.5])},
+        initial_states={"wealth": jnp.array([1.0, 50.400803])},
         **simulate_inputs,
     )
 
     choices = got[0]["choices"]
 
     assert_array_equal(choices["retirement"], 1)
-    assert_array_equal(choices["consumption"], jnp.array([1.0, 50.5]))
+    assert_array_almost_equal(choices["consumption"], jnp.array([1.0, 50.400803]))
 
 
 # ======================================================================================
@@ -152,6 +158,121 @@ def test_simulate_has_same_value_as_solution(phelps_deaton_three_period_solution
     )
     wealth_grid_index = jnp.array([2, 4, 6, 10])
     assert jnp.all(vf_arr_list[0][wealth_grid_index] == res[0]["value"])
+
+
+# ======================================================================================
+# Testing effects of parameters
+# ======================================================================================
+
+
+def test_effect_of_beta_on_last_period():
+    model = {**PHELPS_DEATON, "n_periods": 5}
+
+    # Model solutions
+    # ==================================================================================
+    solve_model, _ = get_lcm_function(model=model, targets="solve")
+
+    params = {
+        "beta": None,
+        "utility": {"delta": 1.0},
+        "next_wealth": {
+            "interest_rate": 0.05,
+            "wage": 1.0,
+        },
+    }
+
+    # low beta
+    params_low = params.copy()
+    params_low["beta"] = 0.5
+
+    # high delta
+    params_high = params.copy()
+    params_high["beta"] = 0.99
+
+    # solutions
+    solution_low = solve_model(params_low)
+    solution_high = solve_model(params_high)
+
+    # Simulate
+    # ==================================================================================
+    simulate_model, _ = get_lcm_function(model=model, targets="simulate")
+
+    initial_wealth = jnp.array([20.0, 50, 70])
+
+    res_low = simulate_model(
+        params_low,
+        vf_arr_list=solution_low,
+        initial_states={"wealth": initial_wealth},
+    )
+
+    res_high = simulate_model(
+        params_high,
+        vf_arr_list=solution_high,
+        initial_states={"wealth": initial_wealth},
+    )
+
+    # Asserting
+    # ==================================================================================
+    assert jnp.all(res_low[-1]["value"] <= res_high[-1]["value"])
+
+
+def test_effect_of_delta():
+    model = {**PHELPS_DEATON, "n_periods": 5}
+
+    # Model solutions
+    # ==================================================================================
+    solve_model, _ = get_lcm_function(model=model, targets="solve")
+
+    params = {
+        "beta": 1.0,
+        "utility": {"delta": None},
+        "next_wealth": {
+            "interest_rate": 0.05,
+            "wage": 1.0,
+        },
+    }
+
+    # low delta
+    params_low = params.copy()
+    params_low["utility"]["delta"] = 0.2
+
+    # high delta
+    params_high = params.copy()
+    params_high["utility"]["delta"] = 1.5
+
+    # solutions
+    solution_low = solve_model(params_low)
+    solution_high = solve_model(params_high)
+
+    # Simulate
+    # ==================================================================================
+    simulate_model, _ = get_lcm_function(model=model, targets="simulate")
+
+    initial_wealth = jnp.array([20.0, 50, 70])
+
+    res_low = simulate_model(
+        params_low,
+        vf_arr_list=solution_low,
+        initial_states={"wealth": initial_wealth},
+    )
+
+    res_high = simulate_model(
+        params_high,
+        vf_arr_list=solution_high,
+        initial_states={"wealth": initial_wealth},
+    )
+
+    # Asserting
+    # ==================================================================================
+    for period in range(5):
+        assert jnp.all(
+            res_low[period]["choices"]["consumption"]
+            <= res_high[period]["choices"]["consumption"],
+        )
+        assert jnp.all(
+            res_low[period]["choices"]["retirement"]
+            >= res_high[period]["choices"]["retirement"],
+        )
 
 
 # ======================================================================================
