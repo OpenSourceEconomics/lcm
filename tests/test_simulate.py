@@ -143,23 +143,6 @@ def test_simulate_using_get_lcm_function(phelps_deaton_model_solution, n_periods
         # assert jnp.all(jnp.diff(res[period]["value"]) >= 0)  # noqa: ERA001
 
 
-@pytest.mark.xfail(reason="Not clear if this is a constraint or not.")
-def test_simulate_has_same_value_as_solution(phelps_deaton_three_period_solution):
-    vf_arr_list, params = phelps_deaton_three_period_solution
-
-    simulate_model, _ = get_lcm_function(model=PHELPS_DEATON, targets="simulate")
-
-    res = simulate_model(
-        params,
-        vf_arr_list=vf_arr_list,
-        initial_states={
-            "wealth": jnp.array([20, 40, 60, 100.0]),
-        },
-    )
-    wealth_grid_index = jnp.array([2, 4, 6, 10])
-    assert jnp.all(vf_arr_list[0][wealth_grid_index] == res[0]["value"])
-
-
 # ======================================================================================
 # Testing effects of parameters
 # ======================================================================================

@@ -137,33 +137,3 @@ def segment_argmax(a, segment_ids, num_segments):
     )
 
     return segment_argmax, segment_max
-
-
-def _create_segment_nd_arange(segment_ids, num_segments, shape):
-    """Create an nd-arange for each segment.
-
-    Args:
-        segment_ids (jax.numpy.ndarray): 1d array with segment identifiers. See
-            jax.ops.segment_max.
-        num_segments (int): Total number of segments. See jax.ops.segment_max.
-        shape (tuple): The shape to which the index map should be broadcasted. The first
-            dimension must coincide with len(segment_ids).
-
-    Returns:
-        jax.numpy.ndarray: An array of shape 'shape' containing an arange in the first
-            dimension for each segment, and repeating this value along the remaining
-            shape[1:] dimensions.
-
-    """
-    bincount = jnp.bincount(segment_ids, length=num_segments)
-    cumsum = jnp.cumsum(bincount)
-
-    # shift the cumulative sum to the right and pad with zero at the beginning
-    shifted_cumsum = jnp.pad(cumsum[:-1], (1, 0), constant_values=0)
-
-    # create an array of indices for each segment
-    segment_arange = jnp.arange(shape[0]) - shifted_cumsum[segment_ids]
-
-    # reshape the array of indices to be broadcastable to the desired shape
-    reshaped = segment_arange.reshape(-1, *((1,) * (len(shape) - 1)))
-    return jnp.broadcast_to(reshaped, shape)

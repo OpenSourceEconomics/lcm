@@ -255,3 +255,8 @@ def test_vmap_1d():
     exp = jnp.array([-2, -4])
 
     aaae(got, exp)
+
+
+def test_vmap_1d_error():
+    with pytest.raises(ValueError, match="Same argument provided more than once."):
+        vmap_1d(None, variables=["a", "a"])
