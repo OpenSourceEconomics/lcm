@@ -2,7 +2,7 @@
 from typing import NamedTuple
 
 from lcm.example_models import (
-    PHELPS_DEATON,
+    PHELPS_DEATON_WITH_FILTERS,
 )
 
 
@@ -34,7 +34,7 @@ def get_model(model: str):
 
 
 ISKHAKOV_2017_FIVE_PERIODS = {
-    **PHELPS_DEATON,
+    **PHELPS_DEATON_WITH_FILTERS,
     "choices": {
         "retirement": {"options": [0, 1]},
         "consumption": {
@@ -51,6 +51,7 @@ ISKHAKOV_2017_FIVE_PERIODS = {
             "stop": 400,
             "n_points": 100,
         },
+        "lagged_retirement": {"options": [0, 1]},
     },
     "n_periods": 5,
 }
