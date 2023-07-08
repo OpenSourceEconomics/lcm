@@ -2,6 +2,8 @@
 import jax.numpy as jnp
 
 RETIREMENT_AGE = 65
+N_CHOICE_GRID_POINTS = 500
+N_STATE_GRID_POINTS = 100
 
 
 def phelps_deaton_utility_with_shock(
@@ -49,6 +51,10 @@ def next_wealth_constraint(next_wealth):
     return next_wealth >= 0
 
 
+def consumption_constraint(consumption, wealth):
+    return consumption <= wealth
+
+
 def age(period):
     return period + 18
 
@@ -65,20 +71,25 @@ PHELPS_DEATON = {
     "functions": {
         "utility": phelps_deaton_utility,
         "next_wealth": next_wealth,
-        "next_wealth_constraint": next_wealth_constraint,
+        "consumption_constraint": consumption_constraint,
         "working": working,
     },
     "choices": {
         "retirement": {"options": [0, 1]},
         "consumption": {
             "grid_type": "linspace",
-            "start": 1,
+            "start": 0,
             "stop": 100,
-            "n_points": 11,
+            "n_points": N_CHOICE_GRID_POINTS,
         },
     },
     "states": {
-        "wealth": {"grid_type": "linspace", "start": 0, "stop": 100, "n_points": 11},
+        "wealth": {
+            "grid_type": "linspace",
+            "start": 0,
+            "stop": 100,
+            "n_points": N_STATE_GRID_POINTS,
+        },
     },
     "n_periods": 20,
 }
@@ -89,7 +100,7 @@ PHELPS_DEATON_WITH_SHOCKS = {
     "functions": {
         "utility": phelps_deaton_utility_with_shock,
         "next_wealth": next_wealth_with_shock,
-        "next_wealth_constraint": next_wealth_constraint,
+        "consumption_constraint": consumption_constraint,
         "working": working,
     },
     "shocks": {
@@ -116,11 +127,16 @@ PHELPS_DEATON_WITH_FILTERS = {
             "grid_type": "linspace",
             "start": 1,
             "stop": 100,
-            "n_points": 11,
+            "n_points": N_CHOICE_GRID_POINTS,
         },
     },
     "states": {
-        "wealth": {"grid_type": "linspace", "start": 0, "stop": 100, "n_points": 11},
+        "wealth": {
+            "grid_type": "linspace",
+            "start": 0,
+            "stop": 100,
+            "n_points": N_STATE_GRID_POINTS,
+        },
         "lagged_retirement": {"options": [0, 1]},
     },
     "n_periods": 20,
