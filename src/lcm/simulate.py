@@ -40,6 +40,16 @@ def simulate(
         list: List of optimal choices for each initial state per period.
 
     """
+    # Update the vf_arr_list
+    # ----------------------------------------------------------------------------------
+    # We drop the value function array for the first period, because it is not needed
+    # for the simulation. This is because in the first period the agents only consider
+    # the current utility and the value function of next period. Similarly, the last
+    # value function array is not required, as the agents only consider the current
+    # utility in the last period.
+    # ==================================================================================
+    vf_arr_list = vf_arr_list[1:] + [None]
+
     # Preparations
     # ==================================================================================
     next_state = partial(next_state, params=params)
