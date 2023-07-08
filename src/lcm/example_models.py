@@ -47,10 +47,6 @@ def next_wealth(wealth, consumption, working, wage, interest_rate):
     return (1 + interest_rate) * (wealth - consumption) + wage * working
 
 
-def next_wealth_constraint(next_wealth):
-    return next_wealth >= 0
-
-
 def consumption_constraint(consumption, wealth):
     return consumption <= wealth
 
@@ -116,7 +112,7 @@ PHELPS_DEATON_WITH_FILTERS = {
     "functions": {
         "utility": phelps_deaton_utility_with_filter,
         "next_wealth": next_wealth,
-        "next_wealth_constraint": next_wealth_constraint,
+        "consumption_constraint": consumption_constraint,
         "working": working,
         "absorbing_retirement_filter": absorbing_retirement_filter,
         "next_lagged_retirement": lambda retirement: retirement,
