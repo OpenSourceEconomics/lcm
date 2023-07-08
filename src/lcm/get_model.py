@@ -28,9 +28,40 @@ def get_model(model: str):
     return MODELS[model]
 
 
+# ======================================================================================
+# Models
+# ======================================================================================
+
+
+ISKHAKOV_2017_FIVE_PERIODS = {
+    **PHELPS_DEATON,
+    "choices": {
+        "retirement": {"options": [0, 1]},
+        "consumption": {
+            "grid_type": "linspace",
+            "start": 1,
+            "stop": 400,
+            "n_points": 500,
+        },
+    },
+    "states": {
+        "wealth": {
+            "grid_type": "linspace",
+            "start": 1,
+            "stop": 400,
+            "n_points": 100,
+        },
+    },
+    "n_periods": 5,
+}
+
+# ======================================================================================
+# Model collection
+# ======================================================================================
+
 MODELS = {
-    "iskhakov_2017_test": ModelAndParams(
-        model={**PHELPS_DEATON, "n_periods": 5},
+    "iskhakov_2017_five_periods": ModelAndParams(
+        model=ISKHAKOV_2017_FIVE_PERIODS,
         params={
             "beta": 0.98,
             "utility": {"delta": 1.0},
