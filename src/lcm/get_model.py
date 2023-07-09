@@ -1,6 +1,8 @@
 """Get a user model and parameters."""
 from typing import NamedTuple
 
+from pybaum import tree_update
+
 from lcm.example_models import (
     PHELPS_DEATON_WITH_FILTERS,
 )
@@ -56,6 +58,8 @@ ISKHAKOV_2017_FIVE_PERIODS = {
     "n_periods": 5,
 }
 
+ISKHAKOV_2017_LOW_DELTA = tree_update(ISKHAKOV_2017_FIVE_PERIODS, {"n_periods": 3})
+
 # ======================================================================================
 # Model collection
 # ======================================================================================
@@ -66,6 +70,17 @@ MODELS = {
         params={
             "beta": 0.98,
             "utility": {"delta": 1.0},
+            "next_wealth": {
+                "interest_rate": 0.0,
+                "wage": 20.0,
+            },
+        },
+    ),
+    "iskhakov_2017_low_delta": ModelAndParams(
+        model=ISKHAKOV_2017_LOW_DELTA,
+        params={
+            "beta": 0.98,
+            "utility": {"delta": 0.1},
             "next_wealth": {
                 "interest_rate": 0.0,
                 "wage": 20.0,
