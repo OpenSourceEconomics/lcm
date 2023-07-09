@@ -2,6 +2,8 @@
 import jax.numpy as jnp
 
 RETIREMENT_AGE = 65
+N_CHOICE_GRID_POINTS = 500
+N_STATE_GRID_POINTS = 100
 
 
 def phelps_deaton_utility_with_shock(
@@ -45,8 +47,8 @@ def next_wealth(wealth, consumption, working, wage, interest_rate):
     return (1 + interest_rate) * (wealth - consumption) + wage * working
 
 
-def next_wealth_constraint(next_wealth):
-    return next_wealth >= 0
+def consumption_constraint(consumption, wealth):
+    return consumption <= wealth
 
 
 def consumption_constraint(consumption, wealth):
@@ -76,13 +78,18 @@ PHELPS_DEATON = {
         "retirement": {"options": [0, 1]},
         "consumption": {
             "grid_type": "linspace",
-            "start": 1,
+            "start": 0,
             "stop": 100,
-            "n_points": 11,
+            "n_points": N_CHOICE_GRID_POINTS,
         },
     },
     "states": {
-        "wealth": {"grid_type": "linspace", "start": 0, "stop": 100, "n_points": 11},
+        "wealth": {
+            "grid_type": "linspace",
+            "start": 0,
+            "stop": 100,
+            "n_points": N_STATE_GRID_POINTS,
+        },
     },
     "n_periods": 20,
 }
@@ -93,7 +100,7 @@ PHELPS_DEATON_WITH_SHOCKS = {
     "functions": {
         "utility": phelps_deaton_utility_with_shock,
         "next_wealth": next_wealth_with_shock,
-        "next_wealth_constraint": next_wealth_constraint,
+        "consumption_constraint": consumption_constraint,
         "working": working,
     },
     "shocks": {
@@ -109,7 +116,7 @@ PHELPS_DEATON_WITH_FILTERS = {
     "functions": {
         "utility": phelps_deaton_utility_with_filter,
         "next_wealth": next_wealth,
-        "next_wealth_constraint": next_wealth_constraint,
+        "consumption_constraint": consumption_constraint,
         "working": working,
         "absorbing_retirement_filter": absorbing_retirement_filter,
         "next_lagged_retirement": lambda retirement: retirement,
@@ -120,11 +127,16 @@ PHELPS_DEATON_WITH_FILTERS = {
             "grid_type": "linspace",
             "start": 1,
             "stop": 100,
-            "n_points": 11,
+            "n_points": N_CHOICE_GRID_POINTS,
         },
     },
     "states": {
-        "wealth": {"grid_type": "linspace", "start": 0, "stop": 100, "n_points": 11},
+        "wealth": {
+            "grid_type": "linspace",
+            "start": 0,
+            "stop": 100,
+            "n_points": N_STATE_GRID_POINTS,
+        },
         "lagged_retirement": {"options": [0, 1]},
     },
     "n_periods": 20,
