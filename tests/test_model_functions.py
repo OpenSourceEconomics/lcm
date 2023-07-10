@@ -1,8 +1,7 @@
 import jax.numpy as jnp
 import pandas as pd
-import pytest
 from lcm.example_models import PHELPS_DEATON, phelps_deaton_utility
-from lcm.interfaces import GridSpec, Model, SpaceInfo
+from lcm.interfaces import Model
 from lcm.model_functions import (
     get_combined_constraint,
     get_utility_and_feasibility_function,
@@ -10,53 +9,6 @@ from lcm.model_functions import (
 from lcm.process_model import process_model
 from lcm.state_space import create_state_choice_space
 from numpy.testing import assert_array_equal
-
-
-@pytest.mark.skip(reason="Not ready yet.")
-def test_get_utility_and_feasibility_function():
-    def f():
-        return True
-
-    def g():
-        return False
-
-    def h():
-        return None
-
-    function_info = pd.DataFrame(
-        {"is_constraint": [True, True, False]},
-        index=["f", "g", "h"],
-    )
-
-    grid_specs = {"start": 0, "stop": 1, "n_points": 3}
-
-    space_info = SpaceInfo(
-        axis_names=["a"],
-        lookup_info={},
-        interpolation_info={
-            "a": GridSpec(kind="linspace", specs=grid_specs),
-        },
-        indexer_infos=[],
-    )
-
-    model = Model(
-        grids=None,
-        gridspecs=None,
-        variable_info=None,
-        functions={"f": f, "g": g, "h": h},
-        function_info=function_info,
-        params=None,
-        shocks=None,
-        n_periods=None,
-    )
-
-    get_utility_and_feasibility_function(
-        model=model,
-        space_info=space_info,
-        data_name="values_name",
-        interpolation_options=None,
-        is_last_period=False,
-    )
 
 
 def test_get_combined_constraint():
