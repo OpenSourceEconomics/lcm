@@ -1,5 +1,5 @@
-import dags
 import jax.numpy as jnp
+from dags import concatenate_functions
 
 from lcm.function_evaluator import get_function_evaluator
 
@@ -68,7 +68,7 @@ def get_utility_and_feasibility_function(
             )["functions"],
         )
 
-    return dags.concatenate_functions(
+    return concatenate_functions(
         functions=func_dict,
         targets=["__big_u__", "feasibility"],
     )
@@ -86,7 +86,7 @@ def get_combined_constraint(model):
     """
     targets = model.function_info.query("is_constraint").index.tolist()
 
-    return dags.concatenate_functions(
+    return concatenate_functions(
         functions=model.functions,
         targets=targets,
         aggregator=jnp.logical_and,
