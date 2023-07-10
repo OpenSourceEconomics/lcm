@@ -215,10 +215,7 @@ def _determine_discrete_choice_axes(variable_info):
 
     choice_vars = set(variable_info.query("is_choice").index.tolist())
 
-    choice_indices = []
-    for i, ax in enumerate(axes):
-        if ax in choice_vars:
-            choice_indices.append(i)
+    choice_indices = [i for i, ax in enumerate(axes) if ax in choice_vars]
 
     if not choice_indices:
         choice_indices = None

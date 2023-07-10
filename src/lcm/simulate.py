@@ -462,11 +462,6 @@ def determine_discrete_dense_choice_axes(variable_info):
 
     choice_vars = set(variable_info.query("is_choice").index.tolist())
 
-    choice_indices = []
-    for i, ax in enumerate(dense_vars):
-        if ax in choice_vars:
-            choice_indices.append(i)
+    choice_indices = [i for i, ax in enumerate(dense_vars) if ax in choice_vars]
 
-    choice_indices = None if not choice_indices else tuple(choice_indices)
-
-    return choice_indices
+    return None if not choice_indices else tuple(choice_indices)

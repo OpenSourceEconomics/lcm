@@ -6,7 +6,7 @@ repos:
       - id: check-useless-excludes
         # - id: identity  # Prints all files passed to pre-commits. Debugging.
   - repo: https://github.com/lyz-code/yamlfix
-    rev: 1.10.0
+    rev: 1.12.0
     hooks:
       - id: yamlfix
   - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -50,11 +50,11 @@ repos:
       - id: black
         language_version: python3.10
   - repo: https://github.com/asottile/blacken-docs
-    rev: 1.13.0
+    rev: 1.14.0
     hooks:
       - id: blacken-docs
-  - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.0.270
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.0.276
     hooks:
       - id: ruff
       #   args:
@@ -85,7 +85,7 @@ repos:
           - '88'
         files: (README\.md)
   - repo: https://github.com/asottile/setup-cfg-fmt
-    rev: v2.3.0
+    rev: v2.4.0
     hooks:
       - id: setup-cfg-fmt
   - repo: https://github.com/mgedmin/check-manifest

@@ -92,8 +92,7 @@ def _get_variable_info(user_model, function_info):
     if set(order) != set(info.index):
         raise ValueError("Order and index do not match.")
 
-    info = info.loc[order]
-    return info
+    return info.loc[order]
 
 
 def _get_gridspecs(user_model, variable_info):

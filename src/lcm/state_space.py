@@ -316,8 +316,7 @@ def _combine_masks(masks):
     for m in _masks[1:]:
         _shape = tuple(list(m.shape) + [1] * (mask.ndim - m.ndim))
         mask = jnp.logical_and(mask, m.reshape(_shape))
-    mask = np.array(mask)
-    return mask
+    return np.array(mask)
 
 
 def create_indexers_and_segments(mask, n_sparse_states, fill_value=-1):
