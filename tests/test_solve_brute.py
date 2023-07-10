@@ -115,7 +115,7 @@ def test_solve_brute():
     assert isinstance(solution, list)
 
 
-def test_solve_continious_problem_no_vf_arr():
+def test_solve_continuous_problem_no_vf_arr():
     state_choice_space = Space(
         dense_vars={"a": jnp.array([0, 1.0]), "b": jnp.array([2, 3.0])},
         sparse_vars={"c": jnp.array([4, 5, 6])},

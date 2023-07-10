@@ -10,7 +10,7 @@ def spacemap(func, dense_vars, sparse_vars, *, dense_first):
     This is achieved by applying a product map for all dense_vars and a vmap for the
     sparse_vars.
 
-    In contrast to vmap, gridmap preserves the function signature and allows the
+    In contrast to vmap, spacemap preserves the function signature and allows the
     function to be called with keyword arguments.
 
     Args:
@@ -147,7 +147,16 @@ def vmap_1d(func, variables):
 
 
 def _product_map(func, product_axes):
-    """Do actual product map without signature changes."""
+    """Do actual product map without signature changes.
+
+    Args:
+        func (callable): The function to be dispatched.
+        product_axes (list): List with names of arguments over which we apply vmap.
+
+    Returns:
+        callable: A callable with the same arguments as func (but with an additional
+
+    """
     signature = inspect.signature(func)
     parameters = list(signature.parameters)
     if product_axes is None:
@@ -169,6 +178,17 @@ def _product_map(func, product_axes):
 
 
 def allow_kwargs(func):
+    """Allow a function to be called with keyword arguments.
+
+    Args:
+        func (callable): The function to be wrapped.
+
+    Returns:
+        callable: A callable with the same arguments as func (but with the additional
+            possibility to call it with keyword arguments).
+
+    """
+
     @functools.wraps(func)
     def allow_kwargs_wrapper(*args, **kwargs):
         parameters = list(inspect.signature(func).parameters)
@@ -187,5 +207,15 @@ def allow_kwargs(func):
 
 
 def convert_kwargs_to_args(kwargs, parameters):
+    """Convert kwargs to args in the order of parameters.
+
+    Args:
+        kwargs (dict): Keyword arguments.
+        parameters (list): List of parameter names in the order they should be.
+
+    Returns:
+        list: List of arguments in the order of parameters.
+
+    """
     sorted_kwargs = dict(sorted(kwargs.items(), key=lambda kw: parameters.index(kw[0])))
     return list(sorted_kwargs.values())

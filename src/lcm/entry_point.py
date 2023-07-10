@@ -34,7 +34,7 @@ def get_lcm_function(model, targets="solve", interpolation_options=None):
       to be replaced by a better solution, when we want to allow for bequest motives.
 
     Args:
-        model (dict): Model specification.
+        model (dict): User model specification.
         targets (str or iterable): The requested function types. Currently only
             "solve" is supported.
         interpolation_options (dict): Dictionary of keyword arguments for interpolation
@@ -51,7 +51,7 @@ def get_lcm_function(model, targets="solve", interpolation_options=None):
     if targets not in {"solve", "simulate"}:
         raise NotImplementedError
 
-    _mod = process_model(model)
+    _mod = process_model(user_model=model)
     last_period = _mod.n_periods - 1
     interpolation_options = (
         {} if interpolation_options is None else interpolation_options

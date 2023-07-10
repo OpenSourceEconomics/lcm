@@ -1,9 +1,42 @@
 import jax.numpy as jnp
+import pandas as pd
 from lcm.example_models import PHELPS_DEATON, phelps_deaton_utility
-from lcm.model_functions import get_utility_and_feasibility_function
+from lcm.interfaces import Model
+from lcm.model_functions import (
+    get_combined_constraint,
+    get_utility_and_feasibility_function,
+)
 from lcm.process_model import process_model
 from lcm.state_space import create_state_choice_space
 from numpy.testing import assert_array_equal
+
+
+def test_get_combined_constraint():
+    def f():
+        return True
+
+    def g():
+        return False
+
+    def h():
+        return None
+
+    function_info = pd.DataFrame(
+        {"is_constraint": [True, True, False]},
+        index=["f", "g", "h"],
+    )
+    model = Model(
+        grids=None,
+        gridspecs=None,
+        variable_info=None,
+        functions={"f": f, "g": g, "h": h},
+        function_info=function_info,
+        params=None,
+        shocks=None,
+        n_periods=None,
+    )
+    combined_constraint = get_combined_constraint(model)
+    assert not combined_constraint()
 
 
 def test_get_utility_and_feasibility_function():
