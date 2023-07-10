@@ -2,8 +2,13 @@ import itertools
 
 import jax.numpy as jnp
 import pytest
-from lcm.dispatchers import allow_kwargs, convert_kwargs_to_args, productmap, spacemap, vmap_1d
-from jax import config
+from lcm.dispatchers import (
+    allow_kwargs,
+    convert_kwargs_to_args,
+    productmap,
+    spacemap,
+    vmap_1d,
+)
 from numpy.testing import assert_array_almost_equal as aaae
 
 

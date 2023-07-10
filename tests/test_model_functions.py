@@ -1,13 +1,12 @@
+import jax.numpy as jnp
 import pandas as pd
 import pytest
+from lcm.example_models import PHELPS_DEATON, phelps_deaton_utility
 from lcm.interfaces import GridSpec, Model, SpaceInfo
 from lcm.model_functions import (
     get_combined_constraint,
     get_utility_and_feasibility_function,
 )
-import jax.numpy as jnp
-from lcm.example_models import PHELPS_DEATON, phelps_deaton_utility
-from lcm.model_functions import get_utility_and_feasibility_function
 from lcm.process_model import process_model
 from lcm.state_space import create_state_choice_space
 from numpy.testing import assert_array_equal
