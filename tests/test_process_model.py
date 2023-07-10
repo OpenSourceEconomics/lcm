@@ -5,6 +5,12 @@ import numpy as np
 import pandas as pd
 import pytest
 from lcm.example_models import PHELPS_DEATON, PHELPS_DEATON_WITH_FILTERS
+from lcm.example_models import (
+    N_CHOICE_GRID_POINTS,
+    N_STATE_GRID_POINTS,
+    PHELPS_DEATON,
+    PHELPS_DEATON_WITH_FILTERS,
+)
 from lcm.interfaces import GridSpec
 from lcm.process_model import (
     _get_function_info,
@@ -103,14 +109,14 @@ def test_process_phelps_deaton_with_filters():
     # Gridspecs
     wealth_specs = GridSpec(
         kind="linspace",
-        specs={"start": 0, "stop": 100, "n_points": 11},
+        specs={"start": 0, "stop": 100, "n_points": N_STATE_GRID_POINTS},
     )
 
     assert model.gridspecs["wealth"] == wealth_specs
 
     consumption_specs = GridSpec(
         kind="linspace",
-        specs={"start": 1, "stop": 100, "n_points": 11},
+        specs={"start": 1, "stop": 100, "n_points": N_CHOICE_GRID_POINTS},
     )
     assert model.gridspecs["consumption"] == consumption_specs
 
@@ -154,14 +160,14 @@ def test_process_phelps_deaton():
     # Gridspecs
     wealth_specs = GridSpec(
         kind="linspace",
-        specs={"start": 0, "stop": 100, "n_points": 11},
+        specs={"start": 0, "stop": 100, "n_points": N_STATE_GRID_POINTS},
     )
 
     assert model.gridspecs["wealth"] == wealth_specs
 
     consumption_specs = GridSpec(
         kind="linspace",
-        specs={"start": 1, "stop": 100, "n_points": 11},
+        specs={"start": 0, "stop": 100, "n_points": N_CHOICE_GRID_POINTS},
     )
     assert model.gridspecs["consumption"] == consumption_specs
 

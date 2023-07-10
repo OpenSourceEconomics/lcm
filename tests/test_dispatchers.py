@@ -2,7 +2,8 @@ import itertools
 
 import jax.numpy as jnp
 import pytest
-from lcm.dispatchers import allow_kwargs, convert_kwargs_to_args, productmap, spacemap
+from lcm.dispatchers import allow_kwargs, convert_kwargs_to_args, productmap, spacemap, vmap_1d
+from jax import config
 from numpy.testing import assert_array_almost_equal as aaae
 
 
@@ -264,3 +265,25 @@ def test_allow_kwargs():
         f(a=1, b=2)
 
     assert allow_kwargs(f)(a=1, b=2) == 3
+
+
+# ======================================================================================
+# vmap_1d
+# ======================================================================================
+
+
+def test_vmap_1d():
+    def func(a, b, c):
+        return c * (a + b)
+
+    vmapped = vmap_1d(func, variables=["a", "b"])
+    a = jnp.array([1, 2])
+    got = vmapped(a=a, b=a, c=-1)
+    exp = jnp.array([-2, -4])
+
+    aaae(got, exp)
+
+
+def test_vmap_1d_error():
+    with pytest.raises(ValueError, match="Same argument provided more than once."):
+        vmap_1d(None, variables=["a", "a"])
