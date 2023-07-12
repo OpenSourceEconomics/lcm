@@ -5,6 +5,8 @@ RETIREMENT_AGE = 65
 N_CHOICE_GRID_POINTS = 500
 N_STATE_GRID_POINTS = 100
 
+intensive_margin_working_hours_cats = [0, 20, 40]
+
 
 def phelps_deaton_utility_with_shock(
     consumption,
@@ -17,6 +19,18 @@ def phelps_deaton_utility_with_shock(
 
 def phelps_deaton_utility(consumption, working, delta):
     return jnp.log(consumption) - delta * working
+
+
+def intensive_margin_utility(consumption, disutility_of_work):
+    return jnp.log(consumption) - disutility_of_work
+
+
+def disutility_of_work(working_hours, disutility_part_time, disutility_full_time):
+    disutility_by_labor_supply = dict(zip(
+            intensive_margin_working_hours_cats,
+            [0, disutility_part_time, disutility_full_time],
+        ))
+    return disutility_by_labor_supply[working_hours]
 
 
 def phelps_deaton_utility_with_filter(
@@ -49,6 +63,12 @@ def wage(wage_category, wage_by_category):
 
 def next_wealth(wealth, consumption, working, wage, interest_rate):
     return (1 + interest_rate) * (wealth - consumption) + wage * working
+
+
+def intensive_margin_next_wealth(
+    wealth, consumption, working_hours, wage, interest_rate,
+):
+    return (1 + interest_rate) * (wealth - consumption) + wage * working_hours
 
 
 def consumption_constraint(consumption, wealth):
@@ -164,6 +184,36 @@ PHELPS_DEATON_WITH_FILTERS = {
             "n_points": N_STATE_GRID_POINTS,
         },
         "lagged_retirement": {"options": [0, 1]},
+    },
+    "n_periods": 20,
+}
+
+
+# Simple model which incorporates a discrete labor supply choice of three options:
+# working full time, working part time, and not working.
+INTENSIVE_MARGIN_LABOR_SUPPLY = {
+    "functions": {
+        "utility": phelps_deaton_utility,
+        "next_wealth": next_wealth,
+        "consumption_constraint": consumption_constraint,
+        "working": working,
+    },
+    "choices": {
+        "working_hours": {"options": intensive_margin_working_hours_cats},
+        "consumption": {
+            "grid_type": "linspace",
+            "start": 0,
+            "stop": 100,
+            "n_points": N_CHOICE_GRID_POINTS,
+        },
+    },
+    "states": {
+        "wealth": {
+            "grid_type": "linspace",
+            "start": 0,
+            "stop": 100,
+            "n_points": N_STATE_GRID_POINTS,
+        },
     },
     "n_periods": 20,
 }
