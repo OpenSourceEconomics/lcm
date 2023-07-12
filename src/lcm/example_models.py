@@ -1,5 +1,6 @@
 """Define example model specifications."""
 import jax.numpy as jnp
+import numpy as np
 
 RETIREMENT_AGE = 65
 N_CHOICE_GRID_POINTS = 500
@@ -26,10 +27,13 @@ def intensive_margin_utility(consumption, disutility_of_work):
 
 
 def disutility_of_work(working_hours, disutility_part_time, disutility_full_time):
-    disutility_by_labor_supply = dict(zip(
+    disutility_by_labor_supply = dict(
+        zip(
             intensive_margin_working_hours_cats,
             [0, disutility_part_time, disutility_full_time],
-        ))
+            strict=True,
+        ),
+    )
     return disutility_by_labor_supply[working_hours]
 
 
@@ -57,6 +61,47 @@ def wage_category(wage_category_probabilities):
     pass
 
 
+def next_human_capital(
+    human_capital,
+    depreciation,
+    working_hours,
+    experience_factor_part_time,
+):
+    """Accumulate human capital (full time equivalent years of experience).
+
+    To discuss:
+    - Depreciation needed here? (without it interpretable as years of experience)
+
+    """
+    additional_experience = dict(
+        zip(
+            intensive_margin_working_hours_cats,
+            [0, experience_factor_part_time, 1],
+            strict=True,
+        ),
+    )
+    return human_capital * depreciation + additional_experience[working_hours]
+
+
+def intensive_margin_wage(
+    human_capital,
+    wage_shock_component,
+    wage_gamma_0,
+    wage_gamma_1,
+):
+    """Hourly wage rate depending on human capital and a permanent shock component.
+
+    To discuss:
+    - Quadratic relationship between human capital and wage rate?
+    """
+    return np.exp(wage_gamma_0 + wage_gamma_1 * human_capital + wage_shock_component)
+
+
+@lcm.mark.stochastic(transition="wage_shock_component")
+def next_wage_shock_component(wage_shock_component):
+    pass
+
+
 def wage(wage_category, wage_by_category):
     return wage_by_category[wage_category]
 
@@ -66,7 +111,11 @@ def next_wealth(wealth, consumption, working, wage, interest_rate):
 
 
 def intensive_margin_next_wealth(
-    wealth, consumption, working_hours, wage, interest_rate,
+    wealth,
+    consumption,
+    working_hours,
+    wage,
+    interest_rate,
 ):
     return (1 + interest_rate) * (wealth - consumption) + wage * working_hours
 
@@ -193,10 +242,13 @@ PHELPS_DEATON_WITH_FILTERS = {
 # working full time, working part time, and not working.
 INTENSIVE_MARGIN_LABOR_SUPPLY = {
     "functions": {
-        "utility": phelps_deaton_utility,
+        "utility": intensive_margin_utility,
         "next_wealth": next_wealth,
+        "next_human_capital": next_human_capital,
+        "next_wage_shock_component": next_wage_shock_component,
         "consumption_constraint": consumption_constraint,
-        "working": working,
+        "disutility_of_work": disutility_of_work,
+        "intensive_margin_wage": intensive_margin_wage,
     },
     "choices": {
         "working_hours": {"options": intensive_margin_working_hours_cats},
@@ -214,6 +266,13 @@ INTENSIVE_MARGIN_LABOR_SUPPLY = {
             "stop": 100,
             "n_points": N_STATE_GRID_POINTS,
         },
+        "human_capital": {
+            "grid_type": "linspace",
+            "start": 0,
+            "stop": 45,
+            "n_points": N_STATE_GRID_POINTS,
+        },
+        "wage_shock_component": {"options": [-1, 0, 1]},
     },
     "n_periods": 20,
 }
