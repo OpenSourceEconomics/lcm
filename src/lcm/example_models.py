@@ -115,8 +115,6 @@ PHELPS_DEATON_WITH_DISCRETE_TRANSITION_SHOCKS = {
             "n_points": N_STATE_GRID_POINTS,
         },
         "wage_category": {"options": ["low", "high"]},
-        # Question: Also possible to just write: 
-        # wage: {"options": [wage_low, wage_high]} 
         # Question: Possibility to specify number of values in params file?
     },
 }
