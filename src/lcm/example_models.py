@@ -32,15 +32,22 @@ def working(retirement):
     return 1 - retirement
 
 
-def next_wealth_with_shock(
-    wealth,
-    consumption,
-    working,
-    wage,
-    wage_shock,
-    interest_rate,
-):
-    return interest_rate * (wealth - consumption) + wage * wage_shock * working
+@lcm.mark.stochastic
+def next_wage_category(wage_category, wage_category_transition):
+    pass
+
+
+def wage(wage_category, wage_low, wage_high):
+    if wage_category == "low":
+        out = wage_low
+    elif wage_category == "high":
+        out = wage_high
+    return out
+
+
+# Question: dict as parameter?
+def wage_with_dict(wage_category, wage_by_category):
+    return wage_by_category[wage_category]
 
 
 def next_wealth(wealth, consumption, working, wage, interest_rate):
@@ -90,23 +97,29 @@ PHELPS_DEATON = {
     "n_periods": 20,
 }
 
-
-PHELPS_DEATON_WITH_SHOCKS = {
+PHELPS_DEATON_WITH_DISCRETE_TRANSITION_SHOCKS = {
     **PHELPS_DEATON,
     "functions": {
-        "utility": phelps_deaton_utility_with_shock,
-        "next_wealth": next_wealth_with_shock,
+        "utility": phelps_deaton_utility,
+        "next_wealth": next_wealth,
+        "wage": wage,
+        "next_wage_category": next_wage_category,
         "consumption_constraint": consumption_constraint,
         "working": working,
     },
-    "shocks": {
-        "wage_shock": "lognormal",
-        # special name to signal that this shock can be set to zero to calculate
-        # expected utility
-        "additive_utility_shock": "extreme_value",
+    "states": {
+        "wealth": {
+            "grid_type": "linspace",
+            "start": 0,
+            "stop": 100,
+            "n_points": N_STATE_GRID_POINTS,
+        },
+        "wage_category": {"options": ["low", "high"]},
+        # Question: Also possible to just write: 
+        # wage: {"options": [wage_low, wage_high]} 
+        # Question: Possibility to specify number of values in params file?
     },
 }
-
 
 PHELPS_DEATON_WITH_FILTERS = {
     "functions": {
