@@ -37,6 +37,11 @@ def next_wage_category(wage_category, wage_category_transition):
     pass
 
 
+@lcm.mark.stochastic
+def wage_category(wage_category, wage_category_transition):
+    pass
+
+
 def wage(wage_category, wage_low, wage_high):
     if wage_category == "low":
         out = wage_low
@@ -97,7 +102,7 @@ PHELPS_DEATON = {
     "n_periods": 20,
 }
 
-PHELPS_DEATON_WITH_DISCRETE_TRANSITION_SHOCKS = {
+PHELPS_DEATON_WITH_PERSISTENT_DISCRETE_TRANSITION_SHOCKS = {
     **PHELPS_DEATON,
     "functions": {
         "utility": phelps_deaton_utility,
@@ -116,6 +121,27 @@ PHELPS_DEATON_WITH_DISCRETE_TRANSITION_SHOCKS = {
         },
         "wage_category": {"options": ["low", "high"]},
         # Question: Possibility to specify number of values in params file?
+    },
+}
+
+PHELPS_DEATON_WITH_TRANSITORY_DISCRETE_TRANSITION_SHOCKS = {
+    **PHELPS_DEATON,
+    "functions": {
+        "utility": phelps_deaton_utility,
+        "next_wealth": next_wealth,
+        "wage": wage,
+        "wage_category": wage_category,
+        "consumption_constraint": consumption_constraint,
+        "working": working,
+    },
+    "states": {
+        "wealth": {
+            "grid_type": "linspace",
+            "start": 0,
+            "stop": 100,
+            "n_points": N_STATE_GRID_POINTS,
+        },
+        # Question: Where are options of wage_category specified?
     },
 }
 
