@@ -137,3 +137,26 @@ PHELPS_DEATON_WITH_FILTERS = {
     },
     "n_periods": 20,
 }
+
+
+FULLY_DISCRETE_CONSUMPTION_MODEL = {
+    "functions": {
+        "utility": phelps_deaton_utility,
+        "next_wealth": next_wealth,
+        "consumption_constraint": consumption_constraint,
+        "working": working,
+    },
+    "choices": {
+        "retirement": {"options": [0, 1]},
+        "consumption": {"options": [0, 1]},
+    },
+    "states": {
+        "wealth": {
+            "grid_type": "linspace",
+            "start": 0,
+            "stop": 100,
+            "n_points": N_STATE_GRID_POINTS,
+        },
+    },
+    "n_periods": 20,
+}

@@ -7,6 +7,7 @@ from lcm.entry_point import (
     get_next_state_function,
 )
 from lcm.example_models import (
+    FULLY_DISCRETE_CONSUMPTION_MODEL,
     PHELPS_DEATON,
     PHELPS_DEATON_WITH_FILTERS,
     phelps_deaton_utility,
@@ -19,6 +20,7 @@ from pybaum import tree_map
 MODELS = {
     "simple": PHELPS_DEATON,
     "with_filters": PHELPS_DEATON_WITH_FILTERS,
+    "discrete": FULLY_DISCRETE_CONSUMPTION_MODEL,
 }
 
 
@@ -41,7 +43,11 @@ def test_get_lcm_function_with_solve_target(user_model):
 # ======================================================================================
 
 
-@pytest.mark.parametrize("user_model", [PHELPS_DEATON], ids=["simple"])
+@pytest.mark.parametrize(
+    "user_model",
+    [PHELPS_DEATON, FULLY_DISCRETE_CONSUMPTION_MODEL],
+    ids=["simple", "discrete"],
+)
 def test_get_lcm_function_with_simulation_target_simple(user_model):
     # solve model
     solve_model, params_template = get_lcm_function(model=user_model)
