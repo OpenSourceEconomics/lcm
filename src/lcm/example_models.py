@@ -32,19 +32,9 @@ def working(retirement):
     return 1 - retirement
 
 
-@lcm.mark.stochastic
-def next_wage_category(wage_category, wage_category_transition):
+@lcm.mark.stochastic(transition_matrix)  # noqa: F821
+def next_wage(wage):  # noqa: ARG001
     pass
-
-
-# Question: common term for _probabilities and _transition?
-@lcm.mark.stochastic
-def wage_category(wage_category_probabilities):
-    pass
-
-
-def wage(wage_category, wage_by_category):
-    return wage_by_category[wage_category]
 
 
 def next_wealth(wealth, consumption, working, wage, interest_rate):
@@ -99,8 +89,7 @@ PHELPS_DEATON_WITH_PERSISTENT_DISCRETE_TRANSITION_SHOCKS = {
     "functions": {
         "utility": phelps_deaton_utility,
         "next_wealth": next_wealth,
-        "wage": wage,
-        "next_wage_category": next_wage_category,
+        "next_wage": next_wage,
         "consumption_constraint": consumption_constraint,
         "working": working,
     },
@@ -111,31 +100,8 @@ PHELPS_DEATON_WITH_PERSISTENT_DISCRETE_TRANSITION_SHOCKS = {
             "stop": 100,
             "n_points": N_STATE_GRID_POINTS,
         },
-        "wage_category": {"options": ["low", "high"]},
-        # Question: Possibility to specify number of values in params file?
+        "wage": {"options": [10, 20]},
     },
-}
-
-PHELPS_DEATON_WITH_TRANSITORY_DISCRETE_TRANSITION_SHOCKS = {
-    **PHELPS_DEATON,
-    "functions": {
-        "utility": phelps_deaton_utility,
-        "next_wealth": next_wealth,
-        "wage": wage,
-        "wage_category": wage_category,
-        "consumption_constraint": consumption_constraint,
-        "working": working,
-    },
-    "states": {
-        "wealth": {
-            "grid_type": "linspace",
-            "start": 0,
-            "stop": 100,
-            "n_points": N_STATE_GRID_POINTS,
-        },
-        # Question: Where are options of wage_category specified?
-    },
-    "shocks": {"wage_category": {"options": ["low", "high"]}},
 }
 
 PHELPS_DEATON_WITH_FILTERS = {
