@@ -37,21 +37,13 @@ def next_wage_category(wage_category, wage_category_transition):
     pass
 
 
+# Question: common term for _probabilities and _transition?
 @lcm.mark.stochastic
-def wage_category(wage_category, wage_category_transition):
+def wage_category(wage_category_probabilities):
     pass
 
 
-def wage(wage_category, wage_low, wage_high):
-    if wage_category == "low":
-        out = wage_low
-    elif wage_category == "high":
-        out = wage_high
-    return out
-
-
-# Question: dict as parameter?
-def wage_with_dict(wage_category, wage_by_category):
+def wage(wage_category, wage_by_category):
     return wage_by_category[wage_category]
 
 
@@ -143,6 +135,7 @@ PHELPS_DEATON_WITH_TRANSITORY_DISCRETE_TRANSITION_SHOCKS = {
         },
         # Question: Where are options of wage_category specified?
     },
+    "shocks": {"wage_category": {"options": ["low", "high"]}},
 }
 
 PHELPS_DEATON_WITH_FILTERS = {
