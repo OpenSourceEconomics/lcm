@@ -23,21 +23,24 @@ def simulate(
 
     Args:
         params (dict): Dict of model parameters.
-        state_indexers (list): List of dicts with length n_periods. Each dict contains
-            one or several state indexers.
-        continuous_choice_grids (list): List of dicts with 1d grids for continuous
-            choice variables.
-        compute_ccv_policy_functions (list): List of functions that compute the
-            conditional continuation value dependent on the discrete choices.
+        state_indexers (list): List of dicts of length n_periods. Each dict contains one
+            or several state indexers.
+        continuous_choice_grids (list): List of dicts of length n_periods. Each dict
+            contains 1d grids for continuous choice variables.
+        compute_ccv_policy_functions (list): List of functions of length n_periods. Each
+            function computes the conditional continuation value dependent on the
+            discrete choices.
         model (Model): Model instance.
         next_state (callable): Function that returns the next state given the current
             state and choice variables.
-        vf_arr_list (list): List of value function arrays for each period. Is the output
-            of the solution.
-        initial_states (list): List of initial states from which we iterate.
+        vf_arr_list (list): List of value function arrays of length n_periods. This is
+            the output of the model's `solve` function.
+        initial_states (list): List of initial states to start from. Typically from the
+            observed dataset.
 
     Returns:
-        list: List of optimal choices for each initial state per period.
+        list: List of length n_periods containing the valuations, optimal choices, and
+            states.
 
     """
     # Update the vf_arr_list
