@@ -252,3 +252,7 @@ def _get_function_with_dummy_params(func):
         return func(**_kwargs)
 
     return processed_func
+
+
+def _process_stochastic_functions(functions):
+    return [func for func in functions if hasattr(func, "_stochastic_info")]

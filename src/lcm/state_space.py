@@ -4,13 +4,32 @@ import inspect
 import jax
 import jax.numpy as jnp
 import numpy as np
-from dags import concatenate_functions
+from dags import concatenate_functions, get_ancestors
 
 from lcm.dispatchers import productmap, spacemap
 from lcm.interfaces import IndexerInfo, Space, SpaceInfo
 
 
-def create_state_choice_space(model, period, *, jit_filter):
+def reduce_variable_info(variable_info, function_info, functions):
+    """Drop state variables that only occur in next functions from the variable info.
+
+    Args:
+        vi (pandas.DataFrame): A table with information about all variables in the model
+        model (Model): A processed model.
+
+    Returns:
+        pandas.Dataframe: The reduced variable info data frame.
+
+    """
+    non_next_functions = function_info.query("~is_next").index.tolist()
+    functions = {name: functions[name] for name in non_next_functions}
+    ancestors = get_ancestors(functions, targets=list(functions), include_targets=True)
+    state_variables = variable_info.query("is_state").index.tolist()
+    irrelevant_state_variables = set(state_variables).difference(set(ancestors))
+    return variable_info.drop(index=irrelevant_state_variables)
+
+
+def create_state_choice_space(model, period, *, is_last_period, jit_filter):
     """Create a state choice space for the model.
 
     A state_choice_space is a compressed representation of all feasible states and the
@@ -47,6 +66,12 @@ def create_state_choice_space(model, period, *, jit_filter):
     # preparations
     # ==================================================================================
     vi = model.variable_info
+    if is_last_period:
+        vi = reduce_variable_info(
+            vi,
+            function_info=model.function_info,
+            functions=model.functions,
+        )
 
     has_sparse_states = (vi.is_sparse & vi.is_state).any()
     has_sparse_vars = vi.is_sparse.any()
