@@ -63,9 +63,9 @@ def _get_variable_info(user_model, function_info, functions):
             columns are booleans that are True if the function has the corresponding
             property. The columns are: is_filter, is_constraint, is_next.
         functions (dict): Dictionary that maps names of functions to functions. The
-            functions differ from the user functions in that they all except the
-            filter functions take ``params`` as keyword argument. If the original
-            function depended on model parameters, those are automatically extracted
+            functions differ from the user functions in that—except for filter
+            functions—they take ``params`` as a keyword argument. If the original
+            function depends on model parameters, those are automatically extracted
             from ``params`` and passed to the original function. Otherwise, the
             ``params`` argument is simply ignored.
 
