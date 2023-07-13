@@ -32,7 +32,7 @@ def working(retirement):
     return 1 - retirement
 
 
-@lcm.mark.stochastic(transition_matrix)  # noqa: F821
+@lcm.mark.stochastic("transition_matrix")  # noqa: F821
 def next_wage(wage):  # noqa: ARG001
     pass
 
