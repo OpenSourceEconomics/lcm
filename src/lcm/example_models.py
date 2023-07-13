@@ -91,23 +91,6 @@ PHELPS_DEATON = {
 }
 
 
-PHELPS_DEATON_WITH_SHOCKS = {
-    **PHELPS_DEATON,
-    "functions": {
-        "utility": phelps_deaton_utility_with_shock,
-        "next_wealth": next_wealth_with_shock,
-        "consumption_constraint": consumption_constraint,
-        "working": working,
-    },
-    "shocks": {
-        "wage_shock": "lognormal",
-        # special name to signal that this shock can be set to zero to calculate
-        # expected utility
-        "additive_utility_shock": "extreme_value",
-    },
-}
-
-
 PHELPS_DEATON_WITH_FILTERS = {
     "functions": {
         "utility": phelps_deaton_utility_with_filter,
