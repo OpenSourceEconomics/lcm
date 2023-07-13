@@ -56,13 +56,18 @@ def test_get_function_info(user_model):
 
 def test_get_variable_info(user_model):
     function_info = _get_function_info(user_model)
-    got = _get_variable_info(user_model, function_info)
+    got = _get_variable_info(
+        user_model,
+        function_info,
+        functions=user_model["functions"],
+    )
     exp = pd.DataFrame(
         {
             "is_state": [False, True],
             "is_choice": [True, False],
             "is_discrete": [True, True],
             "is_continuous": [False, False],
+            "is_auxiliary": [False, True],
             "is_sparse": [False, False],
             "is_dense": [True, True],
         },
@@ -72,14 +77,22 @@ def test_get_variable_info(user_model):
 
 
 def test_get_gridspecs(user_model):
-    variable_info = _get_variable_info(user_model, _get_function_info(user_model))
+    variable_info = _get_variable_info(
+        user_model,
+        function_info=_get_function_info(user_model),
+        functions=user_model["functions"],
+    )
     got = _get_gridspecs(user_model, variable_info)
     exp = {"a": [0, 1], "c": [2, 3]}
     assert got == exp
 
 
 def test_get_grids(user_model):
-    variable_info = _get_variable_info(user_model, _get_function_info(user_model))
+    variable_info = _get_variable_info(
+        user_model,
+        function_info=_get_function_info(user_model),
+        functions=user_model["functions"],
+    )
     gridspecs = _get_gridspecs(user_model, variable_info)
     got = _get_grids(gridspecs, variable_info)
     assert_array_equal(got["a"], jnp.array([0, 1]))

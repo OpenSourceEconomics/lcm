@@ -2,7 +2,7 @@ import functools
 from functools import partial
 
 import jax.numpy as jnp
-from dags import concatenate_functions, get_ancestors
+from dags import concatenate_functions
 
 from lcm.argmax import argmax
 from lcm.discrete_emax import get_emax_calculator
@@ -11,26 +11,7 @@ from lcm.model_functions import get_utility_and_feasibility_function
 from lcm.process_model import process_model
 from lcm.simulate import simulate
 from lcm.solve_brute import solve
-from lcm.state_space import create_state_choice_space, reduce_variable_info
-
-
-def reduce_variable_info(variable_info, function_info, functions):
-    """Drop state variables that only occur in next functions from the variable info.
-
-    Args:
-        vi (pandas.DataFrame): A table with information about all variables in the model
-        model (Model): A processed model.
-
-    Returns:
-        pandas.Dataframe: The reduced variable info data frame.
-
-    """
-    non_next_functions = function_info.query("~is_next").index.tolist()
-    functions = {name: functions[name] for name in non_next_functions}
-    ancestors = get_ancestors(functions, targets=list(functions))
-    state_variables = variable_info.query("is_state").index.tolist()
-    irrelevant_state_variables = set(state_variables).difference(set(ancestors))
-    return variable_info.drop(index=irrelevant_state_variables)
+from lcm.state_space import create_state_choice_space
 
 
 def get_lcm_function(model, targets="solve", interpolation_options=None):
@@ -95,10 +76,12 @@ def get_lcm_function(model, targets="solve", interpolation_options=None):
     choice_segments = []
     emax_calculators = []
 
+    # ==================================================================================
+    # Create stace choice space for each period
+    # ==================================================================================
     for period in range(_mod.n_periods):
         is_last_period = period == last_period
 
-        # ==============================================================================
         # call state space creation function, append trivial items to their lists
         # ==============================================================================
         sc_space, space_info, state_indexer, segments = create_state_choice_space(
@@ -118,22 +101,17 @@ def get_lcm_function(model, targets="solve", interpolation_options=None):
 
         space_infos.append(space_info)
 
-    # after loop
+    # ==================================================================================
+    # Shift space info (in period t we require the space info of period t+1)
+    # ==================================================================================
     space_infos = space_infos[1:] + [{}]
 
+    # ==================================================================================
+    # Create model functions
+    # ==================================================================================
     for period in range(_mod.n_periods):
         is_last_period = period == last_period
 
-        if is_last_period:
-            vi = reduce_variable_info(
-                _mod.variable_info,
-                _mod.function_info,
-                _mod.functions,
-            )
-        else:
-            vi = _mod.variable_info
-
-        # ==============================================================================
         # create the compute conditional continuation value functions and append to list
         # ==============================================================================
         u_and_f = get_utility_and_feasibility_function(
@@ -155,15 +133,14 @@ def get_lcm_function(model, targets="solve", interpolation_options=None):
         )
         compute_ccv_policy_functions.append(compute_ccv_argmax)
 
-        # ==============================================================================
         # create list of emax_calculators
         # ==============================================================================
-
         _shock_type = _mod.shocks.get("additive_utility_shock", None)
 
         calculator = get_emax_calculator(
             shock_type=_shock_type,
-            variable_info=vi,
+            variable_info=_mod.variable_info,
+            is_last_period=is_last_period,
         )
         emax_calculators.append(
             partial(

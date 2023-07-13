@@ -34,7 +34,11 @@ def process_model(user_model):
         function_info=_function_info,
         params=_params,
     )
-    _variable_info = _get_variable_info(user_model, function_info=_function_info)
+    _variable_info = _get_variable_info(
+        user_model,
+        function_info=_function_info,
+        functions=_functions,
+    )
     _gridspecs = _get_gridspecs(user_model, variable_info=_variable_info)
     _grids = _get_grids(gridspecs=_gridspecs, variable_info=_variable_info)
     return Model(
@@ -49,7 +53,7 @@ def process_model(user_model):
     )
 
 
-def _get_variable_info(user_model, function_info):
+def _get_variable_info(user_model, function_info, functions):
     """Derive information about all variables in the model.
 
     Args:
@@ -58,6 +62,12 @@ def _get_variable_info(user_model, function_info):
             functions in the model. The index contains the name of a function. The
             columns are booleans that are True if the function has the corresponding
             property. The columns are: is_filter, is_constraint, is_next.
+        functions (dict): Dictionary that maps names of functions to functions. The
+            functions differ from the user functions in that they all except the
+            filter functions take ``params`` as keyword argument. If the original
+            function depended on model parameters, those are automatically extracted
+            from ``params`` and passed to the original function. Otherwise, the
+            ``params`` argument is simply ignored.
 
     Returns:
         pandas.DataFrame: A table with information about all variables in the model.
@@ -79,6 +89,13 @@ def _get_variable_info(user_model, function_info):
     info["is_discrete"] = ["options" in spec for spec in _variables.values()]
     info["is_continuous"] = ~info["is_discrete"]
 
+    _auxiliary_variables = _get_auxiliary_variables(
+        state_variables=info.query("is_state").index.tolist(),
+        function_info=function_info,
+        functions=functions,
+    )
+    info["is_auxiliary"] = [var in _auxiliary_variables for var in _variables]
+
     _filtered_variables = set()
     _filter_names = function_info.query("is_filter").index.tolist()
 
@@ -99,6 +116,32 @@ def _get_variable_info(user_model, function_info):
         raise ValueError("Order and index do not match.")
 
     return info.loc[order]
+
+
+def _get_auxiliary_variables(state_variables, function_info, functions):
+    """Get state variables that only occur in next functions.
+
+    Args:
+        state_variables (list): List of state variable names.
+        function_info (pandas.DataFrame): A table with information about all
+            functions in the model. The index contains the name of a function. The
+            columns are booleans that are True if the function has the corresponding
+            property. The columns are: is_filter, is_constraint, is_next.
+        functions (dict): Dictionary that maps names of functions to functions. The
+            functions differ from the user functions in that they all except the
+            filter functions take ``params`` as keyword argument. If the original
+            function depended on model parameters, those are automatically extracted
+            from ``params`` and passed to the original function. Otherwise, the
+            ``params`` argument is simply ignored.
+
+    Returns:
+        list: List of state variable names that are only used in next functions.
+
+    """
+    non_next_functions = function_info.query("~is_next").index.tolist()
+    functions = {name: functions[name] for name in non_next_functions}
+    ancestors = get_ancestors(functions, targets=list(functions), include_targets=True)
+    return list(set(state_variables).difference(set(ancestors)))
 
 
 def _get_gridspecs(user_model, variable_info):

@@ -54,6 +54,7 @@ def test_get_utility_and_feasibility_function():
     _, space_info, _, _ = create_state_choice_space(
         model=model,
         period=0,
+        is_last_period=False,
         jit_filter=False,
     )
 
