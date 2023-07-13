@@ -1,6 +1,8 @@
 """Define example model specifications."""
 import jax.numpy as jnp
 
+import lcm
+
 RETIREMENT_AGE = 65
 N_CHOICE_GRID_POINTS = 500
 N_STATE_GRID_POINTS = 100
@@ -18,7 +20,7 @@ def next_wealth(wealth, consumption, working, wage, interest_rate):
     return (1 + interest_rate) * (wealth - consumption) + wage * working
 
 
-# @lcm.mark.stochastic
+@lcm.mark.stochastic
 def next_wage(wage):
     return wage
 
