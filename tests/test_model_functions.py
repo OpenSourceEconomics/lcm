@@ -32,7 +32,6 @@ def test_get_combined_constraint():
         functions={"f": f, "g": g, "h": h},
         function_info=function_info,
         params=None,
-        shocks=None,
         n_periods=None,
     )
     combined_constraint = get_combined_constraint(model)

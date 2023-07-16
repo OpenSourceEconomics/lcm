@@ -1,5 +1,7 @@
 import functools
 import inspect
+from collections.abc import Callable
+from typing import NamedTuple
 
 import jax.numpy as jnp
 import pandas as pd
@@ -9,6 +11,13 @@ from dags.signature import with_signature
 import lcm.grids as grids_module
 from lcm.create_params import create_params
 from lcm.interfaces import GridSpec, Model
+
+
+class StochasticFunction(NamedTuple):
+    """A stochastic function."""
+
+    integrate: Callable
+    simulate: Callable
 
 
 def process_model(user_model):
@@ -41,6 +50,14 @@ def process_model(user_model):
     )
     _gridspecs = _get_gridspecs(user_model, variable_info=_variable_info)
     _grids = _get_grids(gridspecs=_gridspecs, variable_info=_variable_info)
+
+    _stochastic_transitions, _params_update_info = _get_stochastic_transitions(
+        functions=_functions,
+        function_info=_function_info,
+    )
+
+    _params = _add_stochastic_params(_params, _params_update_info)
+
     return Model(
         grids=_grids,
         gridspecs=_gridspecs,
@@ -48,8 +65,55 @@ def process_model(user_model):
         functions=_functions,
         function_info=_function_info,
         params=_params,
-        shocks=user_model.get("shocks", {}),
         n_periods=user_model["n_periods"],
+    )
+
+
+def _add_stochastic_params(params, params_update_info):  # noqa: ARG001
+    return params
+
+
+def _get_stochastic_transitions(functions, function_info):
+    stochastic_functions = function_info.query("is_stochastic").index.tolist()
+
+    transitions = {}
+    params_update_info = {}
+
+    # Check that all stochastic functions are next functions and transform
+    for name in stochastic_functions:
+        if "next_" not in name:
+            raise ValueError(
+                f"You marked function {name} as stochastic. Currently only next "
+                "functions can be stochastic.",
+            )
+
+        _transitions, _params_update_info = _transform_stochastic_function(
+            func=functions[name],
+            name=name,
+        )
+        transitions[name] = _transitions
+        params_update_info[name] = _params_update_info
+
+    return transitions, params_update_info
+
+
+def _transform_stochastic_function(func, name):
+    arguments = list(set(inspect.signature(func).parameters).difference({"params"}))
+
+    params_update_info = {
+        "future": name.replace("next_", ""),
+        "arguments": arguments,
+    }
+
+    def _to_integrate(state, grids, params):  # noqa: ARG001
+        pass
+
+    def _to_simulate(params):  # noqa: ARG001
+        pass
+
+    return params_update_info, StochasticFunction(
+        integrate=_to_integrate,
+        simulate=_to_simulate,
     )
 
 
@@ -228,6 +292,9 @@ def _get_function_info(user_model):
     info["is_next"] = (
         info.index.str.startswith("next_") & ~info["is_constraint"] & ~info["is_filter"]
     )
+    info["is_stochastic"] = [
+        hasattr(func, "is_stochastic") for func in user_model["functions"].values()
+    ]
 
     return info
 

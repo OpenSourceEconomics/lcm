@@ -3,8 +3,8 @@ import functools
 from typing import NamedTuple
 
 
-class StochasticInfo(NamedTuple):
-    """Information on the stochastic nature of user provided functions."""
+class StochasticOptions(NamedTuple):
+    """Options passed to the stochastic decorator."""
 
 
 def stochastic(
@@ -23,14 +23,15 @@ def stochastic(
         callable: The decorated function
 
     """
-    stochastic_info = StochasticInfo(*args, **kwargs)
+    stochastic_options = StochasticOptions(*args, **kwargs)
 
     def decorator_stochastic(func):
         @functools.wraps(func)
-        def wrapper_mark_minimizer(*args, **kwargs):
+        def wrapper_mark_stochastic(*args, **kwargs):
             return func(*args, **kwargs)
 
-        wrapper_mark_minimizer.stochastic_info = stochastic_info
-        return wrapper_mark_minimizer
+        wrapper_mark_stochastic.is_stochastic = True
+        wrapper_mark_stochastic.stochastic_options = stochastic_options
+        return wrapper_mark_stochastic
 
     return decorator_stochastic(func) if callable(func) else decorator_stochastic

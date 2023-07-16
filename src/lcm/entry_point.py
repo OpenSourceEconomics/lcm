@@ -135,10 +135,8 @@ def get_lcm_function(model, targets="solve", interpolation_options=None):
 
         # create list of emax_calculators
         # ==============================================================================
-        _shock_type = _mod.shocks.get("additive_utility_shock", None)
-
         calculator = get_emax_calculator(
-            shock_type=_shock_type,
+            shock_type=None,  # currently no utility shocks are supported
             variable_info=_mod.variable_info,
             is_last_period=is_last_period,
         )

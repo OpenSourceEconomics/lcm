@@ -99,7 +99,6 @@ class Model(NamedTuple):
             booleans that are True if the function has the corresponding property. The
             columns are: is_filter, is_constraint, is_next.
         params (dict): Dict of model parameters.
-        shocks (dict): TODO
         n_periods (int): TODO
 
     """
@@ -111,5 +110,4 @@ class Model(NamedTuple):
     function_info: pd.DataFrame
     params: dict
     # not really processed yet
-    shocks: dict
     n_periods: int
