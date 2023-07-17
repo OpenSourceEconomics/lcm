@@ -48,6 +48,7 @@ def test_get_function_info(user_model):
             "is_filter": [False],
             "is_constraint": [False],
             "is_next": [False],
+            "is_stochastic": [False],
         },
         index=["f"],
     )
