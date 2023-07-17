@@ -43,17 +43,14 @@ def test_get_lcm_function_with_solve_target(user_model):
 
 @pytest.mark.parametrize("user_model", [PHELPS_DEATON], ids=["simple"])
 def test_get_lcm_function_with_simulation_target_simple(user_model):
-    # solve model
-    solve_model, params_template = get_lcm_function(model=user_model)
+    simulate, params_template = get_lcm_function(
+        model=user_model,
+        targets="solve_and_simulate",
+    )
     params = tree_map(lambda _: 0.2, params_template)
-    vf_arr_list = solve_model(params)
 
-    # simulate using solution
-    simulate_model, _ = get_lcm_function(model=user_model, targets="simulate")
-
-    simulate_model(
+    simulate(
         params,
-        vf_arr_list=vf_arr_list,
         initial_states={
             "wealth": jnp.array([0.0, 10.0, 50.0]),
         },
@@ -67,7 +64,7 @@ def test_get_lcm_function_with_simulation_target_simple(user_model):
 )
 def test_get_lcm_function_with_simulation_target_with_filters(user_model):
     # solve model
-    solve_model, params_template = get_lcm_function(model=user_model)
+    solve_model, params_template = get_lcm_function(model=user_model, targets="solve")
     params = tree_map(lambda _: 0.2, params_template)
     vf_arr_list = solve_model(params)
 
