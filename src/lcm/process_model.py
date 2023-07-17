@@ -54,7 +54,11 @@ def process_model(user_model):
     _stochastic_transitions, _params_update_info = _get_stochastic_transitions(
         functions=_functions,
         function_info=_function_info,
+        grids=_grids,
     )
+
+    # update next functions that have stochastic versions
+    _functions = {**_functions, **_stochastic_transitions}
 
     _params = _add_stochastic_params(_params, _params_update_info)
 
@@ -73,7 +77,7 @@ def _add_stochastic_params(params, params_update_info):  # noqa: ARG001
     return params
 
 
-def _get_stochastic_transitions(functions, function_info):
+def _get_stochastic_transitions(functions, function_info, grids):
     stochastic_functions = function_info.query("is_stochastic").index.tolist()
 
     transitions = {}
@@ -90,6 +94,7 @@ def _get_stochastic_transitions(functions, function_info):
         _transitions, _params_update_info = _transform_stochastic_function(
             func=functions[name],
             name=name,
+            grids=grids,
         )
         transitions[name] = _transitions
         params_update_info[name] = _params_update_info
@@ -97,24 +102,21 @@ def _get_stochastic_transitions(functions, function_info):
     return transitions, params_update_info
 
 
-def _transform_stochastic_function(func, name):
+def _transform_stochastic_function(func, name, grids):
     arguments = list(set(inspect.signature(func).parameters).difference({"params"}))
 
+    _name = name.replace("next_", "")
+
     params_update_info = {
-        "future": name.replace("next_", ""),
+        "future": _name,
         "arguments": arguments,
     }
 
-    def _to_integrate(state, grids, params):  # noqa: ARG001
-        pass
+    @functools.wraps(func)
+    def _to_integrate(*args, **kwargs):  # noqa: ARG001
+        return grids[_name]
 
-    def _to_simulate(params):  # noqa: ARG001
-        pass
-
-    return params_update_info, StochasticFunction(
-        integrate=_to_integrate,
-        simulate=_to_simulate,
-    )
+    return _to_integrate, params_update_info
 
 
 def _get_variable_info(user_model, function_info, functions):
