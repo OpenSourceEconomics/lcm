@@ -53,20 +53,30 @@ def get_utility_and_feasibility_function(
             return utility + params["beta"] * continuation_value
 
     feasibility = get_combined_constraint(model)
+    next_state = get_next_state_function(model)
 
-    func_dict = {"__big_u__": _big_u, "feasibility": feasibility, **model.functions}
+    func_dict = {
+        "__big_u__": _big_u,
+        "feasibility": feasibility,
+        "next_state": next_state,
+    }
 
     if not is_last_period:
-        func_dict.update(
-            get_function_evaluator(
-                space_info=space_info,
-                data_name=data_name,
-                interpolation_options=interpolation_options,
-                return_type="dict",
-                input_prefix="next_",
-                out_name="continuation_value",
-            )["functions"],
-        )
+        function_evaluator = get_function_evaluator(
+            space_info=space_info,
+            data_name=data_name,
+            interpolation_options=interpolation_options,
+            return_type="dict",
+            input_prefix="next_",
+            out_name="continuation_value",
+        )["functions"]
+
+        def continuation_value(next_state, **kwargs):
+            return function_evaluator(**next_state, **kwargs)["continuation_value"]
+
+        function_evaluator["continuation_value"] = continuation_value
+
+        func_dict.update(function_evaluator)
 
     return concatenate_functions(
         functions=func_dict,
@@ -90,4 +100,29 @@ def get_combined_constraint(model):
         functions=model.functions,
         targets=targets,
         aggregator=jnp.logical_and,
+    )
+
+
+# ======================================================================================
+# Next state
+# ======================================================================================
+
+
+def get_next_state_function(model):
+    """Combine the next state functions into one function.
+
+    Args:
+        model (Model): Model instance.
+
+    Returns:
+        function: Combined next state function.
+
+    """
+    targets = model.function_info.query("is_next").index.tolist()
+
+    return concatenate_functions(
+        functions=model.functions,
+        targets=targets,
+        return_type="dict",
+        enforce_signature=False,
     )
