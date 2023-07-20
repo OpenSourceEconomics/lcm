@@ -12,7 +12,6 @@ interpolation info functions have the arguments
 - start
 - stop
 - n_points
-- grid
 
 Some of the arguments will not be used by all functions but the aligned interface makes
 it easy to call functions interchangeably.

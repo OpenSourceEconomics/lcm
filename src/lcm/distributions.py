@@ -1,9 +1,14 @@
-"""Collection of distributions for shocks."""
+"""Collection of distributions for shocks.
+
+WARNING: This is currently only a placeholder before we implement the distributions
+in JAX.
+
+"""
 import numpy as np
 
 
 def lognormal(sd, size):
-    return np.random.lognormal(0, sd, size)  # noqa: NPY002
+    return np.random.lognormal(mean=0, sigma=sd, size=size)  # noqa: NPY002
 
 
 def get_lognormal_params():
@@ -11,7 +16,7 @@ def get_lognormal_params():
 
 
 def extreme_value(scale, size):
-    return np.random.gumbel(0, scale, size)  # noqa: NPY002
+    return np.random.gumbel(loc=0, scale=scale, size=size)  # noqa: NPY002
 
 
 def get_extreme_value_params():

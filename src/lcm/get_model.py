@@ -58,10 +58,11 @@ ISKHAKOV_2017_FIVE_PERIODS = {
     "n_periods": 5,
 }
 
-ISKHAKOV_2017_LOW_DELTA = tree_update(ISKHAKOV_2017_FIVE_PERIODS, {"n_periods": 3})
+
+ISKHAKOV_2017_THREE_PERIODS = tree_update(ISKHAKOV_2017_FIVE_PERIODS, {"n_periods": 3})
 
 # ======================================================================================
-# Model collection
+# Models and params
 # ======================================================================================
 
 MODELS = {
@@ -77,7 +78,7 @@ MODELS = {
         },
     ),
     "iskhakov_2017_low_delta": ModelAndParams(
-        model=ISKHAKOV_2017_LOW_DELTA,
+        model=ISKHAKOV_2017_THREE_PERIODS,
         params={
             "beta": 0.98,
             "utility": {"delta": 0.1},

@@ -79,8 +79,8 @@ class Model(NamedTuple):
     """Internal representation of a user model.
 
     Attributes:
-        grids: Dictionary that maps names of model variables to grids of feasible values
-            for that variable.
+        grids (dict): Dictionary that maps names of model variables to grids of feasible
+            values for that variable.
         gridspecs (dict): Dictionary that maps names of model variables to
             specifications from which grids of feasible values can be built.
         variable_info (pd.DataFrame): A table with information about all variables in
@@ -98,6 +98,9 @@ class Model(NamedTuple):
             the model. The index contains the name of a function. The columns are
             booleans that are True if the function has the corresponding property. The
             columns are: is_filter, is_constraint, is_next.
+        params (dict): Dict of model parameters.
+        shocks (dict): TODO
+        n_periods (int): TODO
 
     """
 

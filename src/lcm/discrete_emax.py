@@ -1,21 +1,21 @@
 """Functions to aggregate conditional continuation values over discrete choices.
 
 By conditional_continuation_value we mean continuation values conditional on a discrete
-choice, i.e. the result of solving the continuous choice problem conditional on
-the discrete choice.
+choice, i.e. the result of solving the continuous choice problem conditional on the
+discrete choice.
 
-By aggregate we mean calculating the expected maximum of the continuation values,
-given based on the distribution of choice shocks. In the long run we plan to support
-Three shock distributions (currently only the first two):
+By aggregate we mean calculating the expected maximum of the continuation values, given
+based on the distribution of choice shocks. In the long run we plan to support Three
+shock distributions (currently only the first two):
 
 - no shocks -> simply take the maximum of the continuation values
 - iid extreme value shocks -> do a logsum calculation
 - nested logit shocks -> ???
 
 Notes:
-- It is possible that we split the aggregate_conditional_continuation values on
-one function per shock type, so we can inspect the signatures of the individual
-functions. This will only become clear after implementing a few solvers.
+- It is possible that we split the aggregate_conditional_continuation values on one
+function per shock type, so we can inspect the signatures of the individual functions.
+This will only become clear after implementing a few solvers.
 - Hopefully, there will be a better way to do segment_logsumexp soon:
 https://github.com/google/jax/issues/6265
 
@@ -26,14 +26,15 @@ import jax
 import jax.numpy as jnp
 
 
-def get_emax_calculator(shock_type, variable_info):
+def get_emax_calculator(shock_type, variable_info, is_last_period):
     """Return a function that calculates the expected maximum of continuation values.
 
     The maximum is taken over the discrete choice variables in each state.
 
     Args:
-        shock_type (str or None): One of None, "extreme_value" and "nesed_logit".
+        shock_type (str or None): One of None, "extreme_value" and "nested_logit".
         variable_info (pd.DataFrame): DataFrame with information about the variables.
+        is_last_period (bool): Whether the function is created for the last period.
 
     Returns:
         callable: Function that calculates the expected maximum of conditional
@@ -46,11 +47,15 @@ def get_emax_calculator(shock_type, variable_info):
             - params (dict): Dictionary with model parameters.
 
     """
+    if is_last_period:
+        variable_info = variable_info.query("~is_auxiliary")
     choice_axes = _determine_discrete_choice_axes(variable_info)
     if shock_type is None:
         func = partial(_calculate_emax_no_shocks, choice_axes=choice_axes)
     elif shock_type == "extreme_value":
         func = partial(_calculate_emax_extreme_value_shocks, choice_axes=choice_axes)
+    elif shock_type == "nested_logit":
+        raise ValueError("Nested logit shocks are not yet supported.")
     else:
         raise ValueError(f"Invalid shock_type: {shock_type}.")
     return func
@@ -77,8 +82,8 @@ def _calculate_emax_no_shocks(
 
     Returns:
         jax.numpy.ndarray: Multidimensional jax array with aggregated continuation
-        values. Has less dimensions than values if choice_axes is not None and
-        is shorter in the first dimension if choice_segments is not None.
+            values. Has less dimensions than values if choice_axes is not None and
+            is shorter in the first dimension if choice_segments is not None.
 
     """
     out = values
@@ -146,6 +151,8 @@ def _segment_max_over_first_axis(a, segment_info):
 def _segment_extreme_value_emax_over_first_axis(a, scale, segment_info):
     """Calculate emax under iid extreme value assumption over segments of first axis.
 
+    TODO: Explain in more detail how this function is related to EMAX under IID EV.
+
     Args:
         a (jax.numpy.ndarray): Multidimensional jax array.
         scale (float): Scale parameter of the extreme value distribution.
@@ -198,12 +205,11 @@ def _determine_discrete_choice_axes(variable_info):
     """Determine which axes of a state_choice_space correspond to discrete choices.
 
     Args:
-        state_choice_space (Space): Namedtuple with entries dense_vars and sparse_vars.
-        variable_info (dict): Dict with information about the variables in the model.
+        variable_info (pd.DataFrame): DataFrame with information about the variables.
 
     Returns:
-        int or tuple: Int or tuple of int, specifying which axes in a value function
-        correspond to discrete choices.
+        list[int]: Specifies which axes in a value function correspond to discrete
+            choices.
 
     """
     has_sparse = variable_info["is_sparse"].any()
@@ -215,10 +221,7 @@ def _determine_discrete_choice_axes(variable_info):
 
     choice_vars = set(variable_info.query("is_choice").index.tolist())
 
-    choice_indices = []
-    for i, ax in enumerate(axes):
-        if ax in choice_vars:
-            choice_indices.append(i)
+    choice_indices = [i for i, ax in enumerate(axes) if ax in choice_vars]
 
     if not choice_indices:
         choice_indices = None

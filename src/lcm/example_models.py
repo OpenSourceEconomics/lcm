@@ -51,10 +51,6 @@ def consumption_constraint(consumption, wealth):
     return consumption <= wealth
 
 
-def consumption_constraint(consumption, wealth):
-    return wealth >= consumption
-
-
 def age(period):
     return period + 18
 

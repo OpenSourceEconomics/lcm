@@ -10,7 +10,7 @@ from lcm.dispatchers import productmap, spacemap
 from lcm.interfaces import IndexerInfo, Space, SpaceInfo
 
 
-def create_state_choice_space(model, period, *, jit_filter):
+def create_state_choice_space(model, period, *, is_last_period, jit_filter):
     """Create a state choice space for the model.
 
     A state_choice_space is a compressed representation of all feasible states and the
@@ -31,6 +31,7 @@ def create_state_choice_space(model, period, *, jit_filter):
     Args:
         model (Model): A processed model.
         period (int): The period for which the state space is created.
+        is_last_period (bool): Whether the function is created for the last period.
         jit_filter (bool): If True, the filter function is compiled with JAX.
 
     Returns:
@@ -47,8 +48,12 @@ def create_state_choice_space(model, period, *, jit_filter):
     # preparations
     # ==================================================================================
     vi = model.variable_info
-    has_sparse_states = len(vi.query("is_sparse & is_state")) > 0
-    has_sparse_vars = len(vi.query("is_sparse")) > 0
+    if is_last_period:
+        vi = vi.query("~is_auxiliary")
+
+    has_sparse_states = (vi.is_sparse & vi.is_state).any()
+    has_sparse_vars = vi.is_sparse.any()
+
     # ==================================================================================
     # create state choice space
     # ==================================================================================
@@ -316,8 +321,7 @@ def _combine_masks(masks):
     for m in _masks[1:]:
         _shape = tuple(list(m.shape) + [1] * (mask.ndim - m.ndim))
         mask = jnp.logical_and(mask, m.reshape(_shape))
-    mask = np.array(mask)
-    return mask
+    return np.array(mask)
 
 
 def create_indexers_and_segments(mask, n_sparse_states, fill_value=-1):

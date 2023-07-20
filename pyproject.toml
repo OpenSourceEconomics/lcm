@@ -70,6 +70,7 @@ black = 1
 markers = [
     "wip: Tests that are work-in-progress.",
     "slow: Tests that take a long time to run and are skipped in continuous integration.",
+    "illustrative: Tests are designed for illustrative purposes",
 ]
 norecursedirs = ["docs", ".envs"]
 

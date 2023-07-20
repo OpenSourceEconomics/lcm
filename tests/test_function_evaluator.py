@@ -1,8 +1,10 @@
 from functools import partial
 
 import jax.numpy as jnp
+import pytest
 from lcm.dispatchers import productmap
 from lcm.function_evaluator import (
+    _fail_if_interpolation_axes_are_not_last,
     _get_coordinate_finder,
     _get_interpolator,
     _get_label_translator,
@@ -274,8 +276,158 @@ def test_get_interpolator():
 
     prod_utility = productmap(_utility, variables=["wealth", "working"])
 
-    values = prod_utility(wealth=jnp.arange(4), working=jnp.arange(3))
+    values = prod_utility(
+        wealth=jnp.arange(4, dtype=float),
+        working=jnp.arange(3, dtype=float),
+    )
 
     calculated = interpolate(vf=values, wealth=2.5, working=2)
 
     assert calculated == 3
+
+
+# ======================================================================================
+# Illustrative
+# ======================================================================================
+
+
+@pytest.mark.illustrative()
+def test_get_function_evaluator_illustrative():
+    grid_specs = {"start": 0, "stop": 1, "n_points": 3}
+
+    space_info = SpaceInfo(
+        axis_names=["a"],
+        lookup_info={},
+        interpolation_info={
+            "a": GridSpec(kind="linspace", specs=grid_specs),
+        },
+        indexer_infos=[],
+    )
+
+    grid = linspace(**grid_specs)
+
+    values = jnp.pi * grid + 2
+
+    # create the evaluator
+    evaluator = get_function_evaluator(
+        space_info=space_info,
+        data_name="values_name",
+        input_prefix="prefix_",
+    )
+
+    # partial the function values into the evaluator
+    f = partial(evaluator, values_name=values)
+
+    got = f(prefix_a=0.25)
+    expected = jnp.pi * 0.25 + 2
+
+    assert jnp.allclose(got, expected)
+
+
+@pytest.mark.illustrative()
+def test_get_label_translator_illustrative():
+    # Numerical labels
+    # ==================================================================================
+    f = _get_label_translator(
+        labels=jnp.array([1, 2, 3]),
+        in_name="a",
+    )
+    assert f(a=1) == 0
+
+    # Character labels
+    # ==================================================================================
+    g = _get_label_translator(
+        labels=["a", "b", "c"],
+        in_name="x",
+    )
+    assert g(x="c") == 2
+
+
+@pytest.mark.illustrative()
+def test_get_lookup_function_illustrative():
+    values = jnp.array([0, 1, 4])
+    func = _get_lookup_function(array_name="xyz", axis_names=["a"])
+    pure_lookup_func = partial(func, xyz=values)
+
+    assert pure_lookup_func(a=2) == 4
+
+
+@pytest.mark.illustrative()
+def test_get_coordinate_finder_illustrative():
+    find_coordinate = _get_coordinate_finder(
+        in_name="a",
+        grid_type="linspace",
+        grid_info={"start": 0, "stop": 1, "n_points": 3},
+    )
+
+    assert find_coordinate(a=0) == 0
+    assert find_coordinate(a=0.5) == 1
+    assert find_coordinate(a=1) == 2
+    assert find_coordinate(a=0.25) == 0.5
+
+
+@pytest.mark.illustrative()
+def test_get_interpolator_illustrative():
+    interpolate = _get_interpolator(data_name="data_name", axis_names=["a", "b"])
+
+    def f(a, b):
+        return a - b
+
+    prod_f = productmap(f, variables=["a", "b"])
+
+    values = prod_f(a=jnp.arange(2, dtype=float), b=jnp.arange(3, dtype=float))
+
+    assert interpolate(data_name=values, a=0.5, b=0) == 0.5
+    assert interpolate(data_name=values, a=0.5, b=1) == -0.5
+    assert interpolate(data_name=values, a=0, b=0.5) == -0.5
+    assert interpolate(data_name=values, a=0.5, b=1.5) == -1
+
+
+@pytest.mark.illustrative()
+def test_fail_if_interpolation_axes_are_not_last_illustrative():
+    # Empty intersection of axis_names and interpolation_info
+    # ==================================================================================
+
+    space_info = SpaceInfo(
+        axis_names=["a", "b"],
+        interpolation_info={
+            "c": None,
+        },
+        lookup_info=None,
+        indexer_infos=None,
+    )
+
+    _fail_if_interpolation_axes_are_not_last(space_info)  # does not fail
+
+    # Non-empty intersection but correct order
+    # ==================================================================================
+
+    space_info = SpaceInfo(
+        axis_names=["a", "b", "c"],
+        interpolation_info={
+            "b": None,
+            "c": None,
+            "d": None,
+        },
+        lookup_info=None,
+        indexer_infos=None,
+    )
+
+    _fail_if_interpolation_axes_are_not_last(space_info)  # does not fail
+
+    # Non-empty intersection and in-correct order
+    # ==================================================================================
+
+    space_info = SpaceInfo(
+        axis_names=["b", "c", "a"],  # "b", "c" are not last anymore
+        interpolation_info={
+            "b": None,
+            "c": None,
+            "d": None,
+        },
+        lookup_info=None,
+        indexer_infos=None,
+    )
+
+    with pytest.raises(ValueError, match="Interpolation axes need to be the last"):
+        _fail_if_interpolation_axes_are_not_last(space_info)

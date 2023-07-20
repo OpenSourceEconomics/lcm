@@ -17,7 +17,12 @@ from numpy.testing import assert_array_almost_equal as aaae
 
 def test_create_state_choice_space():
     _model = process_model(PHELPS_DEATON_WITH_FILTERS)
-    create_state_choice_space(model=_model, period=0, jit_filter=False)
+    create_state_choice_space(
+        model=_model,
+        period=0,
+        is_last_period=False,
+        jit_filter=False,
+    )
 
 
 @pytest.fixture()

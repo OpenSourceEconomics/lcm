@@ -1,6 +1,9 @@
 import jax
+import jax.numpy as jnp
 import lcm.grids as grids_module
 import numpy as np
+import pandas as pd
+import pytest
 from lcm.example_models import (
     N_CHOICE_GRID_POINTS,
     N_STATE_GRID_POINTS,
@@ -8,10 +11,95 @@ from lcm.example_models import (
     PHELPS_DEATON_WITH_FILTERS,
 )
 from lcm.interfaces import GridSpec
-from lcm.process_model import process_model
+from lcm.process_model import (
+    _get_function_info,
+    _get_grids,
+    _get_gridspecs,
+    _get_variable_info,
+    process_model,
+)
+from numpy.testing import assert_array_equal
+from pandas.testing import assert_frame_equal
 
 
-def test_process_model_with_filters():
+@pytest.fixture()
+def user_model():
+    def f(a, b):
+        return a + b
+
+    return {
+        "functions": {
+            "f": f,
+        },
+        "choices": {
+            "a": {"options": [0, 1]},
+        },
+        "states": {
+            "c": {"options": [2, 3]},
+        },
+        "n_periods": 2,
+    }
+
+
+def test_get_function_info(user_model):
+    got = _get_function_info(user_model)
+    exp = pd.DataFrame(
+        {
+            "is_filter": [False],
+            "is_constraint": [False],
+            "is_next": [False],
+        },
+        index=["f"],
+    )
+    assert_frame_equal(got, exp)
+
+
+def test_get_variable_info(user_model):
+    function_info = _get_function_info(user_model)
+    got = _get_variable_info(
+        user_model,
+        function_info,
+        functions=user_model["functions"],
+    )
+    exp = pd.DataFrame(
+        {
+            "is_state": [False, True],
+            "is_choice": [True, False],
+            "is_discrete": [True, True],
+            "is_continuous": [False, False],
+            "is_auxiliary": [False, True],
+            "is_sparse": [False, False],
+            "is_dense": [True, True],
+        },
+        index=["a", "c"],
+    )
+    assert_frame_equal(got.loc[exp.index], exp)  # we don't care about the id order here
+
+
+def test_get_gridspecs(user_model):
+    variable_info = _get_variable_info(
+        user_model,
+        function_info=_get_function_info(user_model),
+        functions=user_model["functions"],
+    )
+    got = _get_gridspecs(user_model, variable_info)
+    exp = {"a": [0, 1], "c": [2, 3]}
+    assert got == exp
+
+
+def test_get_grids(user_model):
+    variable_info = _get_variable_info(
+        user_model,
+        function_info=_get_function_info(user_model),
+        functions=user_model["functions"],
+    )
+    gridspecs = _get_gridspecs(user_model, variable_info)
+    got = _get_grids(gridspecs, variable_info)
+    assert_array_equal(got["a"], jnp.array([0, 1]))
+    assert_array_equal(got["c"], jnp.array([2, 3]))
+
+
+def test_process_phelps_deaton_with_filters():
     model = process_model(PHELPS_DEATON_WITH_FILTERS)
 
     # Variable Info
@@ -67,7 +155,7 @@ def test_process_model_with_filters():
     assert ~model.function_info.loc["utility"].to_numpy().any()
 
 
-def test_process_model_base():
+def test_process_phelps_deaton():
     model = process_model(PHELPS_DEATON)
 
     # Variable Info
