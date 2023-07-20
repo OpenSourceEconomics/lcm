@@ -1,5 +1,8 @@
+import inspect
+
 import jax.numpy as jnp
 from dags import concatenate_functions
+from jax import vmap
 
 from lcm.function_evaluator import get_function_evaluator
 
@@ -53,13 +56,14 @@ def get_utility_and_feasibility_function(
             return utility + params["beta"] * continuation_value
 
     feasibility = get_combined_constraint(model)
-    next_state = get_next_state_function(model)
+    next_functions_names, next_state = get_next_state_function(model)
+    next_functions = get_dict_of_next_functions(next_functions_names)
 
     func_dict = {
-        "__big_u__": _big_u,
+        "_big_u": _big_u,
         "feasibility": feasibility,
-        "next_state": next_state,
     }
+    func_dict.update(next_functions)
 
     if not is_last_period:
         function_evaluator = get_function_evaluator(
@@ -70,17 +74,40 @@ def get_utility_and_feasibility_function(
             input_prefix="next_",
             out_name="continuation_value",
         )["functions"]
-
-        def continuation_value(next_state, **kwargs):
-            return function_evaluator(**next_state, **kwargs)["continuation_value"]
-
-        function_evaluator["continuation_value"] = continuation_value
-
         func_dict.update(function_evaluator)
 
-    return concatenate_functions(
+    _big_u = concatenate_functions(
         functions=func_dict,
-        targets=["__big_u__", "feasibility"],
+        targets="_big_u",
+    )
+
+    feasibility = concatenate_functions(
+        functions=func_dict,
+        targets="feasibility",
+    )
+
+    if not is_last_period:
+        parameters = list(inspect.signature(_big_u).parameters)
+        next_state_index = parameters.index("next_state")
+        in_axes = [
+            None,
+        ] * len(parameters)
+        in_axes[next_state_index] = 0
+        _big_u_vmapped = vmap(_big_u, in_axes=in_axes)
+        _big_u_vmapped.__signature__ = inspect.signature(_big_u)
+
+    new_func_dict = {
+        "_big_u": _big_u,
+        "feasibility": feasibility,
+        **model.functions,
+    }
+
+    if not is_last_period:
+        new_func_dict["next_state"] = next_state
+
+    return concatenate_functions(
+        functions=new_func_dict,
+        targets=["_big_u", "feasibility"],
     )
 
 
@@ -103,6 +130,17 @@ def get_combined_constraint(model):
     )
 
 
+def get_dict_of_next_functions(next_functions_names):
+    return {name: get_next_function(name) for name in next_functions_names}
+
+
+def get_next_function(next_func_name):
+    def next_func(next_state):
+        return next_state[next_func_name]
+
+    return next_func
+
+
 # ======================================================================================
 # Next state
 # ======================================================================================
@@ -120,9 +158,9 @@ def get_next_state_function(model):
     """
     targets = model.function_info.query("is_next").index.tolist()
 
-    return concatenate_functions(
+    return targets, concatenate_functions(
         functions=model.functions,
         targets=targets,
         return_type="dict",
-        enforce_signature=False,
+        enforce_signature=True,
     )
