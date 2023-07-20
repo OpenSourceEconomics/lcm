@@ -44,6 +44,7 @@ def test_aggregation_without_shocks(values, segment_info, collapse, n_extra_axes
     calculator = get_emax_calculator(
         shock_type=None,
         variable_info=var_info,
+        is_last_period=False,
     )
 
     calculated = calculator(
@@ -92,6 +93,7 @@ def test_aggregation_with_extreme_value_shocks(
     calculator = get_emax_calculator(
         shock_type="extreme_value",
         variable_info=var_info,
+        is_last_period=False,
     )
 
     calculated = calculator(
@@ -142,7 +144,11 @@ def test_get_emax_calculator_illustrative():
         },
     )  # leads to choice_axes = [1]
 
-    emax_calculator = get_emax_calculator(shock_type=None, variable_info=variable_info)
+    emax_calculator = get_emax_calculator(
+        shock_type=None,
+        variable_info=variable_info,
+        is_last_period=False,
+    )
 
     values = jnp.array(
         [
