@@ -70,20 +70,27 @@ def get_lcm_function(model, targets="solve", interpolation_options=None):
     # ==================================================================================
     state_choice_spaces = []
     state_indexers = []
+    space_infos = []
     compute_ccv_functions = []
     compute_ccv_policy_functions = []
     choice_segments = []
+    emax_calculators = []
 
+    # ==================================================================================
+    # Create stace choice space for each period
+    # ==================================================================================
     for period in range(_mod.n_periods):
         is_last_period = period == last_period
-        # ==============================================================================
+
         # call state space creation function, append trivial items to their lists
         # ==============================================================================
         sc_space, space_info, state_indexer, segments = create_state_choice_space(
             model=_mod,
             period=period,
+            is_last_period=is_last_period,
             jit_filter=False,
         )
+
         state_choice_spaces.append(sc_space)
         choice_segments.append(segments)
 
@@ -92,12 +99,24 @@ def get_lcm_function(model, targets="solve", interpolation_options=None):
         else:
             state_indexers.append(state_indexer)
 
-        # ==============================================================================
+        space_infos.append(space_info)
+
+    # ==================================================================================
+    # Shift space info (in period t we require the space info of period t+1)
+    # ==================================================================================
+    space_infos = space_infos[1:] + [{}]
+
+    # ==================================================================================
+    # Create model functions
+    # ==================================================================================
+    for period in range(_mod.n_periods):
+        is_last_period = period == last_period
+
         # create the compute conditional continuation value functions and append to list
         # ==============================================================================
         u_and_f = get_utility_and_feasibility_function(
             model=_mod,
-            space_info=space_info,
+            space_info=space_infos[period],
             data_name="vf_arr",
             interpolation_options=interpolation_options,
             is_last_period=is_last_period,
@@ -114,21 +133,22 @@ def get_lcm_function(model, targets="solve", interpolation_options=None):
         )
         compute_ccv_policy_functions.append(compute_ccv_argmax)
 
-    # ==================================================================================
-    # create list of emax_calculators
-    # ==================================================================================
-    # for now they are the same in all periods but this will change.
+        # create list of emax_calculators
+        # ==============================================================================
+        _shock_type = _mod.shocks.get("additive_utility_shock", None)
 
-    _shock_type = _mod.shocks.get("additive_utility_shock", None)
-
-    calculator = get_emax_calculator(
-        shock_type=_shock_type,
-        variable_info=_mod.variable_info,
-    )
-    emax_calculators = [
-        partial(calculator, choice_segments=choice_segments[period], params=_mod.params)
-        for period in range(_mod.n_periods)
-    ]
+        calculator = get_emax_calculator(
+            shock_type=_shock_type,
+            variable_info=_mod.variable_info,
+            is_last_period=is_last_period,
+        )
+        emax_calculators.append(
+            partial(
+                calculator,
+                choice_segments=choice_segments[period],
+                params=_mod.params,
+            ),
+        )
 
     # ==================================================================================
     # select requested solver and partial arguments into it
