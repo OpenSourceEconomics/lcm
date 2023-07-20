@@ -36,7 +36,7 @@ def get_lcm_function(model, targets="solve", interpolation_options=None):
     Args:
         model (dict): User model specification.
         targets (str or iterable): The requested function types. Currently only
-            "solve" is supported.
+            "solve", "simulate" and "solve_and_simulate" are supported.
         interpolation_options (dict): Dictionary of keyword arguments for interpolation
             via map_coordinates.
 
@@ -48,7 +48,7 @@ def get_lcm_function(model, targets="solve", interpolation_options=None):
     # ==================================================================================
     # preparations
     # ==================================================================================
-    if targets not in {"solve", "simulate"}:
+    if targets not in {"solve", "simulate", "solve_and_simulate"}:
         raise NotImplementedError
 
     _mod = process_model(user_model=model)
@@ -171,7 +171,13 @@ def get_lcm_function(model, targets="solve", interpolation_options=None):
         next_state=next_state,
     )
 
-    _target = solve_model if targets == "solve" else simulate_model
+    if targets == "solve":
+        _target = solve_model
+    elif targets == "simulate":
+        _target = simulate_model
+    elif targets == "solve_and_simulate":
+        _target = partial(simulate_model, solve_model=solve_model)
+
     return _target, _mod.params
 
 
