@@ -16,8 +16,9 @@ def simulate(
     compute_ccv_policy_functions,
     model,
     next_state,
-    vf_arr_list,
     initial_states,
+    solve_model=None,
+    vf_arr_list=None,
 ):
     """Simulate the model forward in time.
 
@@ -33,16 +34,26 @@ def simulate(
         model (Model): Model instance.
         next_state (callable): Function that returns the next state given the current
             state and choice variables.
-        vf_arr_list (list): List of value function arrays of length n_periods. This is
-            the output of the model's `solve` function.
         initial_states (list): List of initial states to start from. Typically from the
             observed dataset.
+        solve_model (callable): Function that solves the model. Is only required if
+            vf_arr_list is not provided.
+        vf_arr_list (list): List of value function arrays of length n_periods. This is
+            the output of the model's `solve` function. If not provided, the model is
+            solved first.
 
     Returns:
         list: List of length n_periods containing the valuations, optimal choices, and
             states.
 
     """
+    if vf_arr_list is None:
+        if solve_model is None:
+            raise ValueError(
+                "You need to provide either vf_arr_list or solve_model.",
+            )
+        vf_arr_list = solve_model(params)
+
     # Update the vf_arr_list
     # ----------------------------------------------------------------------------------
     # We drop the value function array for the first period, because it is not needed
