@@ -1,14 +1,10 @@
 """Testing against the analytical solution by Iskhakov et al (2017)."""
-from pathlib import Path
-
 import numpy as np
 import pytest
+from lcm._config import TEST_DATA_PATH
 from lcm.entry_point import get_lcm_function
 from lcm.get_model import get_model
 from numpy.testing import assert_array_almost_equal as aaae
-
-TEST_DATA = Path(__file__).parent.resolve().joinpath("analytical_solution")
-
 
 TEST_CASES = {
     "iskhakov_2017_five_periods": get_model("iskhakov_2017_five_periods"),
@@ -43,7 +39,10 @@ def test_analytical_solution(model_name, model_config):
     # ==================================================================================
     analytical = {
         _type: np.genfromtxt(
-            TEST_DATA.joinpath(f"{model_name}__values_{_type}.csv"),
+            TEST_DATA_PATH.joinpath(
+                "analytical_solution",
+                f"{model_name}__values_{_type}.csv",
+            ),
             delimiter=",",
         )
         for _type in ["worker", "retired"]
