@@ -188,6 +188,7 @@ def test_create_compute_conditional_continuation_value_discrete():
     _, space_info, _, _ = create_state_choice_space(
         model=model,
         period=0,
+        is_last_period=False,
         jit_filter=False,
     )
 
@@ -277,6 +278,7 @@ def test_create_compute_conditional_continuation_policy_discrete():
     _, space_info, _, _ = create_state_choice_space(
         model=model,
         period=0,
+        is_last_period=False,
         jit_filter=False,
     )
 
