@@ -47,8 +47,10 @@ def create_state_choice_space(model, period, *, jit_filter):
     # preparations
     # ==================================================================================
     vi = model.variable_info
-    has_sparse_states = len(vi.query("is_sparse & is_state")) > 0
-    has_sparse_vars = len(vi.query("is_sparse")) > 0
+
+    has_sparse_states = (vi.is_sparse & vi.is_state).any()
+    has_sparse_vars = vi.is_sparse.any()
+
     # ==================================================================================
     # create state choice space
     # ==================================================================================
@@ -134,23 +136,15 @@ def create_filter_mask(model, subset, fixed_inputs=None, *, jit_filter):
     Args:
         model (Model): A processed model.
         subset (list): The subset of variables to be considered in the mask.
+        fixed_inputs (dict): A dict of fixed inputs for the filters or aux_functions. An
+            example would be a model period.
         jit_filter (bool): Whether the aggregated filter function is jitted before
             applying it.
 
-
-        grids (dict): Dictionary containing a one-dimensional grid for each
-            variable that is used as a basis to construct the higher dimensional
-            grid.
-        filters (dict): Dict of filter functions. A filter function depends on
-            one or more variables and returns True if a state is feasible.
-        fixed_inputs (dict): A dict of fixed inputs for the filters or
-            aux_functions. An example would be a model period.
-
-
     Returns:
-        jax.numpy.ndarray: Multi-Dimensional boolean array that is True
-            for a feasible combination of variables. The order of the
-            dimensions in the mask is defined by the order of `grids`.
+        jax.numpy.ndarray: Multi-Dimensional boolean array that is True for a feasible
+            combination of variables. The order of the dimensions in the mask is defined
+            by the order of `grids`.
 
     """
     # preparations
@@ -324,8 +318,7 @@ def _combine_masks(masks):
     for m in _masks[1:]:
         _shape = tuple(list(m.shape) + [1] * (mask.ndim - m.ndim))
         mask = jnp.logical_and(mask, m.reshape(_shape))
-    mask = np.array(mask)
-    return mask
+    return np.array(mask)
 
 
 def create_indexers_and_segments(mask, n_sparse_states, fill_value=-1):

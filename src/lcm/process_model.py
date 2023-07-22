@@ -20,6 +20,12 @@ def process_model(user_model):
     - Generate derived information
     - Check that the model specification is valid.
 
+    Args:
+        user_model (dict): The model as provided by the user.
+
+    Returns:
+        lcm.interfaces.Model: The processed model.
+
     """
     _params = create_params(user_model)
     _function_info = _get_function_info(user_model)
@@ -92,8 +98,7 @@ def _get_variable_info(user_model, function_info):
     if set(order) != set(info.index):
         raise ValueError("Order and index do not match.")
 
-    info = info.loc[order]
-    return info
+    return info.loc[order]
 
 
 def _get_gridspecs(user_model, variable_info):

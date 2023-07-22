@@ -1,6 +1,7 @@
 import jax.numpy as jnp
 import numpy as np
 from jax.scipy.ndimage import map_coordinates
+from lcm.entry_point import create_compute_conditional_continuation_value
 from lcm.interfaces import Space
 from lcm.solve_brute import solve, solve_continuous_problem
 from numpy.testing import assert_array_almost_equal as aaae
@@ -81,14 +82,18 @@ def test_solve_brute():
             mode="nearest",
         )
 
-    utility_and_feasibility_functions = [_utility_and_feasibility] * 2
+    compute_ccv = create_compute_conditional_continuation_value(
+        utility_and_feasibility=_utility_and_feasibility,
+        continuous_choice_variables=["consumption"],
+    )
+
+    utility_and_feasibility_functions = [compute_ccv] * 2
 
     # ==================================================================================
     # create emax aggregators and choice segments
     # ==================================================================================
-    choice_segments = [None, None]
 
-    def calculate_emax(values, choice_segments, params):  # noqa: ARG001
+    def calculate_emax(values):
         """Take max over axis that corresponds to working."""
         return values.max(axis=1)
 
@@ -103,15 +108,14 @@ def test_solve_brute():
         state_choice_spaces=state_choice_spaces,
         state_indexers=state_indexers,
         continuous_choice_grids=continuous_choice_grids,
-        utility_and_feasibility_functions=utility_and_feasibility_functions,
+        compute_ccv_functions=utility_and_feasibility_functions,
         emax_calculators=emax_calculators,
-        choice_segments=choice_segments,
     )
 
     assert isinstance(solution, list)
 
 
-def test_solve_continious_problem_no_vf_arr():
+def test_solve_continuous_problem_no_vf_arr():
     state_choice_space = Space(
         dense_vars={"a": jnp.array([0, 1.0]), "b": jnp.array([2, 3.0])},
         sparse_vars={"c": jnp.array([4, 5, 6])},
@@ -124,13 +128,18 @@ def test_solve_continious_problem_no_vf_arr():
 
     continuous_choice_grids = {"d": jnp.arange(12)}
 
+    compute_ccv = create_compute_conditional_continuation_value(
+        utility_and_feasibility=_utility_and_feasibility,
+        continuous_choice_variables=["d"],
+    )
+
     expected = np.array([[[6, 7, 8], [7, 8, 9]], [[7, 8, 9], [8, 9, 10]]])
     expected = np.transpose(expected, axes=(2, 0, 1))
 
     calculated = np.array(
         solve_continuous_problem(
             state_choice_space,
-            _utility_and_feasibility,
+            compute_ccv,
             continuous_choice_grids,
             vf_arr=None,
             state_indexers={},

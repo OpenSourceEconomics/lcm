@@ -5,6 +5,14 @@ from numpy.testing import assert_array_almost_equal as aaae
 from scipy.interpolate import RegularGridInterpolator
 
 
+def test_linear_interpolation_1d():
+    values = np.linspace(0, 1, 11) ** 2
+    grid_info = [("linspace", (0, 1, 11))]
+    point = np.array([0.45])
+    got = linear_interpolation(values=values, point=point, grid_info=grid_info)
+    assert got == (0.4**2 + 0.5**2) / 2
+
+
 def assert_point_wise(grids, grid_info, points, values):
     for point in points:
         calculated = linear_interpolation(
@@ -72,7 +80,7 @@ def _calc_values_5d(a, b, c, d, e):
 )
 def test_linear_interpolation_monotone_grid(info, points, calc_values):
     grids = [np.linspace(*i) for i in info]
-    grid_info = [("linspace",) + (i,) for i in info]
+    grid_info = [("linspace", i) for i in info]
 
     values = calc_values(*np.meshgrid(*grids, indexing="ij", sparse=False))
 
@@ -110,7 +118,7 @@ def test_linear_interpolation_monotone_grid(info, points, calc_values):
 )
 def test_linear_interpolation_logarithmic_scale(grid, info, points, calc_values):
     grids = [np.logspace(*g) for g in grid]
-    grid_info = [("logspace",) + (i,) for i in info]
+    grid_info = [("logspace", i) for i in info]
 
     values = calc_values(*np.meshgrid(*grids, indexing="ij", sparse=False))
 

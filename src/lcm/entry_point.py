@@ -1,8 +1,15 @@
+import functools
 from functools import partial
 
+import jax.numpy as jnp
+from dags import concatenate_functions
+
+from lcm.argmax import argmax
 from lcm.discrete_emax import get_emax_calculator
+from lcm.dispatchers import productmap
 from lcm.model_functions import get_utility_and_feasibility_function
 from lcm.process_model import process_model
+from lcm.simulate import simulate
 from lcm.solve_brute import solve
 from lcm.state_space import create_state_choice_space
 
@@ -27,7 +34,7 @@ def get_lcm_function(model, targets="solve", interpolation_options=None):
       to be replaced by a better solution, when we want to allow for bequest motives.
 
     Args:
-        model (dict): Model specification.
+        model (dict): User model specification.
         targets (str or iterable): The requested function types. Currently only
             "solve" is supported.
         interpolation_options (dict): Dictionary of keyword arguments for interpolation
@@ -41,10 +48,10 @@ def get_lcm_function(model, targets="solve", interpolation_options=None):
     # ==================================================================================
     # preparations
     # ==================================================================================
-    if targets != "solve":
+    if targets not in {"solve", "simulate"}:
         raise NotImplementedError
 
-    _mod = process_model(model)
+    _mod = process_model(user_model=model)
     last_period = _mod.n_periods - 1
     interpolation_options = (
         {} if interpolation_options is None else interpolation_options
@@ -59,24 +66,12 @@ def get_lcm_function(model, targets="solve", interpolation_options=None):
     continuous_choice_grids = [_choice_grids] * _mod.n_periods
 
     # ==================================================================================
-    # create list of emax_calculators
-    # ==================================================================================
-    # for now they are the same in all periods but this will change.
-
-    _shock_type = _mod.shocks.get("additive_utility_shock", None)
-
-    calculator = get_emax_calculator(
-        shock_type=_shock_type,
-        variable_info=_mod.variable_info,
-    )
-    emax_calculators = [calculator] * _mod.n_periods
-
-    # ==================================================================================
     # Initialize other argument lists
     # ==================================================================================
     state_choice_spaces = []
     state_indexers = []
-    utility_and_feasibility_functions = []
+    compute_ccv_functions = []
+    compute_ccv_policy_functions = []
     choice_segments = []
 
     for period in range(_mod.n_periods):
@@ -98,7 +93,7 @@ def get_lcm_function(model, targets="solve", interpolation_options=None):
             state_indexers.append(state_indexer)
 
         # ==============================================================================
-        # create the utility and feasibility functions and append to their list
+        # create the compute conditional continuation value functions and append to list
         # ==============================================================================
         u_and_f = get_utility_and_feasibility_function(
             model=_mod,
@@ -107,7 +102,33 @@ def get_lcm_function(model, targets="solve", interpolation_options=None):
             interpolation_options=interpolation_options,
             is_last_period=is_last_period,
         )
-        utility_and_feasibility_functions.append(u_and_f)
+        compute_ccv = create_compute_conditional_continuation_value(
+            utility_and_feasibility=u_and_f,
+            continuous_choice_variables=list(_choice_grids),
+        )
+        compute_ccv_functions.append(compute_ccv)
+
+        compute_ccv_argmax = create_compute_conditional_continuation_policy(
+            utility_and_feasibility=u_and_f,
+            continuous_choice_variables=list(_choice_grids),
+        )
+        compute_ccv_policy_functions.append(compute_ccv_argmax)
+
+    # ==================================================================================
+    # create list of emax_calculators
+    # ==================================================================================
+    # for now they are the same in all periods but this will change.
+
+    _shock_type = _mod.shocks.get("additive_utility_shock", None)
+
+    calculator = get_emax_calculator(
+        shock_type=_shock_type,
+        variable_info=_mod.variable_info,
+    )
+    emax_calculators = [
+        partial(calculator, choice_segments=choice_segments[period], params=_mod.params)
+        for period in range(_mod.n_periods)
+    ]
 
     # ==================================================================================
     # select requested solver and partial arguments into it
@@ -117,9 +138,119 @@ def get_lcm_function(model, targets="solve", interpolation_options=None):
         state_choice_spaces=state_choice_spaces,
         state_indexers=state_indexers,
         continuous_choice_grids=continuous_choice_grids,
-        utility_and_feasibility_functions=utility_and_feasibility_functions,
+        compute_ccv_functions=compute_ccv_functions,
         emax_calculators=emax_calculators,
-        choice_segments=choice_segments,
     )
 
-    return solve_model, _mod.params
+    next_state = get_next_state_function(model=_mod)
+
+    simulate_model = partial(
+        simulate,
+        state_indexers=state_indexers,
+        continuous_choice_grids=continuous_choice_grids,
+        compute_ccv_policy_functions=compute_ccv_policy_functions,
+        model=_mod,
+        next_state=next_state,
+    )
+
+    _target = solve_model if targets == "solve" else simulate_model
+    return _target, _mod.params
+
+
+def create_compute_conditional_continuation_value(
+    utility_and_feasibility,
+    continuous_choice_variables,
+):
+    """Create a function that computes the conditional continuation value.
+
+    Note:
+    -----
+    This function solves the continuous choice problem conditional on a state-
+    (discrete-)choice combination.
+
+    Args:
+        utility_and_feasibility (callable): A function that takes a state-choice
+            combination and return the utility of that combination (float) and whether
+            the state-choice combination is feasible (bool).
+        continuous_choice_variables (list): List of choice variable names that are
+            continuous.
+
+    Returns:
+        callable: A function that takes a state-choice combination and returns the
+            conditional continuation value over the continuous choices.
+
+    """
+    u_and_f_mapped_over_cont_choices = productmap(
+        func=utility_and_feasibility,
+        variables=continuous_choice_variables,
+    )
+
+    @functools.wraps(u_and_f_mapped_over_cont_choices)
+    def compute_ccv(*args, **kwargs):
+        u, f = u_and_f_mapped_over_cont_choices(*args, **kwargs)
+        return u.max(where=f, initial=-jnp.inf)
+
+    return compute_ccv
+
+
+def create_compute_conditional_continuation_policy(
+    utility_and_feasibility,
+    continuous_choice_variables,
+):
+    """Create a function that computes the conditional continuation policy.
+
+    Note:
+    -----
+    This function solves the continuous choice problem conditional on a state-
+    (discrete-)choice combination.
+
+    Args:
+        utility_and_feasibility (callable): A function that takes a state-choice
+            combination and return the utility of that combination (float) and whether
+            the state-choice combination is feasible (bool).
+        continuous_choice_variables (list): List of choice variable names that are
+            continuous.
+
+    Returns:
+        callable: A function that takes a state-choice combination and returns the
+            conditional continuation value over the continuous choices, and the index
+            that maximizes the conditional continuation value.
+
+    """
+    u_and_f_mapped_over_cont_choices = productmap(
+        func=utility_and_feasibility,
+        variables=continuous_choice_variables,
+    )
+
+    @functools.wraps(u_and_f_mapped_over_cont_choices)
+    def compute_ccv_policy(*args, **kwargs):
+        u, f = u_and_f_mapped_over_cont_choices(*args, **kwargs)
+        _argmax, _max = argmax(u, where=f, initial=-jnp.inf)
+        return _argmax, _max
+
+    return compute_ccv_policy
+
+
+# ======================================================================================
+# Next state
+# ======================================================================================
+
+
+def get_next_state_function(model):
+    """Combine the next state functions into one function.
+
+    Args:
+        model (Model): Model instance.
+
+    Returns:
+        function: Combined next state function.
+
+    """
+    targets = model.function_info.query("is_next").index.tolist()
+
+    return concatenate_functions(
+        functions=model.functions,
+        targets=targets,
+        return_type="dict",
+        enforce_signature=False,
+    )
