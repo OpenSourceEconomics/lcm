@@ -5,25 +5,14 @@ Roughly follows Jakobsen, Jorgensen, Low (2022).
 """
 import jax.numpy as jnp
 
-MIN_AGE_YOUNG_CHILD = 3
+WORKING_HOURS_CATS = [0, 20, 40]
 
 # ======================================================================================
 # Utility
 # ======================================================================================
 
 
-def utility_household(
-    utility_male,
-    utility_female,
-    female_bargaining_weight,
-):
-    return (
-        female_bargaining_weight * utility_female
-        + (1 - female_bargaining_weight) * utility_male
-    )
-
-
-def utility_male(
+def utility(
     crra_value_of_consumption,
     disutility_of_working,
     child_related_disutility_of_working,
@@ -35,27 +24,20 @@ def utility_male(
     )
 
 
-def child_related_disutility_of_working(
-    working_hours,
+def crra_value_of_consumption(
+    consumption,
+    has_partner,
     n_children,
-    age_youngest_child,
-    disutility_of_working_constant,
-    child_related_disutility_of_working_child,
-    child_related_disutility_of_working_more,
-    child_related_disutility_of_working_young,
-    gender_attitude_type,
+    crra_coefficient,
 ):
-    young_child_present = age_youngest_child <= MIN_AGE_YOUNG_CHILD
+    return (
+        (consumption / (1 + 0.5 * has_partner + 0.3 * n_children))
+        ** (1 - crra_coefficient)
+    ) / (1 - crra_coefficient)
 
-    child_related_disutility_per_working_hour = disutility_of_working_constant * (
-        child_related_disutility_of_working_child[gender_attitude_type]
-        + child_related_disutility_of_working_more[gender_attitude_type]
-        * (n_children - 1)
-        + child_related_disutility_of_working_young[gender_attitude_type]
-        * young_child_present
-    )
 
-    return working_hours * child_related_disutility_per_working_hour
+def working_hours_full_time_equivalent(working_hours):
+    return working_hours / WORKING_HOURS_CATS[-1]
 
 
 def disutility_of_working(
@@ -63,26 +45,52 @@ def disutility_of_working(
     age,
     disutility_of_working_constant,
     disutility_of_working_age,
-    disutility_of_working_age_squared,
 ):
-    return (
-        working_hours
-        * disutility_of_working_constant
-        * (
-            1
-            + disutility_of_working_age * age
-            + disutility_of_working_age_squared * age**2
-        )
+    """Disutility of working.
+
+    The constant depends on working hours.
+
+    The age term increases disutility further (relative to constant and independent of
+    working hours).
+
+    """
+    return disutility_of_working_constant[working_hours] * (
+        1 + disutility_of_working_age * age
     )
 
 
-def crra_value_of_consumption(
-    consumption,
+def child_related_disutility_of_working(
+    working_hours,
     n_children,
-    crra_coefficient,
+    age_youngest_child,
+    disutility_of_working_constant,
+    child_related_disutility_of_working_child,
+    child_related_disutility_of_working_n_children,
+    child_related_disutility_of_working_age_0,
+    child_related_disutility_of_working_age_1,
+    child_related_disutility_of_working_age_2,
+    child_related_disutility_of_working_type_factor,
+    gender_attitude_type,
 ):
-    return ((consumption / (1.5 + 0.3 * n_children)) ** (1 - crra_coefficient)) / (
-        1 - crra_coefficient
+    relative_increase_disutil = (
+        # At least one child
+        (n_children > 0) * child_related_disutility_of_working_child
+        # Number of children
+        + (n_children - 1) * child_related_disutility_of_working_n_children
+        # Additional term for very young children
+        + (age_youngest_child == 0) * child_related_disutility_of_working_age_0
+        + (age_youngest_child == 1) * child_related_disutility_of_working_age_1
+        + (age_youngest_child == 2)  # noqa: PLR2004
+        * child_related_disutility_of_working_age_2
+    )
+
+    # Assumption: Type has same effect on all components of child-related disutility
+    # Assumption: No difference between full-time and part-time work with respect to
+    # child-related disutility other than through constant
+    return (
+        disutility_of_working_constant[working_hours]
+        * relative_increase_disutil
+        * child_related_disutility_of_working_type_factor[gender_attitude_type]
     )
 
 
@@ -98,18 +106,37 @@ def labor_income(
     return working_hours * wage
 
 
-def labor_income_female(
-    working_hours_female,
-    wage_female,
-):
-    return labor_income(working_hours=working_hours_female, wage=wage_female)
+def labor_income_partner(wage_partner):
+    """Labor income of the partner.
+
+    Assumption: The partner always works full-time.
+    """
+    return WORKING_HOURS_CATS[-1] * wage_partner
 
 
-def labor_income_male(
-    working_hours_male,
-    wage_male,
+def wage_partner(
+    has_partner,
+    age,
+    wage_partner_constant,
+    wage_partner_age,
+    wage_partner_age_squared,
+    gender_attitude_type,
 ):
-    return labor_income(working_hours=working_hours_male, wage=wage_male)
+    """Wage of the partner. It depends on the female's state variables.
+
+    We should add some kind of shock, at some point (either employment shock or wage
+    shock or both).
+
+    """
+    if has_partner:
+        out = (
+            wage_partner_constant[gender_attitude_type]
+            + age * wage_partner_age[gender_attitude_type]
+            + age**2 * wage_partner_age_squared[gender_attitude_type]
+        )
+    else:
+        out = 0
+    return out
 
 
 def wage(
@@ -123,63 +150,33 @@ def wage(
     return jnp.exp(log_wage)
 
 
-def wage_female(
-    human_capital_female,  # noqa: ARG001
-    wage_coefficient_constant_female,  # noqa: ARG001
-    wage_coefficient_per_human_capital_female,  # noqa: ARG001
-):
-    pass
-
-
-def wage_male(
-    human_capital_male,  # noqa: ARG001
-    wage_coefficient_constant_male,  # noqa: ARG001
-    wage_coefficient_per_human_capital_male,  # noqa: ARG001
-):
-    pass
-
-
 # Human capital state transition
 # ======================================================================================
 
 
-def next_human_capital_male(
-    human_capital_male,
-    working_hours_male,
-    human_capital_depreciation,
-    human_capital_shock_male,
-):
-    return next_human_capital(
-        human_capital=human_capital_male,
-        working_hours=working_hours_male,
-        human_capital_depreciation=human_capital_depreciation,
-        human_capital_shock=human_capital_shock_male,
-    )
-
-
-def next_human_capital_female(
-    human_capital_female,
-    working_hours_female,
-    human_capital_depreciation,
-    human_capital_shock_female,
-):
-    return next_human_capital(
-        human_capital=human_capital_female,
-        working_hours=working_hours_female,
-        human_capital_depreciation=human_capital_depreciation,
-        human_capital_shock=human_capital_shock_female,
-    )
-
-
 def next_human_capital(
     human_capital,
+    depreciation,
     working_hours,
-    human_capital_depreciation,
-    human_capital_shock,
+    experience_factor_part_time,
 ):
-    return human_capital_shock * (
-        (1 - human_capital_depreciation) * human_capital + working_hours
+    """Accumulate human capital (full time equivalent years of experience).
+
+    To discuss:
+    - Depreciation needed here? (without it interpretable as years of experience)
+
+    To add:
+    - shock
+
+    """
+    additional_experience = dict(
+        zip(
+            WORKING_HOURS_CATS,
+            [0, experience_factor_part_time, 1],
+            strict=True,
+        ),
     )
+    return human_capital * depreciation + additional_experience[working_hours]
 
 
 # ======================================================================================
@@ -257,12 +254,12 @@ def next_wealth_constraint(next_wealth):
 
 LABOR_SUPPLY = {
     "functions": {
-        "utility_household": utility_household,
+        "utility": utility,
         "next_wealth": next_wealth,
         "next_wealth_constraint": next_wealth_constraint,
     },
     "choices": {
-        "working_hours": {"options": [0, 10, 20, 30, 40]},
+        "working_hours": {"options": WORKING_HOURS_CATS},
     },
     "states": {
         "job_offer": {"options": [0, 1]},
