@@ -7,6 +7,7 @@ Still missing relative to full model:
 - no children (no transition)
 - no shocks
 - tax and transfer system strongly simplified
+- no heterogeneity
 
 Think about Timing
 
