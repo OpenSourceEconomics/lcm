@@ -8,13 +8,17 @@ Still missing relative to full model:
 - no shocks
 - tax and transfer system strongly simplified
 - no heterogeneity
+- retirement periods (age >= 60 -> retired | fix continuation value at 60)
 
 Think about Timing
 
 """
 import jax.numpy as jnp
 
-WORKING_HOURS_CATS = [0, 20, 40]
+PART_TIME_WORKING_HOURS = 20
+FULL_TIME_WORKING_HOURS = 40
+
+WORKING_HOURS_CATS = [0, PART_TIME_WORKING_HOURS, FULL_TIME_WORKING_HOURS]
 
 # ======================================================================================
 # Utility
@@ -51,7 +55,8 @@ def working_hours_full_time_equivalent(working_hours):
 def disutility_of_working(
     working_hours,
     age,
-    disutility_of_working_constant,
+    disutility_of_working_fulltime,
+    disutility_of_working_parttime,
     disutility_of_working_age,
 ):
     """Disutility of working.
@@ -62,9 +67,25 @@ def disutility_of_working(
     working hours).
 
     """
-    return disutility_of_working_constant[working_hours] * (
-        1 + disutility_of_working_age * age
+    disutility_age_factor = 1 + disutility_of_working_age * age
+
+    disutility_of_working = jnp.where(
+        working_hours == FULL_TIME_WORKING_HOURS,
+        disutility_of_working_fulltime,
+        disutility_of_working_parttime,
     )
+
+    disutility_of_working = jnp.where(
+        working_hours == 0,
+        0,
+        disutility_of_working,
+    )
+
+    return disutility_of_working * disutility_age_factor
+
+
+def age(period):
+    return period + 18
 
 
 # ======================================================================================
@@ -109,14 +130,19 @@ def next_human_capital(
     - shock
 
     """
-    additional_experience = dict(
-        zip(
-            WORKING_HOURS_CATS,
-            [0, experience_factor_part_time, 1],
-            strict=True,
-        ),
+    additional_experience = jnp.where(
+        working_hours == FULL_TIME_WORKING_HOURS,
+        1,
+        experience_factor_part_time,
     )
-    return human_capital * depreciation + additional_experience[working_hours]
+
+    additional_experience = jnp.where(
+        working_hours == 0,
+        0,
+        additional_experience,
+    )
+
+    return human_capital * (1 - depreciation) + additional_experience
 
 
 # ======================================================================================
@@ -124,9 +150,9 @@ def next_human_capital(
 # ======================================================================================
 
 
-def disposable_household_income(labor_income, consumption_floor):
+def disposable_household_income(labor_income, income_floor):
     hh_income = labor_income
-    return max(consumption_floor, 0.8 * hh_income)
+    return jnp.maximum(income_floor, 0.8 * hh_income)
 
 
 def next_wealth(
@@ -148,6 +174,7 @@ def next_wealth_constraint(next_wealth):
 
 
 PARTTIME_HUMAN_CAPITAL = {
+    "n_periods": 3,
     "functions": {
         "utility": utility,
         "crra_value_of_consumption": crra_value_of_consumption,
@@ -159,17 +186,56 @@ PARTTIME_HUMAN_CAPITAL = {
         "disposable_household_income": disposable_household_income,
         "next_wealth": next_wealth,
         "next_wealth_constraint": next_wealth_constraint,
+        "age": age,
     },
     "choices": {
         "working_hours": {"options": WORKING_HOURS_CATS},
         "consumption": {
             "grid_type": "linspace",
-            "start": 0,
-            "stop": 100,
-            "n_points": 11,
+            "start": 100,
+            "stop": 10_000,
+            "n_points": 200,
         },
     },
     "states": {
-        "wealth": {"grid_type": "linspace", "start": 0, "stop": 100, "n_points": 11},
+        "human_capital": {
+            "grid_type": "linspace",
+            "start": 0,
+            "stop": 3,
+            "n_points": 10,
+        },
+        "wealth": {
+            "grid_type": "linspace",
+            "start": 100,
+            "stop": 10_000,
+            "n_points": 200,
+        },
     },
+}
+
+
+PARTTIME_HUMAN_CAPITAL_PARAMS = {
+    "beta": 0.98,
+    "utility": {},
+    "crra_value_of_consumption": {
+        "crra_coefficient": 1.5,  # jacobsen et al, attanasio & weber
+        "has_partner": 0.0,
+        "n_children": 0.0,
+    },
+    "working_hours_full_time_equivalent": {},
+    "disutility_of_working": {  # jacobsen et al (motivated)
+        "disutility_of_working_age": -0.02,
+        "disutility_of_working_fulltime": -0.5,
+        "disutility_of_working_parttime": -0.3,
+    },
+    "labor_income": {},
+    "wage": {  # jacobsen et al
+        "human_capital": 5.0,
+        "wage_coefficient_constant": 0.8,
+        "wage_coefficient_per_human_capital": 0.09,
+    },
+    "disposable_household_income": {"income_floor": 1000.0},
+    "next_wealth": {"interest_rate": 1.03},
+    "next_wealth_constraint": {},
+    "age": {"period": 0},
 }
