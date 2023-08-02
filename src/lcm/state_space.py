@@ -10,7 +10,7 @@ from lcm.dispatchers import productmap, spacemap
 from lcm.interfaces import IndexerInfo, Space, SpaceInfo
 
 
-def create_state_choice_space(model, period, *, jit_filter):
+def create_state_choice_space(model, period, *, is_last_period, jit_filter):
     """Create a state choice space for the model.
 
     A state_choice_space is a compressed representation of all feasible states and the
@@ -31,6 +31,7 @@ def create_state_choice_space(model, period, *, jit_filter):
     Args:
         model (Model): A processed model.
         period (int): The period for which the state space is created.
+        is_last_period (bool): Whether the function is created for the last period.
         jit_filter (bool): If True, the filter function is compiled with JAX.
 
     Returns:
@@ -47,6 +48,8 @@ def create_state_choice_space(model, period, *, jit_filter):
     # preparations
     # ==================================================================================
     vi = model.variable_info
+    if is_last_period:
+        vi = vi.query("~is_auxiliary")
 
     has_sparse_states = (vi.is_sparse & vi.is_state).any()
     has_sparse_vars = vi.is_sparse.any()

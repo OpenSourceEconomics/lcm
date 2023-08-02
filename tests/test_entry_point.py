@@ -14,7 +14,7 @@ from lcm.example_models import (
 from lcm.model_functions import get_utility_and_feasibility_function
 from lcm.process_model import process_model
 from lcm.state_space import create_state_choice_space
-from pybaum import tree_map
+from pybaum import tree_equal, tree_map
 
 MODELS = {
     "simple": PHELPS_DEATON,
@@ -43,7 +43,27 @@ def test_get_lcm_function_with_solve_target(user_model):
 
 @pytest.mark.parametrize("user_model", [PHELPS_DEATON], ids=["simple"])
 def test_get_lcm_function_with_simulation_target_simple(user_model):
-    # solve model
+    simulate, params_template = get_lcm_function(
+        model=user_model,
+        targets="solve_and_simulate",
+    )
+    params = tree_map(lambda _: 0.2, params_template)
+
+    simulate(
+        params,
+        initial_states={
+            "wealth": jnp.array([0.0, 10.0, 50.0]),
+        },
+    )
+
+
+@pytest.mark.parametrize("user_model", [PHELPS_DEATON], ids=["simple"])
+def test_get_lcm_function_with_simulation_is_coherent(user_model):
+    """Test that solve_and_simulate creates same output as solve then simulate."""
+    # solve then simulate
+    # ==================================================================================
+
+    # solve
     solve_model, params_template = get_lcm_function(model=user_model)
     params = tree_map(lambda _: 0.2, params_template)
     vf_arr_list = solve_model(params)
@@ -51,13 +71,29 @@ def test_get_lcm_function_with_simulation_target_simple(user_model):
     # simulate using solution
     simulate_model, _ = get_lcm_function(model=user_model, targets="simulate")
 
-    simulate_model(
+    solve_then_simulate = simulate_model(
         params,
         vf_arr_list=vf_arr_list,
         initial_states={
             "wealth": jnp.array([0.0, 10.0, 50.0]),
         },
     )
+
+    # solve and simulate
+    # ==================================================================================
+    solve_and_simulate_model, _ = get_lcm_function(
+        model=user_model,
+        targets="solve_and_simulate",
+    )
+
+    solve_and_simulate = solve_and_simulate_model(
+        params,
+        initial_states={
+            "wealth": jnp.array([0.0, 10.0, 50.0]),
+        },
+    )
+
+    assert tree_equal(solve_then_simulate, solve_and_simulate)
 
 
 @pytest.mark.parametrize(
@@ -67,7 +103,7 @@ def test_get_lcm_function_with_simulation_target_simple(user_model):
 )
 def test_get_lcm_function_with_simulation_target_with_filters(user_model):
     # solve model
-    solve_model, params_template = get_lcm_function(model=user_model)
+    solve_model, params_template = get_lcm_function(model=user_model, targets="solve")
     params = tree_map(lambda _: 0.2, params_template)
     vf_arr_list = solve_model(params)
 
@@ -104,6 +140,7 @@ def test_create_compute_conditional_continuation_value():
     _, space_info, _, _ = create_state_choice_space(
         model=model,
         period=0,
+        is_last_period=False,
         jit_filter=False,
     )
 
@@ -150,6 +187,7 @@ def test_create_compute_conditional_continuation_policy():
     _, space_info, _, _ = create_state_choice_space(
         model=model,
         period=0,
+        is_last_period=False,
         jit_filter=False,
     )
 

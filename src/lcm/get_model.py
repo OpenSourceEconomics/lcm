@@ -1,9 +1,9 @@
 """Get a user model and parameters."""
 from typing import NamedTuple
 
-from lcm.example_models import (
-    PHELPS_DEATON_WITH_FILTERS,
-)
+from pybaum import tree_update
+
+from lcm.example_models import PHELPS_DEATON, PHELPS_DEATON_WITH_FILTERS
 
 
 class ModelAndParams(NamedTuple):
@@ -32,6 +32,28 @@ def get_model(model: str):
 # Models
 # ======================================================================================
 
+PHELPS_DEATON_FIVE_PERIODS = {
+    **PHELPS_DEATON,
+    "choices": {
+        "retirement": {"options": [0, 1]},
+        "consumption": {
+            "grid_type": "linspace",
+            "start": 1,
+            "stop": 400,
+            "n_points": 500,
+        },
+    },
+    "states": {
+        "wealth": {
+            "grid_type": "linspace",
+            "start": 1,
+            "stop": 400,
+            "n_points": 100,
+        },
+    },
+    "n_periods": 5,
+}
+
 
 ISKHAKOV_2017_FIVE_PERIODS = {
     **PHELPS_DEATON_WITH_FILTERS,
@@ -56,16 +78,41 @@ ISKHAKOV_2017_FIVE_PERIODS = {
     "n_periods": 5,
 }
 
+
+ISKHAKOV_2017_THREE_PERIODS = tree_update(ISKHAKOV_2017_FIVE_PERIODS, {"n_periods": 3})
+
 # ======================================================================================
-# Model collection
+# Models and params
 # ======================================================================================
 
 MODELS = {
+    "phelps_deaton_regression_test": ModelAndParams(
+        model=PHELPS_DEATON_FIVE_PERIODS,
+        params={
+            "beta": 1.0,
+            "utility": {"delta": 1.0},
+            "next_wealth": {
+                "interest_rate": 0.05,
+                "wage": 1.0,
+            },
+        },
+    ),
     "iskhakov_2017_five_periods": ModelAndParams(
         model=ISKHAKOV_2017_FIVE_PERIODS,
         params={
             "beta": 0.98,
             "utility": {"delta": 1.0},
+            "next_wealth": {
+                "interest_rate": 0.0,
+                "wage": 20.0,
+            },
+        },
+    ),
+    "iskhakov_2017_low_delta": ModelAndParams(
+        model=ISKHAKOV_2017_THREE_PERIODS,
+        params={
+            "beta": 0.98,
+            "utility": {"delta": 0.1},
             "next_wealth": {
                 "interest_rate": 0.0,
                 "wage": 20.0,

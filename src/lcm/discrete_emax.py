@@ -26,7 +26,7 @@ import jax
 import jax.numpy as jnp
 
 
-def get_emax_calculator(shock_type, variable_info):
+def get_emax_calculator(shock_type, variable_info, is_last_period):
     """Return a function that calculates the expected maximum of continuation values.
 
     The maximum is taken over the discrete choice variables in each state.
@@ -34,6 +34,7 @@ def get_emax_calculator(shock_type, variable_info):
     Args:
         shock_type (str or None): One of None, "extreme_value" and "nested_logit".
         variable_info (pd.DataFrame): DataFrame with information about the variables.
+        is_last_period (bool): Whether the function is created for the last period.
 
     Returns:
         callable: Function that calculates the expected maximum of conditional
@@ -46,6 +47,8 @@ def get_emax_calculator(shock_type, variable_info):
             - params (dict): Dictionary with model parameters.
 
     """
+    if is_last_period:
+        variable_info = variable_info.query("~is_auxiliary")
     choice_axes = _determine_discrete_choice_axes(variable_info)
     if shock_type is None:
         func = partial(_calculate_emax_no_shocks, choice_axes=choice_axes)
