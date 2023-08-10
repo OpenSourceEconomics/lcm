@@ -274,7 +274,7 @@ def create_data_scs(
 
     has_sparse_choice_vars = len(vi.query("is_sparse & is_choice")) > 0
 
-    n_states = len(list(states.values())[0])
+    n_states = len(next(iter(states.values())))
 
     # check that all states have an initial value
     # ==================================================================================
