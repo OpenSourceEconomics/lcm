@@ -2,6 +2,8 @@
 import jax.numpy as jnp
 import numpy as np
 
+import lcm
+
 RETIREMENT_AGE = 65
 N_CHOICE_GRID_POINTS = 500
 N_STATE_GRID_POINTS = 100
