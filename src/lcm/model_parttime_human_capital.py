@@ -29,10 +29,15 @@ def utility(
     crra_value_of_consumption,
     disutility_of_working,
 ):
+    """Utility.
+
+    todo:
+    - add child_related_disutility_of_working
+    
+    """
     return (
         crra_value_of_consumption
         + disutility_of_working
-        # + child_related_disutility_of_working
     )
 
 
@@ -111,6 +116,10 @@ def wage(
     return jnp.exp(log_wage)
 
 
+def wage_constraint(wage, human_capital):
+    return jnp.logical_and(wage > 0, human_capital > 0)
+
+
 # Human capital state transition
 # ======================================================================================
 
@@ -126,7 +135,7 @@ def next_human_capital(
     To discuss:
     - Depreciation needed here? (without it interpretable as years of experience)
 
-    To add:
+    To add:  
     - shock
 
     """
@@ -164,8 +173,8 @@ def next_wealth(
     return interest_rate * wealth + disposable_household_income - consumption
 
 
-def next_wealth_constraint(next_wealth):
-    return next_wealth >= 0
+def consumption_constraint(consumption, wealth):
+    return consumption <= wealth
 
 
 # ======================================================================================
@@ -182,11 +191,12 @@ PARTTIME_HUMAN_CAPITAL = {
         "disutility_of_working": disutility_of_working,
         "labor_income": labor_income,
         "wage": wage,
-        "next_human_capital": next_human_capital,
         "disposable_household_income": disposable_household_income,
+        "next_human_capital": next_human_capital,
         "next_wealth": next_wealth,
-        "next_wealth_constraint": next_wealth_constraint,
+        "consumption_constraint": consumption_constraint,
         "age": age,
+        "wage_constraint": wage_constraint,
     },
     "choices": {
         "working_hours": {"options": WORKING_HOURS_CATS},
@@ -213,10 +223,10 @@ PARTTIME_HUMAN_CAPITAL = {
     },
 }
 
-
 PARTTIME_HUMAN_CAPITAL_PARAMS = {
     "beta": 0.98,
     "utility": {},
+    "age": {"period": 0},
     "crra_value_of_consumption": {
         "crra_coefficient": 1.5,  # jacobsen et al, attanasio & weber
         "has_partner": 0.0,
@@ -228,14 +238,16 @@ PARTTIME_HUMAN_CAPITAL_PARAMS = {
         "disutility_of_working_fulltime": -0.5,
         "disutility_of_working_parttime": -0.3,
     },
-    "labor_income": {},
     "wage": {  # jacobsen et al
-        "human_capital": 5.0,
         "wage_coefficient_constant": 0.8,
         "wage_coefficient_per_human_capital": 0.09,
     },
     "disposable_household_income": {"income_floor": 1000.0},
     "next_wealth": {"interest_rate": 1.03},
-    "next_wealth_constraint": {},
-    "age": {"period": 0},
+    "consumption_constraint": {},
+    "next_human_capital": {
+        "depreciation": 0.9,
+        "experience_factor_part_time": 0.5,
+    },
+    "wage_constraint": {},
 }
