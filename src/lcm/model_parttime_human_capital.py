@@ -31,14 +31,11 @@ def utility(
 ):
     """Utility.
 
-    todo:
+    Todo:
     - add child_related_disutility_of_working
-    
+
     """
-    return (
-        crra_value_of_consumption
-        + disutility_of_working
-    )
+    return crra_value_of_consumption + disutility_of_working
 
 
 def crra_value_of_consumption(
@@ -135,7 +132,7 @@ def next_human_capital(
     To discuss:
     - Depreciation needed here? (without it interpretable as years of experience)
 
-    To add:  
+    To add:
     - shock
 
     """

@@ -20,6 +20,7 @@ exclude *.yaml
 exclude *.yml
 exclude *.pickle
 exclude pytask.ini
+exclude *.ipynb
 
 prune src/lcm/sandbox
 prune docs
