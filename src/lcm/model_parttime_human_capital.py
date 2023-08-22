@@ -28,6 +28,7 @@ WORKING_HOURS_CATS = [0, PART_TIME_WORKING_HOURS, FULL_TIME_WORKING_HOURS]
 def utility(
     crra_value_of_consumption,
     disutility_of_working,
+    human_capital,  # noqa: ARG001
 ):
     """Utility.
 
@@ -113,10 +114,6 @@ def wage(
     return jnp.exp(log_wage)
 
 
-def wage_constraint(wage, human_capital):
-    return jnp.logical_and(wage > 0, human_capital > 0)
-
-
 # Human capital state transition
 # ======================================================================================
 
@@ -193,7 +190,6 @@ PARTTIME_HUMAN_CAPITAL = {
         "next_wealth": next_wealth,
         "consumption_constraint": consumption_constraint,
         "age": age,
-        "wage_constraint": wage_constraint,
     },
     "choices": {
         "working_hours": {"options": WORKING_HOURS_CATS},
@@ -246,5 +242,4 @@ PARTTIME_HUMAN_CAPITAL_PARAMS = {
         "depreciation": 0.9,
         "experience_factor_part_time": 0.5,
     },
-    "wage_constraint": {},
 }
