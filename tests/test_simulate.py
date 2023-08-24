@@ -1,4 +1,5 @@
 import jax.numpy as jnp
+import pandas as pd
 import pytest
 from jax import random
 from lcm.entry_point import (
@@ -17,6 +18,7 @@ from lcm.simulate import (
     _retrieve_non_sparse_choices,
     create_choice_segments,
     create_data_scs,
+    determine_discrete_dense_choice_axes,
     dict_product,
     filter_ccv_policy,
     simulate,
@@ -333,3 +335,16 @@ def test_dict_product():
     assert got_length == 4
     for key, val in exp.items():
         assert_array_equal(got_dict[key], val)
+
+
+def test_determine_discrete_dense_choice_axes():
+    variable_info = pd.DataFrame(
+        {
+            "is_state": [True, True, False, True, False, False],
+            "is_dense": [False, True, True, False, True, True],
+            "is_choice": [False, False, True, True, True, True],
+            "is_continuous": [False, True, False, False, False, True],
+        },
+    )
+    got = determine_discrete_dense_choice_axes(variable_info)
+    assert got == (1, 2)
