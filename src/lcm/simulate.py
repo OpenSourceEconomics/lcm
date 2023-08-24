@@ -274,7 +274,7 @@ def create_data_scs(
 
     has_sparse_choice_vars = len(vi.query("is_sparse & is_choice")) > 0
 
-    n_states = len(list(states.values())[0])
+    n_states = len(next(iter(states.values())))
 
     # check that all states have an initial value
     # ==================================================================================
@@ -470,12 +470,15 @@ def determine_discrete_dense_choice_axes(variable_info):
             discrete and dense choices.
 
     """
-    dense_vars = variable_info.query(
-        "is_dense & ~(is_choice & is_continuous)",
+    discrete_dense_choice_vars = variable_info.query(
+        "~is_continuous & is_dense & is_choice",
     ).index.tolist()
 
     choice_vars = set(variable_info.query("is_choice").index.tolist())
 
-    choice_indices = [i for i, ax in enumerate(dense_vars) if ax in choice_vars]
+    # We add 1 because the first dimension corresponds to the sparse state variables
+    choice_indices = [
+        i + 1 for i, ax in enumerate(discrete_dense_choice_vars) if ax in choice_vars
+    ]
 
     return None if not choice_indices else tuple(choice_indices)
