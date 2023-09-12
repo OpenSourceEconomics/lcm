@@ -43,3 +43,4 @@ dependencies:
   # Install lcm locally
   - pip:
       - -e .
+      - snakeviz

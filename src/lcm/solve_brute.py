@@ -1,3 +1,7 @@
+from functools import partial
+
+import jax
+
 from lcm.dispatchers import spacemap
 
 
@@ -69,6 +73,7 @@ def solve(
     return list(reversed(reversed_solution))
 
 
+@partial(jax.jit, static_argnums=1)
 def solve_continuous_problem(
     state_choice_space,
     compute_ccv,
