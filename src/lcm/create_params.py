@@ -26,8 +26,8 @@ def create_params(model):
         **_create_function_params(model),
     }
 
-    if "shocks" in model:
-        params = {**params, **_create_shock_params(model["shocks"])}
+    if variable_info["is_stochastic"].any():
+        params["shocks"] = _create_shock_params(user_model, variable_info)
 
     return params
 
@@ -73,11 +73,9 @@ def _create_shock_params(shocks):
         dict: A dictionary of parameters.
 
     """
-    out = {}
-    for name, dist in shocks.items():
-        out[name] = getattr(distributions, f"get_{dist}_params")()
-
-    return out
+    # error handling when shock depends on variables for which we don't know
+    # a grid / options
+    pass
 
 
 def _create_standard_params():

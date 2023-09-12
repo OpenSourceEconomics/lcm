@@ -20,6 +20,9 @@ from lcm.process_model import (
 )
 from numpy.testing import assert_array_equal
 from pandas.testing import assert_frame_equal
+from lcm.process_model import _get_stochastic_weight_function
+from lcm.mark import StochasticInfo
+from lcm.create_params import _create_shock_params
 
 
 @pytest.fixture()
@@ -205,3 +208,27 @@ def test_process_phelps_deaton():
     ).all()
 
     assert ~model.function_info.loc["utility"].to_numpy().any()
+
+
+
+def test_get_stochastic_weight_function():
+    def raw_func(health, wealth):
+        pass
+
+    raw_func._stochastic_info = StochasticInfo()
+
+
+    got_function = _get_stochastic_weight_function(raw_func, name="health")
+
+    params = {"shocks": {"health": np.arange(24).reshape(2, 3, 4)}}
+
+    got = got_function(health=1, wealth=2, params=params)
+
+    expected = np.array([20, 21, 22, 23])
+
+    assert_array_equal(got, expected)
+
+
+
+def test_create_shock_params():
+    pass

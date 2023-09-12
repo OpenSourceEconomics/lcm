@@ -27,19 +27,24 @@ def process_model(user_model):
         lcm.interfaces.Model: The processed model.
 
     """
-    _params = create_params(user_model)
     _function_info = _get_function_info(user_model)
     _variable_info = _get_variable_info(
         user_model,
         function_info=_function_info,
     )
+    _gridspecs = _get_gridspecs(user_model, variable_info=_variable_info)
+    _grids = _get_grids(gridspecs=_gridspecs, variable_info=_variable_info)
+
+    _params = create_params(user_model, variable_info=_variable_info)
+
     _functions = _get_functions(
         user_model,
         function_info=_function_info,
+        variable_info=_variable_info,
         params=_params,
+        grids=_grids,
     )
-    _gridspecs = _get_gridspecs(user_model, variable_info=_variable_info)
-    _grids = _get_grids(gridspecs=_gridspecs, variable_info=_variable_info)
+    breakpoint()
     return Model(
         grids=_grids,
         gridspecs=_gridspecs,
@@ -81,6 +86,11 @@ def _get_variable_info(user_model, function_info):
 
     info["is_discrete"] = ["options" in spec for spec in _variables.values()]
     info["is_continuous"] = ~info["is_discrete"]
+
+    info["is_stochastic"] = [
+        var in user_model["states"] and function_info.loc[f"next_{var}", "is_stochastic_next"]
+        for var in _variables
+    ]
 
     _auxiliary_variables = _get_auxiliary_variables(
         state_variables=info.query("is_state").index.tolist(),
@@ -216,7 +226,7 @@ def _get_function_info(user_model):
     """
     info = pd.DataFrame(index=list(user_model["functions"]))
     info["is_stochastic_next"] = [
-        hasattr(func, "_stochastic_info") for func in user_model["functions"]
+        hasattr(func, "_stochastic_info") for func in user_model["functions"].values()
     ]
     info["is_filter"] = info.index.str.endswith("_filter")
     info["is_constraint"] = info.index.str.endswith("_constraint")
@@ -227,12 +237,15 @@ def _get_function_info(user_model):
     return info
 
 
-def _get_functions(user_model, function_info, params):
+def _get_functions(user_model, function_info, variable_info, grids, params):
     """Process the user provided model functions.
 
     Args:
         user_model (dict): The model as provided by the user.
         function_info (pd.DataFrame): A table with information about model functions.
+        variable_info (pd.DataFrame): A table with information about model variables.
+        grids (dict): Dictionary containing all variables of the model. The keys are
+            the names of the variables. The values are the grids.
         params (dict): The parameters of the model.
 
     Returns:
@@ -243,8 +256,23 @@ def _get_functions(user_model, function_info, params):
             functions.
 
     """
+    raw_functions = user_model["functions"].copy()
+
+    for var in user_model["states"]:
+        if variable_info.loc[var, "is_stochastic"]:
+            raw_functions[f"next_{var}"] = _get_stochastic_next_function(
+                raw_func=raw_functions[f"next_{var}"],
+                grid=grids[var],
+            )
+
+            raw_functions[f"weight_next_{var}"] = _get_stochastic_weight_function(
+                raw_func=raw_functions[f"next_{var}"],
+                name=var,
+            )
+
+
     functions = {}
-    for name, func in user_model["functions"].items():
+    for name, func in raw_functions.items():
         is_filter = function_info.loc[name, "is_filter"]
         if is_filter:
             if params.get(name, {}):
@@ -292,5 +320,22 @@ def _get_function_with_dummy_params(func):
     return processed_func
 
 
-def _process_stochastic_functions(functions):
-    return [func for func in functions if hasattr(func, "_stochastic_info")]
+def _get_stochastic_next_function(raw_func, grid):
+
+    @functools.wraps(raw_func)
+    def next_func(*args, **kwargs):
+        return grid
+
+    return next_func
+
+
+def _get_stochastic_weight_function(raw_func, name):
+
+    signature = list(inspect.signature(raw_func).parameters)
+
+    @with_signature(kwargs=signature + ["params"])
+    def weight_func(**kwargs):
+        indices = [kwargs[arg] for arg in signature]
+        return kwargs["params"]["shocks"][name][*indices]
+
+    return weight_func

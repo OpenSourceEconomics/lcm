@@ -16,7 +16,7 @@ def next_wealth(wealth, consumption, working, wage, interest_rate):
 
 
 @lcm.mark.stochastic
-def next_health():
+def next_health(health):
     pass
 
 
