@@ -50,11 +50,11 @@ repos:
       - id: black
         language_version: python3.10
   - repo: https://github.com/asottile/blacken-docs
-    rev: 1.15.0
+    rev: 1.16.0
     hooks:
       - id: blacken-docs
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.0.282
+    rev: v0.0.287
     hooks:
       - id: ruff
       #   args:
@@ -80,7 +80,7 @@ repos:
           - --ignore=B018,T201
         exclude: src/lcm/sandbox/
   - repo: https://github.com/executablebooks/mdformat
-    rev: 0.7.16
+    rev: 0.7.17
     hooks:
       - id: mdformat
         additional_dependencies:
