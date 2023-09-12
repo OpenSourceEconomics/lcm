@@ -29,15 +29,14 @@ def process_model(user_model):
     """
     _params = create_params(user_model)
     _function_info = _get_function_info(user_model)
+    _variable_info = _get_variable_info(
+        user_model,
+        function_info=_function_info,
+    )
     _functions = _get_functions(
         user_model,
         function_info=_function_info,
         params=_params,
-    )
-    _variable_info = _get_variable_info(
-        user_model,
-        function_info=_function_info,
-        functions=_functions,
     )
     _gridspecs = _get_gridspecs(user_model, variable_info=_variable_info)
     _grids = _get_grids(gridspecs=_gridspecs, variable_info=_variable_info)
@@ -53,7 +52,7 @@ def process_model(user_model):
     )
 
 
-def _get_variable_info(user_model, function_info, functions):
+def _get_variable_info(user_model, function_info):
     """Derive information about all variables in the model.
 
     Args:
@@ -62,12 +61,6 @@ def _get_variable_info(user_model, function_info, functions):
             functions in the model. The index contains the name of a function. The
             columns are booleans that are True if the function has the corresponding
             property. The columns are: is_filter, is_constraint, is_next.
-        functions (dict): Dictionary that maps names of functions to functions. The
-            functions differ from the user functions in that—except for filter
-            functions—they take ``params`` as a keyword argument. If the original
-            function depends on model parameters, those are automatically extracted
-            from ``params`` and passed to the original function. Otherwise, the
-            ``params`` argument is simply ignored.
 
     Returns:
         pandas.DataFrame: A table with information about all variables in the model.
@@ -92,7 +85,7 @@ def _get_variable_info(user_model, function_info, functions):
     _auxiliary_variables = _get_auxiliary_variables(
         state_variables=info.query("is_state").index.tolist(),
         function_info=function_info,
-        functions=functions,
+        user_functions=user_model["functions"],
     )
     info["is_auxiliary"] = [var in _auxiliary_variables for var in _variables]
 
@@ -118,7 +111,7 @@ def _get_variable_info(user_model, function_info, functions):
     return info.loc[order]
 
 
-def _get_auxiliary_variables(state_variables, function_info, functions):
+def _get_auxiliary_variables(state_variables, function_info, user_functions):
     """Get state variables that only occur in next functions.
 
     Args:
@@ -127,20 +120,19 @@ def _get_auxiliary_variables(state_variables, function_info, functions):
             functions in the model. The index contains the name of a function. The
             columns are booleans that are True if the function has the corresponding
             property. The columns are: is_filter, is_constraint, is_next.
-        functions (dict): Dictionary that maps names of functions to functions. The
-            functions differ from the user functions in that they all except the
-            filter functions take ``params`` as keyword argument. If the original
-            function depended on model parameters, those are automatically extracted
-            from ``params`` and passed to the original function. Otherwise, the
-            ``params`` argument is simply ignored.
+        user_functions (dict): Dictionary that maps names of functions to functions.
 
     Returns:
         list: List of state variable names that are only used in next functions.
 
     """
     non_next_functions = function_info.query("~is_next").index.tolist()
-    functions = {name: functions[name] for name in non_next_functions}
-    ancestors = get_ancestors(functions, targets=list(functions), include_targets=True)
+    user_functions = {name: user_functions[name] for name in non_next_functions}
+    ancestors = get_ancestors(
+        user_functions,
+        targets=list(user_functions),
+        include_targets=True,
+    )
     return list(set(state_variables).difference(set(ancestors)))
 
 

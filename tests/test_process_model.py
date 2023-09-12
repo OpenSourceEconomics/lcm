@@ -59,7 +59,6 @@ def test_get_variable_info(user_model):
     got = _get_variable_info(
         user_model,
         function_info,
-        functions=user_model["functions"],
     )
     exp = pd.DataFrame(
         {
@@ -80,7 +79,6 @@ def test_get_gridspecs(user_model):
     variable_info = _get_variable_info(
         user_model,
         function_info=_get_function_info(user_model),
-        functions=user_model["functions"],
     )
     got = _get_gridspecs(user_model, variable_info)
     exp = {"a": [0, 1], "c": [2, 3]}
@@ -91,7 +89,6 @@ def test_get_grids(user_model):
     variable_info = _get_variable_info(
         user_model,
         function_info=_get_function_info(user_model),
-        functions=user_model["functions"],
     )
     gridspecs = _get_gridspecs(user_model, variable_info)
     got = _get_grids(gridspecs, variable_info)
