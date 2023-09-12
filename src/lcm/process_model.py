@@ -215,6 +215,9 @@ def _get_function_info(user_model):
 
     """
     info = pd.DataFrame(index=list(user_model["functions"]))
+    info["is_stochastic_next"] = [
+        hasattr(func, "_stochastic_info") for func in user_model["functions"]
+    ]
     info["is_filter"] = info.index.str.endswith("_filter")
     info["is_constraint"] = info.index.str.endswith("_constraint")
     info["is_next"] = (
