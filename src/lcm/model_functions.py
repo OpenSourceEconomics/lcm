@@ -13,25 +13,26 @@ def get_utility_and_feasibility_function(
 ):
     """Create a func to calculate utility and feasibility of a state choice combination.
 
-    Utility here is not just the current period reward but also includes the discounted
-    expected future reward. In the dynamic programming literature this is often denoted
-    as capital U, whereas the period reward is lowercase u.
+    Utility here is not just the current period reward (or felicity function) but also
+    includes the discounted expected future reward. In the dynamic programming
+    literature this is often denoted as capital U or V, whereas the felicity function is
+    lowercase u.
 
     See `lcm.solve_brute.solve` for more details.
 
     Notes:
     ------
-    - The is last period currently sets continuation values to zero. Needs to be changed
-      to accomodate bequest motives.
+    - The last period currently sets continuation values to zero. Needs to be changed
+      to accommodate bequest motives.
     - the fake big_u function for last period takes vf_arr, just to make things run for
-      to save us some if conditions in the backwards induction loop. Should
-      be moved somewhere else:
+      to save us some if conditions in the backwards induction loop. Should be moved
+      somewhere else:
 
     Args:
         model (Model): The model object.
         space_info (SpaceInfo): Namedtuple containing all information needed to
-            interpret the precalculated values of a function.
-        data_name (str): The name of the argument via which the precalculated values
+            interpret the pre-calculated values of a function.
+        data_name (str): The name of the argument via which the pre-calculated values
             will be passed into the resulting function.
         interpolation_options (dict): Dictionary of keyword arguments for interpolation
             via map_coordinates.
