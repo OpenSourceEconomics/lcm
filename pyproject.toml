@@ -47,6 +47,9 @@ extend-ignore = [
     # use of `assert` detected
     "S101",
 
+    # Private member accessed: `_stochastic_info`
+    "SLF001",
+
     # long messages outside the exception class
     "TRY003",
 ]

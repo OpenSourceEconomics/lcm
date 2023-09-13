@@ -16,7 +16,7 @@ def next_wealth(wealth, consumption, working, wage, interest_rate):
 
 
 @lcm.mark.stochastic
-def next_health(health):
+def next_health(health):  # noqa: ARG001
     pass
 
 
@@ -52,6 +52,4 @@ MODEL = {
     "n_periods": 3,
 }
 
-PARAMS = {
-
-}
+PARAMS = {}

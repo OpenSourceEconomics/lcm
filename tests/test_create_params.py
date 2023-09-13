@@ -1,27 +1,11 @@
 import numpy as np
+import pandas as pd
 from lcm.create_params import (
     _create_function_params,
     _create_shock_params,
     create_params,
 )
-from lcm.example_models import PHELPS_DEATON_WITH_SHOCKS
-from pybaum import leaf_names
-
-
-def test_create_params_phelps_deaton_with_shocks():
-    params = create_params(PHELPS_DEATON_WITH_SHOCKS)
-
-    names = leaf_names(params, separator="__")
-    expected_names = [
-        "beta",
-        "utility__delta",
-        "next_wealth__interest_rate",
-        "next_wealth__wage",
-        "wage_shock__sd",
-        "additive_utility_shock__scale",
-    ]
-
-    assert sorted(names) == sorted(expected_names)
+from numpy.testing import assert_equal
 
 
 def test_create_params_without_shocks():
@@ -36,7 +20,11 @@ def test_create_params_without_shocks():
             "b": None,
         },
     }
-    got = create_params(model)
+    got = create_params(
+        model,
+        variable_info=pd.DataFrame({"is_stochastic": [False]}),
+        grids=None,
+    )
     assert got == {"beta": np.nan, "f": {"c": np.nan}}
 
 
@@ -57,12 +45,17 @@ def test_create_function_params():
 
 
 def test_create_shock_params():
-    shocks = {
-        "a": "lognormal",
-        "b": "extreme_value",
-    }
-    got = _create_shock_params(shocks)
+    def next_a(a):  # noqa: ARG001
+        pass
 
-    assert {"a", "b"} == set(got.keys())
-    assert got["a"] == {"sd": np.nan}
-    assert got["b"] == {"scale": np.nan}
+    variable_info = pd.DataFrame(
+        {"is_stochastic": True, "is_state": True, "is_discrete": True},
+        index=["a"],
+    )
+
+    got = _create_shock_params(
+        model={"functions": {"next_a": next_a}},
+        variable_info=variable_info,
+        grids={"a": np.array([1, 2])},
+    )
+    assert_equal(got["a"], np.full((2, 2), np.nan))

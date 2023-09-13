@@ -11,28 +11,27 @@ from lcm.example_models import (
     PHELPS_DEATON_WITH_FILTERS,
 )
 from lcm.interfaces import GridSpec
+from lcm.mark import StochasticInfo
 from lcm.process_model import (
     _get_function_info,
     _get_grids,
     _get_gridspecs,
+    _get_stochastic_weight_function,
     _get_variable_info,
     process_model,
 )
 from numpy.testing import assert_array_equal
 from pandas.testing import assert_frame_equal
-from lcm.process_model import _get_stochastic_weight_function
-from lcm.mark import StochasticInfo
-from lcm.create_params import _create_shock_params
 
 
 @pytest.fixture()
 def user_model():
-    def f(a, b):
+    def next_c(a, b):
         return a + b
 
     return {
         "functions": {
-            "f": f,
+            "next_c": next_c,
         },
         "choices": {
             "a": {"options": [0, 1]},
@@ -48,11 +47,12 @@ def test_get_function_info(user_model):
     got = _get_function_info(user_model)
     exp = pd.DataFrame(
         {
+            "is_stochastic_next": [False],
             "is_filter": [False],
             "is_constraint": [False],
             "is_next": [False],
         },
-        index=["f"],
+        index=["next_c"],
     )
     assert_frame_equal(got, exp)
 
@@ -69,6 +69,7 @@ def test_get_variable_info(user_model):
             "is_choice": [True, False],
             "is_discrete": [True, True],
             "is_continuous": [False, False],
+            "is_stochastic": [False, False],
             "is_auxiliary": [False, True],
             "is_sparse": [False, False],
             "is_dense": [True, True],
@@ -210,13 +211,11 @@ def test_process_phelps_deaton():
     assert ~model.function_info.loc["utility"].to_numpy().any()
 
 
-
 def test_get_stochastic_weight_function():
-    def raw_func(health, wealth):
+    def raw_func(health, wealth):  # noqa: ARG001
         pass
 
     raw_func._stochastic_info = StochasticInfo()
-
 
     got_function = _get_stochastic_weight_function(raw_func, name="health")
 
@@ -227,7 +226,6 @@ def test_get_stochastic_weight_function():
     expected = np.array([20, 21, 22, 23])
 
     assert_array_equal(got, expected)
-
 
 
 def test_create_shock_params():

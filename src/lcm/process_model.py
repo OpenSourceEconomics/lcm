@@ -35,7 +35,7 @@ def process_model(user_model):
     _gridspecs = _get_gridspecs(user_model, variable_info=_variable_info)
     _grids = _get_grids(gridspecs=_gridspecs, variable_info=_variable_info)
 
-    _params = create_params(user_model, variable_info=_variable_info)
+    _params = create_params(user_model, variable_info=_variable_info, grids=_grids)
 
     _functions = _get_functions(
         user_model,
@@ -44,7 +44,6 @@ def process_model(user_model):
         params=_params,
         grids=_grids,
     )
-    breakpoint()
     return Model(
         grids=_grids,
         gridspecs=_gridspecs,
@@ -88,7 +87,10 @@ def _get_variable_info(user_model, function_info):
     info["is_continuous"] = ~info["is_discrete"]
 
     info["is_stochastic"] = [
-        var in user_model["states"] and function_info.loc[f"next_{var}", "is_stochastic_next"]
+        (
+            var in user_model["states"]
+            and function_info.loc[f"next_{var}", "is_stochastic_next"]
+        )
         for var in _variables
     ]
 
@@ -270,9 +272,13 @@ def _get_functions(user_model, function_info, variable_info, grids, params):
                 name=var,
             )
 
-
     functions = {}
     for name, func in raw_functions.items():
+        # if the raw function is a weighting function for a stochastic variable, skip
+        is_weight_next_function = name.startswith("weight_next_")
+        if is_weight_next_function:
+            continue
+
         is_filter = function_info.loc[name, "is_filter"]
         if is_filter:
             if params.get(name, {}):
@@ -321,19 +327,17 @@ def _get_function_with_dummy_params(func):
 
 
 def _get_stochastic_next_function(raw_func, grid):
-
     @functools.wraps(raw_func)
-    def next_func(*args, **kwargs):
+    def next_func(*args, **kwargs):  # noqa: ARG001
         return grid
 
     return next_func
 
 
 def _get_stochastic_weight_function(raw_func, name):
-
     signature = list(inspect.signature(raw_func).parameters)
 
-    @with_signature(kwargs=signature + ["params"])
+    @with_signature(kwargs=[*signature, "params"])
     def weight_func(**kwargs):
         indices = [kwargs[arg] for arg in signature]
         return kwargs["params"]["shocks"][name][*indices]
