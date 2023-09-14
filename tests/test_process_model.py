@@ -50,7 +50,7 @@ def test_get_function_info(user_model):
             "is_stochastic_next": [False],
             "is_filter": [False],
             "is_constraint": [False],
-            "is_next": [False],
+            "is_next": [True],
         },
         index=["next_c"],
     )
