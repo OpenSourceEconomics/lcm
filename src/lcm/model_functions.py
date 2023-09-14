@@ -23,28 +23,32 @@ def get_utility_and_feasibility_function(
     # ==================================================================================
     # Generate dynamic functions
     # ==================================================================================
-    next_states = get_next_states_function(model)
-    next_weights = get_next_weights_function(model)
+    if not is_last_period:
+        next_states = get_next_states_function(model)
+        next_weights = get_next_weights_function(model)
 
-    scalar_function_evaluator = get_function_evaluator(
-        space_info=space_info,
-        data_name=data_name,
-        interpolation_options=interpolation_options,
-        return_type="dict",
-        input_prefix="next_",
-        out_name="continuation_value",
-    )["functions"]
+        scalar_function_evaluator = get_function_evaluator(
+            space_info=space_info,
+            data_name=data_name,
+            interpolation_options=interpolation_options,
+            input_prefix="next_",
+            out_name="continuation_value",
+        )
+
+        multiply_weights = get_multiply_weights(stochastic_variables)
 
     current_u_and_f = get_current_u_and_f(model)
 
-    multiply_weights = get_multiply_weights(stochastic_variables)
+    arg_names = [*state_variables, *choice_variables, "params", "vf_arr"]
 
     # ==================================================================================
     # Create the utility and feasability function
     # ==================================================================================
 
-    @with_signature(kwargs=[*state_variables, *choice_variables, "params", "vf_arr"])
-    def u_and_f(**kwargs):
+    @with_signature(args=arg_names)
+    def u_and_f(*args):
+        kwargs = dict(zip(arg_names, args, strict=True))
+
         states = {k: v for k, v in kwargs.items() if k in state_variables}
         choices = {k: v for k, v in kwargs.items() if k in choice_variables}
 
@@ -57,14 +61,17 @@ def get_utility_and_feasibility_function(
             _next_states = next_states(**states, **choices, params=kwargs["params"])
             weights = next_weights(**states, **choices, params=kwargs["params"])
 
-            function_evaluator = productmap(scalar_function_evaluator, *weights)
+            function_evaluator = productmap(
+                scalar_function_evaluator,
+                variables=[f"next_{var}" for var in stochastic_variables],
+            )
 
             ccvs_at_nodes = function_evaluator(
                 **_next_states,
                 vf_arr=kwargs["vf_arr"],
             )
 
-            node_weights = multiply_weights(weights)
+            node_weights = multiply_weights(**weights)
 
             ccv = (ccvs_at_nodes * node_weights).sum()
 
@@ -156,12 +163,13 @@ def get_multiply_weights(stochastic_variables):
         callable
 
     """
+    arg_names = [f"weight_next_{var}" for var in stochastic_variables]
 
-    @with_signature(args=stochastic_variables)
+    @with_signature(args=arg_names)
     def _outer(*args):
         return jnp.prod(jnp.array(args))
 
-    return productmap(_outer, variables=stochastic_variables)
+    return productmap(_outer, variables=arg_names)
 
 
 def get_combined_constraint(model):
@@ -199,6 +207,7 @@ def get_next_states_function(model):
         functions=model.functions,
         targets=targets,
         return_type="dict",
+        enforce_signature=False,
     )
 
 
@@ -212,4 +221,5 @@ def get_next_weights_function(model):
         functions=model.functions,
         targets=targets,
         return_type="dict",
+        enforce_signature=False,
     )
