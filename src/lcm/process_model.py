@@ -277,6 +277,7 @@ def _get_functions(user_model, function_info, variable_info, grids, params):
         # if the raw function is a weighting function for a stochastic variable, skip
         is_weight_next_function = name.startswith("weight_next_")
         if is_weight_next_function:
+            functions[name] = func
             continue
 
         is_filter = function_info.loc[name, "is_filter"]
