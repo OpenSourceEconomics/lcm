@@ -3,6 +3,7 @@ import itertools
 import jax.numpy as jnp
 import pytest
 from lcm.dispatchers import (
+    allow_args,
     allow_kwargs,
     convert_kwargs_to_args,
     productmap,
@@ -270,6 +271,26 @@ def test_allow_kwargs():
         f(a=1, b=2)
 
     assert allow_kwargs(f)(a=1, b=2) == 3
+
+
+def test_allow_kwargs_with_keyword_only_args():
+    def f(a, *, b):
+        return a + b
+
+    assert allow_kwargs(f)(a=1, b=2) == 3
+
+
+# ======================================================================================
+# allow args
+# ======================================================================================
+
+
+def test_allow_args():
+    def f(a, *, b):
+        # b is keyword-only
+        return a + b
+
+    assert allow_args(f)(1, 2) == 3
 
 
 # ======================================================================================

@@ -206,6 +206,20 @@ def allow_kwargs(func):
     return allow_kwargs_wrapper
 
 
+def allow_args(func):
+    """Allow a function to be called with positional arguments.
+
+    Args:
+        func (callable): The function to be wrapped.
+
+    Returns:
+        callable: A callable with the same arguments as func (but with the additional
+            possibility to call it with positional arguments).
+
+    """
+    return func
+
+
 def convert_kwargs_to_args(kwargs, parameters):
     """Convert kwargs to args in the order of parameters.
 
