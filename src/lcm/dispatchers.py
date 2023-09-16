@@ -193,22 +193,21 @@ def allow_kwargs(func):
     def allow_kwargs_wrapper(*args, **kwargs):
         parameters = inspect.signature(func).parameters
 
-        # Separate keyword-only arguments
+        # Separate keyword-only arguments and remove from kwargs
         keyword_only = {
             k: v
             for k, v in kwargs.items()
             if k in parameters and parameters[k].kind == inspect.Parameter.KEYWORD_ONLY
         }
-        for kwarg_name in keyword_only:
-            kwargs.pop(kwarg_name)
-
-        positional = list(args) if args is not None else []
+        for k in keyword_only:
+            kwargs.pop(k)
 
         # Check if the total number of arguments matches the function signature
-        kwargs = {} if args is None else kwargs
         if len(args) + len(kwargs) + len(keyword_only) != len(parameters):
             raise ValueError("Not enough or too many arguments provided.")
 
+        # Separate positional arguments and convert keyword arguments to positional
+        positional = list(args)
         positional += convert_kwargs_to_args(kwargs, list(parameters))
 
         return func(*positional, **keyword_only)
