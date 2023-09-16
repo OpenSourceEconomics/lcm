@@ -226,7 +226,44 @@ def allow_args(func):
             possibility to call it with positional arguments).
 
     """
-    return func
+
+    @functools.wraps(func)
+    def allow_args_wrapper(*args, **kwargs):
+        parameters = inspect.signature(func).parameters
+
+        # Count the number of positional-only arguments
+        n_positional_only_parameters = len(
+            [
+                p
+                for p in parameters.values()
+                if p.kind == inspect.Parameter.POSITIONAL_ONLY
+            ],
+        )
+
+        # Check if the total number of arguments matches the function signature
+        if len(args) + len(kwargs) != len(parameters):
+            raise ValueError("Not enough or too many arguments provided.")
+
+        # Convert all arguments to positional arguments in correct order
+        positional = list(args)
+        positional += convert_kwargs_to_args(kwargs, list(parameters))
+
+        # Extract positional-only arguments
+        positional_only = positional[:n_positional_only_parameters]
+
+        # Create kwargs dictionary with remaining arguments
+        kwargs_names = list(parameters)[n_positional_only_parameters:]
+        kwargs = dict(
+            zip(
+                kwargs_names,
+                positional[n_positional_only_parameters:],
+                strict=True,
+            ),
+        )
+
+        return func(*positional_only, **kwargs)
+
+    return allow_args_wrapper
 
 
 def convert_kwargs_to_args(kwargs, parameters):
