@@ -291,6 +291,16 @@ def test_allow_args():
         return a + b
 
     assert allow_args(f)(1, 2) == 3
+    assert allow_args(f)(1, b=2) == 3
+    assert allow_args(f)(b=2, a=1) == 3
+
+
+def test_allow_args_different_kwargs_order():
+    def f(a, b, c, *, d):
+        return a + b + c + d
+
+    assert allow_args(f)(1, 2, 3, 4) == 10
+    assert allow_args(f)(1, 2, d=4, c=3) == 10
 
 
 # ======================================================================================
