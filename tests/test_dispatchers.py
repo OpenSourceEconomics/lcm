@@ -274,10 +274,24 @@ def test_allow_kwargs():
 
 
 def test_allow_kwargs_with_keyword_only_args():
-    def f(a, *, b):
+    def f(a, /, *, b):
         return a + b
 
+    with pytest.raises(TypeError):
+        f(a=1, b=2)
+
     assert allow_kwargs(f)(a=1, b=2) == 3
+
+
+def test_allow_kwargs_incorrect_number_of_args():
+    def f(a, /, b):
+        return a + b
+
+    with pytest.raises(ValueError, match="Not enough or too many arguments"):
+        allow_kwargs(f)(a=1, b=2, c=3)
+
+    with pytest.raises(ValueError, match="Not enough or too many arguments"):
+        allow_kwargs(f)(a=1)
 
 
 # ======================================================================================
@@ -290,6 +304,9 @@ def test_allow_args():
         # b is keyword-only
         return a + b
 
+    with pytest.raises(TypeError):
+        f(1, 2)
+
     assert allow_args(f)(1, 2) == 3
     assert allow_args(f)(1, b=2) == 3
     assert allow_args(f)(b=2, a=1) == 3
@@ -299,8 +316,22 @@ def test_allow_args_different_kwargs_order():
     def f(a, b, c, *, d):
         return a + b + c + d
 
+    with pytest.raises(TypeError):
+        f(1, 2, 3, 4)
+
     assert allow_args(f)(1, 2, 3, 4) == 10
     assert allow_args(f)(1, 2, d=4, c=3) == 10
+
+
+def test_allow_args_incorrect_number_of_args():
+    def f(a, *, b):
+        return a + b
+
+    with pytest.raises(ValueError, match="Not enough or too many arguments"):
+        allow_args(f)(1, 2, b=3)
+
+    with pytest.raises(ValueError, match="Not enough or too many arguments"):
+        allow_args(f)(1)
 
 
 # ======================================================================================
