@@ -188,29 +188,30 @@ def allow_kwargs(func):
             possibility to call it with keyword arguments).
 
     """
+    parameters = inspect.signature(func).parameters
+
+    # Get names of keyword-only arguments
+    kw_only_parameters = [
+        p.name for p in parameters.values() if p.kind == inspect.Parameter.KEYWORD_ONLY
+    ]
 
     @functools.wraps(func)
     def allow_kwargs_wrapper(*args, **kwargs):
-        parameters = inspect.signature(func).parameters
+        # Retrieve keyword-only arguments
+        kw_only_kwargs = {k: kwargs[k] for k in kw_only_parameters}
 
-        # Retrieve keyword-only arguments and remove from kwargs
-        keyword_only = {
-            k: v
-            for k, v in kwargs.items()
-            if k in parameters and parameters[k].kind == inspect.Parameter.KEYWORD_ONLY
-        }
-        for k in keyword_only:
-            kwargs.pop(k)
+        # Get kwargs that will be converted to positional arguments
+        pos_kwargs = {k: v for k, v in kwargs.items() if k not in kw_only_parameters}
 
         # Check if the total number of arguments matches the function signature
-        if len(args) + len(kwargs) + len(keyword_only) != len(parameters):
+        if len(args) + len(pos_kwargs) + len(kw_only_kwargs) != len(parameters):
             raise ValueError("Not enough or too many arguments provided.")
 
         # Separate positional arguments and convert keyword arguments to positional
         positional = list(args)
-        positional += convert_kwargs_to_args(kwargs, list(parameters))
+        positional += convert_kwargs_to_args(pos_kwargs, list(parameters))
 
-        return func(*positional, **keyword_only)
+        return func(*positional, **kw_only_kwargs)
 
     return allow_kwargs_wrapper
 
@@ -226,23 +227,18 @@ def allow_args(func):
             possibility to call it with positional arguments).
 
     """
+    parameters = inspect.signature(func).parameters
+
+    # Count the number of positional-only arguments
+    n_positional_only_parameters = len(
+        [p for p in parameters.values() if p.kind == inspect.Parameter.POSITIONAL_ONLY],
+    )
 
     @functools.wraps(func)
     def allow_args_wrapper(*args, **kwargs):
-        parameters = inspect.signature(func).parameters
-
         # Check if the total number of arguments matches the function signature
         if len(args) + len(kwargs) != len(parameters):
             raise ValueError("Not enough or too many arguments provided.")
-
-        # Count the number of positional-only arguments
-        n_positional_only_parameters = len(
-            [
-                p
-                for p in parameters.values()
-                if p.kind == inspect.Parameter.POSITIONAL_ONLY
-            ],
-        )
 
         # Convert all arguments to positional arguments in correct order
         positional = list(args)
