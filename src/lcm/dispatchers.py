@@ -39,6 +39,8 @@ def spacemap(func, dense_vars, sparse_vars, *, dense_first):
             above but there might be additional dimensions.
 
     """
+    func = allow_args(func)  # vmap cannot deal with keyword-only arguments
+
     if not set(dense_vars).isdisjoint(sparse_vars):
         raise ValueError("dense_vars and sparse_vars overlap.")
 
@@ -96,6 +98,8 @@ def productmap(func, variables):
             might be additional dimensions.
 
     """
+    func = allow_args(func)  # vmap cannot deal with keyword-only arguments
+
     if len(variables) != len(set(variables)):
         raise ValueError("Same argument provided more than once.")
 
