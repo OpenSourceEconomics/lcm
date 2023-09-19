@@ -312,7 +312,7 @@ def test_allow_kwargs_signature_change():
     def f(a, /, b, *, c):  # noqa: ARG001
         pass
 
-    decorated = allow_args(f)
+    decorated = allow_kwargs(f)
     parameters = inspect.signature(decorated).parameters
 
     assert parameters["a"].kind == inspect.Parameter.POSITIONAL_OR_KEYWORD
