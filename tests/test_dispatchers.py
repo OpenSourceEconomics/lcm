@@ -294,6 +294,26 @@ def test_allow_kwargs_incorrect_number_of_args():
         allow_kwargs(f)(a=1)
 
 
+def test_allow_kwargs_with_productmap():
+    def f(a, /, b):
+        # a is positional-only
+        return a + b
+
+    # productmap calls allow_kwargs internally
+    decorated = productmap(f, ["a", "b"])
+
+    a = jnp.arange(2)
+    b = jnp.arange(2)
+
+    with pytest.raises(TypeError):
+        # TypeError since a is positional-only
+        f(a=a, b=b)
+
+    aaae(decorated(a=a, b=b), jnp.array([[0, 1], [1, 2]]))
+    aaae(decorated(a, b=b), jnp.array([[0, 1], [1, 2]]))
+    aaae(decorated(a, b), jnp.array([[0, 1], [1, 2]]))
+
+
 # ======================================================================================
 # allow args
 # ======================================================================================
@@ -332,6 +352,34 @@ def test_allow_args_incorrect_number_of_args():
 
     with pytest.raises(ValueError, match="Not enough or too many arguments"):
         allow_args(f)(1)
+
+
+def test_allow_args_with_productmap():
+    def f(a, *, b):
+        # b is keyword-only
+        return a + b
+
+    decorated_f = productmap(f, ["a", "b"])
+    decorated_f_with_allow_args = productmap(allow_args(f), ["a", "b"])
+
+    a = jnp.arange(2)
+    b = jnp.arange(2)
+
+    with pytest.raises(ValueError, match="vmap in_axes specification must be a tree"):
+        # ValueError since vmap is applied to a function with keyword-only argument
+        decorated_f(a=a, b=b)
+
+    with pytest.raises(ValueError, match="vmap in_axes specification must be a tree"):
+        # ValueError since vmap is applied to a function with keyword-only argument
+        decorated_f(a, b=b)
+
+    with pytest.raises(KeyError):
+        # KeyError since f expects b as keyword argument
+        decorated_f(a, b)
+
+    aaae(decorated_f_with_allow_args(a, b), jnp.array([[0, 1], [1, 2]]))
+    aaae(decorated_f_with_allow_args(a, b=b), jnp.array([[0, 1], [1, 2]]))
+    aaae(decorated_f_with_allow_args(a=a, b=b), jnp.array([[0, 1], [1, 2]]))
 
 
 # ======================================================================================

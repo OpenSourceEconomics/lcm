@@ -188,12 +188,22 @@ def allow_kwargs(func):
             possibility to call it with keyword arguments).
 
     """
-    parameters = inspect.signature(func).parameters
+    signature = inspect.signature(func)
+    parameters = signature.parameters
 
     # Get names of keyword-only arguments
     kw_only_parameters = [
         p.name for p in parameters.values() if p.kind == inspect.Parameter.KEYWORD_ONLY
     ]
+
+    # Create new signature without positional-only arguments
+    new_parameters = [
+        p.replace(kind=inspect.Parameter.POSITIONAL_OR_KEYWORD)
+        if p.kind == inspect.Parameter.POSITIONAL_ONLY
+        else p
+        for p in parameters.values()
+    ]
+    new_signature = signature.replace(parameters=new_parameters)
 
     @functools.wraps(func)
     def allow_kwargs_wrapper(*args, **kwargs):
@@ -213,6 +223,7 @@ def allow_kwargs(func):
 
         return func(*positional, **kw_only_kwargs)
 
+    allow_kwargs_wrapper.__signature__ = new_signature
     return allow_kwargs_wrapper
 
 
@@ -227,12 +238,22 @@ def allow_args(func):
             possibility to call it with positional arguments).
 
     """
-    parameters = inspect.signature(func).parameters
+    signature = inspect.signature(func)
+    parameters = signature.parameters
 
     # Count the number of positional-only arguments
     n_positional_only_parameters = len(
         [p for p in parameters.values() if p.kind == inspect.Parameter.POSITIONAL_ONLY],
     )
+
+    # Create new signature without keyword-only arguments
+    new_parameters = [
+        p.replace(kind=inspect.Parameter.POSITIONAL_OR_KEYWORD)
+        if p.kind == inspect.Parameter.KEYWORD_ONLY
+        else p
+        for p in parameters.values()
+    ]
+    new_signature = signature.replace(parameters=new_parameters)
 
     @functools.wraps(func)
     def allow_args_wrapper(*args, **kwargs):
@@ -259,6 +280,7 @@ def allow_args(func):
 
         return func(*positional_only, **kwargs)
 
+    allow_args_wrapper.__signature__ = new_signature
     return allow_args_wrapper
 
 
