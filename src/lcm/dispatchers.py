@@ -39,6 +39,8 @@ def spacemap(func, dense_vars, sparse_vars, *, dense_first):
             above but there might be additional dimensions.
 
     """
+    func = allow_args(func)  # vmap cannot deal with keyword-only arguments
+
     if not set(dense_vars).isdisjoint(sparse_vars):
         raise ValueError("dense_vars and sparse_vars overlap.")
 
@@ -96,6 +98,8 @@ def productmap(func, variables):
             might be additional dimensions.
 
     """
+    func = allow_args(func)  # vmap cannot deal with keyword-only arguments
+
     if len(variables) != len(set(variables)):
         raise ValueError("Same argument provided more than once.")
 
@@ -188,22 +192,100 @@ def allow_kwargs(func):
             possibility to call it with keyword arguments).
 
     """
+    signature = inspect.signature(func)
+    parameters = signature.parameters
+
+    # Get names of keyword-only arguments
+    kw_only_parameters = [
+        p.name for p in parameters.values() if p.kind == inspect.Parameter.KEYWORD_ONLY
+    ]
+
+    # Create new signature without positional-only arguments
+    new_parameters = [
+        p.replace(kind=inspect.Parameter.POSITIONAL_OR_KEYWORD)
+        if p.kind == inspect.Parameter.POSITIONAL_ONLY
+        else p
+        for p in parameters.values()
+    ]
+    new_signature = signature.replace(parameters=new_parameters)
 
     @functools.wraps(func)
     def allow_kwargs_wrapper(*args, **kwargs):
-        parameters = list(inspect.signature(func).parameters)
+        # Retrieve keyword-only arguments
+        kw_only_kwargs = {k: kwargs[k] for k in kw_only_parameters}
 
-        positional = list(args) if args is not None else []
+        # Get kwargs that will be converted to positional arguments
+        pos_kwargs = {k: v for k, v in kwargs.items() if k not in kw_only_parameters}
 
-        kwargs = {} if args is None else kwargs
+        # Check if the total number of arguments matches the function signature
+        if len(args) + len(pos_kwargs) + len(kw_only_kwargs) != len(parameters):
+            raise ValueError("Not enough or too many arguments provided.")
+
+        # Separate positional arguments and convert keyword arguments to positional
+        positional = list(args)
+        positional += convert_kwargs_to_args(pos_kwargs, list(parameters))
+
+        return func(*positional, **kw_only_kwargs)
+
+    allow_kwargs_wrapper.__signature__ = new_signature
+    return allow_kwargs_wrapper
+
+
+def allow_args(func):
+    """Allow a function to be called with positional arguments.
+
+    Args:
+        func (callable): The function to be wrapped.
+
+    Returns:
+        callable: A callable with the same arguments as func (but with the additional
+            possibility to call it with positional arguments).
+
+    """
+    signature = inspect.signature(func)
+    parameters = signature.parameters
+
+    # Count the number of positional-only arguments
+    n_positional_only_parameters = len(
+        [p for p in parameters.values() if p.kind == inspect.Parameter.POSITIONAL_ONLY],
+    )
+
+    # Create new signature without keyword-only arguments
+    new_parameters = [
+        p.replace(kind=inspect.Parameter.POSITIONAL_OR_KEYWORD)
+        if p.kind == inspect.Parameter.KEYWORD_ONLY
+        else p
+        for p in parameters.values()
+    ]
+    new_signature = signature.replace(parameters=new_parameters)
+
+    @functools.wraps(func)
+    def allow_args_wrapper(*args, **kwargs):
+        # Check if the total number of arguments matches the function signature
         if len(args) + len(kwargs) != len(parameters):
             raise ValueError("Not enough or too many arguments provided.")
 
-        positional += convert_kwargs_to_args(kwargs, parameters)
+        # Convert all arguments to positional arguments in correct order
+        positional = list(args)
+        positional += convert_kwargs_to_args(kwargs, list(parameters))
 
-        return func(*positional)
+        # Extract positional-only arguments
+        positional_only = positional[:n_positional_only_parameters]
 
-    return allow_kwargs_wrapper
+        # Create kwargs dictionary with remaining arguments
+        kwargs_names = list(parameters)[n_positional_only_parameters:]
+        kwargs = dict(
+            zip(
+                kwargs_names,
+                positional[n_positional_only_parameters:],
+                strict=True,
+            ),
+        )
+
+        return func(*positional_only, **kwargs)
+
+    allow_args_wrapper.__signature__ = new_signature
+    return allow_args_wrapper
 
 
 def convert_kwargs_to_args(kwargs, parameters):
