@@ -46,8 +46,8 @@ def get_utility_and_feasibility_function(
     # ==================================================================================
 
     @with_signature(args=arg_names)
-    def u_and_f(*args):
-        kwargs = dict(zip(arg_names, args, strict=True))
+    def u_and_f(*args, **kwargs):
+        kwargs = dict(zip(arg_names[: len(args)], args, strict=True)) | kwargs
 
         states = {k: v for k, v in kwargs.items() if k in state_variables}
         choices = {k: v for k, v in kwargs.items() if k in choice_variables}

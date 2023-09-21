@@ -304,9 +304,10 @@ def _get_extracting_function(func, params, name):
     old_signature = list(inspect.signature(func).parameters)
     new_kwargs = [p for p in old_signature if p not in params[name]] + ["params"]
 
-    @with_signature(kwargs=new_kwargs)
+    @with_signature(args=new_kwargs)
     @functools.wraps(func)
-    def processed_func(**kwargs):
+    def processed_func(*args, **kwargs):
+        kwargs = dict(zip(new_kwargs[: len(args)], args, strict=True)) | kwargs
         _kwargs = {k: v for k, v in kwargs.items() if k in new_kwargs and k != "params"}
         return func(**_kwargs, **kwargs["params"][name])
 
@@ -318,9 +319,10 @@ def _get_function_with_dummy_params(func):
 
     new_kwargs = [*old_signature, "params"]
 
-    @with_signature(kwargs=new_kwargs)
+    @with_signature(args=new_kwargs)
     @functools.wraps(func)
-    def processed_func(**kwargs):
+    def processed_func(*args, **kwargs):
+        kwargs = dict(zip(new_kwargs[: len(args)], args, strict=True)) | kwargs
         _kwargs = {k: v for k, v in kwargs.items() if k != "params"}
         return func(**_kwargs)
 
@@ -338,8 +340,11 @@ def _get_stochastic_next_function(raw_func, grid):
 def _get_stochastic_weight_function(raw_func, name):
     signature = list(inspect.signature(raw_func).parameters)
 
-    @with_signature(kwargs=[*signature, "params"])
-    def weight_func(**kwargs):
+    new_kwargs = [*signature, "params"]
+
+    @with_signature(args=new_kwargs)
+    def weight_func(*args, **kwargs):
+        kwargs = dict(zip(new_kwargs[: len(args)], args, strict=True)) | kwargs
         indices = [kwargs[arg] for arg in signature]
         return kwargs["params"]["shocks"][name][*indices]
 
