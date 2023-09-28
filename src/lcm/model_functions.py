@@ -1,3 +1,5 @@
+import inspect
+
 import jax.numpy as jnp
 from dags import concatenate_functions
 from dags.signature import with_signature
@@ -23,6 +25,8 @@ def get_utility_and_feasibility_function(
     # ==================================================================================
     # Generate dynamic functions
     # ==================================================================================
+    current_u_and_f = get_current_u_and_f(model)
+
     if not is_last_period:
         next_states = get_next_states_function(model)
         next_weights = get_next_weights_function(model)
@@ -37,9 +41,27 @@ def get_utility_and_feasibility_function(
 
         multiply_weights = get_multiply_weights(stochastic_variables)
 
-    current_u_and_f = get_current_u_and_f(model)
+        relevant_functions = [
+            current_u_and_f,
+            next_states,
+            next_weights,
+            scalar_function_evaluator,
+        ]
+    else:
+        relevant_functions = [current_u_and_f]
 
-    arg_names = [*state_variables, *choice_variables, "params", "vf_arr"]
+    # ==================================================================================
+    # Update this section
+
+    arg_names = set()
+    for func in relevant_functions:
+        parameters = inspect.signature(func).parameters
+        arg_names.update(parameters.keys())
+    arg_names = list({"vf_arr", *arg_names})
+    arg_names = [arg for arg in arg_names if "next_" not in arg]
+
+    # Update this section
+    # ==================================================================================
 
     # ==================================================================================
     # Create the utility and feasability function
@@ -66,10 +88,23 @@ def get_utility_and_feasibility_function(
                 variables=[f"next_{var}" for var in stochastic_variables],
             )
 
-            ccvs_at_nodes = function_evaluator(
-                **_next_states,
-                vf_arr=kwargs["vf_arr"],
-            )
+            # ==========================================================================
+            # Update this section
+
+            if "state_indexer" in kwargs:
+                ccvs_at_nodes = function_evaluator(
+                    **_next_states,
+                    vf_arr=kwargs["vf_arr"],
+                    state_indexer=kwargs["state_indexer"],
+                )
+            else:
+                ccvs_at_nodes = function_evaluator(
+                    **_next_states,
+                    vf_arr=kwargs["vf_arr"],
+                )
+
+            # Update this section
+            # ==========================================================================
 
             node_weights = multiply_weights(**weights)
 
