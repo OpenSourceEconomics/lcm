@@ -4,7 +4,7 @@ import jax.numpy as jnp
 from dags import concatenate_functions
 from dags.signature import with_signature
 
-from lcm.dispatchers import productmap
+from lcm.dispatchers import allow_kwargs, productmap
 from lcm.function_evaluator import get_function_evaluator
 
 
@@ -200,6 +200,7 @@ def get_multiply_weights(stochastic_variables):
     """
     arg_names = [f"weight_next_{var}" for var in stochastic_variables]
 
+    @allow_kwargs
     @with_signature(args=arg_names)
     def _outer(*args):
         return jnp.prod(jnp.array(args))
