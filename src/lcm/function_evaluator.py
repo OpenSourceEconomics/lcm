@@ -7,6 +7,7 @@ from dags.signature import with_signature
 from jax.scipy.ndimage import map_coordinates
 
 import lcm.grids as grids_module
+from lcm.functools import all_as_kwargs
 
 
 def get_function_evaluator(
@@ -180,7 +181,7 @@ def _get_label_translator(labels, in_name):
 
         @with_signature(args=[in_name])
         def translate_label(*args, **kwargs):
-            kwargs = dict(zip([in_name][: len(args)], args, strict=True)) | kwargs
+            kwargs = all_as_kwargs(args, kwargs, arg_names=[in_name])
             return kwargs[in_name]
 
     else:
@@ -188,7 +189,7 @@ def _get_label_translator(labels, in_name):
 
         @with_signature(args=[in_name])
         def translate_label(*args, **kwargs):
-            kwargs = dict(zip([in_name][: len(args)], args, strict=True)) | kwargs
+            kwargs = all_as_kwargs(args, kwargs, arg_names=[in_name])
             return val_to_pos[kwargs[in_name]]
 
     return translate_label
@@ -210,7 +211,7 @@ def _get_lookup_function(array_name, axis_names):
 
     @with_signature(args=arg_names)
     def lookup_wrapper(*args, **kwargs):
-        kwargs = dict(zip(arg_names[: len(args)], args, strict=True)) | kwargs
+        kwargs = all_as_kwargs(args, kwargs, arg_names=arg_names)
         positions = tuple(kwargs[var] for var in axis_names)
         arr = kwargs[array_name]
         return arr[positions]
@@ -245,7 +246,7 @@ def _get_coordinate_finder(in_name, grid_type, grid_info):
 
     @with_signature(args=[in_name])
     def find_coordinate(*args, **kwargs):
-        kwargs = dict(zip([in_name][: len(args)], args, strict=True)) | kwargs
+        kwargs = all_as_kwargs(args, kwargs, arg_names=[in_name])
         return partialled_func(kwargs[in_name])
 
     return find_coordinate
@@ -275,7 +276,7 @@ def _get_interpolator(data_name, axis_names, map_coordinates_kwargs=None):
 
     @with_signature(args=arg_names)
     def interpolate(*args, **kwargs):
-        kwargs = dict(zip(arg_names[: len(args)], args, strict=True)) | kwargs
+        kwargs = all_as_kwargs(args, kwargs, arg_names=arg_names)
         coordinates = jnp.array([kwargs[var] for var in axis_names])
         return partialled_map_coordinates(
             input=kwargs[data_name],

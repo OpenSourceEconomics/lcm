@@ -6,6 +6,7 @@ from dags.signature import with_signature
 
 from lcm.dispatchers import allow_kwargs, productmap
 from lcm.function_evaluator import get_function_evaluator
+from lcm.functools import all_as_kwargs
 
 
 def get_utility_and_feasibility_function(
@@ -69,7 +70,7 @@ def get_utility_and_feasibility_function(
 
     @with_signature(args=arg_names)
     def u_and_f(*args, **kwargs):
-        kwargs = dict(zip(arg_names[: len(args)], args, strict=True)) | kwargs
+        kwargs = all_as_kwargs(args, kwargs, arg_names=arg_names)
 
         states = {k: v for k, v in kwargs.items() if k in state_variables}
         choices = {k: v for k, v in kwargs.items() if k in choice_variables}
