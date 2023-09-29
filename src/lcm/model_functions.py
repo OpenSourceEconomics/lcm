@@ -4,9 +4,9 @@ import jax.numpy as jnp
 from dags import concatenate_functions
 from dags.signature import with_signature
 
-from lcm.dispatchers import allow_kwargs, productmap
+from lcm.dispatchers import productmap
 from lcm.function_evaluator import get_function_evaluator
-from lcm.functools import all_as_kwargs
+from lcm.functools import all_as_args, all_as_kwargs
 
 
 def get_utility_and_feasibility_function(
@@ -130,9 +130,9 @@ def get_multiply_weights(stochastic_variables):
     """
     arg_names = [f"weight_next_{var}" for var in stochastic_variables]
 
-    @allow_kwargs
     @with_signature(args=arg_names)
-    def _outer(*args):
+    def _outer(*args, **kwargs):
+        args = all_as_args(args, kwargs, arg_names=arg_names)
         return jnp.prod(jnp.array(args))
 
     return productmap(_outer, variables=arg_names)
