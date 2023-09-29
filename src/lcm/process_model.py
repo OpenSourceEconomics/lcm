@@ -339,6 +339,32 @@ def _get_stochastic_next_function(raw_func, grid):
 
 
 def _get_stochastic_weight_function(raw_func, name):
+    """Get a function that returns the transition weights of a stochastic variable.
+
+    Example:
+    Consider a stochastic variable 'health' that takes two values {0, 1}. The transition
+    matrix is thus 2x2. We create the weighting function and then select the weights
+    that correspond to the case where 'health' is 0.
+
+    >>> from lcm.mark import StochasticInfo
+    >>> def next_health(health):
+    >>>     pass
+    >>> next_health._stochastic_info = StochasticInfo()
+    >>> params = {"shocks": {"health": np.arange(4).reshape(2, 2)}}
+    >>> weight_func = _get_stochastic_weight_function(next_health, "health")
+    >>> weight_func(health=0, params=params)
+    >>> array([0, 1])
+
+
+    Args:
+        raw_func (callable): The raw next function of the stochastic variable.
+        name (str): The name of the stochastic variable.
+
+    Returns:
+        callable: A function that returns the transition weights of the stochastic
+            variable.
+
+    """
     signature = list(inspect.signature(raw_func).parameters)
 
     new_kwargs = [*signature, "params"]
@@ -346,7 +372,8 @@ def _get_stochastic_weight_function(raw_func, name):
     @with_signature(args=new_kwargs)
     def weight_func(*args, **kwargs):
         kwargs = all_as_kwargs(args, kwargs, arg_names=new_kwargs)
-        indices = [kwargs[arg] for arg in signature]
+        indices = [kwargs[arg] for arg in signature]  # TODO(@timmens): this should be
+        # an indexer lookup
         return kwargs["params"]["shocks"][name][*indices]
 
     return weight_func
