@@ -17,6 +17,7 @@ from lcm.state_space import create_state_choice_space
 from pybaum import tree_equal, tree_map
 
 MODELS = {
+    "simple": PHELPS_DEATON,
     "with_filters": PHELPS_DEATON_WITH_FILTERS,
 }
 
