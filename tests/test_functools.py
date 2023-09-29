@@ -9,8 +9,33 @@ from lcm.functools import (
     allow_args,
     allow_kwargs,
     convert_kwargs_to_args,
+    get_union_of_arguments,
 )
 from numpy.testing import assert_array_almost_equal as aaae
+
+# ======================================================================================
+# get_union_of_arguments
+# ======================================================================================
+
+
+def test_get_union_of_arguments():
+    def f(a, b):  # noqa: ARG001
+        pass
+
+    def g(b, c):  # noqa: ARG001
+        pass
+
+    got = get_union_of_arguments([f, g])
+    assert got == {"a", "b", "c"}
+
+
+def test_get_union_of_arguments_no_args():
+    def f():
+        pass
+
+    got = get_union_of_arguments([f])
+    assert got == set()
+
 
 # ======================================================================================
 # all_as_kwargs

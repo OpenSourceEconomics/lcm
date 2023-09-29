@@ -2,6 +2,20 @@ import functools
 import inspect
 
 
+def get_union_of_arguments(list_of_functions):
+    """Return the union of arguments of a list of functions.
+
+    Args:
+        list_of_functions (list): A list of functions.
+
+    Returns:
+        set: The union of arguments of all functions in list_of_functions.
+
+    """
+    arguments = [inspect.signature(f).parameters for f in list_of_functions]
+    return set().union(*arguments)
+
+
 def all_as_kwargs(args, kwargs, arg_names):
     """Return kwargs dictionary containing all arguments.
 

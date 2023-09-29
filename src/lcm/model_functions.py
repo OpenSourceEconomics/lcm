@@ -6,7 +6,7 @@ from dags.signature import with_signature
 
 from lcm.dispatchers import productmap
 from lcm.function_evaluator import get_function_evaluator
-from lcm.functools import all_as_args, all_as_kwargs
+from lcm.functools import all_as_args, all_as_kwargs, get_union_of_arguments
 
 
 def get_utility_and_feasibility_function(
@@ -28,11 +28,14 @@ def get_utility_and_feasibility_function(
     # ==================================================================================
     current_u_and_f = get_current_u_and_f(model)
 
-    if not is_last_period:
+    if is_last_period:
+        relevant_functions = [current_u_and_f]
+
+    else:
         next_states = get_next_states_function(model)
         next_weights = get_next_weights_function(model)
 
-        scalar_function_evaluator = get_function_evaluator(
+        scalar_value_function = get_function_evaluator(
             space_info=space_info,
             data_name=data_name,
             interpolation_options=interpolation_options,
@@ -46,23 +49,15 @@ def get_utility_and_feasibility_function(
             current_u_and_f,
             next_states,
             next_weights,
-            scalar_function_evaluator,
+            scalar_value_function,
         ]
-    else:
-        relevant_functions = [current_u_and_f]
 
-    # ==================================================================================
-    # Update this section
+        value_function_arguments = list(
+            inspect.signature(scalar_value_function).parameters,
+        )
 
-    arg_names = set()
-    for func in relevant_functions:
-        parameters = inspect.signature(func).parameters
-        arg_names.update(parameters.keys())
-    arg_names = list({"vf_arr", *arg_names})
+    arg_names = {"vf_arr"} | get_union_of_arguments(relevant_functions)
     arg_names = [arg for arg in arg_names if "next_" not in arg]
-
-    # Update this section
-    # ==================================================================================
 
     # ==================================================================================
     # Create the utility and feasability function
@@ -84,28 +79,15 @@ def get_utility_and_feasibility_function(
             _next_states = next_states(**states, **choices, params=kwargs["params"])
             weights = next_weights(**states, **choices, params=kwargs["params"])
 
-            function_evaluator = productmap(
-                scalar_function_evaluator,
+            value_function = productmap(
+                scalar_value_function,
                 variables=[f"next_{var}" for var in stochastic_variables],
             )
 
-            # ==========================================================================
-            # Update this section
-
-            if "state_indexer" in kwargs:
-                ccvs_at_nodes = function_evaluator(
-                    **_next_states,
-                    vf_arr=kwargs["vf_arr"],
-                    state_indexer=kwargs["state_indexer"],
-                )
-            else:
-                ccvs_at_nodes = function_evaluator(
-                    **_next_states,
-                    vf_arr=kwargs["vf_arr"],
-                )
-
-            # Update this section
-            # ==========================================================================
+            ccvs_at_nodes = value_function(
+                **_next_states,
+                **{k: v for k, v in kwargs.items() if k in value_function_arguments},
+            )
 
             node_weights = multiply_weights(**weights)
 
