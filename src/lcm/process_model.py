@@ -273,19 +273,27 @@ def _get_functions(user_model, function_info, variable_info, grids, params):
                 name=var,
             )
 
+    # ==================================================================================
+    # Add 'params' argument to functions
+    # ==================================================================================
+    # We wrap the user functions such that they can be called with the 'params' argument
+    # instead of the individual parameters. This is done for all functions except for
+    # filter functions, because they cannot depend on model parameters. And dynamically
+    # generated weighting functions for stochastic next functions, since they are
+    # constructed to accept the 'params' argument.
+
     functions = {}
     for name, func in raw_functions.items():
-        # if the raw function is a weighting function for a stochastic variable, skip
         is_weight_next_function = name.startswith("weight_next_")
-        if is_weight_next_function:
-            functions[name] = func
-            continue
 
-        is_filter = function_info.loc[name, "is_filter"]
-        if is_filter:
+        if is_weight_next_function:
+            processed_func = func
+
+        elif function_info.loc[name, "is_filter"]:
             if params.get(name, {}):
                 raise ValueError("filters cannot depend on model parameters.")
             processed_func = func
+
         elif params[name]:
             processed_func = _get_extracting_function(
                 func=func,

@@ -56,26 +56,35 @@ def get_utility_and_feasibility_function(
             inspect.signature(scalar_value_function).parameters,
         )
 
-    arg_names = {"vf_arr"} | get_union_of_arguments(relevant_functions)
-    arg_names = [arg for arg in arg_names if "next_" not in arg]
-
     # ==================================================================================
     # Create the utility and feasability function
     # ==================================================================================
 
-    @with_signature(args=arg_names)
-    def u_and_f(*args, **kwargs):
-        kwargs = all_as_kwargs(args, kwargs, arg_names=arg_names)
+    arg_names = {"vf_arr"} | get_union_of_arguments(relevant_functions)
+    arg_names = [arg for arg in arg_names if "next_" not in arg]
 
-        states = {k: v for k, v in kwargs.items() if k in state_variables}
-        choices = {k: v for k, v in kwargs.items() if k in choice_variables}
+    if is_last_period:
 
-        u, f = current_u_and_f(**states, **choices, params=kwargs["params"])
+        @with_signature(args=arg_names)
+        def u_and_f(*args, **kwargs):
+            kwargs = all_as_kwargs(args, kwargs, arg_names=arg_names)
 
-        if is_last_period:
-            big_u = u
+            states = {k: v for k, v in kwargs.items() if k in state_variables}
+            choices = {k: v for k, v in kwargs.items() if k in choice_variables}
 
-        else:
+            return current_u_and_f(**states, **choices, params=kwargs["params"])
+
+    else:
+
+        @with_signature(args=arg_names)
+        def u_and_f(*args, **kwargs):
+            kwargs = all_as_kwargs(args, kwargs, arg_names=arg_names)
+
+            states = {k: v for k, v in kwargs.items() if k in state_variables}
+            choices = {k: v for k, v in kwargs.items() if k in choice_variables}
+
+            u, f = current_u_and_f(**states, **choices, params=kwargs["params"])
+
             _next_states = next_states(**states, **choices, params=kwargs["params"])
             weights = next_weights(**states, **choices, params=kwargs["params"])
 
@@ -94,8 +103,7 @@ def get_utility_and_feasibility_function(
             ccv = (ccvs_at_nodes * node_weights).sum()
 
             big_u = u + kwargs["params"]["beta"] * ccv
-
-        return big_u, f
+            return big_u, f
 
     return u_and_f
 
