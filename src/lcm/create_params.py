@@ -112,8 +112,8 @@ def _create_shock_params(model, variable_info, grids):
 
         # get dimensions of variables that influence the stochastic variable
         dimensions = [len(grids[dep]) for dep in dependencies]
-        # add dimension of stochastic variable to first axis
-        dimensions = (len(grids[var]), *dimensions)
+        # add dimension of stochastic variable to last axis
+        dimensions = (*dimensions, len(grids[var]))
 
         params[var] = np.full(dimensions, np.nan)
 
