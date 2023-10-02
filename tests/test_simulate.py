@@ -131,6 +131,7 @@ def test_simulate_using_get_lcm_function(phelps_deaton_model_solution, n_periods
         initial_states={
             "wealth": jnp.array([1.0, 20, 40, 70]),
         },
+        targets=["utility"],
     )
 
     # assert that everyone retires in the last period
