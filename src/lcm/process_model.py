@@ -278,9 +278,9 @@ def _get_functions(user_model, function_info, variable_info, grids, params):
     # ==================================================================================
     # We wrap the user functions such that they can be called with the 'params' argument
     # instead of the individual parameters. This is done for all functions except for
-    # filter functions, because they cannot depend on model parameters. And dynamically
+    # filter functions, because they cannot depend on model parameters; and dynamically
     # generated weighting functions for stochastic next functions, since they are
-    # constructed to accept the 'params' argument.
+    # constructed to accept the 'params' argument by default.
 
     functions = {}
     for name, func in raw_functions.items():
@@ -289,20 +289,25 @@ def _get_functions(user_model, function_info, variable_info, grids, params):
         if is_weight_next_function:
             processed_func = func
 
-        elif function_info.loc[name, "is_filter"]:
-            if params.get(name, {}):
-                raise ValueError("filters cannot depend on model parameters.")
-            processed_func = func
-
-        elif params[name]:
-            processed_func = _get_extracting_function(
-                func=func,
-                params=params,
-                name=name,
-            )
-
         else:
-            processed_func = _get_function_with_dummy_params(func=func)
+            is_filter_function = function_info.loc[name, "is_filter"]
+            # params[name] contains the dictionary of parameters for the function
+            depends_on_params = bool(params[name])
+
+            if is_filter_function:
+                if params.get(name, {}):
+                    raise ValueError("filters cannot depend on model parameters.")
+                processed_func = func
+
+            elif depends_on_params:
+                processed_func = _get_extracting_function(
+                    func=func,
+                    params=params,
+                    name=name,
+                )
+
+            else:
+                processed_func = _get_function_with_dummy_params(func=func)
 
         functions[name] = processed_func
 
