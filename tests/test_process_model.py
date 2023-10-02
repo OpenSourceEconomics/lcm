@@ -217,7 +217,19 @@ def test_get_stochastic_weight_function():
 
     raw_func._stochastic_info = StochasticInfo()
 
-    got_function = _get_stochastic_weight_function(raw_func, name="health")
+    variable_info = pd.DataFrame({"is_state": [True, True]}, index=["health", "wealth"])
+
+    grids = {
+        "health": jnp.arange(2),
+        "wealth": jnp.arange(2),
+    }
+
+    got_function = _get_stochastic_weight_function(
+        raw_func,
+        name="health",
+        variable_info=variable_info,
+        grids=grids,
+    )
 
     params = {"shocks": {"health": np.arange(24).reshape(2, 3, 4)}}
 
@@ -226,6 +238,26 @@ def test_get_stochastic_weight_function():
     expected = np.array([20, 21, 22, 23])
 
     assert_array_equal(got, expected)
+
+
+def test_get_stochastic_weight_function_non_state_dependency():
+    def raw_func(health, wealth):  # noqa: ARG001
+        pass
+
+    raw_func._stochastic_info = StochasticInfo()
+
+    variable_info = pd.DataFrame(
+        {"is_state": [False, True]},
+        index=["health", "wealth"],
+    )
+
+    with pytest.raises(ValueError, match="Stochastic variables"):
+        _get_stochastic_weight_function(
+            raw_func,
+            name="health",
+            variable_info=variable_info,
+            grids=None,
+        )
 
 
 def test_create_shock_params():
