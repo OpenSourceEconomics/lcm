@@ -186,10 +186,10 @@ def simulate(
         states = next_state(**choices, **states)
         states = {key.lstrip("next_"): val for key, val in states.items()}
 
-    processed = process_simulated_data(_simulation_results)
+    processed = _process_simulated_data(_simulation_results)
 
     if targets is not None:
-        calculated_targets = compute_targets(
+        calculated_targets = _compute_targets(
             processed,
             targets=targets,
             model_functions=model.functions,
@@ -197,10 +197,23 @@ def simulate(
         )
         processed = {**processed, **calculated_targets}
 
-    return as_data_frame(processed, n_periods=n_periods)
+    return _as_data_frame(processed, n_periods=n_periods)
 
 
-def as_data_frame(processed, n_periods):
+def _as_data_frame(processed, n_periods):
+    """Convert processed simulation results to DataFrame.
+
+    Args:
+        processed (dict): Dict with processed simulation results.
+        n_periods (int): Number of periods.
+
+    Returns:
+        pd.DataFrame: DataFrame with the simulation results. The index is a multi-index
+            with the first level corresponding to the period and the second level
+            corresponding to the initial state id. The columns correspond to the value,
+            and the choice and state variables.
+
+    """
     n_initial_states = len(processed["value"]) // n_periods
     index = pd.MultiIndex.from_product(
         [range(n_periods), range(n_initial_states)],
@@ -209,7 +222,19 @@ def as_data_frame(processed, n_periods):
     return pd.DataFrame(processed, index=index)
 
 
-def compute_targets(processed_results, targets, model_functions, params):
+def _compute_targets(processed_results, targets, model_functions, params):
+    """Compute targets.
+
+    Args:
+        processed_results (dict): Dict with processed simulation results.
+        targets (list): List of targets to compute.
+        model_functions (dict): Dict with model functions.
+        params (dict): Dict with model parameters.
+
+    Returns:
+        dict: Dict with computed targets.
+
+    """
     target_func = concatenate_functions(
         functions=model_functions,
         targets=targets,
@@ -226,7 +251,7 @@ def compute_targets(processed_results, targets, model_functions, params):
     return target_func(params=params, **kwargs)
 
 
-def process_simulated_data(results):
+def _process_simulated_data(results):
     """Process simulation results.
 
     Args:
