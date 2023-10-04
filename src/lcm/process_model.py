@@ -8,8 +8,8 @@ from dags.signature import with_signature
 
 import lcm.grids as grids_module
 from lcm.create_params import create_params
-from lcm.function_evaluator import _get_label_translator
-from lcm.functools import all_as_kwargs
+from lcm.function_evaluator import get_label_translator
+from lcm.functools import all_as_args, all_as_kwargs
 from lcm.interfaces import GridSpec, Model
 
 
@@ -399,36 +399,23 @@ def _get_stochastic_weight_function(raw_func, name, variable_info, grids):
                 f"depends on {arg}.",
             )
 
-    label_translators = _get_label_translators(
-        variables=function_parameters,
-        grids=grids,
-    )
+    label_translators = {
+        var: get_label_translator(labels=grids[var], in_name=var)
+        for var in function_parameters
+    }
 
     new_kwargs = [*function_parameters, "params"]
 
     @with_signature(args=new_kwargs)
     def weight_func(*args, **kwargs):
-        kwargs = all_as_kwargs(args, kwargs, arg_names=new_kwargs)
+        args = all_as_args(args, kwargs, arg_names=new_kwargs)
+        params = args[-1]  # by definition of new_kargs, params is the last argument
+
         indices = [
-            label_translators[arg](**{arg: kwargs[arg]}) for arg in function_parameters
+            label_translators[arg_name](arg)
+            for arg_name, arg in zip(function_parameters, args, strict=False)
         ]
-        return kwargs["params"]["shocks"][name][*indices]
+
+        return params["shocks"][name][*indices]
 
     return weight_func
-
-
-def _get_label_translators(variables, grids):
-    """Get a dictionary of label translators.
-
-    Args:
-        variables (list): List of variable names.
-        grids (dict): Dictionary containing all variables of the model. The keys are
-            the names of the variables. The values are the grids.
-
-    Returns:
-        dict: Dictionary that maps variable names to label translators.
-
-    """
-    return {
-        var: _get_label_translator(labels=grids[var], in_name=var) for var in variables
-    }

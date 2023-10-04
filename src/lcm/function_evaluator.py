@@ -85,7 +85,7 @@ def get_function_evaluator(
     # create functions to look up position of discrete variables from labels
     # ==================================================================================
     for var, labels in space_info.lookup_info.items():
-        funcs[f"__{var}_pos__"] = _get_label_translator(
+        funcs[f"__{var}_pos__"] = get_label_translator(
             labels=labels,
             in_name=input_prefix + var,
         )
@@ -156,7 +156,7 @@ def get_function_evaluator(
     return out
 
 
-def _get_label_translator(labels, in_name):
+def get_label_translator(labels, in_name):
     """Create a function that translates a label into a position in a list of labels.
 
     Args:
