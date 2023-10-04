@@ -27,10 +27,10 @@ def stochastic(
 
     def decorator_stochastic(func):
         @functools.wraps(func)
-        def wrapper_mark_minimizer(*args, **kwargs):
+        def wrapper_mark_stochastic(*args, **kwargs):
             return func(*args, **kwargs)
 
-        wrapper_mark_minimizer.stochastic_info = stochastic_info
-        return wrapper_mark_minimizer
+        wrapper_mark_stochastic._stochastic_info = stochastic_info
+        return wrapper_mark_stochastic
 
     return decorator_stochastic(func) if callable(func) else decorator_stochastic

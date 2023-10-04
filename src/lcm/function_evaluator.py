@@ -7,6 +7,7 @@ from dags.signature import with_signature
 from jax.scipy.ndimage import map_coordinates
 
 import lcm.grids as grids_module
+from lcm.functools import all_as_kwargs
 
 
 def get_function_evaluator(
@@ -84,7 +85,7 @@ def get_function_evaluator(
     # create functions to look up position of discrete variables from labels
     # ==================================================================================
     for var, labels in space_info.lookup_info.items():
-        funcs[f"__{var}_pos__"] = _get_label_translator(
+        funcs[f"__{var}_pos__"] = get_label_translator(
             labels=labels,
             in_name=input_prefix + var,
         )
@@ -155,7 +156,7 @@ def get_function_evaluator(
     return out
 
 
-def _get_label_translator(labels, in_name):
+def get_label_translator(labels, in_name):
     """Create a function that translates a label into a position in a list of labels.
 
     Args:
@@ -178,15 +179,17 @@ def _get_label_translator(labels, in_name):
 
     if _grid == list(range(len(labels))):
 
-        @with_signature(kwargs=[in_name])
-        def translate_label(**kwargs):
+        @with_signature(args=[in_name])
+        def translate_label(*args, **kwargs):
+            kwargs = all_as_kwargs(args, kwargs, arg_names=[in_name])
             return kwargs[in_name]
 
     else:
         val_to_pos = dict(zip(_grid, range(len(labels)), strict=True))
 
-        @with_signature(kwargs=[in_name])
-        def translate_label(**kwargs):
+        @with_signature(args=[in_name])
+        def translate_label(*args, **kwargs):
+            kwargs = all_as_kwargs(args, kwargs, arg_names=[in_name])
             return val_to_pos[kwargs[in_name]]
 
     return translate_label
@@ -204,9 +207,11 @@ def _get_lookup_function(array_name, axis_names):
             that looks up values in an indexer array called ``array_name``.
 
     """
+    arg_names = [*axis_names, array_name]
 
-    @with_signature(kwargs=[*axis_names, array_name])
-    def lookup_wrapper(**kwargs):
+    @with_signature(args=arg_names)
+    def lookup_wrapper(*args, **kwargs):
+        kwargs = all_as_kwargs(args, kwargs, arg_names=arg_names)
         positions = tuple(kwargs[var] for var in axis_names)
         arr = kwargs[array_name]
         return arr[positions]
@@ -239,8 +244,9 @@ def _get_coordinate_finder(in_name, grid_type, grid_info):
     raw_func = getattr(grids_module, f"get_{grid_type}_coordinate")
     partialled_func = partial(raw_func, **grid_info)
 
-    @with_signature(kwargs=[in_name])
-    def find_coordinate(**kwargs):
+    @with_signature(args=[in_name])
+    def find_coordinate(*args, **kwargs):
+        kwargs = all_as_kwargs(args, kwargs, arg_names=[in_name])
         return partialled_func(kwargs[in_name])
 
     return find_coordinate
@@ -266,8 +272,11 @@ def _get_interpolator(data_name, axis_names, map_coordinates_kwargs=None):
 
     partialled_map_coordinates = partial(map_coordinates, **kwargs)
 
-    @with_signature(kwargs=[data_name, *axis_names])
-    def interpolate(**kwargs):
+    arg_names = [data_name, *axis_names]
+
+    @with_signature(args=arg_names)
+    def interpolate(*args, **kwargs):
+        kwargs = all_as_kwargs(args, kwargs, arg_names=arg_names)
         coordinates = jnp.array([kwargs[var] for var in axis_names])
         return partialled_map_coordinates(
             input=kwargs[data_name],
