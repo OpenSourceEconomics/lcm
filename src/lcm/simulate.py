@@ -269,7 +269,7 @@ def _process_simulated_data(results):
     column_names = [
         # remove prefixes 'choice_' and 'states_' from variable names, which are added
         # by the leaf_names function
-        name.split("_")[1] if name != "value" else name
+        name.removeprefix("choices_").removeprefix("states_")
         for name in leaf_names(results[0])
     ]
 
