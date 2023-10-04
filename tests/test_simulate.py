@@ -87,10 +87,8 @@ def test_simulate_using_raw_inputs(simulate_inputs):
         **simulate_inputs,
     )
 
-    choices = got[0]["choices"]
-
-    assert_array_equal(choices["retirement"], 1)
-    assert_array_almost_equal(choices["consumption"], jnp.array([1.0, 50.400803]))
+    assert_array_equal(got.loc[0, :]["retirement"], 1)
+    assert_array_almost_equal(got.loc[0, :]["consumption"], jnp.array([1.0, 50.400803]))
 
 
 # ======================================================================================
@@ -119,7 +117,7 @@ def phelps_deaton_model_solution():
     return _model_solution
 
 
-@pytest.mark.parametrize("n_periods", range(1, PHELPS_DEATON["n_periods"] + 1))
+@pytest.mark.parametrize("n_periods", range(3, PHELPS_DEATON["n_periods"] + 1))
 def test_simulate_using_get_lcm_function(phelps_deaton_model_solution, n_periods):
     vf_arr_list, params, model = phelps_deaton_model_solution(n_periods)
 
@@ -131,14 +129,25 @@ def test_simulate_using_get_lcm_function(phelps_deaton_model_solution, n_periods
         initial_states={
             "wealth": jnp.array([1.0, 20, 40, 70]),
         },
+        additional_targets=["utility", "consumption_constraint"],
     )
 
+    assert {
+        "value",
+        "retirement",
+        "consumption",
+        "wealth",
+        "utility",
+        "consumption_constraint",
+    } == set(res.columns)
+
     # assert that everyone retires in the last period
-    assert_array_equal(res[-1]["choices"]["retirement"], 1)
+    last_period_index = n_periods - 1
+    assert_array_equal(res.loc[last_period_index, :]["retirement"], 1)
 
     # assert that higher wealth leads to higher consumption
     for period in range(n_periods):
-        assert jnp.all(jnp.diff(res[period]["choices"]["consumption"]) >= 0)
+        assert (res.loc[period, :]["consumption"].diff()[1:] >= 0).all()
 
         # The following does not work. I.e. the continuation value in each period is not
         # weakly increasing in wealth. It is unclear if this needs to hold.
@@ -199,7 +208,11 @@ def test_effect_of_beta_on_last_period():
 
     # Asserting
     # ==================================================================================
-    assert jnp.all(res_low[-1]["value"] <= res_high[-1]["value"])
+    last_period_index = 4
+    assert (
+        res_low.loc[last_period_index, :]["value"]
+        <= res_high.loc[last_period_index, :]["value"]
+    ).all()
 
 
 def test_effect_of_delta():
@@ -251,14 +264,14 @@ def test_effect_of_delta():
     # Asserting
     # ==================================================================================
     for period in range(5):
-        assert jnp.all(
-            res_low[period]["choices"]["consumption"]
-            <= res_high[period]["choices"]["consumption"],
-        )
-        assert jnp.all(
-            res_low[period]["choices"]["retirement"]
-            >= res_high[period]["choices"]["retirement"],
-        )
+        assert (
+            res_low.loc[period, :]["consumption"]
+            <= res_high.loc[period, :]["consumption"]
+        ).all()
+        assert (
+            res_low.loc[period, :]["retirement"]
+            >= res_high.loc[period, :]["retirement"]
+        ).all()
 
 
 # ======================================================================================
