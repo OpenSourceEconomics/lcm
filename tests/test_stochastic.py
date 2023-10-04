@@ -18,16 +18,17 @@ def test_get_lcm_function_with_simulate_target():
         "next_wealth": {"interest_rate": 0.25, "wage": 0.25},
         "next_health": {},
         "consumption_constraint": {},
-        "shocks": {"health": jnp.array([[0.25, 0.25], [0.25, 0.25]])},
+        "shocks": {"health": jnp.array([[0.3, 0.7], [0.6, 0.4]])},
     }
 
-    simulate_model(
+    res = simulate_model(
         params,
         initial_states={
-            "health": jnp.array([1, 1]),
-            "wealth": jnp.array([10.0, 50.0]),
+            "health": jnp.array([1, 1, 0]),
+            "wealth": jnp.array([10.0, 50.0, 30]),
         },
     )
+    breakpoint()
 
 
 # ======================================================================================

@@ -10,6 +10,7 @@ from lcm.argmax import argmax, segment_argmax
 from lcm.dispatchers import spacemap, vmap_1d
 from lcm.interfaces import Space
 from lcm.model_functions import get_multiply_weights, get_next_weights_function
+import jax
 
 
 def simulate(
@@ -22,6 +23,7 @@ def simulate(
     solve_model=None,
     vf_arr_list=None,
     additional_targets=None,
+    seed=12345,
 ):
     """Simulate the model forward in time.
 
@@ -76,8 +78,11 @@ def simulate(
     )
 
     next_weights = get_next_weights_function(model)
+    
+    stochastic_variables = model.variable_info.query("is_stochastic").index.tolist()
     multiply_weights = get_multiply_weights(
-        stochastic_variables=model.variable_info.query("is_stochastic").index.tolist(),
+        stochastic_variables=stochastic_variables,
+        vmap_over_first_axis=True,
     )
 
     n_periods = len(vf_arr_list)
@@ -89,6 +94,8 @@ def simulate(
     sparse_choice_variables = model.variable_info.query("is_choice & is_sparse").index
 
     states = initial_states  # will be updated in the forward simulation
+    
+    key = jax.random.PRNGKey(seed=seed)
 
     # Forward simulation
     # ==================================================================================
@@ -192,10 +199,14 @@ def simulate(
         # ==============================================================================
         deterministic_states = next_deterministic_states(**choices, **states)
 
-        weights = next_weights(**states, **choices, params=params)
+        weights = next_weights(**states, params=params)
         node_weights = multiply_weights(**weights)
+        
+        key, sim_key = jax.random.split(key)
 
-        stochastic_states = _draw_stochastic_states(node_weights, grids=model.grids)
+        stochastic_states = _draw_stochastic_states(
+            node_weights, grids=model.grids, stochastic_variables=stochastic_variables, key=sim_key
+        )
 
         states = {**deterministic_states, **stochastic_states}
         states = {key.removeprefix("next_"): val for key, val in states.items()}
@@ -214,9 +225,18 @@ def simulate(
     return _as_data_frame(processed, n_periods=n_periods)
 
 
-def _draw_stochastic_states(weights, grids):
-    breakpoint()
-    pass
+def _draw_stochastic_states(weights, grids, stochastic_variables, key):
+    def _random_choice(key, probs, labels):
+        return jax.random.choice(key, labels, p=probs)
+    
+    keys = jax.random.split(key, weights.shape[0])
+    
+    random_choice = jax.vmap(_random_choice, in_axes=(0, 0, None))
+    
+    name = stochastic_variables[0]
+    
+    return {name: random_choice(keys, weights, grids[name])}
+
 
 
 def _as_data_frame(processed, n_periods):
