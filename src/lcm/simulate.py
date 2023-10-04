@@ -211,7 +211,7 @@ def _as_data_frame(processed, n_periods):
         pd.DataFrame: DataFrame with the simulation results. The index is a multi-index
             with the first level corresponding to the period and the second level
             corresponding to the initial state id. The columns correspond to the value,
-            and the choice and state variables.
+            and the choice and state variables, and potentially auxiliary variables.
 
     """
     n_initial_states = len(processed["value"]) // n_periods
@@ -241,13 +241,14 @@ def _compute_targets(processed_results, targets, model_functions, params):
         return_type="dict",
     )
 
-    parameters = [
+    # get list of variables over which we want to vectorize the target function
+    variables = [
         p for p in list(inspect.signature(target_func).parameters) if p != "params"
     ]
 
-    target_func = vmap_1d(target_func, variables=parameters)
+    target_func = vmap_1d(target_func, variables=variables)
 
-    kwargs = {k: v for k, v in processed_results.items() if k in parameters}
+    kwargs = {k: v for k, v in processed_results.items() if k in variables}
     return target_func(params=params, **kwargs)
 
 
@@ -266,17 +267,22 @@ def _process_simulated_data(results):
 
     """
     column_names = [
-        # remove 'choice_' and 'states_' from variable names
+        # remove prefixes 'choice_' and 'states_' from variable names, which are added
+        # by the leaf_names function
         name.split("_")[1] if name != "value" else name
         for name in leaf_names(results[0])
     ]
 
-    # Flatten and concatenate results
+    # ==================================================================================
+    # Get dict of arrays for each variable with dimension (n_periods, n_initial_states)
+    # ==================================================================================
+
+    # flatten the nested dictionary structure to get a list of dicts, where each dict
+    # has only array values
     processed = [
         dict(zip(column_names, tree_flatten(vals)[0], strict=True)) for vals in results
     ]
     processed = {key: [d[key] for d in processed] for key in column_names}
-
     return {key: jnp.concatenate(values) for key, values in processed.items()}
 
 
