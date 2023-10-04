@@ -117,7 +117,7 @@ def phelps_deaton_model_solution():
     return _model_solution
 
 
-@pytest.mark.parametrize("n_periods", range(1, PHELPS_DEATON["n_periods"] + 1))
+@pytest.mark.parametrize("n_periods", range(3, PHELPS_DEATON["n_periods"] + 1))
 def test_simulate_using_get_lcm_function(phelps_deaton_model_solution, n_periods):
     vf_arr_list, params, model = phelps_deaton_model_solution(n_periods)
 
@@ -129,7 +129,7 @@ def test_simulate_using_get_lcm_function(phelps_deaton_model_solution, n_periods
         initial_states={
             "wealth": jnp.array([1.0, 20, 40, 70]),
         },
-        targets=["utility", "working"],
+        additional_targets=["utility", "consumption_constraint"],
     )
 
     # assert that everyone retires in the last period

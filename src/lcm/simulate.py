@@ -21,7 +21,7 @@ def simulate(
     initial_states,
     solve_model=None,
     vf_arr_list=None,
-    targets=None,
+    additional_targets=None,
 ):
     """Simulate the model forward in time.
 
@@ -44,8 +44,8 @@ def simulate(
         vf_arr_list (list): List of value function arrays of length n_periods. This is
             the output of the model's `solve` function. If not provided, the model is
             solved first.
-        targets (list): List of targets to compute. If provided, the targets are
-            computed and added to the simulation results.
+        additional_targets (list): List of targets to compute. If provided, the targets
+            are computed and added to the simulation results.
 
     Returns:
         list: List of length n_periods containing the valuations, optimal choices, and
@@ -184,14 +184,14 @@ def simulate(
         # Update states
         # ==============================================================================
         states = next_state(**choices, **states)
-        states = {key.lstrip("next_"): val for key, val in states.items()}
+        states = {key.removeprefix("next_"): val for key, val in states.items()}
 
     processed = _process_simulated_data(_simulation_results)
 
-    if targets is not None:
+    if additional_targets is not None:
         calculated_targets = _compute_targets(
             processed,
-            targets=targets,
+            targets=additional_targets,
             model_functions=model.functions,
             params=params,
         )
@@ -226,7 +226,8 @@ def _compute_targets(processed_results, targets, model_functions, params):
     """Compute targets.
 
     Args:
-        processed_results (dict): Dict with processed simulation results.
+        processed_results (dict): Dict with processed simulation results. Values must be
+            one-dimensional arrays.
         targets (list): List of targets to compute.
         model_functions (dict): Dict with model functions.
         params (dict): Dict with model parameters.
@@ -253,17 +254,16 @@ def _compute_targets(processed_results, targets, model_functions, params):
 
 
 def _process_simulated_data(results):
-    """Process simulation results.
+    """Process and flatten the simulation results.
 
     Args:
         results (list): List of dicts with simulation results. Each dict contains the
             value, choices, and states for one period.
 
     Returns:
-        pd.DataFrame: DataFrame with the simulation results. The index is a multi-index
-            with the first level corresponding to the period and the second level
-            corresponding to the initial state id. The columns correspond to the value,
-            and the choice and state variables.
+        dict: Dict with processed simulation results. The keys are the variable names
+            and the values are the flattened arrays, with dimension (n_periods *
+            n_initial_states, ).
 
     """
     column_names = [
@@ -274,7 +274,12 @@ def _process_simulated_data(results):
     ]
 
     # ==================================================================================
-    # Get dict of arrays for each variable with dimension (n_periods, n_initial_states)
+    # Get dict of arrays for each var with dimension (n_periods * n_initial_states, )
+    # ----------------------------------------------------------------------------------
+    # The arrays are flattened, so that the resulting dictionary has a one-dimensional
+    # array for each variable. The length of this array is the number of periods times
+    # the number of initial states. The order of array elements is given by an outer
+    # level of periods and an inner level of initial states ids.
     # ==================================================================================
 
     # flatten the nested dictionary structure to get a list of dicts, where each dict
