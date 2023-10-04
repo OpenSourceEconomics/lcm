@@ -7,9 +7,9 @@ from lcm.function_evaluator import (
     _fail_if_interpolation_axes_are_not_last,
     _get_coordinate_finder,
     _get_interpolator,
-    _get_label_translator,
     _get_lookup_function,
     get_function_evaluator,
+    get_label_translator,
 )
 from lcm.grids import linspace
 from lcm.interfaces import GridSpec, IndexerInfo, SpaceInfo
@@ -240,7 +240,7 @@ def test_function_evaluator_longer_indexer():
 def test_get_label_translator():
     grid = jnp.array([9, 10, 13])
 
-    func = _get_label_translator(
+    func = get_label_translator(
         labels=grid,
         in_name="schooling",
     )
@@ -328,7 +328,7 @@ def test_get_function_evaluator_illustrative():
 def test_get_label_translator_illustrative():
     # Numerical labels
     # ==================================================================================
-    f = _get_label_translator(
+    f = get_label_translator(
         labels=jnp.array([1, 2, 3]),
         in_name="a",
     )
@@ -336,7 +336,7 @@ def test_get_label_translator_illustrative():
 
     # Character labels
     # ==================================================================================
-    g = _get_label_translator(
+    g = get_label_translator(
         labels=["a", "b", "c"],
         in_name="x",
     )
