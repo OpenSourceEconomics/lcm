@@ -132,6 +132,15 @@ def test_simulate_using_get_lcm_function(phelps_deaton_model_solution, n_periods
         additional_targets=["utility", "consumption_constraint"],
     )
 
+    assert {
+        "value",
+        "retirement",
+        "consumption",
+        "wealth",
+        "utility",
+        "consumption_constraint",
+    } == set(res.columns)
+
     # assert that everyone retires in the last period
     last_period_index = n_periods - 1
     assert_array_equal(res.loc[last_period_index, :]["retirement"], 1)
