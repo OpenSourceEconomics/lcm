@@ -2,7 +2,9 @@ import inspect
 from functools import partial
 
 import jax.numpy as jnp
+import pandas as pd
 from dags import concatenate_functions
+from pybaum import leaf_names, tree_flatten
 
 from lcm.argmax import argmax, segment_argmax
 from lcm.dispatchers import spacemap, vmap_1d
@@ -19,6 +21,7 @@ def simulate(
     initial_states,
     solve_model=None,
     vf_arr_list=None,
+    additional_targets=None,
 ):
     """Simulate the model forward in time.
 
@@ -41,6 +44,8 @@ def simulate(
         vf_arr_list (list): List of value function arrays of length n_periods. This is
             the output of the model's `solve` function. If not provided, the model is
             solved first.
+        additional_targets (list): List of targets to compute. If provided, the targets
+            are computed and added to the simulation results.
 
     Returns:
         list: List of length n_periods containing the valuations, optimal choices, and
@@ -80,7 +85,7 @@ def simulate(
 
     # Forward simulation
     # ==================================================================================
-    result = []
+    _simulation_results = []
 
     for period in range(n_periods):
         # Create data state choice space
@@ -167,19 +172,123 @@ def simulate(
         # Store results
         # ==============================================================================
         choices = {**dense_choices, **sparse_choices, **cont_choices}
-        result.append(
+
+        _simulation_results.append(
             {
-                "choices": choices,
                 "value": value,
+                "choices": choices,
+                "states": states,
             },
         )
 
         # Update states
         # ==============================================================================
         states = next_state(**choices, **states)
-        states = {key.lstrip("next_"): val for key, val in states.items()}
+        states = {key.removeprefix("next_"): val for key, val in states.items()}
 
-    return result
+    processed = _process_simulated_data(_simulation_results)
+
+    if additional_targets is not None:
+        calculated_targets = _compute_targets(
+            processed,
+            targets=additional_targets,
+            model_functions=model.functions,
+            params=params,
+        )
+        processed = {**processed, **calculated_targets}
+
+    return _as_data_frame(processed, n_periods=n_periods)
+
+
+def _as_data_frame(processed, n_periods):
+    """Convert processed simulation results to DataFrame.
+
+    Args:
+        processed (dict): Dict with processed simulation results.
+        n_periods (int): Number of periods.
+
+    Returns:
+        pd.DataFrame: DataFrame with the simulation results. The index is a multi-index
+            with the first level corresponding to the period and the second level
+            corresponding to the initial state id. The columns correspond to the value,
+            and the choice and state variables, and potentially auxiliary variables.
+
+    """
+    n_initial_states = len(processed["value"]) // n_periods
+    index = pd.MultiIndex.from_product(
+        [range(n_periods), range(n_initial_states)],
+        names=["period", "initial_state_id"],
+    )
+    return pd.DataFrame(processed, index=index)
+
+
+def _compute_targets(processed_results, targets, model_functions, params):
+    """Compute targets.
+
+    Args:
+        processed_results (dict): Dict with processed simulation results. Values must be
+            one-dimensional arrays.
+        targets (list): List of targets to compute.
+        model_functions (dict): Dict with model functions.
+        params (dict): Dict with model parameters.
+
+    Returns:
+        dict: Dict with computed targets.
+
+    """
+    target_func = concatenate_functions(
+        functions=model_functions,
+        targets=targets,
+        return_type="dict",
+    )
+
+    # get list of variables over which we want to vectorize the target function
+    variables = [
+        p for p in list(inspect.signature(target_func).parameters) if p != "params"
+    ]
+
+    target_func = vmap_1d(target_func, variables=variables)
+
+    kwargs = {k: v for k, v in processed_results.items() if k in variables}
+    return target_func(params=params, **kwargs)
+
+
+def _process_simulated_data(results):
+    """Process and flatten the simulation results.
+
+    Args:
+        results (list): List of dicts with simulation results. Each dict contains the
+            value, choices, and states for one period.
+
+    Returns:
+        dict: Dict with processed simulation results. The keys are the variable names
+            and the values are the flattened arrays, with dimension (n_periods *
+            n_initial_states, ).
+
+    """
+    column_names = [
+        # remove prefixes 'choice_' and 'states_' from variable names, which are added
+        # by the leaf_names function
+        name.removeprefix("choices_").removeprefix("states_")
+        for name in leaf_names(results[0])
+    ]
+
+    # ==================================================================================
+    # Get dict of arrays for each var with dimension (n_periods * n_initial_states, )
+    # ----------------------------------------------------------------------------------
+    # The arrays are flattened, so that the resulting dictionary has a one-dimensional
+    # array for each variable. The length of this array is the number of periods times
+    # the number of initial states. The order of array elements is given by an outer
+    # level of periods and an inner level of initial states ids.
+    # ==================================================================================
+
+    # flatten the nested dictionary structure to get a list of dicts, where each dict
+    # has only array values
+    processed = [
+        dict(zip(column_names, tree_flatten(vals)[0], strict=True)) for vals in results
+    ]
+    processed = {key: [d[key] for d in processed] for key in column_names}
+    return {key: jnp.concatenate(values) for key, values in processed.items()}
 
 
 @partial(vmap_1d, variables=["ccv_policy", "dense_argmax"])
