@@ -15,7 +15,6 @@ def simulate(
     continuous_choice_grids,
     compute_ccv_policy_functions,
     model,
-    next_state,
     initial_states,
     solve_model=None,
     vf_arr_list=None,
@@ -32,8 +31,6 @@ def simulate(
             function computes the conditional continuation value dependent on the
             discrete choices.
         model (Model): Model instance.
-        next_state (callable): Function that returns the next state given the current
-            state and choice variables.
         initial_states (list): List of initial states to start from. Typically from the
             observed dataset.
         solve_model (callable): Function that solves the model. Is only required if
@@ -66,7 +63,11 @@ def simulate(
 
     # Preparations
     # ==================================================================================
-    next_state = partial(next_state, params=params)
+    next_deterministic_states = get_next_deterministic_states_function(model)
+    next_deterministic_states = partial(
+        next_deterministic_states,
+        params=params,
+    )
 
     n_periods = len(vf_arr_list)
 
@@ -171,15 +172,45 @@ def simulate(
             {
                 "choices": choices,
                 "value": value,
+                "states": states,
             },
         )
 
         # Update states
         # ==============================================================================
-        states = next_state(**choices, **states)
+        deterministic_states = next_deterministic_states(**choices, **states)
+
+        weights = next_weights(**states, **choices, params=params)
+        node_weights = multiply_weights(**weights)
+        stochastic_states = draw_stochastic_states(node_weights, model.grids)
+
+        states = {**deterministic_states, **stochastic_states}
         states = {key.lstrip("next_"): val for key, val in states.items()}
 
     return result
+
+
+def get_next_deterministic_states_function(model):
+    """Get function that returns the deterministic next states.
+
+    Args:
+        model (Model): Model instance.
+
+    Returns:
+        tuple: Tuple of functions. First function returns the non-stochastic next
+            states, second function returns the stochastic next states.
+
+    """
+    deterministic_targets = model.function_info.query(
+        "is_next & ~is_stochastic_next",
+    ).index
+
+    return concatenate_functions(
+        functions=model.functions,
+        targets=deterministic_targets,
+        return_type="dict",
+        enforce_signature=False,
+    )
 
 
 @partial(vmap_1d, variables=["ccv_policy", "dense_argmax"])
