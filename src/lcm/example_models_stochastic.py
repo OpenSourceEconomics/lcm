@@ -20,6 +20,11 @@ def next_health(health):  # noqa: ARG001
     pass
 
 
+@lcm.mark.stochastic
+def next_partner():
+    pass
+
+
 def consumption_constraint(consumption, wealth):
     return consumption <= wealth
 
@@ -52,4 +57,14 @@ MODEL = {
     "n_periods": 3,
 }
 
-PARAMS = {}
+
+PARAMS = {
+    "beta": 0.25,
+    "utility": {"delta": 0.25, "gamma": 0.25},
+    "next_wealth": {"interest_rate": 0.25, "wage": 0.25},
+    "next_health": {},
+    "consumption_constraint": {},
+    "shocks": {
+        "health": jnp.array([[0.25, 0.25], [0.25, 0.25]]),
+    },
+}

@@ -4,6 +4,7 @@ from lcm.example_models import PHELPS_DEATON, phelps_deaton_utility
 from lcm.interfaces import Model
 from lcm.model_functions import (
     get_combined_constraint,
+    get_multiply_weights,
     get_next_states_function,
     get_utility_and_feasibility_function,
 )
@@ -108,3 +109,32 @@ def test_get_next_state_function():
 
     _next_state = next_state(**choice, **state, params=params)
     assert _next_state == {"next_wealth": 1.05 * (20 - 10)}
+
+
+def test_get_multiply_weights():
+    multiply_weights = get_multiply_weights(
+        stochastic_variables=["a", "b"],
+        vmap_over_first_axis=False,
+    )
+
+    a = jnp.array([1, 2])
+    b = jnp.array([3, 4])
+
+    got = multiply_weights(a, b)
+    expected = jnp.array([[3, 4], [6, 8]])
+    assert_array_equal(got, expected)
+
+
+def test_get_multiply_weights_vmapped():
+    multiply_weights = get_multiply_weights(
+        stochastic_variables=["a", "b"],
+        vmap_over_first_axis=True,
+    )
+
+    a = jnp.array([[1, 2], [1, 2]])
+    b = jnp.array([[3, 4], [3, 4]])
+
+    got = multiply_weights(a, b)
+    expected = jnp.array([[[3, 4], [6, 8]], [[3, 4], [6, 8]]])
+
+    assert_array_equal(got, expected)

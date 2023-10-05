@@ -141,8 +141,7 @@ def get_multiply_weights(stochastic_variables, vmap_over_first_axis):
     outer = productmap(_outer, variables=arg_names)
 
     if vmap_over_first_axis:
-        for k in range(len(arg_names)):
-            outer = vmap(outer, in_axes=k)
+        outer = vmap(outer, in_axes=[0] * len(arg_names))
         outer = allow_kwargs(outer)
 
     return outer

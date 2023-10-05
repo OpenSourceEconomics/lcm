@@ -199,22 +199,24 @@ def simulate(
         # ==============================================================================
         deterministic_states = next_deterministic_states(**choices, **states)
 
-        weights = next_weights(**states, params=params)
-        node_weights = multiply_weights(**weights)
-
-        key, sim_key = jax.random.split(key)
-
         if stochastic_variables:
+            weights = next_weights(**states, params=params)
+            weights = {key: jnp.atleast_2d(val) for key, val in weights.items()}
+            node_weights = multiply_weights(**weights)
+
+            key, sim_key = jax.random.split(key)
+
             stochastic_states = _draw_stochastic_states(
                 node_weights,
                 grids=model.grids,
                 stochastic_variables=stochastic_variables,
                 key=sim_key,
             )
+            states = deterministic_states | stochastic_states
         else:
-            stochastic_states = {}
+            states = deterministic_states
 
-        states = {**deterministic_states, **stochastic_states}
+        # remove 'next_' prefix from keys (is added by next functions)
         states = {key.removeprefix("next_"): val for key, val in states.items()}
 
     processed = _process_simulated_data(_simulation_results)
@@ -447,9 +449,12 @@ def create_data_scs(
     state_names = set(vi.query("is_state").index)
 
     if state_names != set(states.keys()):
+        missing = state_names - set(states.keys())
+        too_many = set(states.keys()) - state_names
         raise ValueError(
             "You need to provide an initial value for each state variable in the model."
-            f" Missing initial states: {state_names - set(states.keys())}",
+            f"\n\nMissing initial states: {missing}\n",
+            f"Provided variables that are not states: {too_many}",
         )
 
     # get sparse and dense choices
