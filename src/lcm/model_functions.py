@@ -7,7 +7,12 @@ from jax import vmap
 
 from lcm.dispatchers import productmap
 from lcm.function_evaluator import get_function_evaluator
-from lcm.functools import all_as_args, all_as_kwargs, get_union_of_arguments, allow_kwargs
+from lcm.functools import (
+    all_as_args,
+    all_as_kwargs,
+    allow_kwargs,
+    get_union_of_arguments,
+)
 
 
 def get_utility_and_feasibility_function(
@@ -44,7 +49,10 @@ def get_utility_and_feasibility_function(
             out_name="continuation_value",
         )
 
-        multiply_weights = get_multiply_weights(stochastic_variables)
+        multiply_weights = get_multiply_weights(
+            stochastic_variables,
+            vmap_over_first_axis=False,
+        )
 
         relevant_functions = [
             current_u_and_f,
@@ -109,11 +117,15 @@ def get_utility_and_feasibility_function(
     return u_and_f
 
 
-def get_multiply_weights(stochastic_variables, vmap_over_first_axis=False):
+def get_multiply_weights(stochastic_variables, vmap_over_first_axis):
     """Get multiply_weights function.
 
     Args:
         stochastic_variables (list): List of stochastic variables.
+        vmap_over_first_axis (bool): Whether to vmap over the first axis of the inputs.
+            This is useful when the inputs have an additional batch dimension, for
+            example as in the simulation, where this dimension corresponds to the
+            simulation units.
 
     Returns:
         callable
@@ -127,14 +139,13 @@ def get_multiply_weights(stochastic_variables, vmap_over_first_axis=False):
         return jnp.prod(jnp.array(args))
 
     outer = productmap(_outer, variables=arg_names)
-    
+
     if vmap_over_first_axis:
         for k in range(len(arg_names)):
             outer = vmap(outer, in_axes=k)
         outer = allow_kwargs(outer)
 
     return outer
-
 
 
 def get_combined_constraint(model):
