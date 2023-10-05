@@ -346,10 +346,10 @@ def test_process_simulated_data():
     ]
     expected = {
         "value": jnp.array([0.1, 0.2, 0.3, 0.4]),
-        "a": jnp.array([1, 2, 3, 4]),
-        "b": jnp.array([-1, -2, -3, -4]),
         "c": jnp.array([5, 6, 7, 8]),
         "d": jnp.array([-5, -6, -7, -8]),
+        "a": jnp.array([1, 2, 3, 4]),
+        "b": jnp.array([-1, -2, -3, -4]),
     }
 
     got = _process_simulated_data(simulated)

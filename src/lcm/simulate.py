@@ -5,7 +5,6 @@ import jax
 import jax.numpy as jnp
 import pandas as pd
 from dags import concatenate_functions
-from pybaum import leaf_names, tree_flatten
 
 from lcm.argmax import argmax, segment_argmax
 from lcm.dispatchers import spacemap, vmap_1d
@@ -301,6 +300,13 @@ def _compute_targets(processed_results, targets, model_functions, params):
 def _process_simulated_data(results):
     """Process and flatten the simulation results.
 
+    Get dict of arrays for each var with dimension (n_periods * n_initial_states, )
+    ----------------------------------------------------------------------------------
+    The arrays are flattened, so that the resulting dictionary has a one-dimensional
+    array for each variable. The length of this array is the number of periods times the
+    number of initial states. The order of array elements is given by an outer level of
+    periods and an inner level of initial states ids.
+
     Args:
         results (list): List of dicts with simulation results. Each dict contains the
             value, choices, and states for one period.
@@ -311,31 +317,13 @@ def _process_simulated_data(results):
             n_initial_states, ).
 
     """
-    # ==================================================================================
-    # Get dict of arrays for each var with dimension (n_periods * n_initial_states, )
-    # ----------------------------------------------------------------------------------
-    # The arrays are flattened, so that the resulting dictionary has a one-dimensional
-    # array for each variable. The length of this array is the number of periods times
-    # the number of initial states. The order of array elements is given by an outer
-    # level of periods and an inner level of initial states ids.
-    # ==================================================================================
-
     list_of_dicts = [
-        dict(zip(leaf_names(vals), tree_flatten(vals)[0], strict=True))
-        for vals in results
+        {"value": d["value"], **d["choices"], **d["states"]} for d in results
     ]
     dict_of_lists = {
-        key: [d[key] for d in list_of_dicts] for key in leaf_names(results[0])
+        key: [d[key] for d in list_of_dicts] for key in list(list_of_dicts[0])
     }
-    dict_of_arrays = {
-        key: jnp.concatenate(values) for key, values in dict_of_lists.items()
-    }
-    return {
-        # remove prefixes 'choice_' and 'states_' from variable names, which are added
-        # by the leaf_names function.
-        key.removeprefix("choices_").removeprefix("states_"): val
-        for key, val in dict_of_arrays.items()
-    }
+    return {key: jnp.concatenate(values) for key, values in dict_of_lists.items()}
 
 
 def get_next_deterministic_states_function(model):
