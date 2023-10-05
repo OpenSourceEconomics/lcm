@@ -1,6 +1,7 @@
 import inspect
 from functools import partial
 
+import jax
 import jax.numpy as jnp
 import pandas as pd
 from dags import concatenate_functions
@@ -10,7 +11,6 @@ from lcm.argmax import argmax, segment_argmax
 from lcm.dispatchers import spacemap, vmap_1d
 from lcm.interfaces import Space
 from lcm.model_functions import get_multiply_weights, get_next_weights_function
-import jax
 
 
 def simulate(
@@ -46,6 +46,7 @@ def simulate(
             solved first.
         additional_targets (list): List of targets to compute. If provided, the targets
             are computed and added to the simulation results.
+        seed (int): Random number seed; will be passed to `jax.random.PRNGKey`.
 
     Returns:
         list: List of length n_periods containing the valuations, optimal choices, and
@@ -78,7 +79,7 @@ def simulate(
     )
 
     next_weights = get_next_weights_function(model)
-    
+
     stochastic_variables = model.variable_info.query("is_stochastic").index.tolist()
     multiply_weights = get_multiply_weights(
         stochastic_variables=stochastic_variables,
@@ -94,7 +95,7 @@ def simulate(
     sparse_choice_variables = model.variable_info.query("is_choice & is_sparse").index
 
     states = initial_states  # will be updated in the forward simulation
-    
+
     key = jax.random.PRNGKey(seed=seed)
 
     # Forward simulation
@@ -201,12 +202,18 @@ def simulate(
 
         weights = next_weights(**states, params=params)
         node_weights = multiply_weights(**weights)
-        
+
         key, sim_key = jax.random.split(key)
 
-        stochastic_states = _draw_stochastic_states(
-            node_weights, grids=model.grids, stochastic_variables=stochastic_variables, key=sim_key
-        )
+        if stochastic_variables:
+            stochastic_states = _draw_stochastic_states(
+                node_weights,
+                grids=model.grids,
+                stochastic_variables=stochastic_variables,
+                key=sim_key,
+            )
+        else:
+            stochastic_states = {}
 
         states = {**deterministic_states, **stochastic_states}
         states = {key.removeprefix("next_"): val for key, val in states.items()}
@@ -228,15 +235,14 @@ def simulate(
 def _draw_stochastic_states(weights, grids, stochastic_variables, key):
     def _random_choice(key, probs, labels):
         return jax.random.choice(key, labels, p=probs)
-    
-    keys = jax.random.split(key, weights.shape[0])
-    
-    random_choice = jax.vmap(_random_choice, in_axes=(0, 0, None))
-    
-    name = stochastic_variables[0]
-    
-    return {name: random_choice(keys, weights, grids[name])}
 
+    keys = jax.random.split(key, weights.shape[0])
+
+    random_choice = jax.vmap(_random_choice, in_axes=(0, 0, None))
+
+    name = stochastic_variables[0]
+
+    return {name: random_choice(keys, weights, grids[name])}
 
 
 def _as_data_frame(processed, n_periods):
@@ -305,13 +311,6 @@ def _process_simulated_data(results):
             n_initial_states, ).
 
     """
-    column_names = [
-        # remove prefixes 'choice_' and 'states_' from variable names, which are added
-        # by the leaf_names function
-        name.removeprefix("choices_").removeprefix("states_")
-        for name in leaf_names(results[0])
-    ]
-
     # ==================================================================================
     # Get dict of arrays for each var with dimension (n_periods * n_initial_states, )
     # ----------------------------------------------------------------------------------
@@ -321,13 +320,22 @@ def _process_simulated_data(results):
     # level of periods and an inner level of initial states ids.
     # ==================================================================================
 
-    # flatten the nested dictionary structure to get a list of dicts, where each dict
-    # has only array values
-    processed = [
-        dict(zip(column_names, tree_flatten(vals)[0], strict=True)) for vals in results
+    list_of_dicts = [
+        dict(zip(leaf_names(vals), tree_flatten(vals)[0], strict=True))
+        for vals in results
     ]
-    processed = {key: [d[key] for d in processed] for key in column_names}
-    return {key: jnp.concatenate(values) for key, values in processed.items()}
+    dict_of_lists = {
+        key: [d[key] for d in list_of_dicts] for key in leaf_names(results[0])
+    }
+    dict_of_arrays = {
+        key: jnp.concatenate(values) for key, values in dict_of_lists.items()
+    }
+    return {
+        # remove prefixes 'choice_' and 'states_' from variable names, which are added
+        # by the leaf_names function.
+        key.removeprefix("choices_").removeprefix("states_"): val
+        for key, val in dict_of_arrays.items()
+    }
 
 
 def get_next_deterministic_states_function(model):
