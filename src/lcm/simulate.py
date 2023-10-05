@@ -232,16 +232,15 @@ def simulate(
 
 
 def _draw_stochastic_states(weights, grids, stochastic_variables, key):
-    def _random_choice(key, probs, labels):
-        return jax.random.choice(key, labels, p=probs)
-
     keys = jax.random.split(key, weights.shape[0])
-
-    random_choice = jax.vmap(_random_choice, in_axes=(0, 0, None))
-
     name = stochastic_variables[0]
+    return {name: _random_choice(keys, weights, grids[name])}
 
-    return {name: random_choice(keys, weights, grids[name])}
+
+@partial(jax.vmap, in_axes=(0, 0, None))
+def _random_choice(key, probs, labels):
+    """Wrapper around `jax.random.choice` that is vectorized over keys and probs."""
+    return jax.random.choice(key, labels, p=probs)
 
 
 def _as_data_frame(processed, n_periods):
@@ -300,16 +299,16 @@ def _compute_targets(processed_results, targets, model_functions, params):
 def _process_simulated_data(results):
     """Process and flatten the simulation results.
 
-    Get dict of arrays for each var with dimension (n_periods * n_initial_states, )
-    ----------------------------------------------------------------------------------
-    The arrays are flattened, so that the resulting dictionary has a one-dimensional
-    array for each variable. The length of this array is the number of periods times the
-    number of initial states. The order of array elements is given by an outer level of
-    periods and an inner level of initial states ids.
+    This function produces a dict of arrays for each var with dimension (n_periods *
+    n_initial_states,). The arrays are flattened, so that the resulting dictionary has a
+    one-dimensional array for each variable. The length of this array is the number of
+    periods times the number of initial states. The order of array elements is given by
+    an outer level of periods and an inner level of initial states ids.
 
     Args:
         results (list): List of dicts with simulation results. Each dict contains the
-            value, choices, and states for one period.
+            value, choices, and states for one period. Choices and states are stored in
+            a nested dictionary.
 
     Returns:
         dict: Dict with processed simulation results. The keys are the variable names

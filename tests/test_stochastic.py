@@ -21,14 +21,13 @@ def test_get_lcm_function_with_simulate_target():
         "shocks": {"health": jnp.array([[0.3, 0.7], [0.6, 0.4]])},
     }
 
-    res = simulate_model(
+    simulate_model(
         params,
         initial_states={
             "health": jnp.array([1, 1, 0]),
             "wealth": jnp.array([10.0, 50.0, 30]),
         },
     )
-    breakpoint()
 
 
 # ======================================================================================
