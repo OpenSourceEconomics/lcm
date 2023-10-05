@@ -117,6 +117,25 @@ def get_utility_and_feasibility_function(
     return u_and_f
 
 
+def get_multiply_labels(stochastic_variables):
+    """Get multiply_weights function.
+
+    Args:
+        stochastic_variables (list): List of stochastic variables.
+
+    Returns:
+        callable
+
+    """
+
+    @with_signature(args=stochastic_variables)
+    def _outer(*args, **kwargs):
+        args = all_as_args(args, kwargs, arg_names=stochastic_variables)
+        return jnp.prod(jnp.array(args))
+
+    return productmap(_outer, variables=stochastic_variables)
+
+
 def get_multiply_weights(stochastic_variables, vmap_over_first_axis):
     """Get multiply_weights function.
 

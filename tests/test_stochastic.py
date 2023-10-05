@@ -16,6 +16,7 @@ def test_get_lcm_function_with_simulate_target():
         PARAMS,
         initial_states={
             "health": jnp.array([1, 1, 0]),
+            "partner": jnp.array([0, 0, 1]),
             "wealth": jnp.array([10.0, 50.0, 30]),
         },
     )

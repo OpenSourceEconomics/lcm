@@ -1,5 +1,6 @@
 import inspect
 from functools import partial
+from math import prod
 
 import jax
 import jax.numpy as jnp
@@ -8,8 +9,13 @@ from dags import concatenate_functions
 
 from lcm.argmax import argmax, segment_argmax
 from lcm.dispatchers import spacemap, vmap_1d
+from lcm.functools import allow_kwargs
 from lcm.interfaces import Space
-from lcm.model_functions import get_multiply_weights, get_next_weights_function
+from lcm.model_functions import (
+    get_multiply_labels,
+    get_multiply_weights,
+    get_next_weights_function,
+)
 
 
 def simulate(
@@ -84,6 +90,7 @@ def simulate(
         stochastic_variables=stochastic_variables,
         vmap_over_first_axis=True,
     )
+    get_multiply_labels(stochastic_variables=stochastic_variables)
 
     n_periods = len(vf_arr_list)
 
@@ -201,22 +208,32 @@ def simulate(
 
         if stochastic_variables:
             weights = next_weights(**states, params=params)
-            weights = {key: jnp.atleast_2d(val) for key, val in weights.items()}
             node_weights = multiply_weights(**weights)
 
             key, sim_key = jax.random.split(key)
 
+            labels = {
+                key: val
+                for key, val in model.grids.items()
+                if key in stochastic_variables
+            }
+
+            labels_dim = [len(val) for val in labels.values()]
+            labels_idx = jnp.arange(prod(labels_dim)).reshape(labels_dim)
+
             stochastic_states = _draw_stochastic_states(
                 node_weights,
-                grids=model.grids,
-                stochastic_variables=stochastic_variables,
+                labels_idx,
                 key=sim_key,
             )
+            breakpoint()
+
             states = deterministic_states | stochastic_states
         else:
             states = deterministic_states
 
-        # remove 'next_' prefix from keys (is added by next functions)
+        # 'next_' prefix is added by the next_states function, but needs to be removed
+        # because in the next period, next states are current states.
         states = {key.removeprefix("next_"): val for key, val in states.items()}
 
     processed = _process_simulated_data(_simulation_results)
@@ -233,12 +250,18 @@ def simulate(
     return _as_data_frame(processed, n_periods=n_periods)
 
 
-def _draw_stochastic_states(weights, grids, stochastic_variables, key):
-    keys = jax.random.split(key, weights.shape[0])
-    name = stochastic_variables[0]
-    return {name: _random_choice(keys, weights, grids[name])}
+def _draw_stochastic_states(weights, node_labels, key):
+    n_initial_states = len(weights)
+    keys = jax.random.split(key, n_initial_states)
+
+    w = weights.reshape(n_initial_states, -1)
+    l = node_labels.flatten()
+
+    _random_choice(keys, probs=w, labels=l)
+    breakpoint()
 
 
+@allow_kwargs
 @partial(jax.vmap, in_axes=(0, 0, None))
 def _random_choice(key, probs, labels):
     """Wrapper around `jax.random.choice` that is vectorized over keys and probs."""
