@@ -1,6 +1,5 @@
 import inspect
 from functools import partial
-from math import prod
 
 import jax
 import jax.numpy as jnp
@@ -9,13 +8,11 @@ from dags import concatenate_functions
 
 from lcm.argmax import argmax, segment_argmax
 from lcm.dispatchers import spacemap, vmap_1d
-from lcm.functools import allow_kwargs
 from lcm.interfaces import Space
 from lcm.model_functions import (
-    get_multiply_labels,
-    get_multiply_weights,
     get_next_weights_function,
 )
+from lcm.random_choice import random_choice
 
 
 def simulate(
@@ -86,11 +83,6 @@ def simulate(
     next_weights = get_next_weights_function(model)
 
     stochastic_variables = model.variable_info.query("is_stochastic").index.tolist()
-    multiply_weights = get_multiply_weights(
-        stochastic_variables=stochastic_variables,
-        vmap_over_first_axis=True,
-    )
-    get_multiply_labels(stochastic_variables=stochastic_variables)
 
     n_periods = len(vf_arr_list)
 
@@ -208,25 +200,17 @@ def simulate(
 
         if stochastic_variables:
             weights = next_weights(**states, params=params)
-            node_weights = multiply_weights(**weights)
+            weights = {k.removeprefix("weight_next_"): v for k, v in weights.items()}
 
             key, sim_key = jax.random.split(key)
 
-            labels = {
-                key: val
-                for key, val in model.grids.items()
-                if key in stochastic_variables
-            }
+            labels = {k: v for k, v in model.grids.items() if k in stochastic_variables}
 
-            labels_dim = [len(val) for val in labels.values()]
-            labels_idx = jnp.arange(prod(labels_dim)).reshape(labels_dim)
-
-            stochastic_states = _draw_stochastic_states(
-                node_weights,
-                labels_idx,
+            stochastic_states = random_choice(
                 key=sim_key,
+                probs=weights,
+                labels=labels,
             )
-            breakpoint()
 
             states = deterministic_states | stochastic_states
         else:
@@ -248,24 +232,6 @@ def simulate(
         processed = {**processed, **calculated_targets}
 
     return _as_data_frame(processed, n_periods=n_periods)
-
-
-def _draw_stochastic_states(weights, node_labels, key):
-    n_initial_states = len(weights)
-    keys = jax.random.split(key, n_initial_states)
-
-    w = weights.reshape(n_initial_states, -1)
-    l = node_labels.flatten()
-
-    _random_choice(keys, probs=w, labels=l)
-    breakpoint()
-
-
-@allow_kwargs
-@partial(jax.vmap, in_axes=(0, 0, None))
-def _random_choice(key, probs, labels):
-    """Wrapper around `jax.random.choice` that is vectorized over keys and probs."""
-    return jax.random.choice(key, labels, p=probs)
 
 
 def _as_data_frame(processed, n_periods):
