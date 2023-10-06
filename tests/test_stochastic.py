@@ -15,11 +15,12 @@ def test_get_lcm_function_with_simulate_target():
     simulate_model(
         PARAMS,
         initial_states={
-            "health": jnp.array([1, 1, 0]),
-            "partner": jnp.array([0, 0, 1]),
-            "wealth": jnp.array([10.0, 50.0, 30]),
+            "health": jnp.array([1, 1, 0, 0]),
+            "partner": jnp.array([0, 0, 1, 0]),
+            "wealth": jnp.array([10.0, 50.0, 30, 80.0]),
         },
     )
+    breakpoint()
 
 
 # ======================================================================================

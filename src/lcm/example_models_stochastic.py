@@ -67,7 +67,7 @@ PARAMS = {
     "next_health": {},
     "consumption_constraint": {},
     "shocks": {
-        "health": jnp.array([[0.7, 0.3], [0.2, 0.8]]),
-        "partner": jnp.array([[0.7, 0.3], [0.2, 0.8]]),
+        "health": jnp.array([[0.5, 0.5], [0.5, 0.5]]),
+        "partner": jnp.array([[0.5, 0.5], [0.5, 0.5]]),
     },
 }

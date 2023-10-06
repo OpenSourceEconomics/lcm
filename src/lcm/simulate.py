@@ -9,9 +9,6 @@ from dags import concatenate_functions
 from lcm.argmax import argmax, segment_argmax
 from lcm.dispatchers import spacemap, vmap_1d
 from lcm.interfaces import Space
-from lcm.model_functions import (
-    get_next_weights_function,
-)
 from lcm.random_choice import random_choice
 
 
@@ -74,15 +71,7 @@ def simulate(
 
     # Preparations
     # ==================================================================================
-    next_deterministic_states = get_next_deterministic_states_function(model)
-    next_deterministic_states = partial(
-        next_deterministic_states,
-        params=params,
-    )
-
-    next_weights = get_next_weights_function(model)
-
-    stochastic_variables = model.variable_info.query("is_stochastic").index.tolist()
+    next_states = get_next_states_function(model)
 
     n_periods = len(vf_arr_list)
 
@@ -196,26 +185,11 @@ def simulate(
 
         # Update states
         # ==============================================================================
-        deterministic_states = next_deterministic_states(**choices, **states)
+        stochastic_variables = model.function_info.query("is_stochastic_next").index
+        keys = jax.random.split(key, num=len(stochastic_variables))
+        keys = dict(zip(stochastic_variables, keys))
 
-        if stochastic_variables:
-            weights = next_weights(**states, params=params)
-            weights = {k.removeprefix("weight_next_"): v for k, v in weights.items()}
-
-            key, sim_key = jax.random.split(key)
-
-            labels = {k: v for k, v in model.grids.items() if k in stochastic_variables}
-
-            stochastic_states = random_choice(
-                key=sim_key,
-                probs=weights,
-                labels=labels,
-            )
-
-            states = deterministic_states | stochastic_states
-        else:
-            states = deterministic_states
-
+        states = next_states(**states, **choices, params=params, key=keys)
         # 'next_' prefix is added by the next_states function, but needs to be removed
         # because in the next period, next states are current states.
         states = {key.removeprefix("next_"): val for key, val in states.items()}
@@ -232,6 +206,11 @@ def simulate(
         processed = {**processed, **calculated_targets}
 
     return _as_data_frame(processed, n_periods=n_periods)
+
+
+# ======================================================================================
+# Output processing
+# ======================================================================================
 
 
 def _as_data_frame(processed, n_periods):
@@ -316,27 +295,68 @@ def _process_simulated_data(results):
     return {key: jnp.concatenate(values) for key, values in dict_of_lists.items()}
 
 
-def get_next_deterministic_states_function(model):
-    """Get function that returns the deterministic next states.
+# ======================================================================================
+# Next states
+# ======================================================================================
 
-    Args:
-        model (Model): Model instance.
+from dags.signature import with_signature
 
-    Returns:
-        tuple: Tuple of functions. First function returns the non-stochastic next
-            states, second function returns the stochastic next states.
+from lcm.functools import all_as_args
 
-    """
+
+def get_stochastic_next_func(name, model):
+    @with_signature(args=["key", "model", f"weight_{name}"])
+    def _next_stochastic_state(*args, **kwargs):
+        args = all_as_args(args, kwargs, arg_names=["key", "model", f"weight_{name}"])
+        key, model, weight = args
+        labels = {name: model.grids[name.removeprefix("next_")]}
+        return random_choice(
+            key=key[name],
+            probs={name: weight},
+            labels=labels,
+        )[name]
+
+    return partial(_next_stochastic_state, model=model)
+
+
+def get_next_states_function(model):
+    targets = model.function_info.query("is_next").index.tolist()
+
     deterministic_targets = model.function_info.query(
         "is_next & ~is_stochastic_next",
     ).index
 
+    stochastic_targets = model.function_info.query(
+        "is_next & is_stochastic_next",
+    ).index
+
+    stochastic_next_functions = {
+        name: get_stochastic_next_func(name, model) for name in stochastic_targets
+    }
+
+    stochastic_weight_targets = [
+        f"weight_{name}"
+        for name in model.function_info.query("is_stochastic_next").index.tolist()
+    ]
+
+    functions_dict = {
+        name: f
+        for name, f in model.functions.items()
+        if name in deterministic_targets or name in stochastic_weight_targets
+    }
+    functions_dict = functions_dict | stochastic_next_functions
+
     return concatenate_functions(
-        functions=model.functions,
-        targets=deterministic_targets,
+        functions=functions_dict,
+        targets=targets,
         return_type="dict",
         enforce_signature=False,
     )
+
+
+# ======================================================================================
+# Filter policy
+# ======================================================================================
 
 
 @partial(vmap_1d, variables=["ccv_policy", "dense_argmax"])
@@ -363,6 +383,11 @@ def filter_ccv_policy(
         indices = jnp.unravel_index(dense_argmax, shape=dense_vars_grid_shape)
         out = ccv_policy[indices]
     return out
+
+
+# ======================================================================================
+# Non-sparse choices
+# ======================================================================================
 
 
 def retrieve_non_sparse_choices(indices, grids, grid_shape):
