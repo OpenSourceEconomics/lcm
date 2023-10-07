@@ -187,7 +187,10 @@ def simulate(
 
         # Update states
         # ==============================================================================
-        key, sim_keys = _generate_simulation_keys(key, model=model)
+        key, sim_keys = _generate_simulation_keys(
+            key=key,
+            ids=model.function_info.query("is_stochastic_next").index,
+        )
 
         states = next_states(**states, **choices, params=params, keys=sim_keys)
 
@@ -333,7 +336,8 @@ def get_next_states_function(model):
     # weights and simulates the next state.
     # ==================================================================================
     stochastic_next = {
-        name: get_stochastic_next_func(name, model) for name in stochastic_targets
+        name: _get_stochastic_next_func(name, grids=model.grids)
+        for name in stochastic_targets
     }
 
     stochastic_weights_names = [
@@ -358,12 +362,12 @@ def get_next_states_function(model):
     )
 
 
-def get_stochastic_next_func(name, model):
+def _get_stochastic_next_func(name, grids):
     """Get function that simulates the next state of a stochastic variable.
 
     Args:
         name (str): Name of the stochastic variable.
-        model (Model): Model instance.
+        grids (dict): Dict with grids.
 
     Returns:
         callable: Function that simulates the next state of the stochastic variable.
@@ -376,7 +380,7 @@ def get_stochastic_next_func(name, model):
 
     """
     arg_names = ["keys", f"weight_{name}"]
-    labels = model.grids[name.removeprefix("next_")]
+    labels = grids[name.removeprefix("next_")]
 
     @with_signature(args=arg_names)
     def _next_stochastic_state(*args, **kwargs):
@@ -390,24 +394,22 @@ def get_stochastic_next_func(name, model):
     return _next_stochastic_state
 
 
-def _generate_simulation_keys(key, model):
+def _generate_simulation_keys(key, ids):
     """Generate PRNG keys for simulation.
 
     Args:
         key (jax.random.PRNGKey): PRNG key.
-        model (Model): Model instance.
+        ids (list): List of names for which a key is to be generated.
 
     Returns:
         jax.random.PRNGKey: Updated PRNG key.
-        dict: Dict with PRNG keys for each stochastic variable in model.
+        dict: Dict with PRNG keys for each id in ids.
 
     """
-    stochastic_variables = model.function_info.query("is_stochastic_next").index
-
-    keys = jax.random.split(key, num=len(stochastic_variables) + 1)
+    keys = jax.random.split(key, num=len(ids) + 1)
 
     key = keys[0]
-    simulation_keys = dict(zip(stochastic_variables, keys[1:], strict=True))
+    simulation_keys = dict(zip(ids, keys[1:], strict=True))
 
     return key, simulation_keys
 
