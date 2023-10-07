@@ -20,7 +20,6 @@ def test_get_lcm_function_with_simulate_target():
             "wealth": jnp.array([10.0, 50.0, 30, 80.0]),
         },
     )
-    breakpoint()
 
 
 # ======================================================================================

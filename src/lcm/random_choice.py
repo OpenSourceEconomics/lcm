@@ -4,31 +4,10 @@ import jax
 
 
 def random_choice(key, probs, labels):
-    """Draw random choice from n-dimensional array.
-
-    Args:
-        key (jax.random.PRNGKey): Random key.
-        probs (dict): Dictionary of probabilities. Probabilities are assumed to be
-            2d arrays with the first dimension corresponding simulation units.
-        labels (dict): Dictionary of labels. Labels are assumed to be 1d arrays.
-
-    Returns:
-        dict: Choice of label, for each simulation unit.
-
-    """
-    var_names = list(probs)
-    keys = jax.random.split(key, len(var_names))
-    return {
-        name: _random_choice(key, probs[name], labels[name])
-        for name, key in zip(var_names, keys, strict=True)
-    }
-
-
-def _random_choice(key, probs, labels):
     """Draw multiple random choices.
 
     Args:
-        key (jax.random.PRNGKey): Random key.
+        key (jax.random.PRNGKey): Random keys. One for each simulation unit.
         probs (jax.numpy.array): 2d array of probabilities. Second dimension must be
             the same length as the first dimension of labels.
         labels (jax.numpy.array): 1d array of labels.

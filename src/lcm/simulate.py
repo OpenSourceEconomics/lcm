@@ -5,9 +5,11 @@ import jax
 import jax.numpy as jnp
 import pandas as pd
 from dags import concatenate_functions
+from dags.signature import with_signature
 
 from lcm.argmax import argmax, segment_argmax
 from lcm.dispatchers import spacemap, vmap_1d
+from lcm.functools import all_as_args
 from lcm.interfaces import Space
 from lcm.random_choice import random_choice
 
@@ -81,8 +83,8 @@ def simulate(
 
     sparse_choice_variables = model.variable_info.query("is_choice & is_sparse").index
 
-    states = initial_states  # will be updated in the forward simulation
-
+    # The following variables are updated during the forward simulation
+    states = initial_states
     key = jax.random.PRNGKey(seed=seed)
 
     # Forward simulation
@@ -185,11 +187,10 @@ def simulate(
 
         # Update states
         # ==============================================================================
-        stochastic_variables = model.function_info.query("is_stochastic_next").index
-        keys = jax.random.split(key, num=len(stochastic_variables))
-        keys = dict(zip(stochastic_variables, keys))
+        key, sim_keys = _generate_simulation_keys(key, model=model)
 
-        states = next_states(**states, **choices, params=params, key=keys)
+        states = next_states(**states, **choices, params=params, key=sim_keys)
+
         # 'next_' prefix is added by the next_states function, but needs to be removed
         # because in the next period, next states are current states.
         states = {key.removeprefix("next_"): val for key, val in states.items()}
@@ -299,27 +300,23 @@ def _process_simulated_data(results):
 # Next states
 # ======================================================================================
 
-from dags.signature import with_signature
-
-from lcm.functools import all_as_args
-
-
-def get_stochastic_next_func(name, model):
-    @with_signature(args=["key", "model", f"weight_{name}"])
-    def _next_stochastic_state(*args, **kwargs):
-        args = all_as_args(args, kwargs, arg_names=["key", "model", f"weight_{name}"])
-        key, model, weight = args
-        labels = {name: model.grids[name.removeprefix("next_")]}
-        return random_choice(
-            key=key[name],
-            probs={name: weight},
-            labels=labels,
-        )[name]
-
-    return partial(_next_stochastic_state, model=model)
-
 
 def get_next_states_function(model):
+    """Get function that computes the next states for the simulation.
+
+    Args:
+        model (Model): Model instance.
+
+    Returns:
+        callable: Function that computes the next states. Depends on states and choices
+            of the current period, and the model parameters. Additionaly, it depends on:
+            - key (dict): Dictionary with PRNG keys. Keys are the names of stochastic
+                next functions, e.g. 'next_health'.
+
+    """
+    # ==================================================================================
+    # Get targets
+    # ==================================================================================
     targets = model.function_info.query("is_next").index.tolist()
 
     deterministic_targets = model.function_info.query(
@@ -330,21 +327,36 @@ def get_next_states_function(model):
         "is_next & is_stochastic_next",
     ).index
 
-    stochastic_next_functions = {
+    # ==================================================================================
+    # Handle deterministic next states functions
+    # ==================================================================================
+    deterministic_next = {
+        name: f for name, f in model.functions.items() if name in deterministic_targets
+    }
+
+    # ==================================================================================
+    # Handle stochastic next states functions
+    # ----------------------------------------------------------------------------------
+    # We generate stochastic next states functions that simulate the next state given
+    # a PRNG key and the weights of the stochastic variable. The corresponding weights
+    # are computed using the stochastic weight functions, which we add the to functions
+    # dict. `dags.concatenate_functions` then generates a function that computes the
+    # weights and simulates the next state.
+    # ==================================================================================
+    stochastic_next = {
         name: get_stochastic_next_func(name, model) for name in stochastic_targets
     }
 
-    stochastic_weight_targets = [
+    stochastic_weights_names = [
         f"weight_{name}"
         for name in model.function_info.query("is_stochastic_next").index.tolist()
     ]
 
-    functions_dict = {
-        name: f
-        for name, f in model.functions.items()
-        if name in deterministic_targets or name in stochastic_weight_targets
+    stochastic_weights = {
+        name: model.functions[name] for name in stochastic_weights_names
     }
-    functions_dict = functions_dict | stochastic_next_functions
+
+    functions_dict = deterministic_next | stochastic_next | stochastic_weights
 
     return concatenate_functions(
         functions=functions_dict,
@@ -352,6 +364,60 @@ def get_next_states_function(model):
         return_type="dict",
         enforce_signature=False,
     )
+
+
+def get_stochastic_next_func(name, model):
+    """Get function that simulates the next state of a stochastic variable.
+
+    Args:
+        name (str): Name of the stochastic variable.
+        model (Model): Model instance.
+
+    Returns:
+        callable: Function that simulates the next state of the stochastic variable.
+            Depends on variables:
+            - key (dict): Dictionary with PRNG keys. Keys are the names of stochastic
+                next functions, e.g. 'next_health'.
+            - weight_{name} (jax.numpy.array): 2d array of weights. The first dimension
+                corresponds to the number of simulation units. The second dimension
+                corresponds to the number of grid points (labels).
+
+    """
+    arg_names = ["key", f"weight_{name}"]
+    labels = model.grids[name.removeprefix("next_")]
+
+    @with_signature(args=arg_names)
+    def _next_stochastic_state(*args, **kwargs):
+        key, weights = all_as_args(args, kwargs, arg_names=arg_names)
+        return random_choice(
+            key=key[name],
+            probs=weights,
+            labels=labels,
+        )
+
+    return _next_stochastic_state
+
+
+def _generate_simulation_keys(key, model):
+    """Generate PRNG keys for simulation.
+
+    Args:
+        key (jax.random.PRNGKey): PRNG key.
+        model (Model): Model instance.
+
+    Returns:
+        jax.random.PRNGKey: Updated PRNG key.
+        dict: Dict with PRNG keys for each stochastic variable in model.
+
+    """
+    stochastic_variables = model.function_info.query("is_stochastic_next").index
+
+    keys = jax.random.split(key, num=len(stochastic_variables) + 1)
+
+    key = keys[0]
+    simulation_keys = dict(zip(stochastic_variables, keys[1:], strict=True))
+
+    return key, simulation_keys
 
 
 # ======================================================================================
