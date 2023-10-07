@@ -319,20 +319,9 @@ def get_next_states_function(model):
     # ==================================================================================
     targets = model.function_info.query("is_next").index.tolist()
 
-    deterministic_targets = model.function_info.query(
-        "is_next & ~is_stochastic_next",
-    ).index
-
     stochastic_targets = model.function_info.query(
         "is_next & is_stochastic_next",
     ).index
-
-    # ==================================================================================
-    # Handle deterministic next states functions
-    # ==================================================================================
-    deterministic_next = {
-        name: f for name, f in model.functions.items() if name in deterministic_targets
-    }
 
     # ==================================================================================
     # Handle stochastic next states functions
@@ -356,7 +345,10 @@ def get_next_states_function(model):
         name: model.functions[name] for name in stochastic_weights_names
     }
 
-    functions_dict = deterministic_next | stochastic_next | stochastic_weights
+    # ==================================================================================
+    # Overwrite model.functions with generated stochastic next states functions
+    # ==================================================================================
+    functions_dict = model.functions | stochastic_next | stochastic_weights
 
     return concatenate_functions(
         functions=functions_dict,
