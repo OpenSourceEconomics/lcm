@@ -16,12 +16,12 @@ def next_wealth(wealth, consumption, working, wage, interest_rate):
 
 
 @lcm.mark.stochastic
-def next_health(health):  # noqa: ARG001
+def next_health(health, partner):  # noqa: ARG001
     pass
 
 
 @lcm.mark.stochastic
-def next_partner(partner):
+def next_partner(partner):  # noqa: ARG001
     pass
 
 
@@ -67,7 +67,7 @@ PARAMS = {
     "next_health": {},
     "consumption_constraint": {},
     "shocks": {
-        "health": jnp.array([[0.5, 0.5], [0.5, 0.5]]),
+        "health": jnp.array([[[0.5, 0.5], [0.5, 0.5]], [[0.5, 0.5], [0.5, 0.5]]]),
         "partner": jnp.array([[0.5, 0.5], [0.5, 0.5]]),
     },
 }
