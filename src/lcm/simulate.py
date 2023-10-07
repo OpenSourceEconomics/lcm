@@ -189,11 +189,11 @@ def simulate(
         # ==============================================================================
         key, sim_keys = _generate_simulation_keys(key, model=model)
 
-        states = next_states(**states, **choices, params=params, key=sim_keys)
+        states = next_states(**states, **choices, params=params, keys=sim_keys)
 
         # 'next_' prefix is added by the next_states function, but needs to be removed
         # because in the next period, next states are current states.
-        states = {key.removeprefix("next_"): val for key, val in states.items()}
+        states = {k.removeprefix("next_"): v for k, v in states.items()}
 
     processed = _process_simulated_data(_simulation_results)
 
@@ -375,14 +375,14 @@ def get_stochastic_next_func(name, model):
                 corresponds to the number of grid points (labels).
 
     """
-    arg_names = ["key", f"weight_{name}"]
+    arg_names = ["keys", f"weight_{name}"]
     labels = model.grids[name.removeprefix("next_")]
 
     @with_signature(args=arg_names)
     def _next_stochastic_state(*args, **kwargs):
-        key, weights = all_as_args(args, kwargs, arg_names=arg_names)
+        keys, weights = all_as_args(args, kwargs, arg_names=arg_names)
         return random_choice(
-            key=key[name],
+            key=keys[name],
             probs=weights,
             labels=labels,
         )

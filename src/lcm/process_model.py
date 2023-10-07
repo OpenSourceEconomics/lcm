@@ -409,9 +409,7 @@ def _get_stochastic_weight_function(raw_func, name, variable_info, grids):
     @with_signature(args=new_kwargs)
     def weight_func(*args, **kwargs):
         args = all_as_args(args, kwargs, arg_names=new_kwargs)
-
-        # by definition of new_kwargs the last argument is params
-        params = args[-1]
+        params = args[-1]  # by definition of new_kargs, params is the last argument
 
         indices = [
             label_translators[arg_name](arg)

@@ -114,7 +114,7 @@ def test_get_next_state_function():
 def test_get_multiply_weights():
     multiply_weights = get_multiply_weights(
         stochastic_variables=["a", "b"],
-        vmap_over_first_axis=False,
+        vmap_over_all_args=False,
     )
 
     a = jnp.array([1, 2])
@@ -128,7 +128,7 @@ def test_get_multiply_weights():
 def test_get_multiply_weights_vmapped():
     multiply_weights = get_multiply_weights(
         stochastic_variables=["a", "b"],
-        vmap_over_first_axis=True,
+        vmap_over_all_args=True,
     )
 
     a = jnp.array([[1, 2], [1, 2]])

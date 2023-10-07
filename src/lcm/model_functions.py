@@ -51,7 +51,7 @@ def get_utility_and_feasibility_function(
 
         multiply_weights = get_multiply_weights(
             stochastic_variables,
-            vmap_over_first_axis=False,
+            vmap_over_all_args=False,
         )
 
         relevant_functions = [
@@ -117,34 +117,14 @@ def get_utility_and_feasibility_function(
     return u_and_f
 
 
-def get_multiply_labels(stochastic_variables):
+def get_multiply_weights(stochastic_variables, vmap_over_all_args):
     """Get multiply_weights function.
 
     Args:
         stochastic_variables (list): List of stochastic variables.
-
-    Returns:
-        callable
-
-    """
-
-    @with_signature(args=stochastic_variables)
-    def _outer(*args, **kwargs):
-        args = all_as_args(args, kwargs, arg_names=stochastic_variables)
-        return jnp.prod(jnp.array(args))
-
-    return productmap(_outer, variables=stochastic_variables)
-
-
-def get_multiply_weights(stochastic_variables, vmap_over_first_axis):
-    """Get multiply_weights function.
-
-    Args:
-        stochastic_variables (list): List of stochastic variables.
-        vmap_over_first_axis (bool): Whether to vmap over the first axis of the inputs.
-            This is useful when the inputs have an additional batch dimension, for
-            example as in the simulation, where this dimension corresponds to the
-            simulation units.
+        vmap_over_all_args (bool): Whether to vmap over the inputs. This is useful when
+            the inputs have an additional batch dimension, for example as in the
+            simulation, where this dimension corresponds to the simulation units.
 
     Returns:
         callable
@@ -159,7 +139,7 @@ def get_multiply_weights(stochastic_variables, vmap_over_first_axis):
 
     outer = productmap(_outer, variables=arg_names)
 
-    if vmap_over_first_axis:
+    if vmap_over_all_args:
         outer = vmap(outer, in_axes=[0] * len(arg_names))
         outer = allow_kwargs(outer)
 
