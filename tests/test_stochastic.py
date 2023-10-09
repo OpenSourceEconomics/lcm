@@ -36,7 +36,7 @@ def test_get_lcm_function_with_solve_target():
 
 
 # ======================================================================================
-# End-to-End: Solve and simulate -- Comparison with deterministic results
+# Comparison with deterministic results
 # ======================================================================================
 
 
@@ -138,12 +138,12 @@ def test_compare_deterministic_and_stochastic_results(model_and_params):
     }
 
     simulation_deterministic = simulate_model_deterministic(
-        PARAMS,
+        params,
         vf_arr_list=solution_deterministic,
         initial_states=initial_states,
     )
     simulation_stochastic = simulate_model_stochastic(
-        PARAMS,
+        params,
         vf_arr_list=solution_stochastic,
         initial_states=initial_states,
     )
