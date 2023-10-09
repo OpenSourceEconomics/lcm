@@ -1,10 +1,10 @@
 import inspect
 from functools import partial
 
+import jax
 import jax.numpy as jnp
 import pandas as pd
 from dags import concatenate_functions
-from pybaum import leaf_names, tree_flatten
 
 from lcm.argmax import argmax, segment_argmax
 from lcm.dispatchers import spacemap, vmap_1d
@@ -22,6 +22,7 @@ def simulate(
     solve_model=None,
     vf_arr_list=None,
     additional_targets=None,
+    seed=12345,
 ):
     """Simulate the model forward in time.
 
@@ -34,9 +35,10 @@ def simulate(
         compute_ccv_policy_functions (list): List of functions of length n_periods. Each
             function computes the conditional continuation value dependent on the
             discrete choices.
-        model (Model): Model instance.
         next_state (callable): Function that returns the next state given the current
-            state and choice variables.
+            state and choice variables. For stochastic variables, it returns a random
+            draw from the distribution of the next state.
+        model (Model): Model instance.
         initial_states (list): List of initial states to start from. Typically from the
             observed dataset.
         solve_model (callable): Function that solves the model. Is only required if
@@ -46,6 +48,7 @@ def simulate(
             solved first.
         additional_targets (list): List of targets to compute. If provided, the targets
             are computed and added to the simulation results.
+        seed (int): Random number seed; will be passed to `jax.random.PRNGKey`.
 
     Returns:
         list: List of length n_periods containing the valuations, optimal choices, and
@@ -71,8 +74,6 @@ def simulate(
 
     # Preparations
     # ==================================================================================
-    next_state = partial(next_state, params=params)
-
     n_periods = len(vf_arr_list)
 
     _discrete_policy_calculator = get_discrete_policy_calculator(
@@ -81,7 +82,9 @@ def simulate(
 
     sparse_choice_variables = model.variable_info.query("is_choice & is_sparse").index
 
-    states = initial_states  # will be updated in the forward simulation
+    # The following variables are updated during the forward simulation
+    states = initial_states
+    key = jax.random.PRNGKey(seed=seed)
 
     # Forward simulation
     # ==================================================================================
@@ -183,8 +186,16 @@ def simulate(
 
         # Update states
         # ==============================================================================
-        states = next_state(**choices, **states)
-        states = {key.removeprefix("next_"): val for key, val in states.items()}
+        key, sim_keys = _generate_simulation_keys(
+            key=key,
+            ids=model.function_info.query("is_stochastic_next").index,
+        )
+
+        states = next_state(**states, **choices, params=params, keys=sim_keys)
+
+        # 'next_' prefix is added by the next_state function, but needs to be removed
+        # because in the next period, next states are current states.
+        states = {k.removeprefix("next_"): v for k, v in states.items()}
 
     processed = _process_simulated_data(_simulation_results)
 
@@ -198,6 +209,11 @@ def simulate(
         processed = {**processed, **calculated_targets}
 
     return _as_data_frame(processed, n_periods=n_periods)
+
+
+# ======================================================================================
+# Output processing
+# ======================================================================================
 
 
 def _as_data_frame(processed, n_periods):
@@ -256,9 +272,16 @@ def _compute_targets(processed_results, targets, model_functions, params):
 def _process_simulated_data(results):
     """Process and flatten the simulation results.
 
+    This function produces a dict of arrays for each var with dimension (n_periods *
+    n_initial_states,). The arrays are flattened, so that the resulting dictionary has a
+    one-dimensional array for each variable. The length of this array is the number of
+    periods times the number of initial states. The order of array elements is given by
+    an outer level of periods and an inner level of initial states ids.
+
     Args:
         results (list): List of dicts with simulation results. Each dict contains the
-            value, choices, and states for one period.
+            value, choices, and states for one period. Choices and states are stored in
+            a nested dictionary.
 
     Returns:
         dict: Dict with processed simulation results. The keys are the variable names
@@ -266,29 +289,43 @@ def _process_simulated_data(results):
             n_initial_states, ).
 
     """
-    column_names = [
-        # remove prefixes 'choice_' and 'states_' from variable names, which are added
-        # by the leaf_names function
-        name.removeprefix("choices_").removeprefix("states_")
-        for name in leaf_names(results[0])
+    list_of_dicts = [
+        {"value": d["value"], **d["choices"], **d["states"]} for d in results
     ]
+    dict_of_lists = {
+        key: [d[key] for d in list_of_dicts] for key in list(list_of_dicts[0])
+    }
+    return {key: jnp.concatenate(values) for key, values in dict_of_lists.items()}
 
-    # ==================================================================================
-    # Get dict of arrays for each var with dimension (n_periods * n_initial_states, )
-    # ----------------------------------------------------------------------------------
-    # The arrays are flattened, so that the resulting dictionary has a one-dimensional
-    # array for each variable. The length of this array is the number of periods times
-    # the number of initial states. The order of array elements is given by an outer
-    # level of periods and an inner level of initial states ids.
-    # ==================================================================================
 
-    # flatten the nested dictionary structure to get a list of dicts, where each dict
-    # has only array values
-    processed = [
-        dict(zip(column_names, tree_flatten(vals)[0], strict=True)) for vals in results
-    ]
-    processed = {key: [d[key] for d in processed] for key in column_names}
-    return {key: jnp.concatenate(values) for key, values in processed.items()}
+# ======================================================================================
+# Simulation keys
+# ======================================================================================
+
+
+def _generate_simulation_keys(key, ids):
+    """Generate PRNG keys for simulation.
+
+    Args:
+        key (jax.random.PRNGKey): PRNG key.
+        ids (list): List of names for which a key is to be generated.
+
+    Returns:
+        jax.random.PRNGKey: Updated PRNG key.
+        dict: Dict with PRNG keys for each id in ids.
+
+    """
+    keys = jax.random.split(key, num=len(ids) + 1)
+
+    key = keys[0]
+    simulation_keys = dict(zip(ids, keys[1:], strict=True))
+
+    return key, simulation_keys
+
+
+# ======================================================================================
+# Filter policy
+# ======================================================================================
 
 
 @partial(vmap_1d, variables=["ccv_policy", "dense_argmax"])
@@ -315,6 +352,11 @@ def filter_ccv_policy(
         indices = jnp.unravel_index(dense_argmax, shape=dense_vars_grid_shape)
         out = ccv_policy[indices]
     return out
+
+
+# ======================================================================================
+# Non-sparse choices
+# ======================================================================================
 
 
 def retrieve_non_sparse_choices(indices, grids, grid_shape):
@@ -390,9 +432,12 @@ def create_data_scs(
     state_names = set(vi.query("is_state").index)
 
     if state_names != set(states.keys()):
+        missing = state_names - set(states.keys())
+        too_many = set(states.keys()) - state_names
         raise ValueError(
             "You need to provide an initial value for each state variable in the model."
-            f" Missing initial states: {state_names - set(states.keys())}",
+            f"\n\nMissing initial states: {missing}\n",
+            f"Provided variables that are not states: {too_many}",
         )
 
     # get sparse and dense choices

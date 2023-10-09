@@ -5,7 +5,6 @@ from jax import random
 from lcm.entry_point import (
     create_compute_conditional_continuation_policy,
     get_lcm_function,
-    get_next_state_function,
 )
 from lcm.example_models import (
     N_CHOICE_GRID_POINTS,
@@ -13,8 +12,13 @@ from lcm.example_models import (
     PHELPS_DEATON_WITH_FILTERS,
 )
 from lcm.model_functions import get_utility_and_feasibility_function
+from lcm.next_state import _get_next_state_function_simulation
 from lcm.process_model import process_model
 from lcm.simulate import (
+    _as_data_frame,
+    _compute_targets,
+    _generate_simulation_keys,
+    _process_simulated_data,
     _retrieve_non_sparse_choices,
     create_choice_segments,
     create_data_scs,
@@ -25,6 +29,7 @@ from lcm.simulate import (
 )
 from lcm.state_space import create_state_choice_space
 from numpy.testing import assert_array_almost_equal, assert_array_equal
+from pybaum import tree_equal
 
 # ======================================================================================
 # Test simulate using raw inputs
@@ -43,7 +48,6 @@ def simulate_inputs():
         jit_filter=False,
     )
 
-    next_state = get_next_state_function(model)
     u_and_f = get_utility_and_feasibility_function(
         model=model,
         space_info=space_info,
@@ -66,7 +70,7 @@ def simulate_inputs():
         ],
         "compute_ccv_policy_functions": compute_ccv_policy_functions,
         "model": model,
-        "next_state": next_state,
+        "next_state": _get_next_state_function_simulation(model),
     }
 
 
@@ -277,6 +281,91 @@ def test_effect_of_delta():
 # ======================================================================================
 # Helper functions
 # ======================================================================================
+
+
+def test_generate_simulation_keys():
+    key = jnp.arange(2, dtype="uint32")  # PRNG dtype
+    stochastic_next_functions = ["a", "b"]
+    got = _generate_simulation_keys(key, stochastic_next_functions)
+    # assert that all generated keys are different from each other
+    matrix = jnp.array([key, got[0], got[1]["a"], got[1]["b"]])
+    assert jnp.linalg.matrix_rank(matrix) == 2
+
+
+def test_as_data_frame():
+    processed = {
+        "value": -6 + jnp.arange(6),
+        "a": jnp.arange(6),
+        "b": 6 + jnp.arange(6),
+    }
+    got = _as_data_frame(processed, n_periods=2)
+    expected = pd.DataFrame(
+        {
+            "period": [0, 0, 0, 1, 1, 1],
+            "initial_state_id": [0, 1, 2, 0, 1, 2],
+            **processed,
+        },
+    ).set_index(["period", "initial_state_id"])
+    pd.testing.assert_frame_equal(got, expected)
+
+
+def test_compute_targets():
+    processed_results = {
+        "a": jnp.arange(3),
+        "b": 1 + jnp.arange(3),
+        "c": 2 + jnp.arange(3),
+    }
+
+    def f_a(a, params):
+        return a + params["delta"]
+
+    def f_b(b, params):  # noqa: ARG001
+        return b
+
+    model_functions = {"fa": f_a, "fb": f_b, "fc": lambda _: None}
+
+    got = _compute_targets(
+        processed_results=processed_results,
+        targets=["fa", "fb"],
+        model_functions=model_functions,
+        params={"delta": -1.0},
+    )
+    expected = {
+        "fa": jnp.arange(3) - 1.0,
+        "fb": 1 + jnp.arange(3),
+    }
+    assert tree_equal(expected, got)
+
+
+def test_process_simulated_data():
+    simulated = [
+        {
+            "value": jnp.array([0.1, 0.2]),
+            "states": {"a": jnp.array([1, 2]), "b": jnp.array([-1, -2])},
+            "choices": {"c": jnp.array([5, 6]), "d": jnp.array([-5, -6])},
+        },
+        {
+            "value": jnp.array([0.3, 0.4]),
+            "states": {
+                "b": jnp.array([-3, -4]),
+                "a": jnp.array([3, 4]),
+            },
+            "choices": {
+                "d": jnp.array([-7, -8]),
+                "c": jnp.array([7, 8]),
+            },
+        },
+    ]
+    expected = {
+        "value": jnp.array([0.1, 0.2, 0.3, 0.4]),
+        "c": jnp.array([5, 6, 7, 8]),
+        "d": jnp.array([-5, -6, -7, -8]),
+        "a": jnp.array([1, 2, 3, 4]),
+        "b": jnp.array([-1, -2, -3, -4]),
+    }
+
+    got = _process_simulated_data(simulated)
+    assert tree_equal(expected, got)
 
 
 def test_retrieve_non_sparse_choices():

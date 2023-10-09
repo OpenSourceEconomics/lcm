@@ -4,7 +4,6 @@ from lcm.entry_point import (
     create_compute_conditional_continuation_policy,
     create_compute_conditional_continuation_value,
     get_lcm_function,
-    get_next_state_function,
 )
 from lcm.example_models import (
     PHELPS_DEATON,
@@ -213,28 +212,3 @@ def test_create_compute_conditional_continuation_policy():
     )
     assert policy == 2
     assert val == phelps_deaton_utility(consumption=30.0, working=0, delta=1.0)
-
-
-# ======================================================================================
-# Next state
-# ======================================================================================
-
-
-def test_get_next_state_function():
-    model = process_model(PHELPS_DEATON)
-    next_state = get_next_state_function(model)
-
-    params = {
-        "beta": 1.0,
-        "utility": {"delta": 1.0},
-        "next_wealth": {
-            "interest_rate": 0.05,
-            "wage": 1.0,
-        },
-    }
-
-    choice = {"retirement": 1, "consumption": 10}
-    state = {"wealth": 20}
-
-    _next_state = next_state(**choice, **state, params=params)
-    assert _next_state == {"next_wealth": 1.05 * (20 - 10)}

@@ -4,6 +4,7 @@ from lcm.example_models import PHELPS_DEATON, phelps_deaton_utility
 from lcm.interfaces import Model
 from lcm.model_functions import (
     get_combined_constraint,
+    get_multiply_weights,
     get_utility_and_feasibility_function,
 )
 from lcm.process_model import process_model
@@ -87,3 +88,16 @@ def test_get_utility_and_feasibility_function():
         ),
     )
     assert_array_equal(f, jnp.array([True, True, False]))
+
+
+def test_get_multiply_weights():
+    multiply_weights = get_multiply_weights(
+        stochastic_variables=["a", "b"],
+    )
+
+    a = jnp.array([1, 2])
+    b = jnp.array([3, 4])
+
+    got = multiply_weights(a, b)
+    expected = jnp.array([[3, 4], [6, 8]])
+    assert_array_equal(got, expected)

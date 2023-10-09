@@ -6,7 +6,12 @@ from dags.signature import with_signature
 
 from lcm.dispatchers import productmap
 from lcm.function_evaluator import get_function_evaluator
-from lcm.functools import all_as_args, all_as_kwargs, get_union_of_arguments
+from lcm.functools import (
+    all_as_args,
+    all_as_kwargs,
+    get_union_of_arguments,
+)
+from lcm.next_state import get_next_state_function
 
 
 def get_utility_and_feasibility_function(
@@ -32,7 +37,7 @@ def get_utility_and_feasibility_function(
         relevant_functions = [current_u_and_f]
 
     else:
-        next_states = get_next_states_function(model)
+        next_state = get_next_state_function(model, target="solve")
         next_weights = get_next_weights_function(model)
 
         scalar_value_function = get_function_evaluator(
@@ -47,7 +52,7 @@ def get_utility_and_feasibility_function(
 
         relevant_functions = [
             current_u_and_f,
-            next_states,
+            next_state,
             next_weights,
             scalar_value_function,
         ]
@@ -85,8 +90,8 @@ def get_utility_and_feasibility_function(
 
             u, f = current_u_and_f(**states, **choices, params=kwargs["params"])
 
-            _next_states = next_states(**states, **choices, params=kwargs["params"])
-            weights = next_weights(**states, **choices, params=kwargs["params"])
+            _next_state = next_state(**states, **choices, params=kwargs["params"])
+            weights = next_weights(**states, params=kwargs["params"])
 
             value_function = productmap(
                 scalar_value_function,
@@ -94,7 +99,7 @@ def get_utility_and_feasibility_function(
             )
 
             ccvs_at_nodes = value_function(
-                **_next_states,
+                **_next_state,
                 **{k: v for k, v in kwargs.items() if k in value_function_arguments},
             )
 
@@ -112,7 +117,7 @@ def get_multiply_weights(stochastic_variables):
     """Get multiply_weights function.
 
     Args:
-        stochastic_variables (list): TODO
+        stochastic_variables (list): List of stochastic variables.
 
     Returns:
         callable
@@ -153,17 +158,6 @@ def get_current_u_and_f(model):
     return concatenate_functions(
         functions=functions,
         targets=["utility", "feasibility"],
-    )
-
-
-def get_next_states_function(model):
-    targets = model.function_info.query("is_next").index.tolist()
-
-    return concatenate_functions(
-        functions=model.functions,
-        targets=targets,
-        return_type="dict",
-        enforce_signature=False,
     )
 
 
