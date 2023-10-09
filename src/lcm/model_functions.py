@@ -3,16 +3,15 @@ import inspect
 import jax.numpy as jnp
 from dags import concatenate_functions
 from dags.signature import with_signature
-from jax import vmap
 
 from lcm.dispatchers import productmap
 from lcm.function_evaluator import get_function_evaluator
 from lcm.functools import (
     all_as_args,
     all_as_kwargs,
-    allow_kwargs,
     get_union_of_arguments,
 )
+from lcm.next_state import get_next_state_function
 
 
 def get_utility_and_feasibility_function(
@@ -38,7 +37,7 @@ def get_utility_and_feasibility_function(
         relevant_functions = [current_u_and_f]
 
     else:
-        next_states = get_next_states_function(model)
+        next_state = get_next_state_function(model, target="solve")
         next_weights = get_next_weights_function(model)
 
         scalar_value_function = get_function_evaluator(
@@ -49,14 +48,11 @@ def get_utility_and_feasibility_function(
             out_name="continuation_value",
         )
 
-        multiply_weights = get_multiply_weights(
-            stochastic_variables,
-            vmap_over_all_args=False,
-        )
+        multiply_weights = get_multiply_weights(stochastic_variables)
 
         relevant_functions = [
             current_u_and_f,
-            next_states,
+            next_state,
             next_weights,
             scalar_value_function,
         ]
@@ -94,7 +90,7 @@ def get_utility_and_feasibility_function(
 
             u, f = current_u_and_f(**states, **choices, params=kwargs["params"])
 
-            _next_states = next_states(**states, **choices, params=kwargs["params"])
+            _next_state = next_state(**states, **choices, params=kwargs["params"])
             weights = next_weights(**states, params=kwargs["params"])
 
             value_function = productmap(
@@ -103,7 +99,7 @@ def get_utility_and_feasibility_function(
             )
 
             ccvs_at_nodes = value_function(
-                **_next_states,
+                **_next_state,
                 **{k: v for k, v in kwargs.items() if k in value_function_arguments},
             )
 
@@ -117,14 +113,11 @@ def get_utility_and_feasibility_function(
     return u_and_f
 
 
-def get_multiply_weights(stochastic_variables, vmap_over_all_args):
+def get_multiply_weights(stochastic_variables):
     """Get multiply_weights function.
 
     Args:
         stochastic_variables (list): List of stochastic variables.
-        vmap_over_all_args (bool): Whether to vmap over the inputs. This is useful when
-            the inputs have an additional batch dimension, for example as in the
-            simulation, where this dimension corresponds to the simulation units.
 
     Returns:
         callable
@@ -137,13 +130,7 @@ def get_multiply_weights(stochastic_variables, vmap_over_all_args):
         args = all_as_args(args, kwargs, arg_names=arg_names)
         return jnp.prod(jnp.array(args))
 
-    outer = productmap(_outer, variables=arg_names)
-
-    if vmap_over_all_args:
-        outer = vmap(outer, in_axes=[0] * len(arg_names))
-        outer = allow_kwargs(outer)
-
-    return outer
+    return productmap(_outer, variables=arg_names)
 
 
 def get_combined_constraint(model):
@@ -171,17 +158,6 @@ def get_current_u_and_f(model):
     return concatenate_functions(
         functions=functions,
         targets=["utility", "feasibility"],
-    )
-
-
-def get_next_states_function(model):
-    targets = model.function_info.query("is_next").index.tolist()
-
-    return concatenate_functions(
-        functions=model.functions,
-        targets=targets,
-        return_type="dict",
-        enforce_signature=False,
     )
 
 

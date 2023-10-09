@@ -9,6 +9,7 @@ from lcm.dispatchers import productmap
 from lcm.model_functions import (
     get_utility_and_feasibility_function,
 )
+from lcm.next_state import get_next_state_function
 from lcm.process_model import process_model
 from lcm.simulate import simulate
 from lcm.solve_brute import solve
@@ -169,6 +170,7 @@ def get_lcm_function(model, targets="solve", interpolation_options=None):
         continuous_choice_grids=continuous_choice_grids,
         compute_ccv_policy_functions=compute_ccv_policy_functions,
         model=_mod,
+        next_state=get_next_state_function(model=_mod, target="simulate"),
     )
 
     if targets == "solve":

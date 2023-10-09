@@ -7,8 +7,8 @@ N_CHOICE_GRID_POINTS = 500
 N_STATE_GRID_POINTS = 100
 
 
-def utility(consumption, working, health, partner, delta, gamma):
-    return jnp.log(consumption) + (gamma * health - delta) * working + partner
+def utility(consumption, working, health, partner, delta, gamma):  # noqa: ARG001
+    return jnp.log(consumption) + (gamma * health - delta) * working
 
 
 def next_wealth(wealth, consumption, working, wage, interest_rate):

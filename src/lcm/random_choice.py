@@ -13,7 +13,7 @@ def random_choice(key, probs, labels):
         labels (jax.numpy.array): 1d array of labels.
 
     Returns:
-        jax.numpy.array: The index
+        jax.numpy.array: Selected labels. 1d array of length len(probs).
 
     """
     keys = jax.random.split(key, probs.shape[0])

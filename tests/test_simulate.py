@@ -11,14 +11,13 @@ from lcm.example_models import (
     PHELPS_DEATON,
     PHELPS_DEATON_WITH_FILTERS,
 )
-from lcm.interfaces import Model
 from lcm.model_functions import get_utility_and_feasibility_function
+from lcm.next_state import _get_next_state_function_simulation
 from lcm.process_model import process_model
 from lcm.simulate import (
     _as_data_frame,
     _compute_targets,
     _generate_simulation_keys,
-    _get_stochastic_next_func,
     _process_simulated_data,
     _retrieve_non_sparse_choices,
     create_choice_segments,
@@ -26,7 +25,6 @@ from lcm.simulate import (
     determine_discrete_dense_choice_axes,
     dict_product,
     filter_ccv_policy,
-    get_next_states_function,
     simulate,
 )
 from lcm.state_space import create_state_choice_space
@@ -72,6 +70,7 @@ def simulate_inputs():
         ],
         "compute_ccv_policy_functions": compute_ccv_policy_functions,
         "model": model,
+        "next_state": _get_next_state_function_simulation(model),
     }
 
 
@@ -282,60 +281,6 @@ def test_effect_of_delta():
 # ======================================================================================
 # Helper functions
 # ======================================================================================
-
-
-def test_get_next_states_function():
-    def f_b(state):  # noqa: ARG001
-        return None
-
-    def f_weight_b(state):  # noqa: ARG001
-        return jnp.array([[0.0, 1.0]])
-
-    functions = {
-        "a": lambda state: state[0],
-        "b": f_b,
-        "weight_b": f_weight_b,
-    }
-
-    grids = {"b": jnp.arange(2)}
-
-    function_info = pd.DataFrame(
-        {
-            "is_next": [True, True],
-            "is_stochastic_next": [False, True],
-        },
-        index=["a", "b"],
-    )
-
-    model = Model(
-        functions=functions,
-        grids=grids,
-        function_info=function_info,
-        gridspecs=None,
-        variable_info=None,
-        params=None,
-        shocks=None,
-        n_periods=1,
-    )
-
-    got_func = get_next_states_function(model=model)
-
-    keys = {"b": jnp.arange(2, dtype="uint32")}
-    got = got_func(state=jnp.arange(2), keys=keys)
-
-    expected = {"a": jnp.array([0]), "b": jnp.array([1])}
-    assert tree_equal(expected, got)
-
-
-def test_get_stochastic_next_func():
-    grids = {"a": jnp.arange(2)}
-    got_func = _get_stochastic_next_func(name="a", grids=grids)
-
-    keys = {"a": jnp.arange(2, dtype="uint32")}  # PRNG dtype
-    weights = jnp.array([[0.0, 1], [1, 0]])
-    got = got_func(keys=keys, weight_a=weights)
-
-    assert jnp.array_equal(got, jnp.array([1, 0]))
 
 
 def test_generate_simulation_keys():
