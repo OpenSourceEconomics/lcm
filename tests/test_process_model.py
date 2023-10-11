@@ -163,11 +163,11 @@ def test_process_phelps_deaton():
     assert ~(model.variable_info["is_sparse"].to_numpy()).any()
 
     assert (
-        model.variable_info["is_state"].to_numpy() == np.array([True, False, False])
+        model.variable_info["is_state"].to_numpy() == np.array([False, True, False])
     ).all()
 
     assert (
-        model.variable_info["is_continuous"].to_numpy() == np.array([True, False, True])
+        model.variable_info["is_continuous"].to_numpy() == np.array([False, True, True])
     ).all()
 
     # Gridspecs

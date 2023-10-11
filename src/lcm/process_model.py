@@ -116,8 +116,10 @@ def _get_variable_info(user_model, function_info):
 
     order = info.query("is_sparse & is_state").index.tolist()
     order += info.query("is_sparse & is_choice").index.tolist()
-    order += info.query("is_dense & is_state").index.tolist()
-    order += info.query("is_dense & is_choice").index.tolist()
+    order += info.query("is_dense & is_discrete & is_state").index.tolist()
+    order += info.query("is_dense & is_discrete & is_choice").index.tolist()
+    order += info.query("is_continuous & is_state").index.tolist()
+    order += info.query("is_continuous & is_choice").index.tolist()
 
     if set(order) != set(info.index):
         raise ValueError("Order and index do not match.")
