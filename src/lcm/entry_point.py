@@ -143,14 +143,10 @@ def get_lcm_function(model, targets="solve", interpolation_options=None):
             shock_type=_shock_type,
             variable_info=_mod.variable_info,
             is_last_period=is_last_period,
+            choice_segments=choice_segments[period],
+            params=_mod.params,
         )
-        emax_calculators.append(
-            partial(
-                calculator,
-                choice_segments=choice_segments[period],
-                params=_mod.params,
-            ),
-        )
+        emax_calculators.append(calculator)
 
     # ==================================================================================
     # select requested solver and partial arguments into it

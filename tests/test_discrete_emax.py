@@ -45,12 +45,12 @@ def test_aggregation_without_shocks(values, segment_info, collapse, n_extra_axes
         shock_type=None,
         variable_info=var_info,
         is_last_period=False,
+        choice_segments=segment_info,
+        params={},
     )
 
     calculated = calculator(
         values=values,
-        choice_segments=segment_info,
-        params={},
     )
 
     expected = jnp.array([8, 9.5])
@@ -94,12 +94,12 @@ def test_aggregation_with_extreme_value_shocks(
         shock_type="extreme_value",
         variable_info=var_info,
         is_last_period=False,
+        choice_segments=segment_info,
+        params={"additive_utility_shock": {"scale": scale}},
     )
 
     calculated = calculator(
         values=values,
-        choice_segments=segment_info,
-        params={"additive_utility_shock": {"scale": scale}},
     )
 
     expected_shape = tuple([2] + [1] * n_extra_axes)
@@ -148,6 +148,8 @@ def test_get_emax_calculator_illustrative():
         shock_type=None,
         variable_info=variable_info,
         is_last_period=False,
+        choice_segments=None,
+        params=None,
     )
 
     values = jnp.array(
@@ -158,7 +160,7 @@ def test_get_emax_calculator_illustrative():
         ],
     )
 
-    got = emax_calculator(values, choice_segments=None, params=None)
+    got = emax_calculator(values)
     aaae(got, jnp.array([1, 3, 5]))
 
 
@@ -316,4 +318,4 @@ def test_determine_discrete_choice_axes_illustrative():
         },
     )
 
-    assert _determine_discrete_choice_axes(variable_info) == [1]
+    assert _determine_discrete_choice_axes(variable_info) == (1,)

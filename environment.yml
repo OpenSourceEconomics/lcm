@@ -33,6 +33,7 @@ dependencies:
   - pdbpp
   - pre-commit
   - pydot
+  - snakeviz
 
   # Documentation
   - sphinx
