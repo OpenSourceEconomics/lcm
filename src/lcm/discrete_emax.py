@@ -65,13 +65,12 @@ def get_emax_calculator(
     else:
         raise ValueError(f"Invalid shock_type: {shock_type}.")
 
-    out = partial(
+    return partial(
         func,
         choice_axes=choice_axes,
         choice_segments=choice_segments,
         params=params,
     )
-    return jax.jit(out)
 
 
 def _calculate_emax_no_shocks(

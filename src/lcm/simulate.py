@@ -117,21 +117,14 @@ def simulate(
             choice_segments=data_choice_segments,
         )
 
-        gridmapped = spacemap(
-            func=compute_ccv_policy_functions[period],
-            dense_vars=list(data_scs.dense_vars),
-            sparse_vars=list(data_scs.sparse_vars),
-            dense_first=False,
-        )
-
         # Compute optimal continuous choice conditional on discrete choices
         # ==============================================================================
-        ccv_policy, ccv = gridmapped(
-            **data_scs.dense_vars,
-            **continuous_choice_grids[period],
-            **data_scs.sparse_vars,
-            **state_indexers[period],
+        ccv_policy, ccv = solve_continuous_problem(
+            data_scs=data_scs,
+            compute_ccv=compute_ccv_policy_functions[period],
+            continuous_choice_grids=continuous_choice_grids[period],
             vf_arr=vf_arr_list[period],
+            state_indexers=state_indexers[period],
             params=params,
         )
 
@@ -209,6 +202,60 @@ def simulate(
         processed = {**processed, **calculated_targets}
 
     return _as_data_frame(processed, n_periods=n_periods)
+
+
+@partial(jax.jit, static_argnums=1)
+def solve_continuous_problem(
+    data_scs,
+    compute_ccv,
+    continuous_choice_grids,
+    vf_arr,
+    state_indexers,
+    params,
+):
+    """Solve the agent's continuous choices problem problem.
+
+    Args:
+        data_scs (Space): Namedtuple with entries dense_vars and sparse_vars.
+        compute_ccv (callable): Function that returns the conditional continuation
+            values for a given combination of states and discrete choices. The function
+            depends on:
+            - discrete and continuous state variables
+            - discrete and continuous choice variables
+            - vf_arr
+            - one or several state_indexers
+            - params
+        continuous_choice_grids (list): List of dicts with 1d grids for continuous
+            choice variables.
+        vf_arr (jax.numpy.ndarray): Value function array.
+        state_indexers (list): List of dicts with length n_periods. Each dict contains
+            one or several state indexers.
+        params (dict): Dict of model parameters.
+
+    Returns:
+        - jnp.ndarray: Jax array with policies for each combination of a state and a
+          discrete choice. The number and order of dimensions is defined by the
+          ``gridmap`` function.
+        - jnp.ndarray: Jax array with continuation values for each combination of a
+            state and a discrete choice. The number and order of dimensions is defined
+            by the ``gridmap`` function.
+
+    """
+    gridmapped = spacemap(
+        func=compute_ccv,
+        dense_vars=list(data_scs.dense_vars),
+        sparse_vars=list(data_scs.sparse_vars),
+        dense_first=False,
+    )
+
+    return gridmapped(
+        **data_scs.dense_vars,
+        **continuous_choice_grids,
+        **data_scs.sparse_vars,
+        **state_indexers,
+        vf_arr=vf_arr,
+        params=params,
+    )
 
 
 # ======================================================================================

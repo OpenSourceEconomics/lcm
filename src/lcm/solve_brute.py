@@ -102,7 +102,7 @@ def solve_continuous_problem(
         params (dict): Dict of model parameters.
 
     Returns:
-        np.ndarray: Numpy array with continuation values for each combination of a
+        jnp.ndarray: Jax array with continuation values for each combination of a
             state and a discrete choice. The number and order of dimensions is defined
             by the ``gridmap`` function.
 
