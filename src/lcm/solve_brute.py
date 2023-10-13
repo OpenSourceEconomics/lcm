@@ -74,9 +74,9 @@ def solve(
 
         print(f"Period: {period}")
 
+    out = list(reversed(reversed_solution))
     print(" DONE WITH THE SOLUTION ")
-
-    return list(reversed(reversed_solution))
+    return out
 
 
 @partial(jax.jit, static_argnums=1)
