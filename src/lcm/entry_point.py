@@ -134,7 +134,7 @@ def get_lcm_function(model, targets="solve", interpolation_options=None):
             utility_and_feasibility=u_and_f,
             continuous_choice_variables=list(_choice_grids),
         )
-        compute_ccv_policy_functions.append(compute_ccv_argmax)
+        compute_ccv_policy_functions.append(jax.jit(compute_ccv_argmax))
 
         # create list of emax_calculators
         # ==============================================================================
