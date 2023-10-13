@@ -19,6 +19,7 @@ def simulate(
     model,
     next_state,
     initial_states,
+    logger,
     solve_model=None,
     vf_arr_list=None,
     additional_targets=None,
@@ -41,6 +42,7 @@ def simulate(
         model (Model): Model instance.
         initial_states (list): List of initial states to start from. Typically from the
             observed dataset.
+        logger (logging.Logger): Logger that logs to stdout.
         solve_model (callable): Function that solves the model. Is only required if
             vf_arr_list is not provided.
         vf_arr_list (list): List of value function arrays of length n_periods. This is
@@ -62,7 +64,7 @@ def simulate(
             )
         vf_arr_list = solve_model(params)
 
-    print(39 * "=" + " Simulate " + 39 * "=")
+    logger.info("Starting simulation")
 
     # Update the vf_arr_list
     # ----------------------------------------------------------------------------------
@@ -192,7 +194,7 @@ def simulate(
         # because in the next period, next states are current states.
         states = {k.removeprefix("next_"): v for k, v in states.items()}
 
-        print(f"Period: {period}")
+        logger.info("Period: %s", period)
 
     processed = _process_simulated_data(_simulation_results)
 

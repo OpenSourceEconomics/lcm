@@ -12,6 +12,7 @@ def solve(
     continuous_choice_grids,
     compute_ccv_functions,
     emax_calculators,
+    logger,
 ):
     """Solve a model by brute force.
 
@@ -43,6 +44,7 @@ def solve(
         emax_calculators (list): List of functions that take continuation
             values for combinations of states and discrete choices and calculate the
             expected maximum over all discrete choices of a given state.
+        logger (logging.Logger): Logger that logs to stdout.
 
     Returns:
         list: List with one value function array per period.
@@ -53,7 +55,7 @@ def solve(
     reversed_solution = []
     vf_arr = None
 
-    print(39 * "=" + " Solution " + 39 * "=")
+    logger.info("Starting solution")
 
     # backwards induction loop
     for period in reversed(range(n_periods)):
@@ -72,7 +74,7 @@ def solve(
         vf_arr = calculate_emax(conditional_continuation_values)
         reversed_solution.append(vf_arr)
 
-        print(f"Period: {period}")
+        logger.info("Period: %s", period)
 
     return list(reversed(reversed_solution))
 

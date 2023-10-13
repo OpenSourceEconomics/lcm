@@ -3,6 +3,7 @@ import numpy as np
 from jax.scipy.ndimage import map_coordinates
 from lcm.entry_point import create_compute_conditional_continuation_value
 from lcm.interfaces import Space
+from lcm.logging import get_logger
 from lcm.solve_brute import solve, solve_continuous_problem
 from numpy.testing import assert_array_almost_equal as aaae
 
@@ -110,6 +111,7 @@ def test_solve_brute():
         continuous_choice_grids=continuous_choice_grids,
         compute_ccv_functions=utility_and_feasibility_functions,
         emax_calculators=emax_calculators,
+        logger=get_logger(debug_mode=False),
     )
 
     assert isinstance(solution, list)
