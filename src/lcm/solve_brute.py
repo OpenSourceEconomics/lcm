@@ -74,6 +74,8 @@ def solve(
 
         print(f"Period: {period}")
 
+    print(" DONE WITH THE SOLUTION ")
+
     return list(reversed(reversed_solution))
 
 

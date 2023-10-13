@@ -160,7 +160,7 @@ def get_lcm_function(model, targets="solve", interpolation_options=None):
         compute_ccv_functions=compute_ccv_functions,
         emax_calculators=emax_calculators,
     )
-    solve_model = jax.jit(_solve_model)
+    solve_model = _solve_model
 
     _next_state_simulate = get_next_state_function(model=_mod, target="simulate")
     simulate_model = partial(
