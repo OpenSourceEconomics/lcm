@@ -62,6 +62,8 @@ def simulate(
             )
         vf_arr_list = solve_model(params)
 
+    print(39 * "=" + " Simulate " + 39 * "=")
+
     # Update the vf_arr_list
     # ----------------------------------------------------------------------------------
     # We drop the value function array for the first period, because it is not needed
@@ -189,6 +191,8 @@ def simulate(
         # 'next_' prefix is added by the next_state function, but needs to be removed
         # because in the next period, next states are current states.
         states = {k.removeprefix("next_"): v for k, v in states.items()}
+
+        print(f"Period: {period}")
 
     processed = _process_simulated_data(_simulation_results)
 

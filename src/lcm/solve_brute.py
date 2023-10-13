@@ -53,6 +53,8 @@ def solve(
     reversed_solution = []
     vf_arr = None
 
+    print(39 * "=" + " Solution " + 39 * "=")
+
     # backwards induction loop
     for period in reversed(range(n_periods)):
         # solve continuous problem, conditional on discrete choices
@@ -69,6 +71,8 @@ def solve(
         calculate_emax = emax_calculators[period]
         vf_arr = calculate_emax(conditional_continuation_values)
         reversed_solution.append(vf_arr)
+
+        print(f"Period: {period}")
 
     return list(reversed(reversed_solution))
 
