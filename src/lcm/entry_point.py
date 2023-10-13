@@ -124,6 +124,7 @@ def get_lcm_function(model, targets="solve", interpolation_options=None):
             interpolation_options=interpolation_options,
             is_last_period=is_last_period,
         )
+
         compute_ccv = create_compute_conditional_continuation_value(
             utility_and_feasibility=u_and_f,
             continuous_choice_variables=list(_choice_grids),
@@ -147,7 +148,7 @@ def get_lcm_function(model, targets="solve", interpolation_options=None):
             choice_segments=choice_segments[period],
             params=_mod.params,
         )
-        emax_calculators.append(calculator)
+        emax_calculators.append(jax.jit(calculator))
 
     # ==================================================================================
     # select requested solver and partial arguments into it
