@@ -148,6 +148,7 @@ def test_create_compute_conditional_continuation_value():
         space_info=space_info,
         data_name="vf_arr",
         interpolation_options={},
+        period=model.n_periods - 1,
         is_last_period=True,
     )
 
@@ -195,6 +196,7 @@ def test_create_compute_conditional_continuation_policy():
         space_info=space_info,
         data_name="vf_arr",
         interpolation_options={},
+        period=model.n_periods - 1,
         is_last_period=True,
     )
 

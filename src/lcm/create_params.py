@@ -21,10 +21,7 @@ def create_params(user_model, variable_info, grids):
         dict: A dictionary of model parameters.
 
     """
-    params = {
-        **_create_standard_params(),
-        **_create_function_params(user_model),
-    }
+    params = _create_standard_params() | _create_function_params(user_model)
 
     if variable_info["is_stochastic"].any():
         params["shocks"] = _create_shock_params(
@@ -38,6 +35,9 @@ def create_params(user_model, variable_info, grids):
 
 def _create_function_params(model):
     """Get function parameters from a model specification.
+
+    The argument '_period' is handled separately. It is not treated as a parameter, but
+    as the period of the model. Functions like 'age' can depend on it.
 
     Args:
         model (dict): A model specification. Has keys
@@ -63,7 +63,7 @@ def _create_function_params(model):
     for name, func in model["functions"].items():
         arguments = set(inspect.signature(func).parameters)
         params = sorted(arguments.difference(variables))
-        out[name] = {p: np.nan for p in params}
+        out[name] = {p: np.nan for p in params if p != "_period"}
     return out
 
 

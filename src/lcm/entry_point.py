@@ -121,6 +121,7 @@ def get_lcm_function(model, targets="solve", interpolation_options=None):
             space_info=space_infos[period],
             data_name="vf_arr",
             interpolation_options=interpolation_options,
+            period=period,
             is_last_period=is_last_period,
         )
         compute_ccv = create_compute_conditional_continuation_value(
