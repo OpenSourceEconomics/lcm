@@ -93,7 +93,30 @@ PHELPS_DEATON = {
             "n_points": N_STATE_GRID_POINTS,
         },
     },
-    "n_periods": 20,
+    "n_periods": 3,
+}
+
+
+PHELPS_DEATON_FULLY_DISCRETE = {
+    "functions": {
+        "utility": phelps_deaton_utility,
+        "next_wealth": next_wealth,
+        "consumption_constraint": consumption_constraint,
+        "working": working,
+    },
+    "choices": {
+        "retirement": {"options": [0, 1]},
+        "consumption": {"options": [1, 2]},
+    },
+    "states": {
+        "wealth": {
+            "grid_type": "linspace",
+            "start": 0,
+            "stop": 100,
+            "n_points": N_STATE_GRID_POINTS,
+        },
+    },
+    "n_periods": 3,
 }
 
 
@@ -141,5 +164,5 @@ PHELPS_DEATON_WITH_FILTERS = {
         },
         "lagged_retirement": {"options": [0, 1]},
     },
-    "n_periods": 20,
+    "n_periods": 3,
 }
