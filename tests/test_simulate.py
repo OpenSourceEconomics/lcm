@@ -11,6 +11,7 @@ from lcm.example_models import (
     PHELPS_DEATON,
     PHELPS_DEATON_WITH_FILTERS,
 )
+from lcm.logging import get_logger
 from lcm.model_functions import get_utility_and_feasibility_function
 from lcm.next_state import _get_next_state_function_simulation
 from lcm.process_model import process_model
@@ -88,6 +89,7 @@ def test_simulate_using_raw_inputs(simulate_inputs):
         params=params,
         vf_arr_list=[None],
         initial_states={"wealth": jnp.array([1.0, 50.400803])},
+        logger=get_logger(debug_mode=False),
         **simulate_inputs,
     )
 

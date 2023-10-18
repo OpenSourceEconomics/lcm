@@ -26,7 +26,13 @@ import jax
 import jax.numpy as jnp
 
 
-def get_emax_calculator(shock_type, variable_info, is_last_period):
+def get_emax_calculator(
+    shock_type,
+    variable_info,
+    is_last_period,
+    choice_segments,
+    params,
+):
     """Return a function that calculates the expected maximum of continuation values.
 
     The maximum is taken over the discrete choice variables in each state.
@@ -35,30 +41,36 @@ def get_emax_calculator(shock_type, variable_info, is_last_period):
         shock_type (str or None): One of None, "extreme_value" and "nested_logit".
         variable_info (pd.DataFrame): DataFrame with information about the variables.
         is_last_period (bool): Whether the function is created for the last period.
+        choice_segments (jax.numpy.ndarray): Jax array with the indices of the choice
+            segments that indicate which sparse choice variables belong to one state.
+        params (dict): Dictionary with model parameters.
 
     Returns:
         callable: Function that calculates the expected maximum of conditional
             continuation values. The function depends on:
             - values (jax.numpy.ndarray): Multidimensional jax array with conditional
                 continuation values.
-            - choice_segments (jax.numpy.ndarray): Jax array with the indices of the
-                choice segments that indicate which sparse choice variables belong to
-                one state.
-            - params (dict): Dictionary with model parameters.
 
     """
     if is_last_period:
         variable_info = variable_info.query("~is_auxiliary")
     choice_axes = _determine_discrete_choice_axes(variable_info)
+
     if shock_type is None:
-        func = partial(_calculate_emax_no_shocks, choice_axes=choice_axes)
+        func = _calculate_emax_no_shocks
     elif shock_type == "extreme_value":
-        func = partial(_calculate_emax_extreme_value_shocks, choice_axes=choice_axes)
+        func = _calculate_emax_extreme_value_shocks
     elif shock_type == "nested_logit":
         raise ValueError("Nested logit shocks are not yet supported.")
     else:
         raise ValueError(f"Invalid shock_type: {shock_type}.")
-    return func
+
+    return partial(
+        func,
+        choice_axes=choice_axes,
+        choice_segments=choice_segments,
+        params=params,
+    )
 
 
 def _calculate_emax_no_shocks(
@@ -208,8 +220,8 @@ def _determine_discrete_choice_axes(variable_info):
         variable_info (pd.DataFrame): DataFrame with information about the variables.
 
     Returns:
-        list[int]: Specifies which axes in a value function correspond to discrete
-            choices.
+        tuple[int]: Specifies which axes in a value function correspond to discrete
+            choices. If no axes correspond to discrete choices, returns None.
 
     """
     has_sparse = variable_info["is_sparse"].any()
@@ -221,7 +233,7 @@ def _determine_discrete_choice_axes(variable_info):
 
     choice_vars = set(variable_info.query("is_choice").index.tolist())
 
-    choice_indices = [i for i, ax in enumerate(axes) if ax in choice_vars]
+    choice_indices = tuple(i for i, ax in enumerate(axes) if ax in choice_vars)
 
     if not choice_indices:
         choice_indices = None

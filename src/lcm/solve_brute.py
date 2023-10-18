@@ -1,3 +1,7 @@
+from functools import partial
+
+import jax
+
 from lcm.dispatchers import spacemap
 
 
@@ -8,6 +12,7 @@ def solve(
     continuous_choice_grids,
     compute_ccv_functions,
     emax_calculators,
+    logger,
 ):
     """Solve a model by brute force.
 
@@ -39,6 +44,7 @@ def solve(
         emax_calculators (list): List of functions that take continuation
             values for combinations of states and discrete choices and calculate the
             expected maximum over all discrete choices of a given state.
+        logger (logging.Logger): Logger that logs to stdout.
 
     Returns:
         list: List with one value function array per period.
@@ -48,6 +54,8 @@ def solve(
     n_periods = len(state_choice_spaces)
     reversed_solution = []
     vf_arr = None
+
+    logger.info("Starting solution")
 
     # backwards induction loop
     for period in reversed(range(n_periods)):
@@ -66,9 +74,12 @@ def solve(
         vf_arr = calculate_emax(conditional_continuation_values)
         reversed_solution.append(vf_arr)
 
+        logger.info("Period: %s", period)
+
     return list(reversed(reversed_solution))
 
 
+@partial(jax.jit, static_argnums=1)
 def solve_continuous_problem(
     state_choice_space,
     compute_ccv,
@@ -97,7 +108,7 @@ def solve_continuous_problem(
         params (dict): Dict of model parameters.
 
     Returns:
-        np.ndarray: Numpy array with continuation values for each combination of a
+        jnp.ndarray: Jax array with continuation values for each combination of a
             state and a discrete choice. The number and order of dimensions is defined
             by the ``gridmap`` function.
 
