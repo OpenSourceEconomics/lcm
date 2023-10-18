@@ -15,7 +15,7 @@ from lcm.example_models_stochastic import MODEL, PARAMS
 def test_get_lcm_function_with_simulate_target():
     simulate_model, _ = get_lcm_function(model=MODEL, targets="solve_and_simulate")
 
-    simulate_model(
+    res = simulate_model(
         PARAMS,
         initial_states={
             "health": jnp.array([1, 1, 0, 0]),
@@ -23,6 +23,22 @@ def test_get_lcm_function_with_simulate_target():
             "wealth": jnp.array([10.0, 50.0, 30, 80.0]),
         },
     )
+
+    expected_partner = [
+        0,
+        0,
+        1,
+        0,  # period 0
+        0,
+        0,
+        0,
+        0,  # period 1
+        1,
+        1,
+        1,
+        1,  # period 2
+    ]
+    assert jnp.array_equal(res["partner"].values, expected_partner)
 
 
 # ======================================================================================

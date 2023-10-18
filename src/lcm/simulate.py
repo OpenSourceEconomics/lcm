@@ -75,6 +75,7 @@ def simulate(
     # Preparations
     # ==================================================================================
     n_periods = len(vf_arr_list)
+    n_initial_states = len(next(iter(initial_states.values())))
 
     _discrete_policy_calculator = get_discrete_policy_calculator(
         variable_info=model.variable_info,
@@ -194,7 +195,7 @@ def simulate(
         states = next_state(
             **states,
             **choices,
-            _period=period,
+            _period=jnp.repeat(period, n_initial_states),
             params=params,
             keys=sim_keys,
         )

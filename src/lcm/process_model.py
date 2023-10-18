@@ -395,16 +395,19 @@ def _get_stochastic_weight_function(raw_func, name, variable_info, grids):
 
     # Assert that stochastic next function only depends on state variables
     for arg in function_parameters:
-        if not variable_info.loc[arg, "is_state"]:
+        if arg != "_period" and not variable_info.loc[arg, "is_state"]:
             raise ValueError(
-                f"Stochastic variables can only depend on state variables, but {name} "
-                f"depends on {arg}.",
+                f"Stochastic variables can only depend on state variables and '_period'"
+                f" but {name} depends on {arg}.",
             )
 
     label_translators = {
         var: get_label_translator(labels=grids[var], in_name=var)
         for var in function_parameters
+        if var != "_period"
     }
+    if "_period" in function_parameters:
+        label_translators["_period"] = lambda _period: _period
 
     new_kwargs = [*function_parameters, "params"]
 

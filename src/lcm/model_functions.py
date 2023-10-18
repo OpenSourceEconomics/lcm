@@ -107,7 +107,7 @@ def get_utility_and_feasibility_function(
                 _period=period,
                 params=kwargs["params"],
             )
-            weights = next_weights(**states, params=kwargs["params"])
+            weights = next_weights(**states, _period=period, params=kwargs["params"])
 
             value_function = productmap(
                 scalar_value_function,
