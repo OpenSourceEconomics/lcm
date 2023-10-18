@@ -7,7 +7,7 @@ def random_choice(key, probs, labels):
     """Draw multiple random choices.
 
     Args:
-        key (jax.random.PRNGKey): Random keys. One for each simulation unit.
+        key (jax.random.PRNGKey): Random key.
         probs (jax.numpy.array): 2d array of probabilities. Second dimension must be
             the same length as the first dimension of labels.
         labels (jax.numpy.array): 1d array of labels.

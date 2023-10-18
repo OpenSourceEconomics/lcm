@@ -19,6 +19,7 @@ def get_utility_and_feasibility_function(
     space_info,
     data_name,
     interpolation_options,
+    period,
     is_last_period,
 ):
     # ==================================================================================
@@ -65,7 +66,7 @@ def get_utility_and_feasibility_function(
     # Create the utility and feasability function
     # ==================================================================================
 
-    arg_names = {"vf_arr"} | get_union_of_arguments(relevant_functions)
+    arg_names = {"vf_arr"} | get_union_of_arguments(relevant_functions) - {"_period"}
     arg_names = [arg for arg in arg_names if "next_" not in arg]
 
     if is_last_period:
@@ -77,7 +78,12 @@ def get_utility_and_feasibility_function(
             states = {k: v for k, v in kwargs.items() if k in state_variables}
             choices = {k: v for k, v in kwargs.items() if k in choice_variables}
 
-            return current_u_and_f(**states, **choices, params=kwargs["params"])
+            return current_u_and_f(
+                **states,
+                **choices,
+                _period=period,
+                params=kwargs["params"],
+            )
 
     else:
 
@@ -88,10 +94,20 @@ def get_utility_and_feasibility_function(
             states = {k: v for k, v in kwargs.items() if k in state_variables}
             choices = {k: v for k, v in kwargs.items() if k in choice_variables}
 
-            u, f = current_u_and_f(**states, **choices, params=kwargs["params"])
+            u, f = current_u_and_f(
+                **states,
+                **choices,
+                _period=period,
+                params=kwargs["params"],
+            )
 
-            _next_state = next_state(**states, **choices, params=kwargs["params"])
-            weights = next_weights(**states, params=kwargs["params"])
+            _next_state = next_state(
+                **states,
+                **choices,
+                _period=period,
+                params=kwargs["params"],
+            )
+            weights = next_weights(**states, _period=period, params=kwargs["params"])
 
             value_function = productmap(
                 scalar_value_function,
@@ -158,6 +174,7 @@ def get_current_u_and_f(model):
     return concatenate_functions(
         functions=functions,
         targets=["utility", "feasibility"],
+        enforce_signature=False,
     )
 
 

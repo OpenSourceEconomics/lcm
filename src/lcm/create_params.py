@@ -21,10 +21,7 @@ def create_params(user_model, variable_info, grids):
         dict: A dictionary of model parameters.
 
     """
-    params = {
-        **_create_standard_params(),
-        **_create_function_params(user_model),
-    }
+    params = _create_standard_params() | _create_function_params(user_model)
 
     if variable_info["is_stochastic"].any():
         params["shocks"] = _create_shock_params(
@@ -38,6 +35,9 @@ def create_params(user_model, variable_info, grids):
 
 def _create_function_params(model):
     """Get function parameters from a model specification.
+
+    The argument '_period' is handled separately. It is not treated as a parameter, but
+    as the period of the model. Functions like 'age' can depend on it.
 
     Args:
         model (dict): A model specification. Has keys
@@ -63,7 +63,7 @@ def _create_function_params(model):
     for name, func in model["functions"].items():
         arguments = set(inspect.signature(func).parameters)
         params = sorted(arguments.difference(variables))
-        out[name] = {p: np.nan for p in params}
+        out[name] = {p: np.nan for p in params if p != "_period"}
     return out
 
 
@@ -106,12 +106,16 @@ def _create_shock_params(model, variable_info, grids):
             variables=dependencies,
             variable_info=variable_info,
             msg_suffix=(
-                f"The function next_{var} can only depend on discrete state variables."
+                f"The function next_{var} can only depend on discrete state variables "
+                f"or '_period'."
             ),
         )
 
         # get dimensions of variables that influence the stochastic variable
-        dimensions = [len(grids[dep]) for dep in dependencies]
+        dimensions = [
+            len(grids[dep]) if dep != "_period" else model["n_periods"]
+            for dep in dependencies
+        ]
         # add dimension of stochastic variable to last axis
         dimensions = (*dimensions, len(grids[var]))
 
@@ -127,7 +131,7 @@ def _create_standard_params():
 def _check_variables_are_all_discrete_states(variables, variable_info, msg_suffix):
     discrete_state_vars = variable_info.query("is_state and is_discrete").index.tolist()
     for var in variables:
-        if var not in discrete_state_vars:
+        if var not in discrete_state_vars and var != "_period":
             raise ValueError(
                 f"Variable {var} is not a discrete state variable. {msg_suffix}",
             )
