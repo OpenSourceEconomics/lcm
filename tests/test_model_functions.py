@@ -64,6 +64,7 @@ def test_get_utility_and_feasibility_function():
         space_info=space_info,
         data_name="vf_arr",
         interpolation_options={},
+        period=model.n_periods - 1,
         is_last_period=True,
     )
 

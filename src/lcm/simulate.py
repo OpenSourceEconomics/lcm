@@ -79,6 +79,7 @@ def simulate(
     # Preparations
     # ==================================================================================
     n_periods = len(vf_arr_list)
+    n_initial_states = len(next(iter(initial_states.values())))
 
     _discrete_policy_calculator = get_discrete_policy_calculator(
         variable_info=model.variable_info,
@@ -188,7 +189,13 @@ def simulate(
             ids=model.function_info.query("is_stochastic_next").index,
         )
 
-        states = next_state(**states, **choices, params=params, keys=sim_keys)
+        states = next_state(
+            **states,
+            **choices,
+            _period=jnp.repeat(period, n_initial_states),
+            params=params,
+            keys=sim_keys,
+        )
 
         # 'next_' prefix is added by the next_state function, but needs to be removed
         # because in the next period, next states are current states.

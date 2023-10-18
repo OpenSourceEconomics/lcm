@@ -131,6 +131,7 @@ def get_lcm_function(
             space_info=space_infos[period],
             data_name="vf_arr",
             interpolation_options=interpolation_options,
+            period=period,
             is_last_period=is_last_period,
         )
 

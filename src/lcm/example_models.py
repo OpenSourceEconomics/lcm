@@ -51,8 +51,12 @@ def consumption_constraint(consumption, wealth):
     return consumption <= wealth
 
 
-def age(period):
-    return period + 18
+def wage(age):
+    return 1 + 0.1 * age
+
+
+def age(_period):
+    return _period + 18
 
 
 def mandatory_retirement_filter(retirement, age):
@@ -69,6 +73,8 @@ PHELPS_DEATON = {
         "next_wealth": next_wealth,
         "consumption_constraint": consumption_constraint,
         "working": working,
+        "wage": wage,
+        "age": age,
     },
     "choices": {
         "retirement": {"options": [0, 1]},

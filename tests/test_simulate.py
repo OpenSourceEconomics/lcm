@@ -49,20 +49,21 @@ def simulate_inputs():
         jit_filter=False,
     )
 
-    u_and_f = get_utility_and_feasibility_function(
-        model=model,
-        space_info=space_info,
-        data_name="vf_arr",
-        interpolation_options={},
-        is_last_period=True,
-    )
-
-    compute_ccv_policy_functions = model.n_periods * [
-        create_compute_conditional_continuation_policy(
+    compute_ccv_policy_functions = []
+    for period in range(model.n_periods):
+        u_and_f = get_utility_and_feasibility_function(
+            model=model,
+            space_info=space_info,
+            data_name="vf_arr",
+            interpolation_options={},
+            period=period,
+            is_last_period=True,
+        )
+        compute_ccv = create_compute_conditional_continuation_policy(
             utility_and_feasibility=u_and_f,
             continuous_choice_variables=["consumption"],
-        ),
-    ]
+        )
+        compute_ccv_policy_functions.append(compute_ccv)
 
     return {
         "state_indexers": [{}],
@@ -81,7 +82,6 @@ def test_simulate_using_raw_inputs(simulate_inputs):
         "utility": {"delta": 1.0},
         "next_wealth": {
             "interest_rate": 0.05,
-            "wage": 1.0,
         },
     }
 
@@ -106,6 +106,12 @@ def test_simulate_using_raw_inputs(simulate_inputs):
 def phelps_deaton_model_solution():
     def _model_solution(n_periods):
         model = {**PHELPS_DEATON, "n_periods": n_periods}
+        model["functions"] = {
+            # remove dependency on age, so that wage becomes a parameter
+            name: func
+            for name, func in model["functions"].items()
+            if name not in ["age", "wage"]
+        }
         solve_model, _ = get_lcm_function(model=model)
 
         params = {
@@ -178,7 +184,6 @@ def test_effect_of_beta_on_last_period():
         "utility": {"delta": 1.0},
         "next_wealth": {
             "interest_rate": 0.05,
-            "wage": 1.0,
         },
     }
 
@@ -233,7 +238,6 @@ def test_effect_of_delta():
         "utility": {"delta": None},
         "next_wealth": {
             "interest_rate": 0.05,
-            "wage": 1.0,
         },
     }
 

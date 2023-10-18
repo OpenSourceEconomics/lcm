@@ -20,14 +20,13 @@ def test_get_next_state_function_with_solve_target():
         "utility": {"delta": 1.0},
         "next_wealth": {
             "interest_rate": 0.05,
-            "wage": 1.0,
         },
     }
 
     choice = {"retirement": 1, "consumption": 10}
     state = {"wealth": 20}
 
-    got = got_func(**choice, **state, params=params)
+    got = got_func(**choice, **state, _period=1, params=params)
     assert got == {"next_wealth": 1.05 * (20 - 10)}
 
 

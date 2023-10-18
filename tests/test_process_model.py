@@ -200,12 +200,12 @@ def test_process_phelps_deaton():
     # Functions
     assert (
         model.function_info["is_next"].to_numpy()
-        == np.array([False, True, False, False])
+        == np.array([False, True, False, False, False, False])
     ).all()
 
     assert (
         model.function_info["is_constraint"].to_numpy()
-        == np.array([False, False, True, False])
+        == np.array([False, False, True, False, False, False])
     ).all()
 
     assert ~model.function_info.loc["utility"].to_numpy().any()
