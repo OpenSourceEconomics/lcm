@@ -161,11 +161,18 @@ def get_combined_constraint(model):
     """
     targets = model.function_info.query("is_constraint").index.tolist()
 
-    return concatenate_functions(
-        functions=model.functions,
-        targets=targets,
-        aggregator=jnp.logical_and,
-    )
+    if targets:
+        combined_constraint = concatenate_functions(
+            functions=model.functions,
+            targets=targets,
+            aggregator=jnp.logical_and,
+        )
+    else:
+
+        def combined_constraint():
+            return None
+
+    return combined_constraint
 
 
 def get_current_u_and_f(model):

@@ -218,14 +218,15 @@ def create_compute_conditional_continuation_value(
             conditional continuation value over the continuous choices.
 
     """
-    u_and_f_mapped_over_cont_choices = productmap(
-        func=utility_and_feasibility,
-        variables=continuous_choice_variables,
-    )
+    if continuous_choice_variables:
+        utility_and_feasibility = productmap(
+            func=utility_and_feasibility,
+            variables=continuous_choice_variables,
+        )
 
-    @functools.wraps(u_and_f_mapped_over_cont_choices)
+    @functools.wraps(utility_and_feasibility)
     def compute_ccv(*args, **kwargs):
-        u, f = u_and_f_mapped_over_cont_choices(*args, **kwargs)
+        u, f = utility_and_feasibility(*args, **kwargs)
         return u.max(where=f, initial=-jnp.inf)
 
     return compute_ccv
@@ -255,14 +256,15 @@ def create_compute_conditional_continuation_policy(
             that maximizes the conditional continuation value.
 
     """
-    u_and_f_mapped_over_cont_choices = productmap(
-        func=utility_and_feasibility,
-        variables=continuous_choice_variables,
-    )
+    if continuous_choice_variables:
+        utility_and_feasibility = productmap(
+            func=utility_and_feasibility,
+            variables=continuous_choice_variables,
+        )
 
-    @functools.wraps(u_and_f_mapped_over_cont_choices)
+    @functools.wraps(utility_and_feasibility)
     def compute_ccv_policy(*args, **kwargs):
-        u, f = u_and_f_mapped_over_cont_choices(*args, **kwargs)
+        u, f = utility_and_feasibility(*args, **kwargs)
         _argmax, _max = argmax(u, where=f, initial=-jnp.inf)
         return _argmax, _max
 
