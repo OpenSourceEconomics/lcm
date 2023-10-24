@@ -6,7 +6,6 @@ from lcm.entry_point import (
     get_lcm_function,
 )
 from lcm.example_models import (
-    FULLY_DISCRETE_CONSUMPTION_MODEL,
     PHELPS_DEATON,
     PHELPS_DEATON_FULLY_DISCRETE,
     PHELPS_DEATON_WITH_FILTERS,
@@ -178,7 +177,7 @@ def test_create_compute_conditional_continuation_value():
     assert val == phelps_deaton_utility(consumption=30.0, working=0, delta=1.0)
 
 
-def test_create_compute_conditional_continuation_value_discrete():
+def test_create_compute_conditional_continuation_value_with_discrete_model():
     model = process_model(PHELPS_DEATON_FULLY_DISCRETE)
 
     params = {
@@ -202,6 +201,7 @@ def test_create_compute_conditional_continuation_value_discrete():
         space_info=space_info,
         data_name="vf_arr",
         interpolation_options={},
+        period=model.n_periods - 1,
         is_last_period=True,
     )
 
@@ -211,13 +211,13 @@ def test_create_compute_conditional_continuation_value_discrete():
     )
 
     val = compute_ccv(
-        consumption=1,
+        consumption=jnp.array([1, 2]),
         retirement=1,
-        wealth=30,
+        wealth=2,
         params=params,
         vf_arr=None,
     )
-    assert val == phelps_deaton_utility(consumption=1, working=0, delta=1.0)
+    assert val == phelps_deaton_utility(consumption=2, working=0, delta=1.0)
 
 
 # ======================================================================================
@@ -269,8 +269,8 @@ def test_create_compute_conditional_continuation_policy():
     assert val == phelps_deaton_utility(consumption=30.0, working=0, delta=1.0)
 
 
-def test_create_compute_conditional_continuation_policy_discrete():
-    model = process_model(FULLY_DISCRETE_CONSUMPTION_MODEL)
+def test_create_compute_conditional_continuation_policy_with_discrete_model():
+    model = process_model(PHELPS_DEATON_FULLY_DISCRETE)
 
     params = {
         "beta": 1.0,
@@ -293,6 +293,7 @@ def test_create_compute_conditional_continuation_policy_discrete():
         space_info=space_info,
         data_name="vf_arr",
         interpolation_options={},
+        period=model.n_periods - 1,
         is_last_period=True,
     )
 
@@ -302,11 +303,11 @@ def test_create_compute_conditional_continuation_policy_discrete():
     )
 
     policy, val = compute_ccv_policy(
-        consumption=1,
+        consumption=jnp.array([1, 2]),
         retirement=1,
-        wealth=30,
+        wealth=2,
         params=params,
         vf_arr=None,
     )
-    assert policy == 0
-    assert val == phelps_deaton_utility(consumption=1, working=0, delta=1.0)
+    assert policy == 1
+    assert val == phelps_deaton_utility(consumption=2, working=0, delta=1.0)
