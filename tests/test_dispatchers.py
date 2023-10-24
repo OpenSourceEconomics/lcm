@@ -3,25 +3,36 @@ import itertools
 import jax.numpy as jnp
 import pytest
 from lcm.dispatchers import (
-    allow_kwargs,
-    convert_kwargs_to_args,
     productmap,
     spacemap,
     vmap_1d,
 )
+from lcm.functools import allow_args, allow_kwargs
 from numpy.testing import assert_array_almost_equal as aaae
 
 
-def f(a, b, c):
+def f(a, /, *, b, c):
+    """Tests that dispatchers can handle positional-only and keyword-only arguments.
+
+    a is positional-only, b and c are keyword-only
+    """
     return jnp.sin(a) + jnp.cos(b) + jnp.tan(c)
 
 
-def f2(b, a, c):
+def f2(b, a, /, *, c):
+    """Tests that dispatchers can handle positional-only and keyword-only arguments.
+
+    b and a are positional-only, c is keyword-only
+    """
     return jnp.sin(a) + jnp.cos(b) + jnp.tan(c)
 
 
-def g(a, b, c, d):
-    return f(a, b, c) + jnp.log(d)
+def g(a, /, b, *, c, d):
+    """Tests that dispatchers can handle positional-only and keyword-only arguments.
+
+    a is positional-only, b is positional-or-keyword, c and d are keyword-only
+    """
+    return f(a, b=b, c=c) + jnp.log(d)
 
 
 # ======================================================================================
@@ -47,7 +58,7 @@ def expected_productmap_f():
     }
 
     helper = jnp.array(list(itertools.product(*grids.values()))).T
-    return f(*helper).reshape(10, 7, 5)
+    return allow_kwargs(allow_args(f))(*helper).reshape(10, 7, 5)
 
 
 @pytest.fixture()
@@ -70,7 +81,7 @@ def expected_productmap_g():
     }
 
     helper = jnp.array(list(itertools.product(*grids.values()))).T
-    return g(*helper).reshape(10, 7, 5, 4)
+    return allow_kwargs(allow_args(g))(*helper).reshape(10, 7, 5, 4)
 
 
 @pytest.mark.parametrize(
@@ -120,7 +131,7 @@ def test_productmap_with_all_arguments_mapped_some_len_one():
 
     helper = jnp.array(list(itertools.product(*grids.values()))).T
 
-    expected = f(*helper).reshape(1, 1, 5)
+    expected = allow_kwargs(allow_args(f))(*helper).reshape(1, 1, 5)
 
     decorated = productmap(f, ["a", "b", "c"])
     calculated = decorated(*grids.values())
@@ -148,7 +159,7 @@ def test_productmap_with_some_arguments_mapped():
 
     helper = jnp.array(list(itertools.product(grids["a"], [grids["b"]], grids["c"]))).T
 
-    expected = f(*helper).reshape(10, 5)
+    expected = allow_kwargs(allow_args(f))(*helper).reshape(10, 5)
 
     decorated = productmap(f, ["a", "c"])
     calculated = decorated(*grids.values())
@@ -202,7 +213,7 @@ def expected_spacemap():
     all_grids = {**value_grid, **combination_grid}
     helper = jnp.array(list(itertools.product(*all_grids.values()))).T
 
-    return g(*helper).reshape(3, 2, 4 * 5)
+    return allow_kwargs(allow_args(g))(*helper).reshape(3, 2, 4 * 5)
 
 
 @pytest.mark.parametrize("dense_first", [True, False])
@@ -241,35 +252,6 @@ def test_spacemap_all_arguments_mapped(setup_spacemap, expected_spacemap, dense_
 def test_spacemap_arguments_overlap(error_msg, dense_vars, sparse_vars):
     with pytest.raises(ValueError, match=error_msg):
         spacemap(g, dense_vars, sparse_vars, dense_first=True)
-
-
-# ======================================================================================
-# convert kwargs to args
-# ======================================================================================
-
-
-def test_convert_kwargs_to_args():
-    kwargs = {"a": 1, "b": 2, "c": 3}
-    parameters = ["c", "a", "b"]
-    exp = [3, 1, 2]
-    got = convert_kwargs_to_args(kwargs, parameters)
-    assert got == exp
-
-
-# ======================================================================================
-# allow kwargs
-# ======================================================================================
-
-
-def test_allow_kwargs():
-    def f(a, /, b):
-        # a is positional-only
-        return a + b
-
-    with pytest.raises(TypeError):
-        f(a=1, b=2)
-
-    assert allow_kwargs(f)(a=1, b=2) == 3
 
 
 # ======================================================================================

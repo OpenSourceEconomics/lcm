@@ -1,7 +1,9 @@
 import inspect
 from functools import partial
 
+import jax
 import jax.numpy as jnp
+import pandas as pd
 from dags import concatenate_functions
 
 from lcm.argmax import argmax, segment_argmax
@@ -17,30 +19,42 @@ def simulate(
     model,
     next_state,
     initial_states,
+    logger,
     solve_model=None,
     vf_arr_list=None,
+    additional_targets=None,
+    seed=12345,
 ):
     """Simulate the model forward in time.
 
     Args:
         params (dict): Dict of model parameters.
-        state_indexers (list): List of dicts with length n_periods. Each dict contains
-            one or several state indexers.
-        continuous_choice_grids (list): List of dicts with 1d grids for continuous
-            choice variables.
-        compute_ccv_policy_functions (list): List of functions that compute the
-            conditional continuation value dependent on the discrete choices.
-        model (Model): Model instance.
+        state_indexers (list): List of dicts of length n_periods. Each dict contains one
+            or several state indexers.
+        continuous_choice_grids (list): List of dicts of length n_periods. Each dict
+            contains 1d grids for continuous choice variables.
+        compute_ccv_policy_functions (list): List of functions of length n_periods. Each
+            function computes the conditional continuation value dependent on the
+            discrete choices.
         next_state (callable): Function that returns the next state given the current
-            state and choice variables.
-        initial_states (list): List of initial states from which we iterate.
+            state and choice variables. For stochastic variables, it returns a random
+            draw from the distribution of the next state.
+        model (Model): Model instance.
+        initial_states (list): List of initial states to start from. Typically from the
+            observed dataset.
+        logger (logging.Logger): Logger that logs to stdout.
         solve_model (callable): Function that solves the model. Is only required if
             vf_arr_list is not provided.
-        vf_arr_list (list): List of value function arrays for each period. Is the output
-            of the solution. If not provided, the model is solved first.
+        vf_arr_list (list): List of value function arrays of length n_periods. This is
+            the output of the model's `solve` function. If not provided, the model is
+            solved first.
+        additional_targets (list): List of targets to compute. If provided, the targets
+            are computed and added to the simulation results.
+        seed (int): Random number seed; will be passed to `jax.random.PRNGKey`.
 
     Returns:
-        list: List of optimal choices for each initial state per period.
+        list: List of length n_periods containing the valuations, optimal choices, and
+            states.
 
     """
     if vf_arr_list is None:
@@ -49,6 +63,8 @@ def simulate(
                 "You need to provide either vf_arr_list or solve_model.",
             )
         vf_arr_list = solve_model(params)
+
+    logger.info("Starting simulation")
 
     # Update the vf_arr_list
     # ----------------------------------------------------------------------------------
@@ -62,9 +78,8 @@ def simulate(
 
     # Preparations
     # ==================================================================================
-    next_state = partial(next_state, params=params)
-
     n_periods = len(vf_arr_list)
+    n_initial_states = len(next(iter(initial_states.values())))
 
     _discrete_policy_calculator = get_discrete_policy_calculator(
         variable_info=model.variable_info,
@@ -72,11 +87,13 @@ def simulate(
 
     sparse_choice_variables = model.variable_info.query("is_choice & is_sparse").index
 
-    states = initial_states  # will be updated in the forward simulation
+    # The following variables are updated during the forward simulation
+    states = initial_states
+    key = jax.random.PRNGKey(seed=seed)
 
     # Forward simulation
     # ==================================================================================
-    result = []
+    _simulation_results = []
 
     for period in range(n_periods):
         # Create data state choice space
@@ -105,21 +122,14 @@ def simulate(
             choice_segments=data_choice_segments,
         )
 
-        gridmapped = spacemap(
-            func=compute_ccv_policy_functions[period],
-            dense_vars=list(data_scs.dense_vars),
-            sparse_vars=list(data_scs.sparse_vars),
-            dense_first=False,
-        )
-
         # Compute optimal continuous choice conditional on discrete choices
         # ==============================================================================
-        ccv_policy, ccv = gridmapped(
-            **data_scs.dense_vars,
-            **continuous_choice_grids[period],
-            **data_scs.sparse_vars,
-            **state_indexers[period],
+        ccv_policy, ccv = solve_continuous_problem(
+            data_scs=data_scs,
+            compute_ccv=compute_ccv_policy_functions[period],
+            continuous_choice_grids=continuous_choice_grids[period],
             vf_arr=vf_arr_list[period],
+            state_indexers=state_indexers[period],
             params=params,
         )
 
@@ -163,19 +173,219 @@ def simulate(
         # Store results
         # ==============================================================================
         choices = {**dense_choices, **sparse_choices, **cont_choices}
-        result.append(
+
+        _simulation_results.append(
             {
-                "choices": choices,
                 "value": value,
+                "choices": choices,
+                "states": states,
             },
         )
 
         # Update states
         # ==============================================================================
-        states = next_state(**choices, **states)
-        states = {key.lstrip("next_"): val for key, val in states.items()}
+        key, sim_keys = _generate_simulation_keys(
+            key=key,
+            ids=model.function_info.query("is_stochastic_next").index,
+        )
 
-    return result
+        states = next_state(
+            **states,
+            **choices,
+            _period=jnp.repeat(period, n_initial_states),
+            params=params,
+            keys=sim_keys,
+        )
+
+        # 'next_' prefix is added by the next_state function, but needs to be removed
+        # because in the next period, next states are current states.
+        states = {k.removeprefix("next_"): v for k, v in states.items()}
+
+        logger.info("Period: %s", period)
+
+    processed = _process_simulated_data(_simulation_results)
+
+    if additional_targets is not None:
+        calculated_targets = _compute_targets(
+            processed,
+            targets=additional_targets,
+            model_functions=model.functions,
+            params=params,
+        )
+        processed = {**processed, **calculated_targets}
+
+    return _as_data_frame(processed, n_periods=n_periods)
+
+
+@partial(jax.jit, static_argnums=1)
+def solve_continuous_problem(
+    data_scs,
+    compute_ccv,
+    continuous_choice_grids,
+    vf_arr,
+    state_indexers,
+    params,
+):
+    """Solve the agent's continuous choices problem problem.
+
+    Args:
+        data_scs (Space): Namedtuple with entries dense_vars and sparse_vars.
+        compute_ccv (callable): Function that returns the conditional continuation
+            values for a given combination of states and discrete choices. The function
+            depends on:
+            - discrete and continuous state variables
+            - discrete and continuous choice variables
+            - vf_arr
+            - one or several state_indexers
+            - params
+        continuous_choice_grids (list): List of dicts with 1d grids for continuous
+            choice variables.
+        vf_arr (jax.numpy.ndarray): Value function array.
+        state_indexers (list): List of dicts with length n_periods. Each dict contains
+            one or several state indexers.
+        params (dict): Dict of model parameters.
+
+    Returns:
+        - jnp.ndarray: Jax array with policies for each combination of a state and a
+          discrete choice. The number and order of dimensions is defined by the
+          ``gridmap`` function.
+        - jnp.ndarray: Jax array with continuation values for each combination of a
+            state and a discrete choice. The number and order of dimensions is defined
+            by the ``gridmap`` function.
+
+    """
+    gridmapped = spacemap(
+        func=compute_ccv,
+        dense_vars=list(data_scs.dense_vars),
+        sparse_vars=list(data_scs.sparse_vars),
+        dense_first=False,
+    )
+
+    return gridmapped(
+        **data_scs.dense_vars,
+        **continuous_choice_grids,
+        **data_scs.sparse_vars,
+        **state_indexers,
+        vf_arr=vf_arr,
+        params=params,
+    )
+
+
+# ======================================================================================
+# Output processing
+# ======================================================================================
+
+
+def _as_data_frame(processed, n_periods):
+    """Convert processed simulation results to DataFrame.
+
+    Args:
+        processed (dict): Dict with processed simulation results.
+        n_periods (int): Number of periods.
+
+    Returns:
+        pd.DataFrame: DataFrame with the simulation results. The index is a multi-index
+            with the first level corresponding to the period and the second level
+            corresponding to the initial state id. The columns correspond to the value,
+            and the choice and state variables, and potentially auxiliary variables.
+
+    """
+    n_initial_states = len(processed["value"]) // n_periods
+    index = pd.MultiIndex.from_product(
+        [range(n_periods), range(n_initial_states)],
+        names=["period", "initial_state_id"],
+    )
+    return pd.DataFrame(processed, index=index)
+
+
+def _compute_targets(processed_results, targets, model_functions, params):
+    """Compute targets.
+
+    Args:
+        processed_results (dict): Dict with processed simulation results. Values must be
+            one-dimensional arrays.
+        targets (list): List of targets to compute.
+        model_functions (dict): Dict with model functions.
+        params (dict): Dict with model parameters.
+
+    Returns:
+        dict: Dict with computed targets.
+
+    """
+    target_func = concatenate_functions(
+        functions=model_functions,
+        targets=targets,
+        return_type="dict",
+    )
+
+    # get list of variables over which we want to vectorize the target function
+    variables = [
+        p for p in list(inspect.signature(target_func).parameters) if p != "params"
+    ]
+
+    target_func = vmap_1d(target_func, variables=variables)
+
+    kwargs = {k: v for k, v in processed_results.items() if k in variables}
+    return target_func(params=params, **kwargs)
+
+
+def _process_simulated_data(results):
+    """Process and flatten the simulation results.
+
+    This function produces a dict of arrays for each var with dimension (n_periods *
+    n_initial_states,). The arrays are flattened, so that the resulting dictionary has a
+    one-dimensional array for each variable. The length of this array is the number of
+    periods times the number of initial states. The order of array elements is given by
+    an outer level of periods and an inner level of initial states ids.
+
+    Args:
+        results (list): List of dicts with simulation results. Each dict contains the
+            value, choices, and states for one period. Choices and states are stored in
+            a nested dictionary.
+
+    Returns:
+        dict: Dict with processed simulation results. The keys are the variable names
+            and the values are the flattened arrays, with dimension (n_periods *
+            n_initial_states, ).
+
+    """
+    list_of_dicts = [
+        {"value": d["value"], **d["choices"], **d["states"]} for d in results
+    ]
+    dict_of_lists = {
+        key: [d[key] for d in list_of_dicts] for key in list(list_of_dicts[0])
+    }
+    return {key: jnp.concatenate(values) for key, values in dict_of_lists.items()}
+
+
+# ======================================================================================
+# Simulation keys
+# ======================================================================================
+
+
+def _generate_simulation_keys(key, ids):
+    """Generate PRNG keys for simulation.
+
+    Args:
+        key (jax.random.PRNGKey): PRNG key.
+        ids (list): List of names for which a key is to be generated.
+
+    Returns:
+        jax.random.PRNGKey: Updated PRNG key.
+        dict: Dict with PRNG keys for each id in ids.
+
+    """
+    keys = jax.random.split(key, num=len(ids) + 1)
+
+    key = keys[0]
+    simulation_keys = dict(zip(ids, keys[1:], strict=True))
+
+    return key, simulation_keys
+
+
+# ======================================================================================
+# Filter policy
+# ======================================================================================
 
 
 @partial(vmap_1d, variables=["ccv_policy", "dense_argmax"])
@@ -202,6 +412,11 @@ def filter_ccv_policy(
         indices = jnp.unravel_index(dense_argmax, shape=dense_vars_grid_shape)
         out = ccv_policy[indices]
     return out
+
+
+# ======================================================================================
+# Non-sparse choices
+# ======================================================================================
 
 
 def retrieve_non_sparse_choices(indices, grids, grid_shape):
@@ -270,16 +485,19 @@ def create_data_scs(
 
     has_sparse_choice_vars = len(vi.query("is_sparse & is_choice")) > 0
 
-    n_states = len(list(states.values())[0])
+    n_states = len(next(iter(states.values())))
 
     # check that all states have an initial value
     # ==================================================================================
     state_names = set(vi.query("is_state").index)
 
     if state_names != set(states.keys()):
+        missing = state_names - set(states.keys())
+        too_many = set(states.keys()) - state_names
         raise ValueError(
             "You need to provide an initial value for each state variable in the model."
-            f" Missing initial states: {state_names - set(states.keys())}",
+            f"\n\nMissing initial states: {missing}\n",
+            f"Provided variables that are not states: {too_many}",
         )
 
     # get sparse and dense choices
@@ -466,12 +684,15 @@ def determine_discrete_dense_choice_axes(variable_info):
             discrete and dense choices.
 
     """
-    dense_vars = variable_info.query(
-        "is_dense & ~(is_choice & is_continuous)",
+    discrete_dense_choice_vars = variable_info.query(
+        "~is_continuous & is_dense & is_choice",
     ).index.tolist()
 
     choice_vars = set(variable_info.query("is_choice").index.tolist())
 
-    choice_indices = [i for i, ax in enumerate(dense_vars) if ax in choice_vars]
+    # We add 1 because the first dimension corresponds to the sparse state variables
+    choice_indices = [
+        i + 1 for i, ax in enumerate(discrete_dense_choice_vars) if ax in choice_vars
+    ]
 
     return None if not choice_indices else tuple(choice_indices)

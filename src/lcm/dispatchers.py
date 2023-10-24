@@ -1,7 +1,8 @@
-import functools
 import inspect
 
 from jax import vmap
+
+from lcm.functools import allow_args, allow_kwargs
 
 
 def spacemap(func, dense_vars, sparse_vars, *, dense_first):
@@ -39,6 +40,8 @@ def spacemap(func, dense_vars, sparse_vars, *, dense_first):
             above but there might be additional dimensions.
 
     """
+    func = allow_args(func)  # vmap cannot deal with keyword-only arguments
+
     if not set(dense_vars).isdisjoint(sparse_vars):
         raise ValueError("dense_vars and sparse_vars overlap.")
 
@@ -96,6 +99,8 @@ def productmap(func, variables):
             might be additional dimensions.
 
     """
+    func = allow_args(func)  # vmap cannot deal with keyword-only arguments
+
     if len(variables) != len(set(variables)):
         raise ValueError("Same argument provided more than once.")
 
@@ -175,47 +180,3 @@ def _product_map(func, product_axes):
         vmapped = vmap(vmapped, in_axes=spec)
 
     return vmapped
-
-
-def allow_kwargs(func):
-    """Allow a function to be called with keyword arguments.
-
-    Args:
-        func (callable): The function to be wrapped.
-
-    Returns:
-        callable: A callable with the same arguments as func (but with the additional
-            possibility to call it with keyword arguments).
-
-    """
-
-    @functools.wraps(func)
-    def allow_kwargs_wrapper(*args, **kwargs):
-        parameters = list(inspect.signature(func).parameters)
-
-        positional = list(args) if args is not None else []
-
-        kwargs = {} if args is None else kwargs
-        if len(args) + len(kwargs) != len(parameters):
-            raise ValueError("Not enough or too many arguments provided.")
-
-        positional += convert_kwargs_to_args(kwargs, parameters)
-
-        return func(*positional)
-
-    return allow_kwargs_wrapper
-
-
-def convert_kwargs_to_args(kwargs, parameters):
-    """Convert kwargs to args in the order of parameters.
-
-    Args:
-        kwargs (dict): Keyword arguments.
-        parameters (list): List of parameter names in the order they should be.
-
-    Returns:
-        list: List of arguments in the order of parameters.
-
-    """
-    sorted_kwargs = dict(sorted(kwargs.items(), key=lambda kw: parameters.index(kw[0])))
-    return list(sorted_kwargs.values())

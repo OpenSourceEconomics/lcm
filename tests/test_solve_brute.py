@@ -3,6 +3,7 @@ import numpy as np
 from jax.scipy.ndimage import map_coordinates
 from lcm.entry_point import create_compute_conditional_continuation_value
 from lcm.interfaces import Space
+from lcm.logging import get_logger
 from lcm.solve_brute import solve, solve_continuous_problem
 from numpy.testing import assert_array_almost_equal as aaae
 
@@ -110,6 +111,7 @@ def test_solve_brute():
         continuous_choice_grids=continuous_choice_grids,
         compute_ccv_functions=utility_and_feasibility_functions,
         emax_calculators=emax_calculators,
+        logger=get_logger(debug_mode=False),
     )
 
     assert isinstance(solution, list)
@@ -126,25 +128,22 @@ def test_solve_continuous_problem_no_vf_arr():
         feasib = d <= a + b + c
         return util, feasib
 
-    continuous_choice_grids = {"d": jnp.arange(12)}
+    continuous_choice_grids = {"d": jnp.arange(12.0)}
 
     compute_ccv = create_compute_conditional_continuation_value(
         utility_and_feasibility=_utility_and_feasibility,
         continuous_choice_variables=["d"],
     )
 
-    expected = np.array([[[6, 7, 8], [7, 8, 9]], [[7, 8, 9], [8, 9, 10]]])
+    expected = np.array([[[6.0, 7, 8], [7, 8, 9]], [[7, 8, 9], [8, 9, 10]]])
     expected = np.transpose(expected, axes=(2, 0, 1))
 
-    calculated = np.array(
-        solve_continuous_problem(
-            state_choice_space,
-            compute_ccv,
-            continuous_choice_grids,
-            vf_arr=None,
-            state_indexers={},
-            params={},
-        ),
+    got = solve_continuous_problem(
+        state_choice_space,
+        compute_ccv,
+        continuous_choice_grids,
+        vf_arr=None,
+        state_indexers={},
+        params={},
     )
-
-    aaae(calculated, expected)
+    aaae(got, expected)

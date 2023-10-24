@@ -4,11 +4,11 @@ from lcm.entry_point import (
     create_compute_conditional_continuation_policy,
     create_compute_conditional_continuation_value,
     get_lcm_function,
-    get_next_state_function,
 )
 from lcm.example_models import (
     FULLY_DISCRETE_CONSUMPTION_MODEL,
     PHELPS_DEATON,
+    PHELPS_DEATON_FULLY_DISCRETE,
     PHELPS_DEATON_WITH_FILTERS,
     phelps_deaton_utility,
 )
@@ -20,7 +20,7 @@ from pybaum import tree_equal, tree_map
 MODELS = {
     "simple": PHELPS_DEATON,
     "with_filters": PHELPS_DEATON_WITH_FILTERS,
-    "discrete": FULLY_DISCRETE_CONSUMPTION_MODEL,
+    "fully_discrete": PHELPS_DEATON_FULLY_DISCRETE,
 }
 
 
@@ -45,8 +45,8 @@ def test_get_lcm_function_with_solve_target(user_model):
 
 @pytest.mark.parametrize(
     "user_model",
-    [PHELPS_DEATON, FULLY_DISCRETE_CONSUMPTION_MODEL],
-    ids=["simple", "discrete"],
+    [PHELPS_DEATON, PHELPS_DEATON_FULLY_DISCRETE],
+    ids=["simple", "fully_discrete"],
 )
 def test_get_lcm_function_with_simulation_target_simple(user_model):
     simulate, params_template = get_lcm_function(
@@ -63,7 +63,11 @@ def test_get_lcm_function_with_simulation_target_simple(user_model):
     )
 
 
-@pytest.mark.parametrize("user_model", [PHELPS_DEATON], ids=["simple"])
+@pytest.mark.parametrize(
+    "user_model",
+    [PHELPS_DEATON, PHELPS_DEATON_FULLY_DISCRETE],
+    ids=["simple", "fully_discrete"],
+)
 def test_get_lcm_function_with_simulation_is_coherent(user_model):
     """Test that solve_and_simulate creates same output as solve then simulate."""
     # solve then simulate
@@ -155,6 +159,7 @@ def test_create_compute_conditional_continuation_value():
         space_info=space_info,
         data_name="vf_arr",
         interpolation_options={},
+        period=model.n_periods - 1,
         is_last_period=True,
     )
 
@@ -174,7 +179,7 @@ def test_create_compute_conditional_continuation_value():
 
 
 def test_create_compute_conditional_continuation_value_discrete():
-    model = process_model(FULLY_DISCRETE_CONSUMPTION_MODEL)
+    model = process_model(PHELPS_DEATON_FULLY_DISCRETE)
 
     params = {
         "beta": 1.0,
@@ -244,6 +249,7 @@ def test_create_compute_conditional_continuation_policy():
         space_info=space_info,
         data_name="vf_arr",
         interpolation_options={},
+        period=model.n_periods - 1,
         is_last_period=True,
     )
 
@@ -304,28 +310,3 @@ def test_create_compute_conditional_continuation_policy_discrete():
     )
     assert policy == 0
     assert val == phelps_deaton_utility(consumption=1, working=0, delta=1.0)
-
-
-# ======================================================================================
-# Next state
-# ======================================================================================
-
-
-def test_get_next_state_function():
-    model = process_model(PHELPS_DEATON)
-    next_state = get_next_state_function(model)
-
-    params = {
-        "beta": 1.0,
-        "utility": {"delta": 1.0},
-        "next_wealth": {
-            "interest_rate": 0.05,
-            "wage": 1.0,
-        },
-    }
-
-    choice = {"retirement": 1, "consumption": 10}
-    state = {"wealth": 20}
-
-    _next_state = next_state(**choice, **state, params=params)
-    assert _next_state == {"next_wealth": 1.05 * (20 - 10)}

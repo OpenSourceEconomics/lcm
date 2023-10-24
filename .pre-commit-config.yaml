@@ -6,7 +6,7 @@ repos:
       - id: check-useless-excludes
         # - id: identity  # Prints all files passed to pre-commits. Debugging.
   - repo: https://github.com/lyz-code/yamlfix
-    rev: 1.12.0
+    rev: 1.13.0
     hooks:
       - id: yamlfix
   - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -45,36 +45,42 @@ repos:
     hooks:
       - id: yamllint
   - repo: https://github.com/psf/black
-    rev: 23.3.0
+    rev: 23.9.1
     hooks:
       - id: black
-        language_version: python3.10
+        language_version: python3.11
   - repo: https://github.com/asottile/blacken-docs
-    rev: 1.14.0
+    rev: 1.16.0
     hooks:
       - id: blacken-docs
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.0.276
+    rev: v0.0.292
     hooks:
       - id: ruff
       #   args:
       #     - --verbose
-  # - repo: https://github.com/kynan/nbstripout
-  #   rev: 0.6.1
-  #   hooks:
-  #     - id: nbstripout
-  #       args:
-  #         - --extra-keys
-  #         - metadata.kernelspec metadata.language_info.version metadata.vscode
+  - repo: https://github.com/kynan/nbstripout
+    rev: 0.6.1
+    hooks:
+      - id: nbstripout
+        args:
+          - --extra-keys
+          - metadata.kernelspec metadata.language_info.version metadata.vscode
   - repo: https://github.com/nbQA-dev/nbQA
     rev: 1.7.0
     hooks:
       - id: nbqa-black
+        additional_dependencies:
+          - black==23.7.0
         exclude: src/lcm/sandbox/
       - id: nbqa-ruff
+        additional_dependencies:
+          - ruff==v0.0.281
+        args:
+          - --ignore=B018,T201
         exclude: src/lcm/sandbox/
   - repo: https://github.com/executablebooks/mdformat
-    rev: 0.7.16
+    rev: 0.7.17
     hooks:
       - id: mdformat
         additional_dependencies:
@@ -85,7 +91,7 @@ repos:
           - '88'
         files: (README\.md)
   - repo: https://github.com/asottile/setup-cfg-fmt
-    rev: v2.4.0
+    rev: v2.5.0
     hooks:
       - id: setup-cfg-fmt
   - repo: https://github.com/mgedmin/check-manifest

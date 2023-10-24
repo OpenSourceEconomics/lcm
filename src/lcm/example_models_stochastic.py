@@ -3,17 +3,12 @@ import jax.numpy as jnp
 
 import lcm
 
-RETIREMENT_AGE = 65
 N_CHOICE_GRID_POINTS = 500
 N_STATE_GRID_POINTS = 100
 
 
-def phelps_deaton_utility(consumption, working, delta):
-    return jnp.log(consumption) - delta * working
-
-
-def working(retirement):
-    return 1 - retirement
+def utility(consumption, working, health, partner, delta, gamma):  # noqa: ARG001
+    return jnp.log(consumption) + (gamma * health - delta) * working
 
 
 def next_wealth(wealth, consumption, working, wage, interest_rate):
@@ -21,28 +16,29 @@ def next_wealth(wealth, consumption, working, wage, interest_rate):
 
 
 @lcm.mark.stochastic
-def next_wage(wage):
-    return wage
+def next_health(health, partner):  # noqa: ARG001
+    pass
+
+
+@lcm.mark.stochastic
+def next_partner(_period):
+    pass
 
 
 def consumption_constraint(consumption, wealth):
     return consumption <= wealth
 
 
-def age(period):
-    return period + 18
-
-
-PHELPS_DEATON = {
+MODEL = {
     "functions": {
-        "utility": phelps_deaton_utility,
+        "utility": utility,
         "next_wealth": next_wealth,
-        "next_wage": next_wage,
+        "next_health": next_health,
+        "next_partner": next_partner,
         "consumption_constraint": consumption_constraint,
-        "working": working,
     },
     "choices": {
-        "retirement": {"options": [0, 1]},
+        "working": {"options": [0, 1]},
         "consumption": {
             "grid_type": "linspace",
             "start": 0,
@@ -51,7 +47,8 @@ PHELPS_DEATON = {
         },
     },
     "states": {
-        "wage": {"options": [0, 1]},
+        "health": {"options": [0, 1]},
+        "partner": {"options": [0, 1]},
         "wealth": {
             "grid_type": "linspace",
             "start": 0,
@@ -59,5 +56,18 @@ PHELPS_DEATON = {
             "n_points": N_STATE_GRID_POINTS,
         },
     },
-    "n_periods": 20,
+    "n_periods": 3,
+}
+
+
+PARAMS = {
+    "beta": 0.25,
+    "utility": {"delta": 0.25, "gamma": 0.25},
+    "next_wealth": {"interest_rate": 0.25, "wage": 0.25},
+    "next_health": {},
+    "consumption_constraint": {},
+    "shocks": {
+        "health": jnp.array([[[0.5, 0.5], [0.5, 0.5]], [[0.5, 0.5], [0.5, 0.5]]]),
+        "partner": jnp.array([[1.0, 0], [0.0, 1]]),
+    },
 }

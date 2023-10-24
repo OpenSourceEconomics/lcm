@@ -4,15 +4,15 @@ channels:
   - conda-forge
   - nodefaults
 dependencies:
-  - python=3.10
+  - python=3.11
   - pip
   - setuptools_scm
   - toml
 
   # Package dependencies
   - dags
-  - jax>=0.3.0
-  - jaxlib>=0.3.0
+  - jax>=0.4.10
+  - jaxlib>=0.4.10
   - numpy
   - pandas
 
@@ -33,6 +33,7 @@ dependencies:
   - pdbpp
   - pre-commit
   - pydot
+  - snakeviz
 
   # Documentation
   - sphinx

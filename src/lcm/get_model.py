@@ -32,8 +32,18 @@ def get_model(model: str):
 # Models
 # ======================================================================================
 
+# Remove age and wage functions from Phelps-Deaton model, as they are not used in the
+# original paper.
+PHELPS_DEATON_WITHOUT_AGE = PHELPS_DEATON.copy()
+PHELPS_DEATON_WITHOUT_AGE["functions"] = {
+    name: func
+    for name, func in PHELPS_DEATON_WITHOUT_AGE["functions"].items()
+    if name not in ["age", "wage"]
+}
+
+
 PHELPS_DEATON_FIVE_PERIODS = {
-    **PHELPS_DEATON,
+    **PHELPS_DEATON_WITHOUT_AGE,
     "choices": {
         "retirement": {"options": [0, 1]},
         "consumption": {
