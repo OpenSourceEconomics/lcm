@@ -346,16 +346,21 @@ def _process_simulated_data(results):
     Returns:
         dict: Dict with processed simulation results. The keys are the variable names
             and the values are the flattened arrays, with dimension (n_periods *
-            n_initial_states, ).
+            n_initial_states, ). Additionally, the _period variable is added.
 
     """
+    n_periods = len(results)
+    n_initial_states = len(results[0]["value"])
+
     list_of_dicts = [
         {"value": d["value"], **d["choices"], **d["states"]} for d in results
     ]
     dict_of_lists = {
         key: [d[key] for d in list_of_dicts] for key in list(list_of_dicts[0])
     }
-    return {key: jnp.concatenate(values) for key, values in dict_of_lists.items()}
+    out = {key: jnp.concatenate(values) for key, values in dict_of_lists.items()}
+    out["_period"] = jnp.repeat(jnp.arange(n_periods), n_initial_states)
+    return out
 
 
 # ======================================================================================
