@@ -145,6 +145,7 @@ def test_simulate_using_get_lcm_function(phelps_deaton_model_solution, n_periods
     )
 
     assert {
+        "_period",
         "value",
         "retirement",
         "consumption",

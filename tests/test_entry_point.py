@@ -59,6 +59,7 @@ def test_get_lcm_function_with_simulation_target_simple(user_model):
         initial_states={
             "wealth": jnp.array([0.0, 10.0, 50.0]),
         },
+        additional_targets=["age"] if "age" in user_model["functions"] else None,
     )
 
 
