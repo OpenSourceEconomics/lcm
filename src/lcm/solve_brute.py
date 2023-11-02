@@ -1,5 +1,3 @@
-from functools import partial
-
 import jax
 
 from lcm.dispatchers import spacemap
@@ -79,7 +77,6 @@ def solve(
     return list(reversed(reversed_solution))
 
 
-@partial(jax.jit, static_argnums=1)
 def solve_continuous_problem(
     state_choice_space,
     compute_ccv,
@@ -113,12 +110,13 @@ def solve_continuous_problem(
             by the ``gridmap`` function.
 
     """
-    gridmapped = spacemap(
+    _gridmapped = spacemap(
         func=compute_ccv,
         dense_vars=list(state_choice_space.dense_vars),
         sparse_vars=list(state_choice_space.sparse_vars),
         dense_first=False,
     )
+    gridmapped = jax.jit(_gridmapped)
 
     return gridmapped(
         **state_choice_space.dense_vars,
