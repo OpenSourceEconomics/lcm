@@ -217,7 +217,6 @@ def simulate(
     return _as_data_frame(processed, n_periods=n_periods)
 
 
-@partial(jax.jit, static_argnums=1)
 def solve_continuous_problem(
     data_scs,
     compute_ccv,
@@ -254,12 +253,13 @@ def solve_continuous_problem(
             by the ``gridmap`` function.
 
     """
-    gridmapped = spacemap(
+    _gridmapped = spacemap(
         func=compute_ccv,
         dense_vars=list(data_scs.dense_vars),
         sparse_vars=list(data_scs.sparse_vars),
         dense_first=False,
     )
+    gridmapped = jax.jit(_gridmapped)
 
     return gridmapped(
         **data_scs.dense_vars,
