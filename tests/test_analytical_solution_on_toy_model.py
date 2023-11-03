@@ -1,7 +1,9 @@
 """Test analytical solution and simulation with only discrete choices."""
-import itertools
+
+from copy import deepcopy
 
 import jax.numpy as jnp
+import lcm
 import numpy as np
 import pandas as pd
 import pytest
@@ -13,7 +15,7 @@ from pandas.testing import assert_frame_equal
 # ======================================================================================
 # Model specification
 # ======================================================================================
-def utility(consumption, working, wealth=None):  # noqa: ARG001
+def utility(consumption, working, wealth, productivity):  # noqa: ARG001
     return jnp.log(consumption + 1) - 0.5 * working
 
 
@@ -25,10 +27,7 @@ def consumption_constraint(consumption, wealth):
     return consumption <= wealth
 
 
-N_WEALTH_POINTS = 100
-
-
-MODEL = {
+DETERMINISTIC_MODEL = {
     "functions": {
         "utility": utility,
         "next_wealth": next_wealth,
@@ -41,27 +40,27 @@ MODEL = {
     "states": {
         "wealth": {
             "grid_type": "linspace",
-            "start": 0.01,
+            "start": 0,
             "stop": 2,
-            "n_points": N_WEALTH_POINTS,
+            "n_points": None,
         },
     },
     "n_periods": 2,
 }
 
 
-# ======================================================================================
-# Analytical solution and simulation
-# ======================================================================================
-def arr2d_to_dict_of_arr1d(arr, col_names):
-    """Transform a 2d array into a dict of 1d arrays."""
-    return dict(zip(col_names, arr.transpose(), strict=True))
+@lcm.mark.stochastic
+def next_productivity(productivity):  # noqa: ARG001
+    pass
 
 
+# ======================================================================================
+# Analytical solution and simulation (deterministic model)
+# ======================================================================================
 def value_second_period(wealth):
     """Value function in the second (last) period. Computed using pen and paper."""
     consumption = np.minimum(1, np.floor(wealth))
-    return utility(consumption, working=0)
+    return np.log(consumption + 1)
 
 
 def policy_second_period(wealth):
@@ -70,86 +69,82 @@ def policy_second_period(wealth):
     First column corresponds to consumption choice, second to working choice.
 
     """
-    index = np.array(wealth >= 1, dtype=int)
-    policy = np.array([[0, 0], [1, 0]])[index]
-    return arr2d_to_dict_of_arr1d(policy, col_names=["consumption", "working"])
+    policy = np.column_stack(
+        (np.minimum(1, np.floor(wealth)), np.zeros_like(wealth)),
+    ).astype(int)
+    return matrix_to_dict_of_vectors(policy, col_names=["consumption", "working"])
 
 
-def _big_u_first_period(wealth, consumption, working):
-    beta = 0.9
-    if consumption_constraint(consumption, wealth):
-        nw = next_wealth(wealth, consumption, working)
-        out = utility(consumption, working=working) + beta * value_second_period(nw)
-    else:
-        out = -np.inf
-    return out
+def value_first_period(wealth, params):
+    """Value function in the first period. Computed using pen and paper."""
+    index = np.floor(wealth).astype(int)  # map wealth to index 0, 1 and 2
+    values = np.array(
+        [
+            np.maximum(0, params["beta"] * np.log(2) - 0.5),
+            np.maximum(0, params["beta"] * np.log(2) - 0.5) + np.log(2),
+            (1 + params["beta"]) * np.log(2),
+        ],
+    )
+    return values[index]
 
 
-def value_and_policy_first_period(wealth):
-    """Value and policy function in the first period.
-
-    Assuming that consumption and working are both binary choices.
-
-    """
-    # Choice grids
-    # ==================================================================================
-    c = np.arange(2)
-    a = np.arange(2)
-    n_choices = 2
-
-    # Grids
-    # ==================================================================================
-
-    vf_arr = np.empty(len(wealth))
-    policy = np.empty((len(wealth), n_choices), dtype=int)
-
-    # Loop over wealth levels
-    # ==================================================================================
-    for i, w in enumerate(wealth):
-        # For each wealth level, loop over choices and pick the best one
-        # ==============================================================================
-        values = np.empty((len(c), len(a)))
-        for _c, _a in itertools.product(c, a):
-            values[_c, _a] = _big_u_first_period(
-                wealth=w,
-                consumption=_c,
-                working=_a,
-            )
-
-        policy[i, :] = np.unravel_index(values.argmax(), values.shape)
-        vf_arr[i] = values.max()
-
-    return vf_arr, arr2d_to_dict_of_arr1d(policy, col_names=["consumption", "working"])
+def policy_first_period(wealth, params):
+    """Policy function in the first period. Computed using pen and paper."""
+    index = np.floor(wealth).astype(int)  # map wealth to index 0, 1 and 2
+    policies = np.array(
+        [
+            [0, np.argmax((0, params["beta"] * np.log(2) - 0.5))],
+            [1, np.argmax((0, params["beta"] * np.log(2) - 0.5))],
+            [1, 0],
+        ],
+        dtype=int,
+    )
+    policy = policies[index]
+    return matrix_to_dict_of_vectors(policy, col_names=["consumption", "working"])
 
 
-def analytical_solve(wealth_grid):
-    vf_arr_0, _ = value_and_policy_first_period(wealth_grid)
+def matrix_to_dict_of_vectors(arr, col_names):
+    """Transform a matrix into a dict of vectors."""
+    if arr.ndim != 2:
+        raise ValueError("arr must be a two-dimensional array (matrix).")
+    return dict(zip(col_names, arr.transpose(), strict=True))
+
+
+def analytical_solve(wealth_grid, params):
+    vf_arr_0 = value_first_period(wealth_grid, params)
     vf_arr_1 = value_second_period(wealth_grid)
     return [vf_arr_0, vf_arr_1]
 
 
-def analytical_simulate(initial_wealth):
-    vf_arr_0, policy_0 = value_and_policy_first_period(initial_wealth)
+def analytical_simulate(initial_wealth, params):
+    # Simulate
+    # ==================================================================================
+    vf_arr_0 = value_first_period(initial_wealth, params=params)
+    policy_0 = policy_first_period(initial_wealth, params=params)
 
-    _next_wealth = next_wealth(initial_wealth, **policy_0)
-    vf_arr_1_for_simulation = value_second_period(_next_wealth)
+    wealth_1 = next_wealth(initial_wealth, **policy_0)
 
-    policy_1 = policy_second_period(_next_wealth)
+    vf_arr_1 = value_second_period(wealth_1)
+    policy_1 = policy_second_period(wealth_1)
 
     policy_0_renamed = {f"{k}_0": v for k, v in policy_0.items()}
     policy_1_renamed = {f"{k}_1": v for k, v in policy_1.items()}
 
-    raw = pd.DataFrame(
+    # Transform data into format as expected by LCM
+    # ==================================================================================
+    data = (
         {
             "initial_state_id": jnp.arange(len(initial_wealth)),
             "wealth_0": initial_wealth,
-            "wealth_1": _next_wealth,
+            "wealth_1": wealth_1,
             "value_0": vf_arr_0,
-            **policy_0_renamed,
-            "value_1": vf_arr_1_for_simulation,
-            **policy_1_renamed,
-        },
+            "value_1": vf_arr_1,
+        }
+        | policy_0_renamed
+        | policy_1_renamed
     )
+
+    raw = pd.DataFrame(data)
     raw_long = pd.wide_to_long(
         raw,
         stubnames=["value", "wealth", "consumption", "working"],
@@ -157,50 +152,92 @@ def analytical_simulate(initial_wealth):
         j="period",
         sep="_",
     )
-    raw_with_correct_index = raw_long.swaplevel().sort_index()
-    return raw_with_correct_index.assign(
-        _period=raw_with_correct_index.index.get_level_values("period"),
+    raw_long_with_index = raw_long.swaplevel().sort_index()
+    return raw_long_with_index.assign(
+        _period=raw_long_with_index.index.get_level_values("period"),
     )
 
 
 # ======================================================================================
 # Tests
 # ======================================================================================
-def test_solve():
+
+
+@pytest.mark.parametrize("beta", [0, 0.5, 0.9, 1.0])
+@pytest.mark.parametrize("n_wealth_points", [100, 1_000])
+def test_deterministic_solve(beta, n_wealth_points):
+    # Update model
+    # ==================================================================================
+    model = deepcopy(DETERMINISTIC_MODEL)
+    model["states"]["wealth"]["n_points"] = n_wealth_points
+
+    # Solve model using LCM
+    # ==================================================================================
     solve, _ = get_lcm_function(
-        model=MODEL,
+        model=model,
         targets="solve",
     )
-    got = solve(
-        params={"beta": 0.9},
+    params = {"beta": beta, "utility": {"productivity": 1}}
+    got = solve(params)
+
+    # Compute analytical solution
+    # ==================================================================================
+    wealth_grid_spec = model["states"]["wealth"]
+    wealth_grid = np.linspace(
+        start=wealth_grid_spec["start"],
+        stop=wealth_grid_spec["stop"],
+        num=wealth_grid_spec["n_points"],
     )
-    expected = analytical_solve(wealth_grid=np.linspace(0, 2, N_WEALTH_POINTS))
+    expected = analytical_solve(wealth_grid, params=params)
 
-    # Assert that in the first period, the arrays do not have the same values on the
-    # first and last index: THIS IS A BUG AND NEEDS TO BE INVESTIGATED
+    # Do not assert that in the first period, the arrays have the same values on the
+    # first and last index: TODO (@timmens): THIS IS A BUG AND NEEDS TO BE INVESTIGATED.
     # ==================================================================================
-    first_and_last_idx = np.array([0, -1])
-    with pytest.raises(AssertionError):
-        aaae(got[0][first_and_last_idx], expected[0][first_and_last_idx], decimal=5)
+    aaae(got[0][slice(1, -1)], expected[0][slice(1, -1)], decimal=12)
+    aaae(got[1][slice(None)], expected[1][slice(None)], decimal=12)
 
-    # Assert that in the first period, both arrays have the same values on all values
-    # except the first and last index
+
+@pytest.mark.parametrize("beta", [0, 0.5, 0.9, 1.0])
+@pytest.mark.parametrize("n_wealth_points", [100, 1_000])
+def test_deterministic_simulate(beta, n_wealth_points):
+    # Update model
     # ==================================================================================
-    aaae(got[0][slice(1, -1)], expected[0][slice(1, -1)], decimal=5)
+    model = deepcopy(DETERMINISTIC_MODEL)
+    model["states"]["wealth"]["n_points"] = n_wealth_points
 
-    # Assert that in the first period, both arrays have the same values on all values
+    # Simulate model using LCM
     # ==================================================================================
-    aaae(got[1][slice(None)], expected[1][slice(None)], decimal=9)
-
-
-def test_simulate():
     solve_and_simulate, _ = get_lcm_function(
-        model=MODEL,
+        model=model,
         targets="solve_and_simulate",
     )
+    params = {"beta": beta, "utility": {"productivity": 1}}
     got = solve_and_simulate(
-        params={"beta": 0.9},
+        params=params,
         initial_states={"wealth": jnp.array([0.25, 0.75, 1.25, 1.75])},
     )
-    expected = analytical_simulate(initial_wealth=np.array([0.25, 0.75, 1.25, 1.75]))
+
+    # Compute analytical simulation
+    # ==================================================================================
+    expected = analytical_simulate(
+        initial_wealth=np.array([0.25, 0.75, 1.25, 1.75]),
+        params=params,
+    )
     assert_frame_equal(got, expected, check_like=True)
+
+
+@pytest.mark.skip()
+def test_stochastic_solve():
+    solve, _ = get_lcm_function(
+        model=DETERMINISTIC_MODEL,
+        targets="solve",
+    )
+    transition = jnp.array(
+        [
+            [0.8, 0.2],
+            [0.1, 0.9],
+        ],
+    )
+    solve(
+        params={"beta": 0.9, "shocks": {"productivity": transition}},
+    )
