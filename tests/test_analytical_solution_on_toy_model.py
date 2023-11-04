@@ -369,9 +369,17 @@ def test_deterministic_simulate(beta, n_wealth_points):
     assert_frame_equal(got, expected, check_like=True)
 
 
+HEALTH_TRANSITION = [
+    np.array([[0.9, 0.1], [0.2, 0.8]]),
+    np.array([[0.9, 0.1], [0, 1]]),
+    np.array([[0.5, 0.5], [0.2, 0.8]]),
+]
+
+
 @pytest.mark.parametrize("beta", [0, 0.5, 0.9, 1.0])
 @pytest.mark.parametrize("n_wealth_points", [100, 1_000])
-def test_stochstic_solve(beta, n_wealth_points):
+@pytest.mark.parametrize("health_transition", HEALTH_TRANSITION)
+def test_stochastic_solve(beta, n_wealth_points, health_transition):
     beta = 0.9
     n_wealth_points = 100
     # Update model
@@ -385,7 +393,7 @@ def test_stochstic_solve(beta, n_wealth_points):
         model=model,
         targets="solve",
     )
-    params = {"beta": beta, "shocks": {"health": np.array([[0.9, 0.1], [0.2, 0.8]])}}
+    params = {"beta": beta, "shocks": {"health": health_transition}}
     got = solve(params)
 
     # Compute analytical solution
@@ -420,7 +428,8 @@ def test_stochstic_solve(beta, n_wealth_points):
 
 @pytest.mark.parametrize("beta", [0, 0.5, 0.9, 1.0])
 @pytest.mark.parametrize("n_wealth_points", [100, 1_000])
-def test_stochastic_simulate(beta, n_wealth_points):
+@pytest.mark.parametrize("health_transition", HEALTH_TRANSITION)
+def test_stochastic_simulate(beta, n_wealth_points, health_transition):
     # Update model
     # ==================================================================================
     model = deepcopy(STOCHASTIC_MODEL)
@@ -432,7 +441,7 @@ def test_stochastic_simulate(beta, n_wealth_points):
         model=model,
         targets="solve_and_simulate",
     )
-    params = {"beta": beta, "shocks": {"health": np.array([[0.9, 0.1], [0, 1]])}}
+    params = {"beta": beta, "shocks": {"health": health_transition}}
     initial_states = {
         "wealth": jnp.array([0.25, 0.75, 1.25, 1.75, 2.0]),
         "health": jnp.array([0, 1, 0, 1, 1]),
