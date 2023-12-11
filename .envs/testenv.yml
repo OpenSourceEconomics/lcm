@@ -10,8 +10,8 @@ dependencies:
 
   # Package dependencies
   - dags
-  - jax>=0.3.0
-  - jaxlib>=0.3.0
+  - jax>=0.4.10
+  - jaxlib>=0.4.10
   - numpy
   - pandas
 
