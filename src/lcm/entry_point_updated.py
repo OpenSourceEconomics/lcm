@@ -11,8 +11,8 @@ def get_lcm_function(
 ):
     # Setup
     # ==================================================================================
-    model = ModelBlock(model_specification)  # Larger models may consist of multiple
-    # model blocks. Here we only require one.
+    # Larger models may consist of multiple model blocks. Here we only require one.
+    model = ModelBlock(model_specification)
 
     # Objects related to the state choice space
     # ==================================================================================

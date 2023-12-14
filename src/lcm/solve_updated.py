@@ -45,8 +45,9 @@ def backward_induction(
     # ==================================================================================
     n_periods = len(state_choice_spaces)
     reversed_solution = []
-    vf_arr = None  # This represents the value function of next period, which will be
-    # updated in each iteration of the backward induction loop.
+    # vf_arr represents the value function of next period, which will be updated in each
+    # iteration of the backward induction loop.
+    vf_arr = None
 
     # Backwards induction loop
     # ==================================================================================
