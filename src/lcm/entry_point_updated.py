@@ -1,7 +1,7 @@
 from functools import partial
 
 from lcm.model_block import ModelBlock
-from lcm.simulate import simulate
+from lcm.simulate_updated import forward_simulation
 from lcm.solve_updated import backward_induction
 
 
@@ -58,7 +58,7 @@ def get_lcm_function(
     )
 
     _simulate_model = partial(
-        simulate,
+        forward_simulation,
         state_indexers=state_indexers,
         continuous_choice_grids=continuous_choice_grids,
         compute_ccv_policy_functions=argsolve_continuous_problem,
