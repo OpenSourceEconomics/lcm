@@ -68,8 +68,8 @@ class ModelBlock:
         """Reference: get_emax_calculator"""
         choice_segment = _get_choice_segments(...)
 
-    def get_solve_discrete_problem(self, period: int):
-        """Reference: get_discrete_policy_calculator"""
+    def get_argsolve_discrete_problem(self, period: int):
+        """Reference: get_discrete_policy_calculator, but depends on choice_segments."""
         choice_segment = _get_choice_segments(...)
 
     def get_continuous_choice_grids(self, period: int):

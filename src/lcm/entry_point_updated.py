@@ -7,7 +7,7 @@ from lcm.solve_updated import backward_induction
 
 def get_lcm_function(
     model_specification,
-    target,
+    targets,
 ):
     # Setup
     # ==================================================================================
@@ -38,8 +38,12 @@ def get_lcm_function(
     # Functions that simulate the agent's choices
     # ==================================================================================
     argsolve_continuous_problem = [
-        model.get_argsolve_continuous_problem(t, on="state_choice_space")
+        model.get_argsolve_continuous_problem(t, on="sim_state_choice_space")
         for t in model.periods
+    ]
+    
+    argsolve_discrete_problem = [
+        model.get_argsolve_discrete_problem(t) for t in model.periods
     ]
 
     draw_next_states = [
@@ -59,9 +63,10 @@ def get_lcm_function(
 
     _simulate_model = partial(
         forward_simulation,
+        argsolve_continuous_problem=argsolve_continuous_problem,
+        argsolve_discrete_problem=argsolve_discrete_problem,
         state_indexers=state_indexers,
         continuous_choice_grids=continuous_choice_grids,
-        compute_ccv_policy_functions=argsolve_continuous_problem,
         model=model._specification,
         next_state=draw_next_states,
     )
@@ -73,4 +78,4 @@ def get_lcm_function(
         "simulate": _simulate_model,
         "solve_and_simulate": partial(_simulate_model, solve_model=_solve_model),
     }
-    return targets[target]
+    return targets[targets]
