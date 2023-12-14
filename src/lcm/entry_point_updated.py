@@ -2,7 +2,7 @@ from functools import partial
 
 from lcm.model_block import ModelBlock
 from lcm.simulate import simulate
-from lcm.solve_brute import solve
+from lcm.solve_updated import backward_induction
 
 
 def get_lcm_function(
@@ -49,12 +49,12 @@ def get_lcm_function(
     # Partialling
     # ==================================================================================
     _solve_model = partial(
-        solve,
+        backward_induction,
+        solve_continuous_problem=solve_continuous_problem,
+        solve_discrete_problem=solve_discrete_problem,
+        continuous_choice_grids=continuous_choice_grids,
         state_choice_spaces=state_choice_spaces,
         state_indexers=state_indexers,
-        continuous_choice_grids=continuous_choice_grids,
-        compute_ccv_functions=solve_continuous_problem,
-        emax_calculators=solve_discrete_problem,
     )
 
     _simulate_model = partial(
