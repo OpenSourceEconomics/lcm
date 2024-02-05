@@ -33,7 +33,7 @@ def test_analytical_solution(model_name, model_config):
     }
 
 
-with jax.profiler.trace("/tmp/jax-trace", create_perfetto_link=True):
+with jax.profiler.trace("/tmp/jax-trace", create_perfetto_trace=True):
     test_analytical_solution(
         "iskhakov_2017_five_periods",
         get_model("iskhakov_2017_five_periods"),
