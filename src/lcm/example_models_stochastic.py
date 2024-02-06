@@ -8,7 +8,7 @@ N_STATE_GRID_POINTS = 100
 
 
 def utility(consumption, working, health, partner, delta, gamma):  # noqa: ARG001
-    return jnp.log(consumption) + (gamma * health - delta) * working
+    return jnp.log(consumption + 1) + (gamma * health - delta) * working
 
 
 def next_wealth(wealth, consumption, working, wage, interest_rate):
@@ -21,7 +21,7 @@ def next_health(health, partner):  # noqa: ARG001
 
 
 @lcm.mark.stochastic
-def next_partner(working, _period):  # noqa: ARG001
+def next_partner(_period, working, partner):  # noqa: ARG001
     pass
 
 
@@ -61,13 +61,18 @@ MODEL = {
 
 
 PARAMS = {
-    "beta": 0.25,
-    "utility": {"delta": 0.25, "gamma": 0.25},
-    "next_wealth": {"interest_rate": 0.25, "wage": 0.25},
+    "beta": 1.0,
+    "utility": {"delta": 0.5, "gamma": 0.25},
+    "next_wealth": {"interest_rate": 0.05, "wage": 10.0},
     "next_health": {},
     "consumption_constraint": {},
     "shocks": {
         "health": jnp.array([[[0.5, 0.5], [0.5, 0.5]], [[0.5, 0.5], [0.5, 0.5]]]),
-        "partner": jnp.array([[[1.0, 0], [0, 1]], [[0, 1], [1, 0]]]),
+        "partner": jnp.array(
+            [
+                [[[0, 1.0], [1.0, 0]], [[0, 1.0], [0.0, 1.0]]],
+                [[[0, 1.0], [1.0, 0]], [[0, 1.0], [0.0, 1.0]]],
+            ],
+        ),
     },
 }
