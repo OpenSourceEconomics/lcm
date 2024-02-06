@@ -102,12 +102,12 @@ def _create_shock_params(model, variable_info, grids):
             inspect.signature(model["functions"][f"next_{var}"]).parameters,
         )
 
-        _check_variables_are_all_discrete_states(
+        _check_variables_are_all_discrete_or_period(
             variables=dependencies,
             variable_info=variable_info,
             msg_suffix=(
-                f"The function next_{var} can only depend on discrete state variables "
-                f"or '_period'."
+                f"The function next_{var} can only depend on discrete variables or"
+                f"'_period'."
             ),
         )
 
@@ -128,10 +128,10 @@ def _create_standard_params():
     return {"beta": np.nan}
 
 
-def _check_variables_are_all_discrete_states(variables, variable_info, msg_suffix):
-    discrete_state_vars = variable_info.query("is_state and is_discrete").index.tolist()
+def _check_variables_are_all_discrete_or_period(variables, variable_info, msg_suffix):
+    discrete_vars = variable_info.query("is_discrete").index.tolist()
     for var in variables:
-        if var not in discrete_state_vars and var != "_period":
+        if var not in discrete_vars and var != "_period":
             raise ValueError(
-                f"Variable {var} is not a discrete state variable. {msg_suffix}",
+                f"Variable {var} is not a discrete variable. {msg_suffix}",
             )

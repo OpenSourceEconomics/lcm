@@ -21,7 +21,7 @@ def next_health(health, partner):  # noqa: ARG001
 
 
 @lcm.mark.stochastic
-def next_partner(_period):
+def next_partner(working, _period):  # noqa: ARG001
     pass
 
 
@@ -68,6 +68,6 @@ PARAMS = {
     "consumption_constraint": {},
     "shocks": {
         "health": jnp.array([[[0.5, 0.5], [0.5, 0.5]], [[0.5, 0.5], [0.5, 0.5]]]),
-        "partner": jnp.array([[1.0, 0], [0.0, 1]]),
+        "partner": jnp.array([[[1.0, 0], [0, 1]], [[0, 1], [1, 0]]]),
     },
 }
