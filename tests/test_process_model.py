@@ -4,7 +4,7 @@ import lcm.grids as grids_module
 import numpy as np
 import pandas as pd
 import pytest
-from lcm.example_models import (
+from lcm.example_models.example_models import (
     N_CHOICE_GRID_POINTS,
     N_STATE_GRID_POINTS,
     PHELPS_DEATON,
