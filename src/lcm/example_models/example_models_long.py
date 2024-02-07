@@ -2,21 +2,12 @@
 import jax.numpy as jnp
 
 RETIREMENT_AGE = 65
-N_CHOICE_GRID_POINTS = 5_000
-N_STATE_GRID_POINTS = 5_000
+N_CHOICE_GRID_POINTS = 200
+N_STATE_GRID_POINTS = 100
 
 
-def phelps_deaton_utility(consumption, working, delta):
-    return jnp.log(consumption) - delta * working
-
-
-def phelps_deaton_utility_with_filter(
-    consumption,
-    working,
-    delta,
-    lagged_retirement,  # noqa: ARG001
-):
-    return jnp.log(consumption) - delta * working
+def phelps_deaton_utility(consumption, working, health, sport, delta):
+    return jnp.log(consumption + 1) - (delta - health) * working - sport
 
 
 def working(retirement):
@@ -36,6 +27,10 @@ def next_wealth_with_shock(
 
 def next_wealth(wealth, consumption, working, wage, interest_rate):
     return (1 + interest_rate) * (wealth - consumption) + wage * working
+
+
+def next_health(health, sport, working):
+    return health * (1 + sport - working / 2)
 
 
 def consumption_constraint(consumption, wealth):
@@ -58,6 +53,7 @@ PHELPS_DEATON = {
         "working": working,
         "wage": wage,
         "age": age,
+        "next_health": next_health,
     },
     "choices": {
         "retirement": {"options": [0, 1]},
@@ -65,6 +61,12 @@ PHELPS_DEATON = {
             "grid_type": "linspace",
             "start": 0,
             "stop": 100,
+            "n_points": N_CHOICE_GRID_POINTS,
+        },
+        "sport": {
+            "grid_type": "linspace",
+            "start": 0,
+            "stop": 1,
             "n_points": N_CHOICE_GRID_POINTS,
         },
     },
@@ -78,11 +80,15 @@ PHELPS_DEATON = {
         "health": {
             "grid_type": "linspace",
             "start": 0,
-            "stop": 100,
+            "stop": 1,
             "n_points": N_STATE_GRID_POINTS,
         },
     },
     "n_periods": RETIREMENT_AGE - 18,
 }
 
-PARAMS = {}
+PARAMS = {
+    "beta": 0.95,
+    "utility": {"delta": 0.05},
+    "next_wealth": {"interest_rate": 0.05},
+}
