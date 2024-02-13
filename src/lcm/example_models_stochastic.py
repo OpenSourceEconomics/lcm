@@ -1,4 +1,5 @@
 """Define example model specifications."""
+
 import jax.numpy as jnp
 
 import lcm

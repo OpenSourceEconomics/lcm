@@ -20,6 +20,7 @@ This will only become clear after implementing a few solvers.
 https://github.com/google/jax/issues/6265
 
 """
+
 from functools import partial
 
 import jax

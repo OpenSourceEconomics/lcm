@@ -1,4 +1,5 @@
 """Collection of LCM marking decorators."""
+
 import functools
 from typing import NamedTuple
 
