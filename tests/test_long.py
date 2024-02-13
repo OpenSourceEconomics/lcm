@@ -7,7 +7,7 @@ laptop, such that we can differentiate the performance of running LCM on a GPU v
 on the CPU."""
 
 
-@pytest.skip(reason=SKIP_REASON)
+@pytest.mark.skip(reason=SKIP_REASON)
 def test_long():
     solve_model, template = get_lcm_function(PHELPS_DEATON, targets="solve")
     solve_model(PARAMS)
