@@ -1,6 +1,6 @@
 import jax.numpy as jnp
 import pandas as pd
-from lcm.example_models import PHELPS_DEATON, phelps_deaton_utility
+from lcm.example_models.basic_example_models import PHELPS_DEATON, phelps_deaton_utility
 from lcm.interfaces import Model
 from lcm.model_functions import (
     get_combined_constraint,

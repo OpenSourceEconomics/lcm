@@ -2,7 +2,7 @@ import jax.numpy as jnp
 import numpy as np
 import pandas as pd
 import pytest
-from lcm.example_models import PHELPS_DEATON_WITH_FILTERS
+from lcm.example_models.basic_example_models import PHELPS_DEATON_WITH_FILTERS
 from lcm.interfaces import Model
 from lcm.process_model import process_model
 from lcm.state_space import (
