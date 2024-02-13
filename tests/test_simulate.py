@@ -6,7 +6,7 @@ from lcm.entry_point import (
     create_compute_conditional_continuation_policy,
     get_lcm_function,
 )
-from lcm.example_models.example_models import (
+from lcm.example_models.basic_example_models import (
     N_CHOICE_GRID_POINTS,
     PHELPS_DEATON,
     PHELPS_DEATON_WITH_FILTERS,

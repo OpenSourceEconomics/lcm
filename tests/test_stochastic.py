@@ -5,7 +5,7 @@ import pytest
 from lcm.entry_point import (
     get_lcm_function,
 )
-from lcm.example_models.example_models_stochastic import MODEL, PARAMS
+from lcm.example_models.stochastic_example_models import MODEL, PARAMS
 
 # ======================================================================================
 # Simulate

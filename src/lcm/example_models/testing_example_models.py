@@ -1,4 +1,5 @@
 """Define example model specifications."""
+
 import jax.numpy as jnp
 
 RETIREMENT_AGE = 65
@@ -7,7 +8,7 @@ N_STATE_GRID_POINTS = 100
 
 
 def phelps_deaton_utility(consumption, working, health, sport, delta):
-    return jnp.log(consumption + 1) - (delta - health) * working - sport
+    return jnp.log(consumption) - (delta - health) * working - sport
 
 
 def working(retirement):
@@ -59,7 +60,7 @@ PHELPS_DEATON = {
         "retirement": {"options": [0, 1]},
         "consumption": {
             "grid_type": "linspace",
-            "start": 0,
+            "start": 1,
             "stop": 100,
             "n_points": N_CHOICE_GRID_POINTS,
         },
@@ -73,7 +74,7 @@ PHELPS_DEATON = {
     "states": {
         "wealth": {
             "grid_type": "linspace",
-            "start": 0,
+            "start": 1,
             "stop": 100,
             "n_points": N_STATE_GRID_POINTS,
         },
