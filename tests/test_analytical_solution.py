@@ -1,4 +1,5 @@
 """Testing against the analytical solution by Iskhakov et al (2017)."""
+
 import numpy as np
 import pytest
 from lcm._config import TEST_DATA_PATH

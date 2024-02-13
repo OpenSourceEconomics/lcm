@@ -1,4 +1,5 @@
 """Get a user model and parameters."""
+
 from typing import NamedTuple
 
 from pybaum import tree_update

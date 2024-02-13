@@ -217,7 +217,10 @@ def test_get_stochastic_weight_function():
 
     raw_func._stochastic_info = StochasticInfo()
 
-    variable_info = pd.DataFrame({"is_state": [True, True]}, index=["health", "wealth"])
+    variable_info = pd.DataFrame(
+        {"is_discrete": [True, True]},
+        index=["health", "wealth"],
+    )
 
     grids = {
         "health": jnp.array([1, 4]),
@@ -245,7 +248,7 @@ def test_get_stochastic_weight_function_non_state_dependency():
     raw_func._stochastic_info = StochasticInfo()
 
     variable_info = pd.DataFrame(
-        {"is_state": [False, True]},
+        {"is_discrete": [False, True]},
         index=["health", "wealth"],
     )
 
