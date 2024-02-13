@@ -393,12 +393,12 @@ def _get_stochastic_weight_function(raw_func, name, variable_info, grids):
     """
     function_parameters = list(inspect.signature(raw_func).parameters)
 
-    # Assert that stochastic next function only depends on state variables
+    # Assert that stochastic next function only depends on discrete variables or period
     for arg in function_parameters:
-        if arg != "_period" and not variable_info.loc[arg, "is_state"]:
+        if arg != "_period" and not variable_info.loc[arg, "is_discrete"]:
             raise ValueError(
-                f"Stochastic variables can only depend on state variables and '_period'"
-                f" but {name} depends on {arg}.",
+                f"Stochastic variables can only depend on discrete variables and "
+                f"'_period', but {name} depends on {arg}.",
             )
 
     label_translators = {
