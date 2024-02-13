@@ -1,4 +1,5 @@
 """Create a state space for a given model."""
+
 import inspect
 
 import jax

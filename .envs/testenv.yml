@@ -8,13 +8,6 @@ dependencies:
   - setuptools_scm
   - toml
 
-  # Package dependencies
-  - dags
-  - jax>=0.4.10
-  - jaxlib>=0.4.10
-  - numpy
-  - pandas
-
   # Testing dependencies
   - scipy
   - pybaum
@@ -24,6 +17,6 @@ dependencies:
   - pytest-cov
   - pytest-xdist
 
-  # Install lcm locally
+  # Install lcm and its dependencies locally
   - pip:
       - -e ../
