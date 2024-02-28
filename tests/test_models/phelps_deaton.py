@@ -1,9 +1,11 @@
 """Example specifications of the Phelps-Deaton model.
 
-This specification corresponds to the example model presented in the paper: "The
-endogenous grid method for discrete-continuous dynamic choice models with (or without)
-taste shocks" by Fedor Iskhakov, Thomas H. Jørgensen, John Rust and Bertel Schjerning
-(2017, https://doi.org/10.3982/QE643).
+This specification extends the example model presented in the paper: "The endogenous
+grid method for discrete-continuous dynamic choice models with (or without) taste
+shocks" by Fedor Iskhakov, Thomas H. Jørgensen, John Rust and Bertel Schjerning (2017,
+https://doi.org/10.3982/QE643).
+
+In comparison to the original paper, it adds the auxiliary variables "age" and "wage".
 
 """
 
@@ -100,7 +102,7 @@ PHELPS_DEATON = {
         "retirement": {"options": [0, 1]},
         "consumption": {
             "grid_type": "linspace",
-            "start": 0,
+            "start": 1,
             "stop": 100,
             "n_points": N_GRID_POINTS["consumption"],
         },
@@ -108,7 +110,7 @@ PHELPS_DEATON = {
     "states": {
         "wealth": {
             "grid_type": "linspace",
-            "start": 0,
+            "start": 1,
             "stop": 100,
             "n_points": N_GRID_POINTS["wealth"],
         },
@@ -131,7 +133,7 @@ PHELPS_DEATON_FULLY_DISCRETE = {
     "states": {
         "wealth": {
             "grid_type": "linspace",
-            "start": 0,
+            "start": 1,
             "stop": 100,
             "n_points": N_GRID_POINTS["wealth"],
         },
@@ -161,7 +163,7 @@ PHELPS_DEATON_WITH_FILTERS = {
     "states": {
         "wealth": {
             "grid_type": "linspace",
-            "start": 0,
+            "start": 1,
             "stop": 100,
             "n_points": N_GRID_POINTS["wealth"],
         },

@@ -2,14 +2,14 @@
 
 import numpy as np
 import pytest
-from lcm._config import TEST_DATA_PATH
+from lcm._config import TEST_DATA
 from lcm.entry_point import get_lcm_function
 from lcm.get_model import get_model
 from numpy.testing import assert_array_almost_equal as aaae
 
 TEST_CASES = {
     "iskhakov_2017_five_periods": get_model("iskhakov_2017_five_periods"),
-    "iskhakov_2017_low_disutility_of_work": get_model(
+    "iskhakov_2017_low_delta": get_model(
         "iskhakov_2017_low_disutility_of_work",
     ),
 }
@@ -42,7 +42,7 @@ def test_analytical_solution(model_name, model_config):
     # ==================================================================================
     analytical = {
         _type: np.genfromtxt(
-            TEST_DATA_PATH.joinpath(
+            TEST_DATA.joinpath(
                 "analytical_solution",
                 f"{model_name}__values_{_type}.csv",
             ),

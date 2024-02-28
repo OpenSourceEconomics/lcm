@@ -49,6 +49,9 @@ extend-ignore = [
     # use of `assert` detected
     "S101",
 
+    # `pickle` module is unsafe
+    "S301",
+
     # Private member accessed: `_stochastic_info`
     "SLF001",
 
