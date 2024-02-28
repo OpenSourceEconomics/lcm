@@ -78,7 +78,7 @@ markers = [
     "slow: Tests that take a long time to run and are skipped in continuous integration.",
     "illustrative: Tests are designed for illustrative purposes",
 ]
-norecursedirs = ["docs", ".envs", "tests/test_models"]
+norecursedirs = ["docs", ".envs"]
 
 
 [tool.yamlfix]
