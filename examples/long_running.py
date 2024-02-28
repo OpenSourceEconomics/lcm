@@ -43,7 +43,7 @@ def age(_period):
 # State transitions
 # --------------------------------------------------------------------------------------
 def next_wealth(wealth, consumption, working, wage, interest_rate):
-    return (1 + interest_rate) * (wealth - consumption) + wage * working
+    return (1 + interest_rate) * (wealth + working * wage - consumption)
 
 
 def next_health(health, exercise, working):
