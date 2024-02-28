@@ -1,6 +1,6 @@
-"""Example specifications of the Phelps-Deaton model.
+"""Example specifications of a deterministic consumption-saving model.
 
-This specification extends the example model presented in the paper: "The endogenous
+This specification builds on the example model presented in the paper: "The endogenous
 grid method for discrete-continuous dynamic choice models with (or without) taste
 shocks" by Fedor Iskhakov, Thomas H. Jørgensen, John Rust and Bertel Schjerning (2017,
 https://doi.org/10.3982/QE643).
@@ -84,10 +84,10 @@ def absorbing_retirement_filter(retirement, lagged_retirement):
 
 
 # ======================================================================================
-# Model specification and parameters
+# Model specifications
 # ======================================================================================
 
-PHELPS_DEATON = {
+BASE_MODEL = {
     "functions": {
         "utility": utility,
         "next_wealth": next_wealth,
@@ -117,7 +117,7 @@ PHELPS_DEATON = {
 }
 
 
-PHELPS_DEATON_FULLY_DISCRETE = {
+BASE_MODEL_FULLY_DISCRETE = {
     "functions": {
         "utility": utility,
         "next_wealth": next_wealth,
@@ -140,7 +140,7 @@ PHELPS_DEATON_FULLY_DISCRETE = {
 }
 
 
-PHELPS_DEATON_WITH_FILTERS = {
+BASE_MODEL_WITH_FILTERS = {
     "functions": {
         "utility": utility_with_filter,
         "next_wealth": next_wealth,

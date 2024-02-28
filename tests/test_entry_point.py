@@ -10,17 +10,17 @@ from lcm.process_model import process_model
 from lcm.state_space import create_state_choice_space
 from pybaum import tree_equal, tree_map
 
-from tests.test_models.phelps_deaton import (
-    PHELPS_DEATON,
-    PHELPS_DEATON_FULLY_DISCRETE,
-    PHELPS_DEATON_WITH_FILTERS,
+from tests.test_models.deterministic import (
+    BASE_MODEL,
+    BASE_MODEL_FULLY_DISCRETE,
+    BASE_MODEL_WITH_FILTERS,
     utility,
 )
 
 MODELS = {
-    "simple": PHELPS_DEATON,
-    "with_filters": PHELPS_DEATON_WITH_FILTERS,
-    "fully_discrete": PHELPS_DEATON_FULLY_DISCRETE,
+    "simple": BASE_MODEL,
+    "with_filters": BASE_MODEL_WITH_FILTERS,
+    "fully_discrete": BASE_MODEL_FULLY_DISCRETE,
 }
 
 
@@ -45,7 +45,7 @@ def test_get_lcm_function_with_solve_target(user_model):
 
 @pytest.mark.parametrize(
     "user_model",
-    [PHELPS_DEATON, PHELPS_DEATON_FULLY_DISCRETE],
+    [BASE_MODEL, BASE_MODEL_FULLY_DISCRETE],
     ids=["simple", "fully_discrete"],
 )
 def test_get_lcm_function_with_simulation_target_simple(user_model):
@@ -66,7 +66,7 @@ def test_get_lcm_function_with_simulation_target_simple(user_model):
 
 @pytest.mark.parametrize(
     "user_model",
-    [PHELPS_DEATON, PHELPS_DEATON_FULLY_DISCRETE],
+    [BASE_MODEL, BASE_MODEL_FULLY_DISCRETE],
     ids=["simple", "fully_discrete"],
 )
 def test_get_lcm_function_with_simulation_is_coherent(user_model):
@@ -109,7 +109,7 @@ def test_get_lcm_function_with_simulation_is_coherent(user_model):
 
 @pytest.mark.parametrize(
     "user_model",
-    [PHELPS_DEATON_WITH_FILTERS],
+    [BASE_MODEL_WITH_FILTERS],
     ids=["with_filters"],
 )
 def test_get_lcm_function_with_simulation_target_with_filters(user_model):
@@ -137,7 +137,7 @@ def test_get_lcm_function_with_simulation_target_with_filters(user_model):
 
 
 def test_create_compute_conditional_continuation_value():
-    model = process_model(PHELPS_DEATON)
+    model = process_model(BASE_MODEL)
 
     params = {
         "beta": 1.0,
@@ -180,7 +180,7 @@ def test_create_compute_conditional_continuation_value():
 
 
 def test_create_compute_conditional_continuation_value_with_discrete_model():
-    model = process_model(PHELPS_DEATON_FULLY_DISCRETE)
+    model = process_model(BASE_MODEL_FULLY_DISCRETE)
 
     params = {
         "beta": 1.0,
@@ -228,7 +228,7 @@ def test_create_compute_conditional_continuation_value_with_discrete_model():
 
 
 def test_create_compute_conditional_continuation_policy():
-    model = process_model(PHELPS_DEATON)
+    model = process_model(BASE_MODEL)
 
     params = {
         "beta": 1.0,
@@ -272,7 +272,7 @@ def test_create_compute_conditional_continuation_policy():
 
 
 def test_create_compute_conditional_continuation_policy_with_discrete_model():
-    model = process_model(PHELPS_DEATON_FULLY_DISCRETE)
+    model = process_model(BASE_MODEL_FULLY_DISCRETE)
 
     params = {
         "beta": 1.0,

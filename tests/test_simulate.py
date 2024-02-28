@@ -27,10 +27,10 @@ from lcm.state_space import create_state_choice_space
 from numpy.testing import assert_array_almost_equal, assert_array_equal
 from pybaum import tree_equal
 
-from tests.test_models.phelps_deaton import (
+from tests.test_models.deterministic import (
+    BASE_MODEL,
+    BASE_MODEL_WITH_FILTERS,
     N_GRID_POINTS,
-    PHELPS_DEATON,
-    PHELPS_DEATON_WITH_FILTERS,
 )
 
 # ======================================================================================
@@ -40,7 +40,7 @@ from tests.test_models.phelps_deaton import (
 
 @pytest.fixture()
 def simulate_inputs():
-    user_model = {**PHELPS_DEATON, "n_periods": 1}
+    user_model = {**BASE_MODEL, "n_periods": 1}
     model = process_model(user_model)
 
     _, space_info, _, _ = create_state_choice_space(
@@ -104,9 +104,9 @@ def test_simulate_using_raw_inputs(simulate_inputs):
 
 
 @pytest.fixture()
-def phelps_deaton_model_solution():
+def base_model_solution():
     def _model_solution(n_periods):
-        model = {**PHELPS_DEATON, "n_periods": n_periods}
+        model = {**BASE_MODEL, "n_periods": n_periods}
         model["functions"] = {
             # remove dependency on age, so that wage becomes a parameter
             name: func
@@ -130,9 +130,9 @@ def phelps_deaton_model_solution():
     return _model_solution
 
 
-@pytest.mark.parametrize("n_periods", range(3, PHELPS_DEATON["n_periods"] + 1))
-def test_simulate_using_get_lcm_function(phelps_deaton_model_solution, n_periods):
-    vf_arr_list, params, model = phelps_deaton_model_solution(n_periods)
+@pytest.mark.parametrize("n_periods", range(3, BASE_MODEL["n_periods"] + 1))
+def test_simulate_using_get_lcm_function(base_model_solution, n_periods):
+    vf_arr_list, params, model = base_model_solution(n_periods)
 
     simulate_model, _ = get_lcm_function(model=model, targets="simulate")
 
@@ -175,7 +175,7 @@ def test_simulate_using_get_lcm_function(phelps_deaton_model_solution, n_periods
 
 
 def test_effect_of_beta_on_last_period():
-    model = {**PHELPS_DEATON, "n_periods": 5}
+    model = {**BASE_MODEL, "n_periods": 5}
 
     # Model solutions
     # ==================================================================================
@@ -229,7 +229,7 @@ def test_effect_of_beta_on_last_period():
 
 
 def test_effect_of_disutility_of_work():
-    model = {**PHELPS_DEATON, "n_periods": 5}
+    model = {**BASE_MODEL, "n_periods": 5}
 
     # Model solutions
     # ==================================================================================
@@ -404,7 +404,7 @@ def test_filter_ccv_policy():
 
 
 def test_create_data_state_choice_space():
-    model = process_model(PHELPS_DEATON_WITH_FILTERS)
+    model = process_model(BASE_MODEL_WITH_FILTERS)
     got_space, got_segment_info = create_data_scs(
         states={
             "wealth": jnp.array([10.0, 20.0]),

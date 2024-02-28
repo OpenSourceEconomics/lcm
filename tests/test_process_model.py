@@ -17,10 +17,10 @@ from lcm.process_model import (
 from numpy.testing import assert_array_equal
 from pandas.testing import assert_frame_equal
 
-from tests.test_models.phelps_deaton import (
+from tests.test_models.deterministic import (
+    BASE_MODEL,
+    BASE_MODEL_WITH_FILTERS,
     N_GRID_POINTS,
-    PHELPS_DEATON,
-    PHELPS_DEATON_WITH_FILTERS,
 )
 
 
@@ -100,8 +100,8 @@ def test_get_grids(user_model):
     assert_array_equal(got["c"], jnp.array([2, 3]))
 
 
-def test_process_phelps_deaton_with_filters():
-    model = process_model(PHELPS_DEATON_WITH_FILTERS)
+def test_process_model_with_filters():
+    model = process_model(BASE_MODEL_WITH_FILTERS)
 
     # Variable Info
     assert (
@@ -156,8 +156,8 @@ def test_process_phelps_deaton_with_filters():
     assert ~model.function_info.loc["utility"].to_numpy().any()
 
 
-def test_process_phelps_deaton():
-    model = process_model(PHELPS_DEATON)
+def test_process_model():
+    model = process_model(BASE_MODEL)
 
     # Variable Info
     assert ~(model.variable_info["is_sparse"].to_numpy()).any()

@@ -1,11 +1,11 @@
-"""Example specifications of a simple Phelps-Deaton style stochastic model.
+"""Example specifications of a stochastic consumption-saving model.
 
 This specification is motivated by the example model presented in the paper: "The
 endogenous grid method for discrete-continuous dynamic choice models with (or without)
 taste shocks" by Fedor Iskhakov, Thomas H. Jørgensen, John Rust and Bertel Schjerning
 (2017, https://doi.org/10.3982/QE643).
 
-See also the specifications in tests/test_models/phelps_deaton.py.
+See also the specifications in tests/test_models/deterministic.py.
 
 """
 

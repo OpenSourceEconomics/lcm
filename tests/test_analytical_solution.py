@@ -6,7 +6,7 @@ from lcm._config import TEST_DATA
 from lcm.entry_point import get_lcm_function
 from numpy.testing import assert_array_almost_equal as aaae
 
-from tests.test_models.phelps_deaton import PHELPS_DEATON_WITH_FILTERS
+from tests.test_models.deterministic import BASE_MODEL_WITH_FILTERS
 
 # ======================================================================================
 # Model specifications
@@ -23,11 +23,11 @@ ISKHAVOV_2017_PARAMS = {
 
 TEST_CASES = {
     "iskhakov_2017_five_periods": {
-        "model": {**PHELPS_DEATON_WITH_FILTERS, "n_periods": 5},
+        "model": {**BASE_MODEL_WITH_FILTERS, "n_periods": 5},
         "params": {**ISKHAVOV_2017_PARAMS, "utility": {"disutility_of_work": 1.0}},
     },
     "iskhakov_2017_low_delta": {
-        "model": {**PHELPS_DEATON_WITH_FILTERS, "n_periods": 3},
+        "model": {**BASE_MODEL_WITH_FILTERS, "n_periods": 3},
         "params": {**ISKHAVOV_2017_PARAMS, "utility": {"disutility_of_work": 0.1}},
     },
 }

@@ -5,9 +5,9 @@ from lcm.entry_point import get_lcm_function
 from numpy.testing import assert_array_almost_equal as aaae
 from pandas.testing import assert_frame_equal
 
-from tests.test_models.phelps_deaton import PHELPS_DEATON
+from tests.test_models.deterministic import BASE_MODEL
 
-REGRESSION_TEST_MODEL = {**PHELPS_DEATON, "n_perids": 5}
+REGRESSION_TEST_MODEL = {**BASE_MODEL, "n_perids": 5}
 REGRESSION_TEST_PARAMS = {
     "beta": 0.95,
     "utility": {"disutility_of_work": 1.0},
