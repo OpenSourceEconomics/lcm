@@ -8,7 +8,7 @@
 
 ## Running an example
 
-Say you want to run the [`long_running`](./long_running.py) example locally. In a Python
+Say you want to solve the [`long_running`](./long_running.py) example locally. In a Python
 shell, execute:
 
 ```python
