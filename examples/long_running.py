@@ -20,8 +20,8 @@ RETIREMENT_AGE = 65
 # --------------------------------------------------------------------------------------
 # Utility function
 # --------------------------------------------------------------------------------------
-def utility(consumption, working, health, sport, delta):
-    return jnp.log(consumption) - (delta - health) * working - sport
+def utility(consumption, working, health, exercise, delta):
+    return jnp.log(consumption) - (delta - health) * working - exercise
 
 
 # --------------------------------------------------------------------------------------
@@ -47,18 +47,7 @@ def next_wealth(wealth, consumption, working, wage, interest_rate):
 
 
 def next_health(health, exercise, working):
-    return health * (1 + sport - working / 2)
-
-
-def next_wealth_with_shock(
-    wealth,
-    consumption,
-    working,
-    wage,
-    wage_shock,
-    interest_rate,
-):
-    return interest_rate * (wealth - consumption) + wage * wage_shock * working
+    return health * (1 + exercise - working / 2)
 
 
 # --------------------------------------------------------------------------------------
@@ -90,7 +79,7 @@ MODEL_CONFIG = {
             "stop": 100,
             "n_points": N_GRID_POINTS["choices"],
         },
-        "sport": {
+        "exercise": {
             "grid_type": "linspace",
             "start": 0,
             "stop": 1,
