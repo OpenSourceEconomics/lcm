@@ -122,14 +122,14 @@ def test_process_phelps_deaton_with_filters():
     # Gridspecs
     wealth_specs = GridSpec(
         kind="linspace",
-        specs={"start": 0, "stop": 100, "n_points": N_GRID_POINTS["states"]},
+        specs={"start": 0, "stop": 100, "n_points": N_GRID_POINTS["wealth"]},
     )
 
     assert model.gridspecs["wealth"] == wealth_specs
 
     consumption_specs = GridSpec(
         kind="linspace",
-        specs={"start": 1, "stop": 100, "n_points": N_GRID_POINTS["choices"]},
+        specs={"start": 1, "stop": 100, "n_points": N_GRID_POINTS["consumption"]},
     )
     assert model.gridspecs["consumption"] == consumption_specs
 
@@ -173,14 +173,14 @@ def test_process_phelps_deaton():
     # Gridspecs
     wealth_specs = GridSpec(
         kind="linspace",
-        specs={"start": 0, "stop": 100, "n_points": N_GRID_POINTS["states"]},
+        specs={"start": 0, "stop": 100, "n_points": N_GRID_POINTS["wealth"]},
     )
 
     assert model.gridspecs["wealth"] == wealth_specs
 
     consumption_specs = GridSpec(
         kind="linspace",
-        specs={"start": 0, "stop": 100, "n_points": N_GRID_POINTS["choices"]},
+        specs={"start": 0, "stop": 100, "n_points": N_GRID_POINTS["consumption"]},
     )
     assert model.gridspecs["consumption"] == consumption_specs
 

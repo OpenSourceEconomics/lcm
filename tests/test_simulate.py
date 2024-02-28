@@ -69,7 +69,7 @@ def simulate_inputs():
     return {
         "state_indexers": [{}],
         "continuous_choice_grids": [
-            {"consumption": jnp.linspace(1, 100, num=N_GRID_POINTS["choices"])},
+            {"consumption": jnp.linspace(1, 100, num=N_GRID_POINTS["consumption"])},
         ],
         "compute_ccv_policy_functions": compute_ccv_policy_functions,
         "model": model,

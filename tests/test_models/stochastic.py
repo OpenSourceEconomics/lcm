@@ -8,8 +8,8 @@ import lcm
 # ======================================================================================
 
 N_GRID_POINTS = {
-    "states": 100,
-    "choices": 200,
+    "wealth": 100,
+    "consumption": 200,
 }
 
 # ======================================================================================
@@ -69,7 +69,7 @@ MODEL_CONFIG = {
             "grid_type": "linspace",
             "start": 1,
             "stop": 100,
-            "n_points": N_GRID_POINTS["choices"],
+            "n_points": N_GRID_POINTS["consumption"],
         },
     },
     "states": {
@@ -79,7 +79,7 @@ MODEL_CONFIG = {
             "grid_type": "linspace",
             "start": 1,
             "stop": 100,
-            "n_points": N_GRID_POINTS["states"],
+            "n_points": N_GRID_POINTS["wealth"],
         },
     },
     "n_periods": 3,

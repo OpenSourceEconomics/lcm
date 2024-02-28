@@ -7,8 +7,8 @@ import jax.numpy as jnp
 # ======================================================================================
 
 N_GRID_POINTS = {
-    "states": 100,
-    "choices": 500,
+    "wealth": 100,
+    "consumption": 500,
 }
 
 RETIREMENT_AGE = 65
@@ -93,7 +93,7 @@ PHELPS_DEATON = {
             "grid_type": "linspace",
             "start": 0,
             "stop": 100,
-            "n_points": N_GRID_POINTS["choices"],
+            "n_points": N_GRID_POINTS["consumption"],
         },
     },
     "states": {
@@ -101,7 +101,7 @@ PHELPS_DEATON = {
             "grid_type": "linspace",
             "start": 0,
             "stop": 100,
-            "n_points": N_GRID_POINTS["states"],
+            "n_points": N_GRID_POINTS["wealth"],
         },
     },
     "n_periods": 3,
@@ -124,7 +124,7 @@ PHELPS_DEATON_FULLY_DISCRETE = {
             "grid_type": "linspace",
             "start": 0,
             "stop": 100,
-            "n_points": N_GRID_POINTS["states"],
+            "n_points": N_GRID_POINTS["wealth"],
         },
     },
     "n_periods": 3,
@@ -146,7 +146,7 @@ PHELPS_DEATON_WITH_FILTERS = {
             "grid_type": "linspace",
             "start": 1,
             "stop": 100,
-            "n_points": N_GRID_POINTS["choices"],
+            "n_points": N_GRID_POINTS["consumption"],
         },
     },
     "states": {
@@ -154,7 +154,7 @@ PHELPS_DEATON_WITH_FILTERS = {
             "grid_type": "linspace",
             "start": 0,
             "stop": 100,
-            "n_points": N_GRID_POINTS["states"],
+            "n_points": N_GRID_POINTS["wealth"],
         },
         "lagged_retirement": {"options": [0, 1]},
     },

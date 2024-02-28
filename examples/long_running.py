@@ -6,8 +6,10 @@ import jax.numpy as jnp
 # Numerical parameters and constants
 # ======================================================================================
 N_GRID_POINTS = {
-    "states": 100,
-    "choices": 200,
+    "wealth": 100,
+    "health": 100,
+    "consumption": 100,
+    "exericse": 200,
 }
 
 RETIREMENT_AGE = 65
@@ -77,13 +79,13 @@ MODEL_CONFIG = {
             "grid_type": "linspace",
             "start": 1,
             "stop": 100,
-            "n_points": N_GRID_POINTS["choices"],
+            "n_points": N_GRID_POINTS["consumption"],
         },
         "exercise": {
             "grid_type": "linspace",
             "start": 0,
             "stop": 1,
-            "n_points": N_GRID_POINTS["choices"],
+            "n_points": N_GRID_POINTS["exercise"],
         },
     },
     "states": {
@@ -91,13 +93,13 @@ MODEL_CONFIG = {
             "grid_type": "linspace",
             "start": 1,
             "stop": 100,
-            "n_points": N_GRID_POINTS["states"],
+            "n_points": N_GRID_POINTS["wealth"],
         },
         "health": {
             "grid_type": "linspace",
             "start": 0,
             "stop": 1,
-            "n_points": N_GRID_POINTS["states"],
+            "n_points": N_GRID_POINTS["health"],
         },
     },
     "n_periods": RETIREMENT_AGE - 18,
