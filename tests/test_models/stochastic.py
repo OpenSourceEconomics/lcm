@@ -20,7 +20,16 @@ N_GRID_POINTS = {
 # --------------------------------------------------------------------------------------
 # Utility function
 # --------------------------------------------------------------------------------------
-def utility(consumption, working, health, partner, delta, gamma):  # noqa: ARG001
+def utility(
+    consumption,
+    working,
+    health,
+    # Temporary workaround for bug described in issue #30, which requires us to pass
+    # all state variables to the utility function.
+    partner,  # noqa: ARG001, TODO: Remove unused arguments once #30 is fixed.
+    delta,
+    gamma,
+):
     return jnp.log(consumption) + (gamma * health - delta) * working
 
 

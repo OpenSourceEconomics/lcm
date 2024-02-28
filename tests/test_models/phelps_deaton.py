@@ -29,7 +29,9 @@ def utility_with_filter(
     consumption,
     working,
     delta,
-    lagged_retirement,  # noqa: ARG001
+    # Temporary workaround for bug described in issue #30, which requires us to pass
+    # all state variables to the utility function.
+    lagged_retirement,  # noqa: ARG001, TODO: Remove unused arguments once #30 is fixed.
 ):
     return utility(consumption=consumption, working=working, delta=delta)
 
