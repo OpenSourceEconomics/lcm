@@ -5,8 +5,6 @@ grid method for discrete-continuous dynamic choice models with (or without) tast
 shocks" by Fedor Iskhakov, Thomas H. Jørgensen, John Rust and Bertel Schjerning (2017,
 https://doi.org/10.3982/QE643).
 
-In comparison to the original paper, it adds the auxiliary variables "age" and "wage".
-
 """
 
 import jax.numpy as jnp

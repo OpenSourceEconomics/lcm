@@ -9,7 +9,7 @@ N_GRID_POINTS = {
     "wealth": 100,
     "health": 100,
     "consumption": 100,
-    "exericse": 200,
+    "exercise": 200,
 }
 
 RETIREMENT_AGE = 65
@@ -29,6 +29,10 @@ def utility(consumption, working, health, exercise, disutility_of_work):
 # --------------------------------------------------------------------------------------
 # Auxiliary variables
 # --------------------------------------------------------------------------------------
+def labor_income(wage, working):
+    return wage * working
+
+
 def working(leisure):
     return 1 - leisure
 
@@ -44,8 +48,8 @@ def age(_period):
 # --------------------------------------------------------------------------------------
 # State transitions
 # --------------------------------------------------------------------------------------
-def next_wealth(wealth, consumption, working, wage, interest_rate):
-    return (1 + interest_rate) * (wealth + working * wage - consumption)
+def next_wealth(wealth, consumption, labor_income, interest_rate):
+    return (1 + interest_rate) * (wealth + labor_income - consumption)
 
 
 def next_health(health, exercise, working):
@@ -55,8 +59,8 @@ def next_health(health, exercise, working):
 # --------------------------------------------------------------------------------------
 # Constraints
 # --------------------------------------------------------------------------------------
-def consumption_constraint(consumption, wealth):
-    return consumption <= wealth
+def consumption_constraint(consumption, wealth, labor_income):
+    return consumption <= wealth + labor_income
 
 
 # ======================================================================================
@@ -67,11 +71,12 @@ MODEL_CONFIG = {
     "functions": {
         "utility": utility,
         "next_wealth": next_wealth,
+        "next_health": next_health,
         "consumption_constraint": consumption_constraint,
+        "labor_income": labor_income,
         "working": working,
         "wage": wage,
         "age": age,
-        "next_health": next_health,
     },
     "choices": {
         "leisure": {"options": [0, 1]},
