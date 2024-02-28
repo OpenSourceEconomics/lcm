@@ -103,7 +103,7 @@ PHELPS_DEATON = {
         "consumption": {
             "grid_type": "linspace",
             "start": 1,
-            "stop": 100,
+            "stop": 400,
             "n_points": N_GRID_POINTS["consumption"],
         },
     },
@@ -111,7 +111,7 @@ PHELPS_DEATON = {
         "wealth": {
             "grid_type": "linspace",
             "start": 1,
-            "stop": 100,
+            "stop": 400,
             "n_points": N_GRID_POINTS["wealth"],
         },
     },
@@ -134,7 +134,7 @@ PHELPS_DEATON_FULLY_DISCRETE = {
         "wealth": {
             "grid_type": "linspace",
             "start": 1,
-            "stop": 100,
+            "stop": 400,
             "n_points": N_GRID_POINTS["wealth"],
         },
     },
@@ -156,7 +156,7 @@ PHELPS_DEATON_WITH_FILTERS = {
         "consumption": {
             "grid_type": "linspace",
             "start": 1,
-            "stop": 100,
+            "stop": 400,
             "n_points": N_GRID_POINTS["consumption"],
         },
     },
@@ -164,7 +164,7 @@ PHELPS_DEATON_WITH_FILTERS = {
         "wealth": {
             "grid_type": "linspace",
             "start": 1,
-            "stop": 100,
+            "stop": 400,
             "n_points": N_GRID_POINTS["wealth"],
         },
         "lagged_retirement": {"options": [0, 1]},

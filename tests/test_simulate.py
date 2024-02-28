@@ -140,7 +140,7 @@ def test_simulate_using_get_lcm_function(phelps_deaton_model_solution, n_periods
         params,
         vf_arr_list=vf_arr_list,
         initial_states={
-            "wealth": jnp.array([1.0, 20, 40, 70]),
+            "wealth": jnp.array([20.0, 150, 250, 320]),
         },
         additional_targets=["utility", "consumption_constraint"],
     )
