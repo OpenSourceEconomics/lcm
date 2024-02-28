@@ -1,4 +1,11 @@
-"""Example specifications of the Phelps-Deaton model."""
+"""Example specifications of the Phelps-Deaton model.
+
+This specification corresponds to the example model presented in the paper: "The
+endogenous grid method for discrete-continuous dynamic choice models with (or without)
+taste shocks" by Fedor Iskhakov, Thomas H. Jørgensen, John Rust and Bertel Schjerning
+(2017, https://doi.org/10.3982/QE643).
+
+"""
 
 import jax.numpy as jnp
 
