@@ -9,6 +9,8 @@ write_to = "src/lcm/_version.py"
 [tool.ruff]
 target-version = "py311"
 fix = true
+
+[tool.ruff.lint]
 select = ["ALL"]
 extend-ignore = [
     # missing type annotation
@@ -57,6 +59,7 @@ extend-ignore = [
 [tool.ruff.lint.per-file-ignores]
 "docs/source/conf.py" = ["E501", "ERA001", "DTZ005"]
 "tests/test_*.py" = ["PLR2004"]
+"examples/*" = ["INP001"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
@@ -75,7 +78,7 @@ markers = [
     "slow: Tests that take a long time to run and are skipped in continuous integration.",
     "illustrative: Tests are designed for illustrative purposes",
 ]
-norecursedirs = ["docs", ".envs"]
+norecursedirs = ["docs", ".envs", "tests/test_models"]
 
 
 [tool.yamlfix]

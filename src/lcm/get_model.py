@@ -4,7 +4,7 @@ from typing import NamedTuple
 
 from pybaum import tree_update
 
-from lcm.example_models.basic_example_models import (
+from tests.test_models.phelps_deaton import (
     PHELPS_DEATON,
     PHELPS_DEATON_WITH_FILTERS,
 )

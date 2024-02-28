@@ -5,16 +5,17 @@ from lcm.entry_point import (
     create_compute_conditional_continuation_value,
     get_lcm_function,
 )
-from lcm.example_models.basic_example_models import (
-    PHELPS_DEATON,
-    PHELPS_DEATON_FULLY_DISCRETE,
-    PHELPS_DEATON_WITH_FILTERS,
-    phelps_deaton_utility,
-)
 from lcm.model_functions import get_utility_and_feasibility_function
 from lcm.process_model import process_model
 from lcm.state_space import create_state_choice_space
 from pybaum import tree_equal, tree_map
+
+from tests.test_models.phelps_deaton import (
+    PHELPS_DEATON,
+    PHELPS_DEATON_FULLY_DISCRETE,
+    PHELPS_DEATON_WITH_FILTERS,
+    utility,
+)
 
 MODELS = {
     "simple": PHELPS_DEATON,
@@ -175,7 +176,7 @@ def test_create_compute_conditional_continuation_value():
         params=params,
         vf_arr=None,
     )
-    assert val == phelps_deaton_utility(consumption=30.0, working=0, delta=1.0)
+    assert val == utility(consumption=30.0, working=0, delta=1.0)
 
 
 def test_create_compute_conditional_continuation_value_with_discrete_model():
@@ -218,7 +219,7 @@ def test_create_compute_conditional_continuation_value_with_discrete_model():
         params=params,
         vf_arr=None,
     )
-    assert val == phelps_deaton_utility(consumption=2, working=0, delta=1.0)
+    assert val == utility(consumption=2, working=0, delta=1.0)
 
 
 # ======================================================================================
@@ -267,7 +268,7 @@ def test_create_compute_conditional_continuation_policy():
         vf_arr=None,
     )
     assert policy == 2
-    assert val == phelps_deaton_utility(consumption=30.0, working=0, delta=1.0)
+    assert val == utility(consumption=30.0, working=0, delta=1.0)
 
 
 def test_create_compute_conditional_continuation_policy_with_discrete_model():
@@ -311,4 +312,4 @@ def test_create_compute_conditional_continuation_policy_with_discrete_model():
         vf_arr=None,
     )
     assert policy == 1
-    assert val == phelps_deaton_utility(consumption=2, working=0, delta=1.0)
+    assert val == utility(consumption=2, working=0, delta=1.0)

@@ -5,7 +5,8 @@ import pytest
 from lcm.entry_point import (
     get_lcm_function,
 )
-from lcm.example_models.stochastic_example_models import MODEL, PARAMS
+
+from tests.test_models.stochastic import MODEL_CONFIG, PARAMS
 
 # ======================================================================================
 # Simulate
@@ -13,7 +14,10 @@ from lcm.example_models.stochastic_example_models import MODEL, PARAMS
 
 
 def test_get_lcm_function_with_simulate_target():
-    simulate_model, _ = get_lcm_function(model=MODEL, targets="solve_and_simulate")
+    simulate_model, _ = get_lcm_function(
+        model=MODEL_CONFIG,
+        targets="solve_and_simulate",
+    )
 
     res = simulate_model(
         PARAMS,
@@ -47,7 +51,7 @@ def test_get_lcm_function_with_simulate_target():
 
 
 def test_get_lcm_function_with_solve_target():
-    solve_model, _ = get_lcm_function(model=MODEL)
+    solve_model, _ = get_lcm_function(model=MODEL_CONFIG)
     solve_model(PARAMS)
 
 

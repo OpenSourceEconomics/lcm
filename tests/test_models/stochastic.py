@@ -1,21 +1,39 @@
-"""Define example model specifications."""
+"""Example specifications of a simple Phelps-Deaton style stochastic model."""
 
 import jax.numpy as jnp
-
 import lcm
 
-N_CHOICE_GRID_POINTS = 500
-N_STATE_GRID_POINTS = 100
+# ======================================================================================
+# Numerical parameters and constants
+# ======================================================================================
+
+N_GRID_POINTS = {
+    "states": 100,
+    "choices": 200,
+}
+
+# ======================================================================================
+# Model functions
+# ======================================================================================
 
 
+# --------------------------------------------------------------------------------------
+# Utility function
+# --------------------------------------------------------------------------------------
 def utility(consumption, working, health, partner, delta, gamma):  # noqa: ARG001
     return jnp.log(consumption) + (gamma * health - delta) * working
 
 
+# --------------------------------------------------------------------------------------
+# Deterministic state transitions
+# --------------------------------------------------------------------------------------
 def next_wealth(wealth, consumption, working, wage, interest_rate):
     return (1 + interest_rate) * (wealth - consumption) + wage * working
 
 
+# --------------------------------------------------------------------------------------
+# Stochastic state transitions
+# --------------------------------------------------------------------------------------
 @lcm.mark.stochastic
 def next_health(health, partner):  # noqa: ARG001
     pass
@@ -26,11 +44,18 @@ def next_partner(_period, working, partner):  # noqa: ARG001
     pass
 
 
+# --------------------------------------------------------------------------------------
+# Constraints
+# --------------------------------------------------------------------------------------
 def consumption_constraint(consumption, wealth):
     return consumption <= wealth
 
 
-MODEL = {
+# ======================================================================================
+# Model specification and parameters
+# ======================================================================================
+
+MODEL_CONFIG = {
     "functions": {
         "utility": utility,
         "next_wealth": next_wealth,
@@ -44,7 +69,7 @@ MODEL = {
             "grid_type": "linspace",
             "start": 1,
             "stop": 100,
-            "n_points": N_CHOICE_GRID_POINTS,
+            "n_points": N_GRID_POINTS["choices"],
         },
     },
     "states": {
@@ -54,7 +79,7 @@ MODEL = {
             "grid_type": "linspace",
             "start": 1,
             "stop": 100,
-            "n_points": N_STATE_GRID_POINTS,
+            "n_points": N_GRID_POINTS["states"],
         },
     },
     "n_periods": 3,

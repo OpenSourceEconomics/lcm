@@ -1,10 +1,11 @@
 import jax.numpy as jnp
 import pandas as pd
-from lcm.example_models.basic_example_models import PHELPS_DEATON
 from lcm.interfaces import Model
 from lcm.next_state import _get_stochastic_next_func, get_next_state_function
 from lcm.process_model import process_model
 from pybaum import tree_equal
+
+from tests.test_models.phelps_deaton import PHELPS_DEATON
 
 # ======================================================================================
 # Solve target

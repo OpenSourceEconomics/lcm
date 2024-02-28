@@ -4,12 +4,6 @@ import lcm.grids as grids_module
 import numpy as np
 import pandas as pd
 import pytest
-from lcm.example_models.basic_example_models import (
-    N_CHOICE_GRID_POINTS,
-    N_STATE_GRID_POINTS,
-    PHELPS_DEATON,
-    PHELPS_DEATON_WITH_FILTERS,
-)
 from lcm.interfaces import GridSpec
 from lcm.mark import StochasticInfo
 from lcm.process_model import (
@@ -22,6 +16,13 @@ from lcm.process_model import (
 )
 from numpy.testing import assert_array_equal
 from pandas.testing import assert_frame_equal
+
+from tests.test_models.phelps_deaton import (
+    N_CHOICE_GRID_POINTS,
+    N_STATE_GRID_POINTS,
+    PHELPS_DEATON,
+    PHELPS_DEATON_WITH_FILTERS,
+)
 
 
 @pytest.fixture()

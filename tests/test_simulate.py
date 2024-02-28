@@ -6,11 +6,6 @@ from lcm.entry_point import (
     create_compute_conditional_continuation_policy,
     get_lcm_function,
 )
-from lcm.example_models.basic_example_models import (
-    N_CHOICE_GRID_POINTS,
-    PHELPS_DEATON,
-    PHELPS_DEATON_WITH_FILTERS,
-)
 from lcm.logging import get_logger
 from lcm.model_functions import get_utility_and_feasibility_function
 from lcm.next_state import _get_next_state_function_simulation
@@ -31,6 +26,12 @@ from lcm.simulate import (
 from lcm.state_space import create_state_choice_space
 from numpy.testing import assert_array_almost_equal, assert_array_equal
 from pybaum import tree_equal
+
+from tests.test_models.phelps_deaton import (
+    N_CHOICE_GRID_POINTS,
+    PHELPS_DEATON,
+    PHELPS_DEATON_WITH_FILTERS,
+)
 
 # ======================================================================================
 # Test simulate using raw inputs
