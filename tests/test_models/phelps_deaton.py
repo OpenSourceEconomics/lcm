@@ -8,7 +8,7 @@ import jax.numpy as jnp
 
 N_GRID_POINTS = {
     "states": 100,
-    "choices": 200,
+    "choices": 500,
 }
 
 RETIREMENT_AGE = 65
