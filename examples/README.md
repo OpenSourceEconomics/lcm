@@ -2,9 +2,9 @@
 
 ## Choosing an example
 
-| Example name   | Description                                        | Runtime       |
-| -------------- | -------------------------------------------------- | ------------- |
-| `long_running` | Consumptions-savings model with health and leisure | a few minutes |
+| Example name   | Description                                       | Runtime       |
+| -------------- | ------------------------------------------------- | ------------- |
+| `long_running` | Consumption-savings model with health and leisure | a few minutes |
 
 ## Running an example
 
