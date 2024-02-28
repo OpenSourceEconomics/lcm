@@ -5,7 +5,7 @@ import pytest
 from lcm.entry_point import (
     get_lcm_function,
 )
-from lcm.example_models_stochastic import MODEL, PARAMS
+from lcm.example_models.stochastic_example_models import MODEL, PARAMS
 
 # ======================================================================================
 # Simulate
@@ -29,14 +29,14 @@ def test_get_lcm_function_with_simulate_target():
         0,
         1,
         0,  # period 0
-        0,
-        0,
-        0,
-        0,  # period 1
         1,
         1,
         1,
-        1,  # period 2
+        1,  # period 1
+        1,
+        1,
+        1,
+        0,  # period 2
     ]
     assert jnp.array_equal(res["partner"].values, expected_partner)
 
@@ -108,9 +108,9 @@ def model_and_params():
     model_stochastic["functions"]["next_health"] = next_health_stochastic
 
     params = {
-        "beta": 0.25,
-        "utility": {"delta": 0.25, "gamma": 0.25},
-        "next_wealth": {"interest_rate": 0.25, "wage": 0.25},
+        "beta": 0.95,
+        "utility": {"delta": 0.5, "gamma": 0.5},
+        "next_wealth": {"interest_rate": 0.05, "wage": 10.0},
         "next_health": {},
         "consumption_constraint": {},
         "shocks": {

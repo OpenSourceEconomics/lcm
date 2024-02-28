@@ -67,9 +67,11 @@ def allow_kwargs(func):
 
     # Create new signature without positional-only arguments
     new_parameters = [
-        p.replace(kind=inspect.Parameter.POSITIONAL_OR_KEYWORD)
-        if p.kind == inspect.Parameter.POSITIONAL_ONLY
-        else p
+        (
+            p.replace(kind=inspect.Parameter.POSITIONAL_OR_KEYWORD)
+            if p.kind == inspect.Parameter.POSITIONAL_ONLY
+            else p
+        )
         for p in parameters.values()
     ]
     new_signature = signature.replace(parameters=new_parameters)
@@ -117,9 +119,11 @@ def allow_args(func):
 
     # Create new signature without keyword-only arguments
     new_parameters = [
-        p.replace(kind=inspect.Parameter.POSITIONAL_OR_KEYWORD)
-        if p.kind == inspect.Parameter.KEYWORD_ONLY
-        else p
+        (
+            p.replace(kind=inspect.Parameter.POSITIONAL_OR_KEYWORD)
+            if p.kind == inspect.Parameter.KEYWORD_ONLY
+            else p
+        )
         for p in parameters.values()
     ]
     new_signature = signature.replace(parameters=new_parameters)
