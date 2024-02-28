@@ -8,8 +8,8 @@
 
 ## Running an example
 
-Say you want to solve the [`long_running`](./long_running.py) example locally. In a Python
-shell, execute:
+Say you want to solve the [`long_running`](./long_running.py) example locally. In a
+Python shell, execute:
 
 ```python
 from lcm.entry_point import get_lcm_function
