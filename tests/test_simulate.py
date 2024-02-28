@@ -80,7 +80,7 @@ def simulate_inputs():
 def test_simulate_using_raw_inputs(simulate_inputs):
     params = {
         "beta": 1.0,
-        "utility": {"delta": 1.0},
+        "utility": {"disutility_of_work": 1.0},
         "next_wealth": {
             "interest_rate": 0.05,
         },
@@ -117,7 +117,7 @@ def phelps_deaton_model_solution():
 
         params = {
             "beta": 1.0,
-            "utility": {"delta": 1.0},
+            "utility": {"disutility_of_work": 1.0},
             "next_wealth": {
                 "interest_rate": 0.05,
                 "wage": 1.0,
@@ -183,7 +183,7 @@ def test_effect_of_beta_on_last_period():
 
     params = {
         "beta": None,
-        "utility": {"delta": 1.0},
+        "utility": {"disutility_of_work": 1.0},
         "next_wealth": {
             "interest_rate": 0.05,
         },
@@ -193,7 +193,7 @@ def test_effect_of_beta_on_last_period():
     params_low = params.copy()
     params_low["beta"] = 0.5
 
-    # high delta
+    # high disutility_of_work
     params_high = params.copy()
     params_high["beta"] = 0.99
 
@@ -228,7 +228,7 @@ def test_effect_of_beta_on_last_period():
     ).all()
 
 
-def test_effect_of_delta():
+def test_effect_of_disutility_of_work():
     model = {**PHELPS_DEATON, "n_periods": 5}
 
     # Model solutions
@@ -237,19 +237,19 @@ def test_effect_of_delta():
 
     params = {
         "beta": 1.0,
-        "utility": {"delta": None},
+        "utility": {"disutility_of_work": None},
         "next_wealth": {
             "interest_rate": 0.05,
         },
     }
 
-    # low delta
+    # low disutility_of_work
     params_low = params.copy()
-    params_low["utility"]["delta"] = 0.2
+    params_low["utility"]["disutility_of_work"] = 0.2
 
-    # high delta
+    # high disutility_of_work
     params_high = params.copy()
-    params_high["utility"]["delta"] = 1.5
+    params_high["utility"]["disutility_of_work"] = 1.5
 
     # solutions
     solution_low = solve_model(params_low)
@@ -325,7 +325,7 @@ def test_compute_targets():
     }
 
     def f_a(a, params):
-        return a + params["delta"]
+        return a + params["disutility_of_work"]
 
     def f_b(b, params):  # noqa: ARG001
         return b
@@ -336,7 +336,7 @@ def test_compute_targets():
         processed_results=processed_results,
         targets=["fa", "fb"],
         model_functions=model_functions,
-        params={"delta": -1.0},
+        params={"disutility_of_work": -1.0},
     )
     expected = {
         "fa": jnp.arange(3) - 1.0,

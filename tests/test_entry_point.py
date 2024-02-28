@@ -141,7 +141,7 @@ def test_create_compute_conditional_continuation_value():
 
     params = {
         "beta": 1.0,
-        "utility": {"delta": 1.0},
+        "utility": {"disutility_of_work": 1.0},
         "next_wealth": {
             "interest_rate": 0.05,
             "wage": 1.0,
@@ -176,7 +176,7 @@ def test_create_compute_conditional_continuation_value():
         params=params,
         vf_arr=None,
     )
-    assert val == utility(consumption=30.0, working=0, delta=1.0)
+    assert val == utility(consumption=30.0, working=0, disutility_of_work=1.0)
 
 
 def test_create_compute_conditional_continuation_value_with_discrete_model():
@@ -184,7 +184,7 @@ def test_create_compute_conditional_continuation_value_with_discrete_model():
 
     params = {
         "beta": 1.0,
-        "utility": {"delta": 1.0},
+        "utility": {"disutility_of_work": 1.0},
         "next_wealth": {
             "interest_rate": 0.05,
             "wage": 1.0,
@@ -219,7 +219,7 @@ def test_create_compute_conditional_continuation_value_with_discrete_model():
         params=params,
         vf_arr=None,
     )
-    assert val == utility(consumption=2, working=0, delta=1.0)
+    assert val == utility(consumption=2, working=0, disutility_of_work=1.0)
 
 
 # ======================================================================================
@@ -232,7 +232,7 @@ def test_create_compute_conditional_continuation_policy():
 
     params = {
         "beta": 1.0,
-        "utility": {"delta": 1.0},
+        "utility": {"disutility_of_work": 1.0},
         "next_wealth": {
             "interest_rate": 0.05,
             "wage": 1.0,
@@ -268,7 +268,7 @@ def test_create_compute_conditional_continuation_policy():
         vf_arr=None,
     )
     assert policy == 2
-    assert val == utility(consumption=30.0, working=0, delta=1.0)
+    assert val == utility(consumption=30.0, working=0, disutility_of_work=1.0)
 
 
 def test_create_compute_conditional_continuation_policy_with_discrete_model():
@@ -276,7 +276,7 @@ def test_create_compute_conditional_continuation_policy_with_discrete_model():
 
     params = {
         "beta": 1.0,
-        "utility": {"delta": 1.0},
+        "utility": {"disutility_of_work": 1.0},
         "next_wealth": {
             "interest_rate": 0.05,
             "wage": 1.0,
@@ -312,4 +312,4 @@ def test_create_compute_conditional_continuation_policy_with_discrete_model():
         vf_arr=None,
     )
     assert policy == 1
-    assert val == utility(consumption=2, working=0, delta=1.0)
+    assert val == utility(consumption=2, working=0, disutility_of_work=1.0)

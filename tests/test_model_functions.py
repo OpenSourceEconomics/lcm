@@ -46,7 +46,7 @@ def test_get_utility_and_feasibility_function():
 
     params = {
         "beta": 1.0,
-        "utility": {"delta": 1.0},
+        "utility": {"disutility_of_work": 1.0},
         "next_wealth": {
             "interest_rate": 0.05,
             "wage": 1.0,
@@ -86,7 +86,7 @@ def test_get_utility_and_feasibility_function():
         utility(
             consumption=consumption,
             working=1 - retirement,
-            delta=1.0,
+            disutility_of_work=1.0,
         ),
     )
     assert_array_equal(f, jnp.array([True, True, False]))

@@ -104,7 +104,7 @@ MODELS = {
         model=PHELPS_DEATON_FIVE_PERIODS,
         params={
             "beta": 1.0,
-            "utility": {"delta": 1.0},
+            "utility": {"disutility_of_work": 1.0},
             "next_wealth": {
                 "interest_rate": 0.05,
                 "wage": 1.0,
@@ -115,18 +115,18 @@ MODELS = {
         model=ISKHAKOV_2017_FIVE_PERIODS,
         params={
             "beta": 0.98,
-            "utility": {"delta": 1.0},
+            "utility": {"disutility_of_work": 1.0},
             "next_wealth": {
                 "interest_rate": 0.0,
                 "wage": 20.0,
             },
         },
     ),
-    "iskhakov_2017_low_delta": ModelAndParams(
+    "iskhakov_2017_low_disutility_of_work": ModelAndParams(
         model=ISKHAKOV_2017_THREE_PERIODS,
         params={
             "beta": 0.98,
-            "utility": {"delta": 0.1},
+            "utility": {"disutility_of_work": 0.1},
             "next_wealth": {
                 "interest_rate": 0.0,
                 "wage": 20.0,

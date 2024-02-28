@@ -9,7 +9,9 @@ from numpy.testing import assert_array_almost_equal as aaae
 
 TEST_CASES = {
     "iskhakov_2017_five_periods": get_model("iskhakov_2017_five_periods"),
-    "iskhakov_2017_low_delta": get_model("iskhakov_2017_low_delta"),
+    "iskhakov_2017_low_disutility_of_work": get_model(
+        "iskhakov_2017_low_disutility_of_work",
+    ),
 }
 
 

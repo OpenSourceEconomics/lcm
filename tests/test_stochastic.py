@@ -62,8 +62,8 @@ def test_get_lcm_function_with_solve_target():
 
 @pytest.fixture()
 def model_and_params():
-    def utility(consumption, working, health, delta, gamma):
-        return jnp.log(consumption) + (gamma * health - delta) * working
+    def utility(consumption, working, health, disutility_of_work, gamma):
+        return jnp.log(consumption) + (gamma * health - disutility_of_work) * working
 
     def next_wealth(wealth, consumption, working, wage, interest_rate):
         return (1 + interest_rate) * (wealth - consumption) + wage * working
@@ -113,7 +113,7 @@ def model_and_params():
 
     params = {
         "beta": 0.95,
-        "utility": {"delta": 0.5, "gamma": 0.5},
+        "utility": {"disutility_of_work": 0.5, "gamma": 0.5},
         "next_wealth": {"interest_rate": 0.05, "wage": 10.0},
         "next_health": {},
         "consumption_constraint": {},
