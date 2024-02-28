@@ -28,19 +28,19 @@ RETIREMENT_AGE = 65
 # --------------------------------------------------------------------------------------
 # Utility functions
 # --------------------------------------------------------------------------------------
-def utility(consumption, working, delta):
-    return jnp.log(consumption) - delta * working
+def utility(consumption, working, disutility_of_work):
+    return jnp.log(consumption) - disutility_of_work * working
 
 
 def utility_with_filter(
     consumption,
     working,
-    delta,
+    disutility_of_work,
     # Temporary workaround for bug described in issue #30, which requires us to pass
     # all state variables to the utility function.
     lagged_retirement,  # noqa: ARG001, TODO: Remove unused arguments once #30 is fixed.
 ):
-    return utility(consumption=consumption, working=working, delta=delta)
+    return utility(consumption, working=working, disutility_of_work=disutility_of_work)
 
 
 # --------------------------------------------------------------------------------------

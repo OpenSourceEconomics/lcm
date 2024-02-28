@@ -22,8 +22,8 @@ RETIREMENT_AGE = 65
 # --------------------------------------------------------------------------------------
 # Utility function
 # --------------------------------------------------------------------------------------
-def utility(consumption, working, health, exercise, delta):
-    return jnp.log(consumption) - (delta - health) * working - exercise
+def utility(consumption, working, health, exercise, disutility_of_work):
+    return jnp.log(consumption) - (disutility_of_work - health) * working - exercise
 
 
 # --------------------------------------------------------------------------------------
@@ -107,6 +107,6 @@ MODEL_CONFIG = {
 
 PARAMS = {
     "beta": 0.95,
-    "utility": {"delta": 0.05},
+    "utility": {"disutility_of_work": 0.05},
     "next_wealth": {"interest_rate": 0.05},
 }

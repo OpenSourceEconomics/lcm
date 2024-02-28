@@ -1,4 +1,13 @@
-"""Example specifications of a simple Phelps-Deaton style stochastic model."""
+"""Example specifications of a simple Phelps-Deaton style stochastic model.
+
+This specification is motivated by the example model presented in the paper: "The
+endogenous grid method for discrete-continuous dynamic choice models with (or without)
+taste shocks" by Fedor Iskhakov, Thomas H. Jørgensen, John Rust and Bertel Schjerning
+(2017, https://doi.org/10.3982/QE643).
+
+See also the specifications in tests/test_models/phelps_deaton.py.
+
+"""
 
 import jax.numpy as jnp
 import lcm
@@ -27,10 +36,9 @@ def utility(
     # Temporary workaround for bug described in issue #30, which requires us to pass
     # all state variables to the utility function.
     partner,  # noqa: ARG001, TODO: Remove unused arguments once #30 is fixed.
-    delta,
-    gamma,
+    disutility_of_work,
 ):
-    return jnp.log(consumption) + (gamma * health - delta) * working
+    return jnp.log(consumption) - (1 - health / 2) * disutility_of_work * working
 
 
 # --------------------------------------------------------------------------------------
@@ -97,7 +105,7 @@ MODEL_CONFIG = {
 
 PARAMS = {
     "beta": 0.95,
-    "utility": {"delta": 0.5, "gamma": 0.25},
+    "utility": {"disutility_of_work": 0.5},
     "next_wealth": {"interest_rate": 0.05, "wage": 10.0},
     "next_health": {},
     "consumption_constraint": {},
