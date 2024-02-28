@@ -41,7 +41,7 @@ def get_lcm_function(
         model.get_argsolve_continuous_problem(t, on="sim_state_choice_space")
         for t in model.periods
     ]
-    
+
     argsolve_discrete_problem = [
         model.get_argsolve_discrete_problem(t) for t in model.periods
     ]
