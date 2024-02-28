@@ -46,7 +46,7 @@ def next_wealth(wealth, consumption, working, wage, interest_rate):
     return (1 + interest_rate) * (wealth - consumption) + wage * working
 
 
-def next_health(health, sport, working):
+def next_health(health, exercise, working):
     return health * (1 + sport - working / 2)
 
 
