@@ -28,7 +28,7 @@ from numpy.testing import assert_array_almost_equal, assert_array_equal
 from pybaum import tree_equal
 
 from tests.test_models.phelps_deaton import (
-    N_CHOICE_GRID_POINTS,
+    N_GRID_POINTS,
     PHELPS_DEATON,
     PHELPS_DEATON_WITH_FILTERS,
 )
@@ -69,7 +69,7 @@ def simulate_inputs():
     return {
         "state_indexers": [{}],
         "continuous_choice_grids": [
-            {"consumption": jnp.linspace(1, 100, num=N_CHOICE_GRID_POINTS)},
+            {"consumption": jnp.linspace(1, 100, num=N_GRID_POINTS["choices"])},
         ],
         "compute_ccv_policy_functions": compute_ccv_policy_functions,
         "model": model,

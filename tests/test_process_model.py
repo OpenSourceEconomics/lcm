@@ -18,8 +18,7 @@ from numpy.testing import assert_array_equal
 from pandas.testing import assert_frame_equal
 
 from tests.test_models.phelps_deaton import (
-    N_CHOICE_GRID_POINTS,
-    N_STATE_GRID_POINTS,
+    N_GRID_POINTS,
     PHELPS_DEATON,
     PHELPS_DEATON_WITH_FILTERS,
 )
@@ -123,14 +122,14 @@ def test_process_phelps_deaton_with_filters():
     # Gridspecs
     wealth_specs = GridSpec(
         kind="linspace",
-        specs={"start": 0, "stop": 100, "n_points": N_STATE_GRID_POINTS},
+        specs={"start": 0, "stop": 100, "n_points": N_GRID_POINTS["states"]},
     )
 
     assert model.gridspecs["wealth"] == wealth_specs
 
     consumption_specs = GridSpec(
         kind="linspace",
-        specs={"start": 1, "stop": 100, "n_points": N_CHOICE_GRID_POINTS},
+        specs={"start": 1, "stop": 100, "n_points": N_GRID_POINTS["choices"]},
     )
     assert model.gridspecs["consumption"] == consumption_specs
 
@@ -174,14 +173,14 @@ def test_process_phelps_deaton():
     # Gridspecs
     wealth_specs = GridSpec(
         kind="linspace",
-        specs={"start": 0, "stop": 100, "n_points": N_STATE_GRID_POINTS},
+        specs={"start": 0, "stop": 100, "n_points": N_GRID_POINTS["states"]},
     )
 
     assert model.gridspecs["wealth"] == wealth_specs
 
     consumption_specs = GridSpec(
         kind="linspace",
-        specs={"start": 0, "stop": 100, "n_points": N_CHOICE_GRID_POINTS},
+        specs={"start": 0, "stop": 100, "n_points": N_GRID_POINTS["choices"]},
     )
     assert model.gridspecs["consumption"] == consumption_specs
 
