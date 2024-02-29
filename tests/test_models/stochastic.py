@@ -46,8 +46,12 @@ def utility(
 # --------------------------------------------------------------------------------------
 # Deterministic state transitions
 # --------------------------------------------------------------------------------------
-def next_wealth(wealth, consumption, working, wage, interest_rate):
-    return (1 + interest_rate) * (wealth - consumption) + wage * working
+def next_wealth(wealth, consumption, labor_income, interest_rate):
+    return (1 + interest_rate) * (wealth - consumption) + labor_income
+
+
+def labor_income(working, wage):
+    return working * wage
 
 
 # --------------------------------------------------------------------------------------
@@ -81,6 +85,7 @@ MODEL_CONFIG = {
         "next_health": next_health,
         "next_partner": next_partner,
         "consumption_constraint": consumption_constraint,
+        "labor_income": labor_income,
     },
     "choices": {
         "working": {"options": [0, 1]},
@@ -108,9 +113,10 @@ MODEL_CONFIG = {
 PARAMS = {
     "beta": 0.95,
     "utility": {"disutility_of_work": 0.5},
-    "next_wealth": {"interest_rate": 0.05, "wage": 10.0},
+    "next_wealth": {"interest_rate": 0.05},
     "next_health": {},
     "consumption_constraint": {},
+    "labor_income": {"wage": 10.0},
     "shocks": {
         # Health shock:
         # ------------------------------------------------------------------------------
