@@ -8,9 +8,9 @@
 
 ## Running an example
 
-Say you want to solve the [`long_running`](./long_running.py) example locally. First,
-clone this repository, create the `lcm` conda environment, move into the examples
-folder, and open the interactive Python shell. In a console, type:
+Say you want to solve the `long_running` example locally. First, clone this repository,
+create the `lcm` conda environment, move into the examples folder, and open the
+interactive Python shell. In a console, type:
 
 ```console
 $ git clone https://github.com/OpenSourceEconomics/lcm.git
