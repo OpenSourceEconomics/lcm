@@ -24,15 +24,15 @@ def test_regression_test():
     # ----------------------------------------------------------------------------------
     # Generate current lcm ouput
     # ----------------------------------------------------------------------------------
+    model_config = get_model_config("base", n_periods=3)
+
+    solve, _ = get_lcm_function(model=model_config, targets="solve")
+
     params = get_params(
         beta=0.95,
         disutility_of_work=1.0,
         interest_rate=0.05,
     )
-    model_config = get_model_config("base", n_periods=3)
-
-    solve, _ = get_lcm_function(model=model_config, targets="solve")
-
     got_solve = solve(params)
 
     solve_and_simulate, _ = get_lcm_function(

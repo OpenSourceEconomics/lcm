@@ -14,9 +14,10 @@ interactive Python shell. In a console, type:
 
 ```console
 $ git clone https://github.com/OpenSourceEconomics/lcm.git
-$ conda env create
+$ cd lcm
+$ conda env create -f environment.yml
 $ conda activate lcm
-$ cd lcm/examples
+$ cd examples
 $ ipython
 ```
 
