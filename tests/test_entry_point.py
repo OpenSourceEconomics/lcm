@@ -17,19 +17,16 @@ from tests.test_models.deterministic import (
 )
 from tests.test_models.deterministic import utility as base_model_utility
 
-MODELS = {
-    "simple": BASE_MODEL,
-    "with_filters": BASE_MODEL_WITH_FILTERS,
-    "fully_discrete": BASE_MODEL_FULLY_DISCRETE,
-}
-
-
 # ======================================================================================
 # Solve
 # ======================================================================================
 
 
-@pytest.mark.parametrize("user_model", list(MODELS.values()), ids=list(MODELS))
+@pytest.mark.parametrize(
+    "user_model",
+    [BASE_MODEL, BASE_MODEL_FULLY_DISCRETE, BASE_MODEL_WITH_FILTERS],
+    ids=["base", "fully_discrete", "with_filters"],
+)
 def test_get_lcm_function_with_solve_target(user_model):
     solve_model, params_template = get_lcm_function(model=user_model)
 
@@ -46,7 +43,7 @@ def test_get_lcm_function_with_solve_target(user_model):
 @pytest.mark.parametrize(
     "user_model",
     [BASE_MODEL, BASE_MODEL_FULLY_DISCRETE],
-    ids=["simple", "fully_discrete"],
+    ids=["base", "fully_discrete"],
 )
 def test_get_lcm_function_with_simulation_target_simple(user_model):
     simulate, params_template = get_lcm_function(
@@ -67,7 +64,7 @@ def test_get_lcm_function_with_simulation_target_simple(user_model):
 @pytest.mark.parametrize(
     "user_model",
     [BASE_MODEL, BASE_MODEL_FULLY_DISCRETE],
-    ids=["simple", "fully_discrete"],
+    ids=["base", "fully_discrete"],
 )
 def test_get_lcm_function_with_simulation_is_coherent(user_model):
     """Test that solve_and_simulate creates same output as solve then simulate."""
