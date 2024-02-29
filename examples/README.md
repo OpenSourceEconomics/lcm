@@ -8,8 +8,16 @@
 
 ## Running an example
 
-Say you want to solve the [`long_running`](./long_running.py) example locally. In a
-Python shell, execute:
+Say you want to solve the [`long_running`](./long_running.py) example locally. First,
+clone this repository and move into the example folder. In a console, type:
+
+```console
+$ git clone https://github.com/OpenSourceEconomics/lcm.git
+$ cd lcm/examples
+```
+
+Make sure that you have `lcm` installed in your Python environment. Then, in a Python
+shell run
 
 ```python
 from lcm.entry_point import get_lcm_function
