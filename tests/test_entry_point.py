@@ -14,8 +14,8 @@ from tests.test_models.deterministic import (
     BASE_MODEL,
     BASE_MODEL_FULLY_DISCRETE,
     BASE_MODEL_WITH_FILTERS,
-    utility,
 )
+from tests.test_models.deterministic import utility as base_model_utility
 
 MODELS = {
     "simple": BASE_MODEL,
@@ -176,7 +176,11 @@ def test_create_compute_conditional_continuation_value():
         params=params,
         vf_arr=None,
     )
-    assert val == utility(consumption=30.0, working=0, disutility_of_work=1.0)
+    assert val == base_model_utility(
+        consumption=30.0,
+        working=0,
+        disutility_of_work=1.0,
+    )
 
 
 def test_create_compute_conditional_continuation_value_with_discrete_model():
@@ -219,7 +223,7 @@ def test_create_compute_conditional_continuation_value_with_discrete_model():
         params=params,
         vf_arr=None,
     )
-    assert val == utility(consumption=2, working=0, disutility_of_work=1.0)
+    assert val == base_model_utility(consumption=2, working=0, disutility_of_work=1.0)
 
 
 # ======================================================================================
@@ -268,7 +272,11 @@ def test_create_compute_conditional_continuation_policy():
         vf_arr=None,
     )
     assert policy == 2
-    assert val == utility(consumption=30.0, working=0, disutility_of_work=1.0)
+    assert val == base_model_utility(
+        consumption=30.0,
+        working=0,
+        disutility_of_work=1.0,
+    )
 
 
 def test_create_compute_conditional_continuation_policy_with_discrete_model():
@@ -312,4 +320,4 @@ def test_create_compute_conditional_continuation_policy_with_discrete_model():
         vf_arr=None,
     )
     assert policy == 1
-    assert val == utility(consumption=2, working=0, disutility_of_work=1.0)
+    assert val == base_model_utility(consumption=2, working=0, disutility_of_work=1.0)
