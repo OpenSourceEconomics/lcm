@@ -9,6 +9,8 @@ write_to = "src/lcm/_version.py"
 [tool.ruff]
 target-version = "py311"
 fix = true
+
+[tool.ruff.lint]
 select = ["ALL"]
 extend-ignore = [
     # missing type annotation
@@ -41,11 +43,17 @@ extend-ignore = [
     # exception must not use an f-string literal
     "EM102",
 
+    # line contains a todo
+    "FIX002",
+
     # Too many arguments to function call
     "PLR0913",
 
     # use of `assert` detected
     "S101",
+
+    # `pickle` module is unsafe
+    "S301",
 
     # Private member accessed: `_stochastic_info`
     "SLF001",
@@ -57,6 +65,7 @@ extend-ignore = [
 [tool.ruff.lint.per-file-ignores]
 "docs/source/conf.py" = ["E501", "ERA001", "DTZ005"]
 "tests/test_*.py" = ["PLR2004"]
+"examples/*" = ["INP001"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"

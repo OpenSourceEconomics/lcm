@@ -1,6 +1,5 @@
 import jax.numpy as jnp
 import pandas as pd
-from lcm.example_models.basic_example_models import PHELPS_DEATON, phelps_deaton_utility
 from lcm.interfaces import Model
 from lcm.model_functions import (
     get_combined_constraint,
@@ -10,6 +9,8 @@ from lcm.model_functions import (
 from lcm.process_model import process_model
 from lcm.state_space import create_state_choice_space
 from numpy.testing import assert_array_equal
+
+from tests.test_models.deterministic import BASE_MODEL, utility
 
 
 def test_get_combined_constraint():
@@ -41,11 +42,11 @@ def test_get_combined_constraint():
 
 
 def test_get_utility_and_feasibility_function():
-    model = process_model(PHELPS_DEATON)
+    model = process_model(BASE_MODEL)
 
     params = {
         "beta": 1.0,
-        "utility": {"delta": 1.0},
+        "utility": {"disutility_of_work": 1.0},
         "next_wealth": {
             "interest_rate": 0.05,
             "wage": 1.0,
@@ -82,10 +83,10 @@ def test_get_utility_and_feasibility_function():
 
     assert_array_equal(
         u,
-        phelps_deaton_utility(
+        utility(
             consumption=consumption,
             working=1 - retirement,
-            delta=1.0,
+            disutility_of_work=1.0,
         ),
     )
     assert_array_equal(f, jnp.array([True, True, False]))

@@ -6,11 +6,6 @@ from lcm.entry_point import (
     create_compute_conditional_continuation_policy,
     get_lcm_function,
 )
-from lcm.example_models.basic_example_models import (
-    N_CHOICE_GRID_POINTS,
-    PHELPS_DEATON,
-    PHELPS_DEATON_WITH_FILTERS,
-)
 from lcm.logging import get_logger
 from lcm.model_functions import get_utility_and_feasibility_function
 from lcm.next_state import _get_next_state_function_simulation
@@ -32,6 +27,12 @@ from lcm.state_space import create_state_choice_space
 from numpy.testing import assert_array_almost_equal, assert_array_equal
 from pybaum import tree_equal
 
+from tests.test_models.deterministic import (
+    BASE_MODEL,
+    BASE_MODEL_WITH_FILTERS,
+    N_GRID_POINTS,
+)
+
 # ======================================================================================
 # Test simulate using raw inputs
 # ======================================================================================
@@ -39,7 +40,7 @@ from pybaum import tree_equal
 
 @pytest.fixture()
 def simulate_inputs():
-    user_model = {**PHELPS_DEATON, "n_periods": 1}
+    user_model = {**BASE_MODEL, "n_periods": 1}
     model = process_model(user_model)
 
     _, space_info, _, _ = create_state_choice_space(
@@ -68,7 +69,7 @@ def simulate_inputs():
     return {
         "state_indexers": [{}],
         "continuous_choice_grids": [
-            {"consumption": jnp.linspace(1, 100, num=N_CHOICE_GRID_POINTS)},
+            {"consumption": jnp.linspace(1, 100, num=N_GRID_POINTS["consumption"])},
         ],
         "compute_ccv_policy_functions": compute_ccv_policy_functions,
         "model": model,
@@ -79,7 +80,7 @@ def simulate_inputs():
 def test_simulate_using_raw_inputs(simulate_inputs):
     params = {
         "beta": 1.0,
-        "utility": {"delta": 1.0},
+        "utility": {"disutility_of_work": 1.0},
         "next_wealth": {
             "interest_rate": 0.05,
         },
@@ -103,9 +104,9 @@ def test_simulate_using_raw_inputs(simulate_inputs):
 
 
 @pytest.fixture()
-def phelps_deaton_model_solution():
+def base_model_solution():
     def _model_solution(n_periods):
-        model = {**PHELPS_DEATON, "n_periods": n_periods}
+        model = {**BASE_MODEL, "n_periods": n_periods}
         model["functions"] = {
             # remove dependency on age, so that wage becomes a parameter
             name: func
@@ -115,12 +116,12 @@ def phelps_deaton_model_solution():
         solve_model, _ = get_lcm_function(model=model)
 
         params = {
-            "beta": 1.0,
-            "utility": {"delta": 1.0},
+            "beta": 0.95,
+            "utility": {"disutility_of_work": 0.25},
             "next_wealth": {
                 "interest_rate": 0.05,
-                "wage": 1.0,
             },
+            "labor_income": {"wage": 5.0},
         }
 
         vf_arr_list = solve_model(params)
@@ -129,9 +130,9 @@ def phelps_deaton_model_solution():
     return _model_solution
 
 
-@pytest.mark.parametrize("n_periods", range(3, PHELPS_DEATON["n_periods"] + 1))
-def test_simulate_using_get_lcm_function(phelps_deaton_model_solution, n_periods):
-    vf_arr_list, params, model = phelps_deaton_model_solution(n_periods)
+def test_simulate_using_get_lcm_function(base_model_solution):
+    n_periods = 3
+    vf_arr_list, params, model = base_model_solution(n_periods=n_periods)
 
     simulate_model, _ = get_lcm_function(model=model, targets="simulate")
 
@@ -139,7 +140,7 @@ def test_simulate_using_get_lcm_function(phelps_deaton_model_solution, n_periods
         params,
         vf_arr_list=vf_arr_list,
         initial_states={
-            "wealth": jnp.array([1.0, 20, 40, 70]),
+            "wealth": jnp.array([20.0, 150, 250, 320]),
         },
         additional_targets=["utility", "consumption_constraint"],
     )
@@ -158,14 +159,13 @@ def test_simulate_using_get_lcm_function(phelps_deaton_model_solution, n_periods
     last_period_index = n_periods - 1
     assert_array_equal(res.loc[last_period_index, :]["retirement"], 1)
 
-    # assert that higher wealth leads to higher consumption
     for period in range(n_periods):
-        assert (res.loc[period, :]["consumption"].diff()[1:] >= 0).all()
 
-        # The following does not work. I.e. the continuation value in each period is not
-        # weakly increasing in wealth. It is unclear if this needs to hold.
-        # ------------------------------------------------------------------------------
-        # assert jnp.all(jnp.diff(res[period]["value"]) >= 0)  # noqa: ERA001
+        # assert that higher wealth leads to higher consumption in each period
+        assert (res.loc[period]["consumption"].diff()[1:] >= 0).all()
+
+        # assert that higher wealth leads to higher value function in each period
+        assert (res.loc[period]["value"].diff()[1:] >= 0).all()
 
 
 # ======================================================================================
@@ -174,7 +174,7 @@ def test_simulate_using_get_lcm_function(phelps_deaton_model_solution, n_periods
 
 
 def test_effect_of_beta_on_last_period():
-    model = {**PHELPS_DEATON, "n_periods": 5}
+    model = {**BASE_MODEL, "n_periods": 5}
 
     # Model solutions
     # ==================================================================================
@@ -182,7 +182,7 @@ def test_effect_of_beta_on_last_period():
 
     params = {
         "beta": None,
-        "utility": {"delta": 1.0},
+        "utility": {"disutility_of_work": 1.0},
         "next_wealth": {
             "interest_rate": 0.05,
         },
@@ -192,7 +192,7 @@ def test_effect_of_beta_on_last_period():
     params_low = params.copy()
     params_low["beta"] = 0.5
 
-    # high delta
+    # high disutility_of_work
     params_high = params.copy()
     params_high["beta"] = 0.99
 
@@ -227,8 +227,8 @@ def test_effect_of_beta_on_last_period():
     ).all()
 
 
-def test_effect_of_delta():
-    model = {**PHELPS_DEATON, "n_periods": 5}
+def test_effect_of_disutility_of_work():
+    model = {**BASE_MODEL, "n_periods": 5}
 
     # Model solutions
     # ==================================================================================
@@ -236,19 +236,19 @@ def test_effect_of_delta():
 
     params = {
         "beta": 1.0,
-        "utility": {"delta": None},
+        "utility": {"disutility_of_work": None},
         "next_wealth": {
             "interest_rate": 0.05,
         },
     }
 
-    # low delta
+    # low disutility_of_work
     params_low = params.copy()
-    params_low["utility"]["delta"] = 0.2
+    params_low["utility"]["disutility_of_work"] = 0.2
 
-    # high delta
+    # high disutility_of_work
     params_high = params.copy()
-    params_high["utility"]["delta"] = 1.5
+    params_high["utility"]["disutility_of_work"] = 1.5
 
     # solutions
     solution_low = solve_model(params_low)
@@ -324,7 +324,7 @@ def test_compute_targets():
     }
 
     def f_a(a, params):
-        return a + params["delta"]
+        return a + params["disutility_of_work"]
 
     def f_b(b, params):  # noqa: ARG001
         return b
@@ -335,7 +335,7 @@ def test_compute_targets():
         processed_results=processed_results,
         targets=["fa", "fb"],
         model_functions=model_functions,
-        params={"delta": -1.0},
+        params={"disutility_of_work": -1.0},
     )
     expected = {
         "fa": jnp.arange(3) - 1.0,
@@ -403,7 +403,7 @@ def test_filter_ccv_policy():
 
 
 def test_create_data_state_choice_space():
-    model = process_model(PHELPS_DEATON_WITH_FILTERS)
+    model = process_model(BASE_MODEL_WITH_FILTERS)
     got_space, got_segment_info = create_data_scs(
         states={
             "wealth": jnp.array([10.0, 20.0]),

@@ -21,10 +21,11 @@ exclude *.yml
 exclude *.pickle
 exclude pytask.ini
 
-prune src/lcm/sandbox
-prune docs
-prune tests
 prune .envs
+prune examples
+prune docs
+prune src/lcm/sandbox
+prune tests
 
 global-exclude __pycache__
 global-exclude *.py[co]

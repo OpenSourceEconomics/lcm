@@ -1,10 +1,11 @@
 import jax.numpy as jnp
 import pandas as pd
-from lcm.example_models.basic_example_models import PHELPS_DEATON
 from lcm.interfaces import Model
 from lcm.next_state import _get_stochastic_next_func, get_next_state_function
 from lcm.process_model import process_model
 from pybaum import tree_equal
+
+from tests.test_models.deterministic import BASE_MODEL
 
 # ======================================================================================
 # Solve target
@@ -12,12 +13,12 @@ from pybaum import tree_equal
 
 
 def test_get_next_state_function_with_solve_target():
-    model = process_model(PHELPS_DEATON)
+    model = process_model(BASE_MODEL)
     got_func = get_next_state_function(model, target="solve")
 
     params = {
         "beta": 1.0,
-        "utility": {"delta": 1.0},
+        "utility": {"disutility_of_work": 1.0},
         "next_wealth": {
             "interest_rate": 0.05,
         },
