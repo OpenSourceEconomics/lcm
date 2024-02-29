@@ -18,9 +18,8 @@ from numpy.testing import assert_array_equal
 from pandas.testing import assert_frame_equal
 
 from tests.test_models.deterministic import (
-    BASE_MODEL,
-    BASE_MODEL_WITH_FILTERS,
     N_GRID_POINTS,
+    get_model_config,
 )
 
 
@@ -101,7 +100,7 @@ def test_get_grids(user_model):
 
 
 def test_process_model_with_filters():
-    model = process_model(BASE_MODEL_WITH_FILTERS)
+    model = process_model(get_model_config("with_filters", n_periods=3))
 
     # Variable Info
     assert (
@@ -163,7 +162,7 @@ def test_process_model_with_filters():
 
 
 def test_process_model():
-    model = process_model(BASE_MODEL)
+    model = process_model(get_model_config("base", n_periods=3))
 
     # Variable Info
     assert ~(model.variable_info["is_sparse"].to_numpy()).any()

@@ -6,7 +6,7 @@ from lcm.entry_point import (
     get_lcm_function,
 )
 
-from tests.test_models.stochastic import MODEL_CONFIG, PARAMS
+from tests.test_models.stochastic import get_model_config, get_params
 
 # ======================================================================================
 # Simulate
@@ -15,12 +15,12 @@ from tests.test_models.stochastic import MODEL_CONFIG, PARAMS
 
 def test_get_lcm_function_with_simulate_target():
     simulate_model, _ = get_lcm_function(
-        model=MODEL_CONFIG,
+        model=get_model_config("base", n_periods=3),
         targets="solve_and_simulate",
     )
 
     res = simulate_model(
-        PARAMS,
+        params=get_params(),
         initial_states={
             "health": jnp.array([1, 1, 0, 0]),
             "partner": jnp.array([0, 0, 1, 0]),
@@ -51,8 +51,11 @@ def test_get_lcm_function_with_simulate_target():
 
 
 def test_get_lcm_function_with_solve_target():
-    solve_model, _ = get_lcm_function(model=MODEL_CONFIG)
-    solve_model(PARAMS)
+    solve_model, _ = get_lcm_function(
+        model=get_model_config("base", n_periods=3),
+        targets="solve",
+    )
+    solve_model(params=get_params())
 
 
 # ======================================================================================
@@ -62,12 +65,17 @@ def test_get_lcm_function_with_solve_target():
 
 @pytest.fixture()
 def model_and_params():
-    def utility(consumption, working, health, disutility_of_work, gamma):
-        return jnp.log(consumption) + (gamma * health - disutility_of_work) * working
+    """Return a simple deterministic and stochastic model with parameters.
 
-    def next_wealth(wealth, consumption, working, wage, interest_rate):
-        return (1 + interest_rate) * (wealth - consumption) + wage * working
+    TODO(@timmens): Add this to tests/test_models/stochastic.py.
 
+    """
+    model_deterministic = get_model_config("base", n_periods=3)
+    model_stochastic = get_model_config("base", n_periods=3)
+
+    # ----------------------------------------------------------------------------------
+    # Overwrite health transition with simple stochastic version and deterministic one
+    # ----------------------------------------------------------------------------------
     @lcm.mark.stochastic
     def next_health_stochastic(health):  # noqa: ARG001
         pass
@@ -75,52 +83,16 @@ def model_and_params():
     def next_health_deterministic(health):
         return health
 
-    def consumption_constraint(consumption, wealth):
-        return consumption <= wealth
-
-    _model = {
-        "functions": {
-            "utility": utility,
-            "next_wealth": next_wealth,
-            "consumption_constraint": consumption_constraint,
-        },
-        "choices": {
-            "working": {"options": [0, 1]},
-            "consumption": {
-                "grid_type": "linspace",
-                "start": 0,
-                "stop": 100,
-                "n_points": 50,
-            },
-        },
-        "states": {
-            "health": {"options": [0, 1]},
-            "wealth": {
-                "grid_type": "linspace",
-                "start": 0,
-                "stop": 100,
-                "n_points": 10,
-            },
-        },
-        "n_periods": 3,
-    }
-
-    model_deterministic = _model.copy()
     model_deterministic["functions"]["next_health"] = next_health_deterministic
-
-    model_stochastic = _model.copy()
     model_stochastic["functions"]["next_health"] = next_health_stochastic
 
-    params = {
-        "beta": 0.95,
-        "utility": {"disutility_of_work": 0.5, "gamma": 0.5},
-        "next_wealth": {"interest_rate": 0.05, "wage": 10.0},
-        "next_health": {},
-        "consumption_constraint": {},
-        "shocks": {
-            "health": jnp.identity(2),
-        },
-    }
+    params = get_params(
+        beta=0.95,
+        disutility_of_work=1.0,
+        interest_rate=0.05,
+        wage=10.0,
+        health_transition=jnp.identity(2),
+    )
 
     return model_deterministic, model_stochastic, params
 
@@ -154,6 +126,7 @@ def test_compare_deterministic_and_stochastic_results(model_and_params):
 
     initial_states = {
         "health": jnp.array([1, 1, 0, 0]),
+        "partner": jnp.array([0, 0, 0, 0]),
         "wealth": jnp.array([10.0, 50.0, 30, 80.0]),
     }
 

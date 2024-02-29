@@ -7,6 +7,8 @@ https://doi.org/10.3982/QE643).
 
 """
 
+from copy import deepcopy
+
 import jax.numpy as jnp
 
 # ======================================================================================
@@ -182,3 +184,31 @@ BASE_MODEL_WITH_FILTERS = {
     },
     "n_periods": 3,
 }
+
+
+# ======================================================================================
+# Get models and params
+# ======================================================================================
+
+IMPLEMENTED_MODELS = {
+    "base": BASE_MODEL,
+    "fully_discrete": BASE_MODEL_FULLY_DISCRETE,
+    "with_filters": BASE_MODEL_WITH_FILTERS,
+}
+
+
+def get_model_config(model_name: str, n_periods: int):
+    model_config = deepcopy(IMPLEMENTED_MODELS[model_name])
+    model_config["n_periods"] = n_periods
+    return model_config
+
+
+def get_params(beta=0.95, disutility_of_work=0.25, interest_rate=0.05, wage=5.0):
+    return {
+        "beta": beta,
+        "utility": {"disutility_of_work": disutility_of_work},
+        "next_wealth": {
+            "interest_rate": interest_rate,
+        },
+        "labor_income": {"wage": wage},
+    }

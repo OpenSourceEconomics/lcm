@@ -9,6 +9,8 @@ See also the specifications in tests/test_models/deterministic.py.
 
 """
 
+from copy import deepcopy
+
 import jax.numpy as jnp
 import lcm
 
@@ -113,69 +115,109 @@ MODEL_CONFIG = {
 }
 
 
-PARAMS = {
-    "beta": 0.95,
-    "utility": {"disutility_of_work": 0.5},
-    "next_wealth": {"interest_rate": 0.05},
-    "next_health": {},
-    "consumption_constraint": {},
-    "labor_income": {"wage": 10.0},
-    "shocks": {
-        # Health shock:
-        # ------------------------------------------------------------------------------
-        # 1st dimension: Current health state
-        # 2nd dimension: Current Partner state
-        # 3rd dimension: Probability distribution over next period's health state
-        "health": jnp.array(
-            [
-                # Current health state 0
-                [
-                    # Current Partner state 0
-                    [0.9, 0.1],
-                    # Current Partner state 1
-                    [0.5, 0.5],
-                ],
-                # Current health state 1
-                [
-                    # Current Partner state 0
-                    [0.5, 0.5],
-                    # Current Partner state 1
-                    [0.1, 0.9],
-                ],
-            ],
-        ),
-        # Partner shock:
-        # ------------------------------------------------------------------------------
-        # 1st dimension: The period
-        # 2nd dimension: Current working decision
-        # 3rd dimension: Current partner state
-        # 4th dimension: Probability distribution over next period's partner state
-        "partner": jnp.array(
-            [
-                # Transition from period 0 to period 1
-                [
-                    # Current working decision 0
-                    [
-                        # Current partner state 0
-                        [0, 1.0],
-                        # Current partner state 1
-                        [1.0, 0],
-                    ],
-                    # Current working decision 1
-                    [
-                        # Current partner state 0
-                        [0, 1.0],
-                        # Current partner state 1
-                        [0.0, 1.0],
-                    ],
-                ],
-                # Transition from period 1 to period 2
-                [
-                    # Description is the same as above
-                    [[0, 1.0], [1.0, 0]],
-                    [[0, 1.0], [0.0, 1.0]],
-                ],
-            ],
-        ),
-    },
+# ======================================================================================
+# Get models and params
+# ======================================================================================
+
+IMPLEMENTED_MODELS = {
+    "base": MODEL_CONFIG,
 }
+
+
+def get_model_config(model_name: str, n_periods: int):
+    model_config = deepcopy(IMPLEMENTED_MODELS[model_name])
+    model_config["n_periods"] = n_periods
+    return model_config
+
+
+def get_params(
+    beta=0.95,
+    disutility_of_work=0.5,
+    interest_rate=0.05,
+    wage=10.0,
+    health_transition=None,
+    partner_transition=None,
+):
+    # ----------------------------------------------------------------------------------
+    # Transition matrices
+    # ----------------------------------------------------------------------------------
+
+    # Health shock transition:
+    # ------------------------------------------------------------------------------
+    # 1st dimension: Current health state
+    # 2nd dimension: Current Partner state
+    # 3rd dimension: Probability distribution over next period's health state
+    default_health_transition = jnp.array(
+        [
+            # Current health state 0
+            [
+                # Current Partner state 0
+                [0.9, 0.1],
+                # Current Partner state 1
+                [0.5, 0.5],
+            ],
+            # Current health state 1
+            [
+                # Current Partner state 0
+                [0.5, 0.5],
+                # Current Partner state 1
+                [0.1, 0.9],
+            ],
+        ],
+    )
+    health_transition = (
+        default_health_transition if health_transition is None else health_transition
+    )
+
+    # Partner shock transition:
+    # ------------------------------------------------------------------------------
+    # 1st dimension: The period
+    # 2nd dimension: Current working decision
+    # 3rd dimension: Current partner state
+    # 4th dimension: Probability distribution over next period's partner state
+    default_partner_transition = jnp.array(
+        [
+            # Transition from period 0 to period 1
+            [
+                # Current working decision 0
+                [
+                    # Current partner state 0
+                    [0, 1.0],
+                    # Current partner state 1
+                    [1.0, 0],
+                ],
+                # Current working decision 1
+                [
+                    # Current partner state 0
+                    [0, 1.0],
+                    # Current partner state 1
+                    [0.0, 1.0],
+                ],
+            ],
+            # Transition from period 1 to period 2
+            [
+                # Description is the same as above
+                [[0, 1.0], [1.0, 0]],
+                [[0, 1.0], [0.0, 1.0]],
+            ],
+        ],
+    )
+    partner_transition = (
+        default_partner_transition if partner_transition is None else partner_transition
+    )
+
+    # ----------------------------------------------------------------------------------
+    # Model parameters
+    # ----------------------------------------------------------------------------------
+    return {
+        "beta": beta,
+        "utility": {"disutility_of_work": disutility_of_work},
+        "next_wealth": {"interest_rate": interest_rate},
+        "next_health": {},
+        "consumption_constraint": {},
+        "labor_income": {"wage": wage},
+        "shocks": {
+            "health": health_transition,
+            "partner": partner_transition,
+        },
+    }

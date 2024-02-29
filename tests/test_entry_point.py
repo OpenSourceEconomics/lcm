@@ -10,11 +10,7 @@ from lcm.process_model import process_model
 from lcm.state_space import create_state_choice_space
 from pybaum import tree_equal, tree_map
 
-from tests.test_models.deterministic import (
-    BASE_MODEL,
-    BASE_MODEL_FULLY_DISCRETE,
-    BASE_MODEL_WITH_FILTERS,
-)
+from tests.test_models.deterministic import get_model_config
 from tests.test_models.deterministic import utility as base_model_utility
 
 # ======================================================================================
@@ -24,7 +20,10 @@ from tests.test_models.deterministic import utility as base_model_utility
 
 @pytest.mark.parametrize(
     "user_model",
-    [BASE_MODEL, BASE_MODEL_FULLY_DISCRETE, BASE_MODEL_WITH_FILTERS],
+    [
+        get_model_config(name, n_periods=3)
+        for name in ["base", "fully_discrete", "with_filters"]
+    ],
     ids=["base", "fully_discrete", "with_filters"],
 )
 def test_get_lcm_function_with_solve_target(user_model):
@@ -42,7 +41,7 @@ def test_get_lcm_function_with_solve_target(user_model):
 
 @pytest.mark.parametrize(
     "user_model",
-    [BASE_MODEL, BASE_MODEL_FULLY_DISCRETE],
+    [get_model_config(name, n_periods=3) for name in ["base", "fully_discrete"]],
     ids=["base", "fully_discrete"],
 )
 def test_get_lcm_function_with_simulation_target_simple(user_model):
@@ -63,7 +62,7 @@ def test_get_lcm_function_with_simulation_target_simple(user_model):
 
 @pytest.mark.parametrize(
     "user_model",
-    [BASE_MODEL, BASE_MODEL_FULLY_DISCRETE],
+    [get_model_config(name, n_periods=3) for name in ["base", "fully_discrete"]],
     ids=["base", "fully_discrete"],
 )
 def test_get_lcm_function_with_simulation_is_coherent(user_model):
@@ -106,7 +105,7 @@ def test_get_lcm_function_with_simulation_is_coherent(user_model):
 
 @pytest.mark.parametrize(
     "user_model",
-    [BASE_MODEL_WITH_FILTERS],
+    [get_model_config("with_filters", n_periods=3)],
     ids=["with_filters"],
 )
 def test_get_lcm_function_with_simulation_target_with_filters(user_model):
@@ -134,7 +133,7 @@ def test_get_lcm_function_with_simulation_target_with_filters(user_model):
 
 
 def test_create_compute_conditional_continuation_value():
-    model = process_model(BASE_MODEL)
+    model = process_model(get_model_config("base", n_periods=3))
 
     params = {
         "beta": 1.0,
@@ -181,7 +180,7 @@ def test_create_compute_conditional_continuation_value():
 
 
 def test_create_compute_conditional_continuation_value_with_discrete_model():
-    model = process_model(BASE_MODEL_FULLY_DISCRETE)
+    model = process_model(get_model_config("fully_discrete", n_periods=3))
 
     params = {
         "beta": 1.0,
@@ -229,7 +228,7 @@ def test_create_compute_conditional_continuation_value_with_discrete_model():
 
 
 def test_create_compute_conditional_continuation_policy():
-    model = process_model(BASE_MODEL)
+    model = process_model(get_model_config("base", n_periods=3))
 
     params = {
         "beta": 1.0,
@@ -277,7 +276,7 @@ def test_create_compute_conditional_continuation_policy():
 
 
 def test_create_compute_conditional_continuation_policy_with_discrete_model():
-    model = process_model(BASE_MODEL_FULLY_DISCRETE)
+    model = process_model(get_model_config("fully_discrete", n_periods=3))
 
     params = {
         "beta": 1.0,

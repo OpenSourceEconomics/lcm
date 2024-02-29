@@ -13,11 +13,11 @@ from lcm.state_space import (
 )
 from numpy.testing import assert_array_almost_equal as aaae
 
-from tests.test_models.deterministic import BASE_MODEL_WITH_FILTERS
+from tests.test_models.deterministic import get_model_config
 
 
 def test_create_state_choice_space():
-    _model = process_model(BASE_MODEL_WITH_FILTERS)
+    _model = process_model(get_model_config("base", n_periods=3))
     create_state_choice_space(
         model=_model,
         period=0,

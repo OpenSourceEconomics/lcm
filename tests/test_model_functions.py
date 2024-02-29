@@ -10,7 +10,7 @@ from lcm.process_model import process_model
 from lcm.state_space import create_state_choice_space
 from numpy.testing import assert_array_equal
 
-from tests.test_models.deterministic import BASE_MODEL, utility
+from tests.test_models.deterministic import get_model_config, utility
 
 
 def test_get_combined_constraint():
@@ -42,7 +42,7 @@ def test_get_combined_constraint():
 
 
 def test_get_utility_and_feasibility_function():
-    model = process_model(BASE_MODEL)
+    model = process_model(get_model_config("base", n_periods=3))
 
     params = {
         "beta": 1.0,
