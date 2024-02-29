@@ -1,4 +1,11 @@
-"""Testing against the analytical solution by Iskhakov et al (2017)."""
+"""Testing against the analytical solution of Iskhakov et al. (2017).
+
+The benchmark is taken from the paper "The endogenous grid method for
+discrete-continuous dynamic choice models with (or without) taste shocks" by Fedor
+Iskhakov, Thomas H. Jørgensen, John Rust and Bertel Schjerning (2017,
+https://doi.org/10.3982/QE643).
+
+"""
 
 import numpy as np
 import pytest
@@ -12,7 +19,7 @@ from tests.test_models.deterministic import BASE_MODEL_WITH_FILTERS
 # Model specifications
 # ======================================================================================
 
-ISKHAVOV_2017_PARAMS = {
+ISKHAKOV_2017_PARAMS = {
     "beta": 0.98,
     "utility": {"disutility_of_work": None},
     "next_wealth": {
@@ -24,11 +31,11 @@ ISKHAVOV_2017_PARAMS = {
 TEST_CASES = {
     "iskhakov_2017_five_periods": {
         "model": {**BASE_MODEL_WITH_FILTERS, "n_periods": 5},
-        "params": {**ISKHAVOV_2017_PARAMS, "utility": {"disutility_of_work": 1.0}},
+        "params": {**ISKHAKOV_2017_PARAMS, "utility": {"disutility_of_work": 1.0}},
     },
     "iskhakov_2017_low_delta": {
         "model": {**BASE_MODEL_WITH_FILTERS, "n_periods": 3},
-        "params": {**ISKHAVOV_2017_PARAMS, "utility": {"disutility_of_work": 0.1}},
+        "params": {**ISKHAKOV_2017_PARAMS, "utility": {"disutility_of_work": 0.1}},
     },
 }
 

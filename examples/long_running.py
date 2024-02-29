@@ -1,4 +1,4 @@
-"""Example specification for a consumption-savings model with health and leisure."""
+"""Example specification for a consumption-savings model with health and exercise."""
 
 import jax.numpy as jnp
 
@@ -31,10 +31,6 @@ def utility(consumption, working, health, exercise, disutility_of_work):
 # --------------------------------------------------------------------------------------
 def labor_income(wage, working):
     return wage * working
-
-
-def working(leisure):
-    return 1 - leisure
 
 
 def wage(age):
@@ -74,12 +70,11 @@ MODEL_CONFIG = {
         "next_health": next_health,
         "consumption_constraint": consumption_constraint,
         "labor_income": labor_income,
-        "working": working,
         "wage": wage,
         "age": age,
     },
     "choices": {
-        "leisure": {"options": [0, 1]},
+        "working": {"options": [0, 1]},
         "consumption": {
             "grid_type": "linspace",
             "start": 1,
