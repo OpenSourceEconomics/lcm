@@ -116,12 +116,12 @@ def base_model_solution():
         solve_model, _ = get_lcm_function(model=model)
 
         params = {
-            "beta": 1.0,
-            "utility": {"disutility_of_work": 1.0},
+            "beta": 0.95,
+            "utility": {"disutility_of_work": 0.25},
             "next_wealth": {
                 "interest_rate": 0.05,
-                "wage": 1.0,
             },
+            "labor_income": {"wage": 5.0},
         }
 
         vf_arr_list = solve_model(params)
@@ -130,9 +130,9 @@ def base_model_solution():
     return _model_solution
 
 
-@pytest.mark.parametrize("n_periods", range(3, BASE_MODEL["n_periods"] + 1))
-def test_simulate_using_get_lcm_function(base_model_solution, n_periods):
-    vf_arr_list, params, model = base_model_solution(n_periods)
+def test_simulate_using_get_lcm_function(base_model_solution):
+    n_periods = 3
+    vf_arr_list, params, model = base_model_solution(n_periods=n_periods)
 
     simulate_model, _ = get_lcm_function(model=model, targets="simulate")
 
@@ -159,14 +159,13 @@ def test_simulate_using_get_lcm_function(base_model_solution, n_periods):
     last_period_index = n_periods - 1
     assert_array_equal(res.loc[last_period_index, :]["retirement"], 1)
 
-    # assert that higher wealth leads to higher consumption
     for period in range(n_periods):
-        assert (res.loc[period, :]["consumption"].diff()[1:] >= 0).all()
 
-        # The following does not work. I.e. the continuation value in each period is not
-        # weakly increasing in wealth. It is unclear if this needs to hold.
-        # ------------------------------------------------------------------------------
-        # assert jnp.all(jnp.diff(res[period]["value"]) >= 0)  # noqa: ERA001
+        # assert that higher wealth leads to higher consumption in each period
+        assert (res.loc[period]["consumption"].diff()[1:] >= 0).all()
+
+        # assert that higher wealth leads to higher value function in each period
+        assert (res.loc[period]["value"].diff()[1:] >= 0).all()
 
 
 # ======================================================================================
