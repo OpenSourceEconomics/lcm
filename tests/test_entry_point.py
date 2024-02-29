@@ -5,30 +5,28 @@ from lcm.entry_point import (
     create_compute_conditional_continuation_value,
     get_lcm_function,
 )
-from lcm.example_models.basic_example_models import (
-    PHELPS_DEATON,
-    PHELPS_DEATON_FULLY_DISCRETE,
-    PHELPS_DEATON_WITH_FILTERS,
-    phelps_deaton_utility,
-)
 from lcm.model_functions import get_utility_and_feasibility_function
 from lcm.process_model import process_model
 from lcm.state_space import create_state_choice_space
 from pybaum import tree_equal, tree_map
 
-MODELS = {
-    "simple": PHELPS_DEATON,
-    "with_filters": PHELPS_DEATON_WITH_FILTERS,
-    "fully_discrete": PHELPS_DEATON_FULLY_DISCRETE,
-}
-
+from tests.test_models.deterministic import (
+    BASE_MODEL,
+    BASE_MODEL_FULLY_DISCRETE,
+    BASE_MODEL_WITH_FILTERS,
+)
+from tests.test_models.deterministic import utility as base_model_utility
 
 # ======================================================================================
 # Solve
 # ======================================================================================
 
 
-@pytest.mark.parametrize("user_model", list(MODELS.values()), ids=list(MODELS))
+@pytest.mark.parametrize(
+    "user_model",
+    [BASE_MODEL, BASE_MODEL_FULLY_DISCRETE, BASE_MODEL_WITH_FILTERS],
+    ids=["base", "fully_discrete", "with_filters"],
+)
 def test_get_lcm_function_with_solve_target(user_model):
     solve_model, params_template = get_lcm_function(model=user_model)
 
@@ -44,8 +42,8 @@ def test_get_lcm_function_with_solve_target(user_model):
 
 @pytest.mark.parametrize(
     "user_model",
-    [PHELPS_DEATON, PHELPS_DEATON_FULLY_DISCRETE],
-    ids=["simple", "fully_discrete"],
+    [BASE_MODEL, BASE_MODEL_FULLY_DISCRETE],
+    ids=["base", "fully_discrete"],
 )
 def test_get_lcm_function_with_simulation_target_simple(user_model):
     simulate, params_template = get_lcm_function(
@@ -65,8 +63,8 @@ def test_get_lcm_function_with_simulation_target_simple(user_model):
 
 @pytest.mark.parametrize(
     "user_model",
-    [PHELPS_DEATON, PHELPS_DEATON_FULLY_DISCRETE],
-    ids=["simple", "fully_discrete"],
+    [BASE_MODEL, BASE_MODEL_FULLY_DISCRETE],
+    ids=["base", "fully_discrete"],
 )
 def test_get_lcm_function_with_simulation_is_coherent(user_model):
     """Test that solve_and_simulate creates same output as solve then simulate."""
@@ -108,7 +106,7 @@ def test_get_lcm_function_with_simulation_is_coherent(user_model):
 
 @pytest.mark.parametrize(
     "user_model",
-    [PHELPS_DEATON_WITH_FILTERS],
+    [BASE_MODEL_WITH_FILTERS],
     ids=["with_filters"],
 )
 def test_get_lcm_function_with_simulation_target_with_filters(user_model):
@@ -136,11 +134,11 @@ def test_get_lcm_function_with_simulation_target_with_filters(user_model):
 
 
 def test_create_compute_conditional_continuation_value():
-    model = process_model(PHELPS_DEATON)
+    model = process_model(BASE_MODEL)
 
     params = {
         "beta": 1.0,
-        "utility": {"delta": 1.0},
+        "utility": {"disutility_of_work": 1.0},
         "next_wealth": {
             "interest_rate": 0.05,
             "wage": 1.0,
@@ -175,15 +173,19 @@ def test_create_compute_conditional_continuation_value():
         params=params,
         vf_arr=None,
     )
-    assert val == phelps_deaton_utility(consumption=30.0, working=0, delta=1.0)
+    assert val == base_model_utility(
+        consumption=30.0,
+        working=0,
+        disutility_of_work=1.0,
+    )
 
 
 def test_create_compute_conditional_continuation_value_with_discrete_model():
-    model = process_model(PHELPS_DEATON_FULLY_DISCRETE)
+    model = process_model(BASE_MODEL_FULLY_DISCRETE)
 
     params = {
         "beta": 1.0,
-        "utility": {"delta": 1.0},
+        "utility": {"disutility_of_work": 1.0},
         "next_wealth": {
             "interest_rate": 0.05,
             "wage": 1.0,
@@ -218,7 +220,7 @@ def test_create_compute_conditional_continuation_value_with_discrete_model():
         params=params,
         vf_arr=None,
     )
-    assert val == phelps_deaton_utility(consumption=2, working=0, delta=1.0)
+    assert val == base_model_utility(consumption=2, working=0, disutility_of_work=1.0)
 
 
 # ======================================================================================
@@ -227,11 +229,11 @@ def test_create_compute_conditional_continuation_value_with_discrete_model():
 
 
 def test_create_compute_conditional_continuation_policy():
-    model = process_model(PHELPS_DEATON)
+    model = process_model(BASE_MODEL)
 
     params = {
         "beta": 1.0,
-        "utility": {"delta": 1.0},
+        "utility": {"disutility_of_work": 1.0},
         "next_wealth": {
             "interest_rate": 0.05,
             "wage": 1.0,
@@ -267,15 +269,19 @@ def test_create_compute_conditional_continuation_policy():
         vf_arr=None,
     )
     assert policy == 2
-    assert val == phelps_deaton_utility(consumption=30.0, working=0, delta=1.0)
+    assert val == base_model_utility(
+        consumption=30.0,
+        working=0,
+        disutility_of_work=1.0,
+    )
 
 
 def test_create_compute_conditional_continuation_policy_with_discrete_model():
-    model = process_model(PHELPS_DEATON_FULLY_DISCRETE)
+    model = process_model(BASE_MODEL_FULLY_DISCRETE)
 
     params = {
         "beta": 1.0,
-        "utility": {"delta": 1.0},
+        "utility": {"disutility_of_work": 1.0},
         "next_wealth": {
             "interest_rate": 0.05,
             "wage": 1.0,
@@ -311,4 +317,4 @@ def test_create_compute_conditional_continuation_policy_with_discrete_model():
         vf_arr=None,
     )
     assert policy == 1
-    assert val == phelps_deaton_utility(consumption=2, working=0, delta=1.0)
+    assert val == base_model_utility(consumption=2, working=0, disutility_of_work=1.0)

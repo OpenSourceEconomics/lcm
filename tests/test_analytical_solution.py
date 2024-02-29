@@ -1,15 +1,59 @@
-"""Testing against the analytical solution by Iskhakov et al (2017)."""
+"""Testing against the analytical solution of Iskhakov et al. (2017).
+
+The benchmark is taken from the paper "The endogenous grid method for
+discrete-continuous dynamic choice models with (or without) taste shocks" by Fedor
+Iskhakov, Thomas H. Jørgensen, John Rust and Bertel Schjerning (2017,
+https://doi.org/10.3982/QE643).
+
+"""
+
+from copy import deepcopy
 
 import numpy as np
 import pytest
-from lcm._config import TEST_DATA_PATH
+from lcm._config import TEST_DATA
 from lcm.entry_point import get_lcm_function
-from lcm.get_model import get_model
 from numpy.testing import assert_array_almost_equal as aaae
 
+from tests.test_models.deterministic import BASE_MODEL_WITH_FILTERS
+
+# ======================================================================================
+# Model specifications
+# ======================================================================================
+
+
+def _get_iskhakov_2017_model(n_periods):
+    model_config = deepcopy(BASE_MODEL_WITH_FILTERS)
+    model_config["n_periods"] = n_periods
+    # remove age and wage functions, as they are not modelled in Iskhakov et al. (2017)
+    model_config["functions"] = {
+        name: func
+        for name, func in model_config["functions"].items()
+        if name not in ("age", "wage")
+    }
+    return model_config
+
+
+def _get_iskhakov_2017_params(disutility_of_work):
+    return {
+        "beta": 0.98,
+        "utility": {"disutility_of_work": disutility_of_work},
+        "next_wealth": {
+            "interest_rate": 0.0,
+        },
+        "labor_income": {"wage": 20.0},
+    }
+
+
 TEST_CASES = {
-    "iskhakov_2017_five_periods": get_model("iskhakov_2017_five_periods"),
-    "iskhakov_2017_low_delta": get_model("iskhakov_2017_low_delta"),
+    "iskhakov_2017_five_periods": {
+        "model": _get_iskhakov_2017_model(n_periods=5),
+        "params": _get_iskhakov_2017_params(disutility_of_work=1.0),
+    },
+    "iskhakov_2017_low_delta": {
+        "model": _get_iskhakov_2017_model(n_periods=3),
+        "params": _get_iskhakov_2017_params(disutility_of_work=0.1),
+    },
 }
 
 
@@ -17,30 +61,37 @@ def mean_square_error(x, y, axis=None):
     return np.mean((x - y) ** 2, axis=axis)
 
 
-@pytest.mark.parametrize(("model_name", "model_config"), TEST_CASES.items())
-def test_analytical_solution(model_name, model_config):
+# ======================================================================================
+# Test
+# ======================================================================================
+
+
+@pytest.mark.parametrize(("model_name", "model_and_params"), TEST_CASES.items())
+def test_analytical_solution(model_name, model_and_params):
     """Test that the numerical solution matches the analytical solution.
 
     The analytical solution is from Iskhakov et al (2017) and is generated
     in the development repository: github.com/opensourceeconomics/lcm-dev.
 
     """
+    # ----------------------------------------------------------------------------------
     # Compute LCM solution
-    # ==================================================================================
-    solve_model, _ = get_lcm_function(model=model_config.model)
+    # ----------------------------------------------------------------------------------
+    solve_model, _ = get_lcm_function(model=model_and_params["model"])
 
-    vf_arr_list = solve_model(params=model_config.params)
+    vf_arr_list = solve_model(params=model_and_params["params"])
     _numerical = np.stack(vf_arr_list)
     numerical = {
         "worker": _numerical[:, 0, :],
         "retired": _numerical[:, 1, :],
     }
 
+    # ----------------------------------------------------------------------------------
     # Load analytical solution
-    # ==================================================================================
+    # ----------------------------------------------------------------------------------
     analytical = {
         _type: np.genfromtxt(
-            TEST_DATA_PATH.joinpath(
+            TEST_DATA.joinpath(
                 "analytical_solution",
                 f"{model_name}__values_{_type}.csv",
             ),
@@ -49,8 +100,9 @@ def test_analytical_solution(model_name, model_config):
         for _type in ["worker", "retired"]
     }
 
+    # ----------------------------------------------------------------------------------
     # Compare
-    # ==================================================================================
+    # ----------------------------------------------------------------------------------
     for _type in ["worker", "retired"]:
         _analytical = np.array(analytical[_type])
         _numerical = numerical[_type]

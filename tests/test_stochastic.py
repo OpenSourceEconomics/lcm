@@ -5,7 +5,8 @@ import pytest
 from lcm.entry_point import (
     get_lcm_function,
 )
-from lcm.example_models.stochastic_example_models import MODEL, PARAMS
+
+from tests.test_models.stochastic import MODEL_CONFIG, PARAMS
 
 # ======================================================================================
 # Simulate
@@ -13,7 +14,10 @@ from lcm.example_models.stochastic_example_models import MODEL, PARAMS
 
 
 def test_get_lcm_function_with_simulate_target():
-    simulate_model, _ = get_lcm_function(model=MODEL, targets="solve_and_simulate")
+    simulate_model, _ = get_lcm_function(
+        model=MODEL_CONFIG,
+        targets="solve_and_simulate",
+    )
 
     res = simulate_model(
         PARAMS,
@@ -47,7 +51,7 @@ def test_get_lcm_function_with_simulate_target():
 
 
 def test_get_lcm_function_with_solve_target():
-    solve_model, _ = get_lcm_function(model=MODEL)
+    solve_model, _ = get_lcm_function(model=MODEL_CONFIG)
     solve_model(PARAMS)
 
 
@@ -58,8 +62,8 @@ def test_get_lcm_function_with_solve_target():
 
 @pytest.fixture()
 def model_and_params():
-    def utility(consumption, working, health, delta, gamma):
-        return jnp.log(consumption) + (gamma * health - delta) * working
+    def utility(consumption, working, health, disutility_of_work, gamma):
+        return jnp.log(consumption) + (gamma * health - disutility_of_work) * working
 
     def next_wealth(wealth, consumption, working, wage, interest_rate):
         return (1 + interest_rate) * (wealth - consumption) + wage * working
@@ -109,7 +113,7 @@ def model_and_params():
 
     params = {
         "beta": 0.95,
-        "utility": {"delta": 0.5, "gamma": 0.5},
+        "utility": {"disutility_of_work": 0.5, "gamma": 0.5},
         "next_wealth": {"interest_rate": 0.05, "wage": 10.0},
         "next_health": {},
         "consumption_constraint": {},

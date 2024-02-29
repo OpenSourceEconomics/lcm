@@ -4,12 +4,6 @@ import lcm.grids as grids_module
 import numpy as np
 import pandas as pd
 import pytest
-from lcm.example_models.basic_example_models import (
-    N_CHOICE_GRID_POINTS,
-    N_STATE_GRID_POINTS,
-    PHELPS_DEATON,
-    PHELPS_DEATON_WITH_FILTERS,
-)
 from lcm.interfaces import GridSpec
 from lcm.mark import StochasticInfo
 from lcm.process_model import (
@@ -22,6 +16,12 @@ from lcm.process_model import (
 )
 from numpy.testing import assert_array_equal
 from pandas.testing import assert_frame_equal
+
+from tests.test_models.deterministic import (
+    BASE_MODEL,
+    BASE_MODEL_WITH_FILTERS,
+    N_GRID_POINTS,
+)
 
 
 @pytest.fixture()
@@ -100,8 +100,8 @@ def test_get_grids(user_model):
     assert_array_equal(got["c"], jnp.array([2, 3]))
 
 
-def test_process_phelps_deaton_with_filters():
-    model = process_model(PHELPS_DEATON_WITH_FILTERS)
+def test_process_model_with_filters():
+    model = process_model(BASE_MODEL_WITH_FILTERS)
 
     # Variable Info
     assert (
@@ -122,14 +122,14 @@ def test_process_phelps_deaton_with_filters():
     # Gridspecs
     wealth_specs = GridSpec(
         kind="linspace",
-        specs={"start": 0, "stop": 100, "n_points": N_STATE_GRID_POINTS},
+        specs={"start": 1, "stop": 400, "n_points": N_GRID_POINTS["wealth"]},
     )
 
     assert model.gridspecs["wealth"] == wealth_specs
 
     consumption_specs = GridSpec(
         kind="linspace",
-        specs={"start": 1, "stop": 100, "n_points": N_CHOICE_GRID_POINTS},
+        specs={"start": 1, "stop": 400, "n_points": N_GRID_POINTS["consumption"]},
     )
     assert model.gridspecs["consumption"] == consumption_specs
 
@@ -151,13 +151,19 @@ def test_process_phelps_deaton_with_filters():
     # Functions
     assert (
         model.function_info["is_next"].to_numpy()
-        == np.array([False, True, False, False, False, True])
+        == np.array([False, True, True, False, False, False, False, False, False])
     ).all()
+
+    assert (
+        model.function_info["is_constraint"].to_numpy()
+        == np.array([False, False, False, True, False, False, False, False, False])
+    ).all()
+
     assert ~model.function_info.loc["utility"].to_numpy().any()
 
 
-def test_process_phelps_deaton():
-    model = process_model(PHELPS_DEATON)
+def test_process_model():
+    model = process_model(BASE_MODEL)
 
     # Variable Info
     assert ~(model.variable_info["is_sparse"].to_numpy()).any()
@@ -173,14 +179,14 @@ def test_process_phelps_deaton():
     # Gridspecs
     wealth_specs = GridSpec(
         kind="linspace",
-        specs={"start": 0, "stop": 100, "n_points": N_STATE_GRID_POINTS},
+        specs={"start": 1, "stop": 400, "n_points": N_GRID_POINTS["wealth"]},
     )
 
     assert model.gridspecs["wealth"] == wealth_specs
 
     consumption_specs = GridSpec(
         kind="linspace",
-        specs={"start": 0, "stop": 100, "n_points": N_CHOICE_GRID_POINTS},
+        specs={"start": 1, "stop": 400, "n_points": N_GRID_POINTS["consumption"]},
     )
     assert model.gridspecs["consumption"] == consumption_specs
 
@@ -200,12 +206,12 @@ def test_process_phelps_deaton():
     # Functions
     assert (
         model.function_info["is_next"].to_numpy()
-        == np.array([False, True, False, False, False, False])
+        == np.array([False, True, False, False, False, False, False])
     ).all()
 
     assert (
         model.function_info["is_constraint"].to_numpy()
-        == np.array([False, False, True, False, False, False])
+        == np.array([False, False, True, False, False, False, False])
     ).all()
 
     assert ~model.function_info.loc["utility"].to_numpy().any()

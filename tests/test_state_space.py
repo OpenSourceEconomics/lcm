@@ -2,7 +2,6 @@ import jax.numpy as jnp
 import numpy as np
 import pandas as pd
 import pytest
-from lcm.example_models.basic_example_models import PHELPS_DEATON_WITH_FILTERS
 from lcm.interfaces import Model
 from lcm.process_model import process_model
 from lcm.state_space import (
@@ -14,9 +13,11 @@ from lcm.state_space import (
 )
 from numpy.testing import assert_array_almost_equal as aaae
 
+from tests.test_models.deterministic import BASE_MODEL_WITH_FILTERS
+
 
 def test_create_state_choice_space():
-    _model = process_model(PHELPS_DEATON_WITH_FILTERS)
+    _model = process_model(BASE_MODEL_WITH_FILTERS)
     create_state_choice_space(
         model=_model,
         period=0,
