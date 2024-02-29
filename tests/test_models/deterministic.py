@@ -48,6 +48,10 @@ def utility_with_filter(
 # --------------------------------------------------------------------------------------
 # Auxiliary variables
 # --------------------------------------------------------------------------------------
+def labor_income(working, wage):
+    return working * wage
+
+
 def working(retirement):
     return 1 - retirement
 
@@ -63,8 +67,8 @@ def age(_period):
 # --------------------------------------------------------------------------------------
 # State transitions
 # --------------------------------------------------------------------------------------
-def next_wealth(wealth, consumption, working, wage, interest_rate):
-    return (1 + interest_rate) * (wealth - consumption) + wage * working
+def next_wealth(wealth, consumption, labor_income, interest_rate):
+    return (1 + interest_rate) * (wealth - consumption) + labor_income
 
 
 # --------------------------------------------------------------------------------------
@@ -94,6 +98,7 @@ BASE_MODEL = {
         "utility": utility,
         "next_wealth": next_wealth,
         "consumption_constraint": consumption_constraint,
+        "labor_income": labor_income,
         "working": working,
         "wage": wage,
         "age": age,
@@ -124,7 +129,10 @@ BASE_MODEL_FULLY_DISCRETE = {
         "utility": utility,
         "next_wealth": next_wealth,
         "consumption_constraint": consumption_constraint,
+        "labor_income": labor_income,
         "working": working,
+        "wage": wage,
+        "age": age,
     },
     "choices": {
         "retirement": {"options": [0, 1]},
@@ -146,10 +154,13 @@ BASE_MODEL_WITH_FILTERS = {
     "functions": {
         "utility": utility_with_filter,
         "next_wealth": next_wealth,
-        "consumption_constraint": consumption_constraint,
-        "working": working,
-        "absorbing_retirement_filter": absorbing_retirement_filter,
         "next_lagged_retirement": lambda retirement: retirement,
+        "consumption_constraint": consumption_constraint,
+        "absorbing_retirement_filter": absorbing_retirement_filter,
+        "labor_income": labor_income,
+        "working": working,
+        "wage": wage,
+        "age": age,
     },
     "choices": {
         "retirement": {"options": [0, 1]},

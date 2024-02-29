@@ -44,14 +44,17 @@ def utility(
 
 
 # --------------------------------------------------------------------------------------
+# Auxiliary variables
+# --------------------------------------------------------------------------------------
+def labor_income(working, wage):
+    return working * wage
+
+
+# --------------------------------------------------------------------------------------
 # Deterministic state transitions
 # --------------------------------------------------------------------------------------
 def next_wealth(wealth, consumption, labor_income, interest_rate):
     return (1 + interest_rate) * (wealth - consumption) + labor_income
-
-
-def labor_income(working, wage):
-    return working * wage
 
 
 # --------------------------------------------------------------------------------------
