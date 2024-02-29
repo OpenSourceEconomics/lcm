@@ -72,11 +72,11 @@ repos:
     hooks:
       - id: nbqa-black
         additional_dependencies:
-          - black==23.7.0
+          - black==24.2.0
         exclude: src/lcm/sandbox/
       - id: nbqa-ruff
         additional_dependencies:
-          - ruff==v0.0.281
+          - ruff==v0.3.0
         args:
           - --ignore=B018,T201
         exclude: src/lcm/sandbox/
