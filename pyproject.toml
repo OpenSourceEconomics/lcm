@@ -43,6 +43,9 @@ extend-ignore = [
     # exception must not use an f-string literal
     "EM102",
 
+    # line contains a todo
+    "FIX002",
+
     # Too many arguments to function call
     "PLR0913",
 

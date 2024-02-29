@@ -38,7 +38,9 @@ def utility_with_filter(
     disutility_of_work,
     # Temporary workaround for bug described in issue #30, which requires us to pass
     # all state variables to the utility function.
-    lagged_retirement,  # noqa: ARG001, TODO: Remove unused arguments once #30 is fixed.
+    # TODO(@timmens): Remove unused arguments once #30 is fixed.
+    # https://github.com/OpenSourceEconomics/lcm/issues/30
+    lagged_retirement,  # noqa: ARG001
 ):
     return utility(consumption, working=working, disutility_of_work=disutility_of_work)
 

@@ -35,7 +35,9 @@ def utility(
     health,
     # Temporary workaround for bug described in issue #30, which requires us to pass
     # all state variables to the utility function.
-    partner,  # noqa: ARG001, TODO: Remove unused arguments once #30 is fixed.
+    # TODO(@timmens): Remove unused arguments once #30 is fixed.
+    # https://github.com/OpenSourceEconomics/lcm/issues/30
+    partner,  # noqa: ARG001
     disutility_of_work,
 ):
     return jnp.log(consumption) - (1 - health / 2) * disutility_of_work * working
