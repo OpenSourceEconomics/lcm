@@ -1,6 +1,6 @@
 """Example specifications of a deterministic consumption-saving model.
 
-This specification builds on the example model presented in the paper: "The endogenous
+The specification builds on the example model presented in the paper: "The endogenous
 grid method for discrete-continuous dynamic choice models with (or without) taste
 shocks" by Fedor Iskhakov, Thomas H. Jørgensen, John Rust and Bertel Schjerning (2017,
 https://doi.org/10.3982/QE643).
@@ -186,6 +186,38 @@ BASE_MODEL_WITH_FILTERS = {
 }
 
 
+ISKHAKOV_ET_AL_2017 = {
+    "functions": {
+        "utility": utility_with_filter,
+        "next_wealth": next_wealth,
+        "next_lagged_retirement": lambda retirement: retirement,
+        "consumption_constraint": consumption_constraint,
+        "absorbing_retirement_filter": absorbing_retirement_filter,
+        "labor_income": labor_income,
+        "working": working,
+    },
+    "choices": {
+        "retirement": {"options": [0, 1]},
+        "consumption": {
+            "grid_type": "linspace",
+            "start": 1,
+            "stop": 400,
+            "n_points": N_GRID_POINTS["consumption"],
+        },
+    },
+    "states": {
+        "wealth": {
+            "grid_type": "linspace",
+            "start": 1,
+            "stop": 400,
+            "n_points": N_GRID_POINTS["wealth"],
+        },
+        "lagged_retirement": {"options": [0, 1]},
+    },
+    "n_periods": 3,
+}
+
+
 # ======================================================================================
 # Get models and params
 # ======================================================================================
@@ -194,6 +226,7 @@ IMPLEMENTED_MODELS = {
     "base": BASE_MODEL,
     "fully_discrete": BASE_MODEL_FULLY_DISCRETE,
     "with_filters": BASE_MODEL_WITH_FILTERS,
+    "iskhakov_et_al_2017": ISKHAKOV_ET_AL_2017,
 }
 
 

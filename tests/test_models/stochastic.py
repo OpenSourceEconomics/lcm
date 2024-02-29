@@ -1,4 +1,4 @@
-"""Example specifications of a stochastic consumption-saving model.
+"""Example specification of a stochastic consumption-saving model.
 
 This specification is motivated by the example model presented in the paper: "The
 endogenous grid method for discrete-continuous dynamic choice models with (or without)
