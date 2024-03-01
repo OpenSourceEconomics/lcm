@@ -1,10 +1,71 @@
+# ======================================================================================
+# Project metadata
+# ======================================================================================
+
+[project]
+name = "lcm"
+dynamic = ["version"]
+authors = [
+    { name = "Tim Mensinger", email = "mensingertim@gmail.com" },
+    { name = "Hans-Martin von Gaudecker", email = "hmgaudecker@uni-bonn.de" },
+    { name = "Janos Gabler" },
+]
+description = "This package aims to generalize and facilitate the specification, solving, and estimation of dynamic choice models."
+readme = { file = "README.md", content-type = "text/markdown" }
+license = { file = "LICENSE" }
+keywords = [
+    "Dynamic programming",
+    "Econometrics",
+    "Economics",
+    "Estimation",
+    "Life cycle models",
+    "Statistics",
+]
+classifiers = [
+    "Development Status :: 1 - Planning",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: MacOS :: MacOS X",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX",
+    "Operating System :: Unix",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Scientific/Engineering",
+]
+requires-python = ">=3.11"
+dependencies = [
+    "dags",
+    "jax>=0.4.10",
+    "jaxlib>=0.4.10",
+    "numpy",
+    "pandas",
+]
+
+[project.urls]
+Repository = "https://github.com/opensourceeconomics/lcm"
+Github = "https://github.com/opensourceeconomics/lcm"
+Tracker = "https://github.com/OpenSourceEconomics/lcm/issues"
+
+
+# ======================================================================================
+# Build system configuration
+# ======================================================================================
+
 [build-system]
 requires = ["setuptools>=45", "wheel", "setuptools_scm[toml]>=6.0"]
-
+build-backend = "setuptools.build_meta"
 
 [tool.setuptools_scm]
 write_to = "src/lcm/_version.py"
 
+[tool.check-manifest]
+ignore = ["src/lcm/_version.py"]
+
+
+# ======================================================================================
+# Ruff configuration
+# ======================================================================================
 
 [tool.ruff]
 target-version = "py311"
@@ -70,6 +131,9 @@ extend-ignore = [
 [tool.ruff.lint.pydocstyle]
 convention = "google"
 
+# ======================================================================================
+# NBQA configuration
+# ======================================================================================
 
 [tool.nbqa.config]
 black = "pyproject.toml"
@@ -77,6 +141,10 @@ black = "pyproject.toml"
 [tool.nbqa.mutate]
 black = 1
 
+
+# ======================================================================================
+# Pytest configuration
+# ======================================================================================
 
 [tool.pytest.ini_options]
 markers = [
@@ -86,6 +154,10 @@ markers = [
 ]
 norecursedirs = ["docs", ".envs"]
 
+
+# ======================================================================================
+# yamlfix configuration
+# ======================================================================================
 
 [tool.yamlfix]
 line_length = 88

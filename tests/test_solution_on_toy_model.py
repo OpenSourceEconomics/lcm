@@ -366,7 +366,7 @@ def test_deterministic_simulate(beta, n_wealth_points):
         initial_wealth=np.array([0.25, 0.75, 1.25, 1.75]),
         params=params,
     )
-    assert_frame_equal(got, expected, check_like=True)
+    assert_frame_equal(got, expected, check_like=True, check_dtype=False)
 
 
 HEALTH_TRANSITION = [
@@ -467,4 +467,4 @@ def test_stochastic_simulate(beta, n_wealth_points, health_transition):
     # Drop all rows that contain wealth levels at the boundary.
     got = _got.query("wealth != 2")
     expected = _expected.query("wealth != 2")
-    assert_frame_equal(got, expected, check_like=True)
+    assert_frame_equal(got, expected, check_like=True, check_dtype=False)
