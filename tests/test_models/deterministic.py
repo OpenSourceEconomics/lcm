@@ -96,6 +96,10 @@ def absorbing_retirement_filter(retirement, lagged_retirement):
 # ======================================================================================
 
 BASE_MODEL = {
+    "description": (
+        "Starts from Iskhakov et al (2017), removes filters, and adds wage"
+        " function that depends on age."
+    ),
     "functions": {
         "utility": utility,
         "next_wealth": next_wealth,
@@ -152,40 +156,6 @@ BASE_MODEL_FULLY_DISCRETE = {
 }
 
 
-BASE_MODEL_WITH_FILTERS = {
-    "functions": {
-        "utility": utility_with_filter,
-        "next_wealth": next_wealth,
-        "next_lagged_retirement": lambda retirement: retirement,
-        "consumption_constraint": consumption_constraint,
-        "absorbing_retirement_filter": absorbing_retirement_filter,
-        "labor_income": labor_income,
-        "working": working,
-        "wage": wage,
-        "age": age,
-    },
-    "choices": {
-        "retirement": {"options": [0, 1]},
-        "consumption": {
-            "grid_type": "linspace",
-            "start": 1,
-            "stop": 400,
-            "n_points": N_GRID_POINTS["consumption"],
-        },
-    },
-    "states": {
-        "wealth": {
-            "grid_type": "linspace",
-            "start": 1,
-            "stop": 400,
-            "n_points": N_GRID_POINTS["wealth"],
-        },
-        "lagged_retirement": {"options": [0, 1]},
-    },
-    "n_periods": 3,
-}
-
-
 ISKHAKOV_ET_AL_2017 = {
     "functions": {
         "utility": utility_with_filter,
@@ -225,7 +195,6 @@ ISKHAKOV_ET_AL_2017 = {
 IMPLEMENTED_MODELS = {
     "base": BASE_MODEL,
     "fully_discrete": BASE_MODEL_FULLY_DISCRETE,
-    "with_filters": BASE_MODEL_WITH_FILTERS,
     "iskhakov_et_al_2017": ISKHAKOV_ET_AL_2017,
 }
 

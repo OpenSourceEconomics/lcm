@@ -22,9 +22,9 @@ from tests.test_models.deterministic import utility as base_model_utility
     "user_model",
     [
         get_model_config(name, n_periods=3)
-        for name in ["base", "fully_discrete", "with_filters"]
+        for name in ["base", "fully_discrete", "iskhakov_et_al_2017"]
     ],
-    ids=["base", "fully_discrete", "with_filters"],
+    ids=["base", "fully_discrete", "iskhakov_et_al_2017"],
 )
 def test_get_lcm_function_with_solve_target(user_model):
     solve_model, params_template = get_lcm_function(model=user_model)
@@ -105,10 +105,10 @@ def test_get_lcm_function_with_simulation_is_coherent(user_model):
 
 @pytest.mark.parametrize(
     "user_model",
-    [get_model_config("with_filters", n_periods=3)],
-    ids=["with_filters"],
+    [get_model_config("iskhakov_et_al_2017", n_periods=3)],
+    ids=["iskhakov_et_al_2017"],
 )
-def test_get_lcm_function_with_simulation_target_with_filters(user_model):
+def test_get_lcm_function_with_simulation_target_iskhakov_et_al_2017(user_model):
     # solve model
     solve_model, params_template = get_lcm_function(model=user_model, targets="solve")
     params = tree_map(lambda _: 0.2, params_template)

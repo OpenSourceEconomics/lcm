@@ -99,8 +99,8 @@ def test_get_grids(user_model):
     assert_array_equal(got["c"], jnp.array([2, 3]))
 
 
-def test_process_model_with_filters():
-    model = process_model(get_model_config("with_filters", n_periods=3))
+def test_process_model_iskhakov_et_al_2017():
+    model = process_model(get_model_config("iskhakov_et_al_2017", n_periods=3))
 
     # Variable Info
     assert (
@@ -150,12 +150,12 @@ def test_process_model_with_filters():
     # Functions
     assert (
         model.function_info["is_next"].to_numpy()
-        == np.array([False, True, True, False, False, False, False, False, False])
+        == np.array([False, True, True, False, False, False, False])
     ).all()
 
     assert (
         model.function_info["is_constraint"].to_numpy()
-        == np.array([False, False, False, True, False, False, False, False, False])
+        == np.array([False, False, False, True, False, False, False])
     ).all()
 
     assert ~model.function_info.loc["utility"].to_numpy().any()
