@@ -17,11 +17,6 @@ from tests.test_models.deterministic import utility as iskhakov_et_al_2017_utili
 # Test cases
 # ======================================================================================
 
-ALL_MODELS = [
-    "iskhakov_et_al_2017",
-    "iskhakov_et_al_2017_stripped_down",
-    "iskhakov_et_al_2017_fully_discrete",
-]
 
 STRIPPED_DOWN_AND_FULLY_DISCRETE_MODELS = [
     "iskhakov_et_al_2017_stripped_down",
