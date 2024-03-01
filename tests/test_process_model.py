@@ -162,7 +162,9 @@ def test_process_model_iskhakov_et_al_2017():
 
 
 def test_process_model():
-    model = process_model(get_model_config("stripped_down", n_periods=3))
+    model = process_model(
+        get_model_config("iskhakov_et_al_2017_stripped_down", n_periods=3),
+    )
 
     # Variable Info
     assert ~(model.variable_info["is_sparse"].to_numpy()).any()

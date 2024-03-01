@@ -129,8 +129,8 @@ ISKHAKOV_ET_AL_2017 = {
 
 ISKHAKOV_ET_AL_2017_STRIPPED_DOWN = {
     "description": (
-        "Starts from Iskhakov et al. (2017), removes filters, and adds wage function "
-        "that depends on age."
+        "Starts from Iskhakov et al. (2017), removes filters, the lagged_retirement"
+        "state, and adds wage function that depends on age."
     ),
     "functions": {
         "utility": utility,
@@ -164,8 +164,8 @@ ISKHAKOV_ET_AL_2017_STRIPPED_DOWN = {
 
 ISKHAKOV_ET_AL_2017_FULLY_DISCRETE = {
     "description": (
-        "Starts from Iskhakov et al. (2017), removes filters, and makes the "
-        "consumption decision discrete."
+        "Starts from Iskhakov et al. (2017), removes filters, the lagged_retirement "
+        "state, and makes the consumption decision discrete."
     ),
     "functions": {
         "utility": utility,
@@ -196,8 +196,8 @@ ISKHAKOV_ET_AL_2017_FULLY_DISCRETE = {
 
 IMPLEMENTED_MODELS = {
     "iskhakov_et_al_2017": ISKHAKOV_ET_AL_2017,
-    "stripped_down": ISKHAKOV_ET_AL_2017_STRIPPED_DOWN,
-    "fully_discrete": ISKHAKOV_ET_AL_2017_FULLY_DISCRETE,
+    "iskhakov_et_al_2017_stripped_down": ISKHAKOV_ET_AL_2017_STRIPPED_DOWN,
+    "iskhakov_et_al_2017_fully_discrete": ISKHAKOV_ET_AL_2017_FULLY_DISCRETE,
 }
 
 

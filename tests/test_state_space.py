@@ -17,7 +17,9 @@ from tests.test_models.deterministic import get_model_config
 
 
 def test_create_state_choice_space():
-    _model = process_model(get_model_config("stripped_down", n_periods=3))
+    _model = process_model(
+        get_model_config("iskhakov_et_al_2017_stripped_down", n_periods=3),
+    )
     create_state_choice_space(
         model=_model,
         period=0,

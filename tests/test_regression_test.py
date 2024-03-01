@@ -24,7 +24,7 @@ def test_regression_test():
     # ----------------------------------------------------------------------------------
     # Generate current lcm ouput
     # ----------------------------------------------------------------------------------
-    model_config = get_model_config("stripped_down", n_periods=3)
+    model_config = get_model_config("iskhakov_et_al_2017_stripped_down", n_periods=3)
 
     solve, _ = get_lcm_function(model=model_config, targets="solve")
 

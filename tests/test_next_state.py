@@ -13,7 +13,9 @@ from tests.test_models.deterministic import get_model_config
 
 
 def test_get_next_state_function_with_solve_target():
-    model = process_model(get_model_config("stripped_down", n_periods=3))
+    model = process_model(
+        get_model_config("iskhakov_et_al_2017_stripped_down", n_periods=3),
+    )
     got_func = get_next_state_function(model, target="solve")
 
     params = {

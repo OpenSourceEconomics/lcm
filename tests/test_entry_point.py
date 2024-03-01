@@ -14,6 +14,22 @@ from tests.test_models.deterministic import get_model_config
 from tests.test_models.deterministic import utility as iskhakov_et_al_2017_utility
 
 # ======================================================================================
+# Test cases
+# ======================================================================================
+
+ALL_MODELS = [
+    "iskhakov_et_al_2017",
+    "iskhakov_et_al_2017_stripped_down",
+    "iskhakov_et_al_2017_fully_discrete",
+]
+
+STRIPPED_DOWN_AND_FULLY_DISCRETE_MODELS = [
+    "iskhakov_et_al_2017_stripped_down",
+    "iskhakov_et_al_2017_fully_discrete",
+]
+
+
+# ======================================================================================
 # Solve
 # ======================================================================================
 
@@ -22,9 +38,9 @@ from tests.test_models.deterministic import utility as iskhakov_et_al_2017_utili
     "user_model",
     [
         get_model_config(name, n_periods=3)
-        for name in ["stripped_down", "fully_discrete", "iskhakov_et_al_2017"]
+        for name in ["iskhakov_et_al_2017", *STRIPPED_DOWN_AND_FULLY_DISCRETE_MODELS]
     ],
-    ids=["stripped_down", "fully_discrete", "iskhakov_et_al_2017"],
+    ids=["iskhakov_et_al_2017", *STRIPPED_DOWN_AND_FULLY_DISCRETE_MODELS],
 )
 def test_get_lcm_function_with_solve_target(user_model):
     solve_model, params_template = get_lcm_function(model=user_model)
@@ -43,9 +59,9 @@ def test_get_lcm_function_with_solve_target(user_model):
     "user_model",
     [
         get_model_config(name, n_periods=3)
-        for name in ["stripped_down", "fully_discrete"]
+        for name in STRIPPED_DOWN_AND_FULLY_DISCRETE_MODELS
     ],
-    ids=["stripped_down", "fully_discrete"],
+    ids=STRIPPED_DOWN_AND_FULLY_DISCRETE_MODELS,
 )
 def test_get_lcm_function_with_simulation_target_simple(user_model):
     simulate, params_template = get_lcm_function(
@@ -67,9 +83,9 @@ def test_get_lcm_function_with_simulation_target_simple(user_model):
     "user_model",
     [
         get_model_config(name, n_periods=3)
-        for name in ["stripped_down", "fully_discrete"]
+        for name in STRIPPED_DOWN_AND_FULLY_DISCRETE_MODELS
     ],
-    ids=["stripped_down", "fully_discrete"],
+    ids=STRIPPED_DOWN_AND_FULLY_DISCRETE_MODELS,
 )
 def test_get_lcm_function_with_simulation_is_coherent(user_model):
     """Test that solve_and_simulate creates same output as solve then simulate."""
@@ -139,7 +155,9 @@ def test_get_lcm_function_with_simulation_target_iskhakov_et_al_2017(user_model)
 
 
 def test_create_compute_conditional_continuation_value():
-    model = process_model(get_model_config("stripped_down", n_periods=3))
+    model = process_model(
+        get_model_config("iskhakov_et_al_2017_stripped_down", n_periods=3),
+    )
 
     params = {
         "beta": 1.0,
@@ -186,7 +204,9 @@ def test_create_compute_conditional_continuation_value():
 
 
 def test_create_compute_conditional_continuation_value_with_discrete_model():
-    model = process_model(get_model_config("fully_discrete", n_periods=3))
+    model = process_model(
+        get_model_config("iskhakov_et_al_2017_fully_discrete", n_periods=3),
+    )
 
     params = {
         "beta": 1.0,
@@ -238,7 +258,9 @@ def test_create_compute_conditional_continuation_value_with_discrete_model():
 
 
 def test_create_compute_conditional_continuation_policy():
-    model = process_model(get_model_config("stripped_down", n_periods=3))
+    model = process_model(
+        get_model_config("iskhakov_et_al_2017_stripped_down", n_periods=3),
+    )
 
     params = {
         "beta": 1.0,
@@ -286,7 +308,9 @@ def test_create_compute_conditional_continuation_policy():
 
 
 def test_create_compute_conditional_continuation_policy_with_discrete_model():
-    model = process_model(get_model_config("fully_discrete", n_periods=3))
+    model = process_model(
+        get_model_config("iskhakov_et_al_2017_fully_discrete", n_periods=3),
+    )
 
     params = {
         "beta": 1.0,
