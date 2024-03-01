@@ -84,6 +84,10 @@ def consumption_constraint(consumption, wealth):
 # ======================================================================================
 
 MODEL_CONFIG = {
+    "description": (
+        "Starts from Iskhakov et al. (2017), removes filters and the lagged_retirement "
+        "state, and adds discrete stochastic state variables health and partner."
+    ),
     "functions": {
         "utility": utility,
         "next_wealth": next_wealth,
@@ -120,7 +124,7 @@ MODEL_CONFIG = {
 # ======================================================================================
 
 IMPLEMENTED_MODELS = {
-    "base": MODEL_CONFIG,
+    "only_discrete_vars_stochastic": MODEL_CONFIG,
 }
 
 

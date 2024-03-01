@@ -96,6 +96,11 @@ def absorbing_retirement_filter(retirement, lagged_retirement):
 # ======================================================================================
 
 ISKHAKOV_ET_AL_2017 = {
+    "description": (
+        "Corresponds to the example model in Iskhakov et al. (2017). In comparison to "
+        "the extensions below, wage is treated as a constant parameter and therefore "
+        "there is no need for the wage and age functions."
+    ),
     "functions": {
         "utility": utility_with_filter,
         "next_wealth": next_wealth,
@@ -129,7 +134,7 @@ ISKHAKOV_ET_AL_2017 = {
 
 ISKHAKOV_ET_AL_2017_STRIPPED_DOWN = {
     "description": (
-        "Starts from Iskhakov et al. (2017), removes filters, the lagged_retirement"
+        "Starts from Iskhakov et al. (2017), removes filters and the lagged_retirement "
         "state, and adds wage function that depends on age."
     ),
     "functions": {
@@ -164,7 +169,7 @@ ISKHAKOV_ET_AL_2017_STRIPPED_DOWN = {
 
 ISKHAKOV_ET_AL_2017_FULLY_DISCRETE = {
     "description": (
-        "Starts from Iskhakov et al. (2017), removes filters, the lagged_retirement "
+        "Starts from Iskhakov et al. (2017), removes filters and the lagged_retirement "
         "state, and makes the consumption decision discrete."
     ),
     "functions": {
