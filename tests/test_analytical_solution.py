@@ -7,52 +7,37 @@ https://doi.org/10.3982/QE643).
 
 """
 
-from copy import deepcopy
-
 import numpy as np
 import pytest
 from lcm._config import TEST_DATA
 from lcm.entry_point import get_lcm_function
 from numpy.testing import assert_array_almost_equal as aaae
 
-from tests.test_models.deterministic import BASE_MODEL_WITH_FILTERS
+from tests.test_models.deterministic import get_model_config, get_params
 
 # ======================================================================================
 # Model specifications
 # ======================================================================================
 
 
-def _get_iskhakov_2017_model(n_periods):
-    model_config = deepcopy(BASE_MODEL_WITH_FILTERS)
-    model_config["n_periods"] = n_periods
-    # remove age and wage functions, as they are not modelled in Iskhakov et al. (2017)
-    model_config["functions"] = {
-        name: func
-        for name, func in model_config["functions"].items()
-        if name not in ("age", "wage")
-    }
-    return model_config
-
-
-def _get_iskhakov_2017_params(disutility_of_work):
-    return {
-        "beta": 0.98,
-        "utility": {"disutility_of_work": disutility_of_work},
-        "next_wealth": {
-            "interest_rate": 0.0,
-        },
-        "labor_income": {"wage": 20.0},
-    }
-
-
 TEST_CASES = {
     "iskhakov_2017_five_periods": {
-        "model": _get_iskhakov_2017_model(n_periods=5),
-        "params": _get_iskhakov_2017_params(disutility_of_work=1.0),
+        "model": get_model_config("iskhakov_et_al_2017", n_periods=5),
+        "params": get_params(
+            beta=0.98,
+            disutility_of_work=1.0,
+            interest_rate=0.0,
+            wage=20.0,
+        ),
     },
     "iskhakov_2017_low_delta": {
-        "model": _get_iskhakov_2017_model(n_periods=3),
-        "params": _get_iskhakov_2017_params(disutility_of_work=0.1),
+        "model": get_model_config("iskhakov_et_al_2017", n_periods=3),
+        "params": get_params(
+            beta=0.98,
+            disutility_of_work=0.1,
+            interest_rate=0.0,
+            wage=20.0,
+        ),
     },
 }
 

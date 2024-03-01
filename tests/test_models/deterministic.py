@@ -1,11 +1,13 @@
 """Example specifications of a deterministic consumption-saving model.
 
-This specification builds on the example model presented in the paper: "The endogenous
+The specification builds on the example model presented in the paper: "The endogenous
 grid method for discrete-continuous dynamic choice models with (or without) taste
 shocks" by Fedor Iskhakov, Thomas H. Jørgensen, John Rust and Bertel Schjerning (2017,
 https://doi.org/10.3982/QE643).
 
 """
+
+from copy import deepcopy
 
 import jax.numpy as jnp
 
@@ -38,7 +40,7 @@ def utility_with_filter(
     disutility_of_work,
     # Temporary workaround for bug described in issue #30, which requires us to pass
     # all state variables to the utility function.
-    # TODO(@timmens): Remove unused arguments once #30 is fixed.
+    # TODO(@timmens): Remove function once #30 is fixed (re-use "utility").
     # https://github.com/OpenSourceEconomics/lcm/issues/30
     lagged_retirement,  # noqa: ARG001
 ):
@@ -93,64 +95,12 @@ def absorbing_retirement_filter(retirement, lagged_retirement):
 # Model specifications
 # ======================================================================================
 
-BASE_MODEL = {
-    "functions": {
-        "utility": utility,
-        "next_wealth": next_wealth,
-        "consumption_constraint": consumption_constraint,
-        "labor_income": labor_income,
-        "working": working,
-        "wage": wage,
-        "age": age,
-    },
-    "choices": {
-        "retirement": {"options": [0, 1]},
-        "consumption": {
-            "grid_type": "linspace",
-            "start": 1,
-            "stop": 400,
-            "n_points": N_GRID_POINTS["consumption"],
-        },
-    },
-    "states": {
-        "wealth": {
-            "grid_type": "linspace",
-            "start": 1,
-            "stop": 400,
-            "n_points": N_GRID_POINTS["wealth"],
-        },
-    },
-    "n_periods": 3,
-}
-
-
-BASE_MODEL_FULLY_DISCRETE = {
-    "functions": {
-        "utility": utility,
-        "next_wealth": next_wealth,
-        "consumption_constraint": consumption_constraint,
-        "labor_income": labor_income,
-        "working": working,
-        "wage": wage,
-        "age": age,
-    },
-    "choices": {
-        "retirement": {"options": [0, 1]},
-        "consumption": {"options": [1, 2]},
-    },
-    "states": {
-        "wealth": {
-            "grid_type": "linspace",
-            "start": 1,
-            "stop": 400,
-            "n_points": N_GRID_POINTS["wealth"],
-        },
-    },
-    "n_periods": 3,
-}
-
-
-BASE_MODEL_WITH_FILTERS = {
+ISKHAKOV_ET_AL_2017 = {
+    "description": (
+        "Corresponds to the example model in Iskhakov et al. (2017). In comparison to "
+        "the extensions below, wage is treated as a constant parameter and therefore "
+        "there is no need for the wage and age functions."
+    ),
     "functions": {
         "utility": utility_with_filter,
         "next_wealth": next_wealth,
@@ -159,8 +109,6 @@ BASE_MODEL_WITH_FILTERS = {
         "absorbing_retirement_filter": absorbing_retirement_filter,
         "labor_income": labor_income,
         "working": working,
-        "wage": wage,
-        "age": age,
     },
     "choices": {
         "retirement": {"options": [0, 1]},
@@ -182,3 +130,94 @@ BASE_MODEL_WITH_FILTERS = {
     },
     "n_periods": 3,
 }
+
+
+ISKHAKOV_ET_AL_2017_STRIPPED_DOWN = {
+    "description": (
+        "Starts from Iskhakov et al. (2017), removes filters and the lagged_retirement "
+        "state, and adds wage function that depends on age."
+    ),
+    "functions": {
+        "utility": utility,
+        "next_wealth": next_wealth,
+        "consumption_constraint": consumption_constraint,
+        "labor_income": labor_income,
+        "working": working,
+        "wage": wage,
+        "age": age,
+    },
+    "choices": {
+        "retirement": {"options": [0, 1]},
+        "consumption": {
+            "grid_type": "linspace",
+            "start": 1,
+            "stop": 400,
+            "n_points": N_GRID_POINTS["consumption"],
+        },
+    },
+    "states": {
+        "wealth": {
+            "grid_type": "linspace",
+            "start": 1,
+            "stop": 400,
+            "n_points": N_GRID_POINTS["wealth"],
+        },
+    },
+    "n_periods": 3,
+}
+
+
+ISKHAKOV_ET_AL_2017_FULLY_DISCRETE = {
+    "description": (
+        "Starts from Iskhakov et al. (2017), removes filters and the lagged_retirement "
+        "state, and makes the consumption decision discrete."
+    ),
+    "functions": {
+        "utility": utility,
+        "next_wealth": next_wealth,
+        "consumption_constraint": consumption_constraint,
+        "labor_income": labor_income,
+        "working": working,
+    },
+    "choices": {
+        "retirement": {"options": [0, 1]},
+        "consumption": {"options": [1, 2]},
+    },
+    "states": {
+        "wealth": {
+            "grid_type": "linspace",
+            "start": 1,
+            "stop": 400,
+            "n_points": N_GRID_POINTS["wealth"],
+        },
+    },
+    "n_periods": 3,
+}
+
+
+# ======================================================================================
+# Get models and params
+# ======================================================================================
+
+IMPLEMENTED_MODELS = {
+    "iskhakov_et_al_2017": ISKHAKOV_ET_AL_2017,
+    "iskhakov_et_al_2017_stripped_down": ISKHAKOV_ET_AL_2017_STRIPPED_DOWN,
+    "iskhakov_et_al_2017_fully_discrete": ISKHAKOV_ET_AL_2017_FULLY_DISCRETE,
+}
+
+
+def get_model_config(model_name: str, n_periods: int):
+    model_config = deepcopy(IMPLEMENTED_MODELS[model_name])
+    model_config["n_periods"] = n_periods
+    return model_config
+
+
+def get_params(beta=0.95, disutility_of_work=0.25, interest_rate=0.05, wage=5.0):
+    return {
+        "beta": beta,
+        "utility": {"disutility_of_work": disutility_of_work},
+        "next_wealth": {
+            "interest_rate": interest_rate,
+        },
+        "labor_income": {"wage": wage},
+    }

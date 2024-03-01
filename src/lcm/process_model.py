@@ -1,5 +1,6 @@
 import functools
 import inspect
+from copy import deepcopy
 
 import jax.numpy as jnp
 import pandas as pd
@@ -262,7 +263,7 @@ def _get_functions(user_model, function_info, variable_info, grids, params):
             functions.
 
     """
-    raw_functions = user_model["functions"].copy()
+    raw_functions = deepcopy(user_model["functions"])
 
     for var in user_model["states"]:
         if variable_info.loc[var, "is_stochastic"]:

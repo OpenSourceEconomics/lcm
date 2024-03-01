@@ -28,9 +28,9 @@ from numpy.testing import assert_array_almost_equal, assert_array_equal
 from pybaum import tree_equal
 
 from tests.test_models.deterministic import (
-    BASE_MODEL,
-    BASE_MODEL_WITH_FILTERS,
     N_GRID_POINTS,
+    get_model_config,
+    get_params,
 )
 
 # ======================================================================================
@@ -40,8 +40,8 @@ from tests.test_models.deterministic import (
 
 @pytest.fixture()
 def simulate_inputs():
-    user_model = {**BASE_MODEL, "n_periods": 1}
-    model = process_model(user_model)
+    model_config = get_model_config("iskhakov_et_al_2017_stripped_down", n_periods=1)
+    model = process_model(model_config)
 
     _, space_info, _, _ = create_state_choice_space(
         model=model,
@@ -104,35 +104,34 @@ def test_simulate_using_raw_inputs(simulate_inputs):
 
 
 @pytest.fixture()
-def base_model_solution():
+def iskhakov_et_al_2017_stripped_down_model_solution():
     def _model_solution(n_periods):
-        model = {**BASE_MODEL, "n_periods": n_periods}
-        model["functions"] = {
+        model_config = get_model_config(
+            "iskhakov_et_al_2017_stripped_down",
+            n_periods=n_periods,
+        )
+        model_config["functions"] = {
             # remove dependency on age, so that wage becomes a parameter
             name: func
-            for name, func in model["functions"].items()
+            for name, func in model_config["functions"].items()
             if name not in ["age", "wage"]
         }
-        solve_model, _ = get_lcm_function(model=model)
+        solve_model, _ = get_lcm_function(model_config, targets="solve")
 
-        params = {
-            "beta": 0.95,
-            "utility": {"disutility_of_work": 0.25},
-            "next_wealth": {
-                "interest_rate": 0.05,
-            },
-            "labor_income": {"wage": 5.0},
-        }
-
-        vf_arr_list = solve_model(params)
-        return vf_arr_list, params, model
+        params = get_params()
+        vf_arr_list = solve_model(params=params)
+        return vf_arr_list, params, model_config
 
     return _model_solution
 
 
-def test_simulate_using_get_lcm_function(base_model_solution):
+def test_simulate_using_get_lcm_function(
+    iskhakov_et_al_2017_stripped_down_model_solution,
+):
     n_periods = 3
-    vf_arr_list, params, model = base_model_solution(n_periods=n_periods)
+    vf_arr_list, params, model = iskhakov_et_al_2017_stripped_down_model_solution(
+        n_periods=n_periods,
+    )
 
     simulate_model, _ = get_lcm_function(model=model, targets="simulate")
 
@@ -174,27 +173,17 @@ def test_simulate_using_get_lcm_function(base_model_solution):
 
 
 def test_effect_of_beta_on_last_period():
-    model = {**BASE_MODEL, "n_periods": 5}
+    model_config = get_model_config("iskhakov_et_al_2017_stripped_down", n_periods=5)
 
     # Model solutions
     # ==================================================================================
-    solve_model, _ = get_lcm_function(model=model, targets="solve")
-
-    params = {
-        "beta": None,
-        "utility": {"disutility_of_work": 1.0},
-        "next_wealth": {
-            "interest_rate": 0.05,
-        },
-    }
+    solve_model, _ = get_lcm_function(model=model_config, targets="solve")
 
     # low beta
-    params_low = params.copy()
-    params_low["beta"] = 0.5
+    params_low = get_params(beta=0.5, disutility_of_work=1.0)
 
-    # high disutility_of_work
-    params_high = params.copy()
-    params_high["beta"] = 0.99
+    # high beta
+    params_high = get_params(beta=0.99, disutility_of_work=1.0)
 
     # solutions
     solution_low = solve_model(params_low)
@@ -202,7 +191,7 @@ def test_effect_of_beta_on_last_period():
 
     # Simulate
     # ==================================================================================
-    simulate_model, _ = get_lcm_function(model=model, targets="simulate")
+    simulate_model, _ = get_lcm_function(model=model_config, targets="simulate")
 
     initial_wealth = jnp.array([20.0, 50, 70])
 
@@ -228,27 +217,17 @@ def test_effect_of_beta_on_last_period():
 
 
 def test_effect_of_disutility_of_work():
-    model = {**BASE_MODEL, "n_periods": 5}
+    model_config = get_model_config("iskhakov_et_al_2017_stripped_down", n_periods=5)
 
     # Model solutions
     # ==================================================================================
-    solve_model, _ = get_lcm_function(model=model, targets="solve")
-
-    params = {
-        "beta": 1.0,
-        "utility": {"disutility_of_work": None},
-        "next_wealth": {
-            "interest_rate": 0.05,
-        },
-    }
+    solve_model, _ = get_lcm_function(model=model_config, targets="solve")
 
     # low disutility_of_work
-    params_low = params.copy()
-    params_low["utility"]["disutility_of_work"] = 0.2
+    params_low = get_params(beta=1.0, disutility_of_work=0.2)
 
     # high disutility_of_work
-    params_high = params.copy()
-    params_high["utility"]["disutility_of_work"] = 1.5
+    params_high = get_params(beta=1.0, disutility_of_work=1.5)
 
     # solutions
     solution_low = solve_model(params_low)
@@ -256,7 +235,7 @@ def test_effect_of_disutility_of_work():
 
     # Simulate
     # ==================================================================================
-    simulate_model, _ = get_lcm_function(model=model, targets="simulate")
+    simulate_model, _ = get_lcm_function(model=model_config, targets="simulate")
 
     initial_wealth = jnp.array([20.0, 50, 70])
 
@@ -275,13 +254,16 @@ def test_effect_of_disutility_of_work():
     # Asserting
     # ==================================================================================
     for period in range(5):
+
+        # We expect that individuals with lower disutility of work, work (weakly) more
+        # and thus consume (weakly) more
         assert (
-            res_low.loc[period, :]["consumption"]
-            <= res_high.loc[period, :]["consumption"]
+            res_low.loc[period]["consumption"] >= res_high.loc[period]["consumption"]
         ).all()
+
+        # We expect that individuals with lower disutility of work retire (weakly) later
         assert (
-            res_low.loc[period, :]["retirement"]
-            >= res_high.loc[period, :]["retirement"]
+            res_low.loc[period]["retirement"] <= res_high.loc[period]["retirement"]
         ).all()
 
 
@@ -403,7 +385,8 @@ def test_filter_ccv_policy():
 
 
 def test_create_data_state_choice_space():
-    model = process_model(BASE_MODEL_WITH_FILTERS)
+    model_config = get_model_config("iskhakov_et_al_2017", n_periods=3)
+    model = process_model(model_config)
     got_space, got_segment_info = create_data_scs(
         states={
             "wealth": jnp.array([10.0, 20.0]),
