@@ -42,7 +42,7 @@ def test_get_combined_constraint():
 
 
 def test_get_utility_and_feasibility_function():
-    model = process_model(get_model_config("base", n_periods=3))
+    model = process_model(get_model_config("stripped_down", n_periods=3))
 
     params = {
         "beta": 1.0,

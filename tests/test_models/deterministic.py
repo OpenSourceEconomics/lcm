@@ -95,67 +95,6 @@ def absorbing_retirement_filter(retirement, lagged_retirement):
 # Model specifications
 # ======================================================================================
 
-BASE_MODEL = {
-    "description": (
-        "Starts from Iskhakov et al (2017), removes filters, and adds wage"
-        " function that depends on age."
-    ),
-    "functions": {
-        "utility": utility,
-        "next_wealth": next_wealth,
-        "consumption_constraint": consumption_constraint,
-        "labor_income": labor_income,
-        "working": working,
-        "wage": wage,
-        "age": age,
-    },
-    "choices": {
-        "retirement": {"options": [0, 1]},
-        "consumption": {
-            "grid_type": "linspace",
-            "start": 1,
-            "stop": 400,
-            "n_points": N_GRID_POINTS["consumption"],
-        },
-    },
-    "states": {
-        "wealth": {
-            "grid_type": "linspace",
-            "start": 1,
-            "stop": 400,
-            "n_points": N_GRID_POINTS["wealth"],
-        },
-    },
-    "n_periods": 3,
-}
-
-
-BASE_MODEL_FULLY_DISCRETE = {
-    "functions": {
-        "utility": utility,
-        "next_wealth": next_wealth,
-        "consumption_constraint": consumption_constraint,
-        "labor_income": labor_income,
-        "working": working,
-        "wage": wage,
-        "age": age,
-    },
-    "choices": {
-        "retirement": {"options": [0, 1]},
-        "consumption": {"options": [1, 2]},
-    },
-    "states": {
-        "wealth": {
-            "grid_type": "linspace",
-            "start": 1,
-            "stop": 400,
-            "n_points": N_GRID_POINTS["wealth"],
-        },
-    },
-    "n_periods": 3,
-}
-
-
 ISKHAKOV_ET_AL_2017 = {
     "functions": {
         "utility": utility_with_filter,
@@ -188,14 +127,77 @@ ISKHAKOV_ET_AL_2017 = {
 }
 
 
+ISKHAKOV_ET_AL_2017_STRIPPED_DOWN = {
+    "description": (
+        "Starts from Iskhakov et al. (2017), removes filters, and adds wage function "
+        "that depends on age."
+    ),
+    "functions": {
+        "utility": utility,
+        "next_wealth": next_wealth,
+        "consumption_constraint": consumption_constraint,
+        "labor_income": labor_income,
+        "working": working,
+        "wage": wage,
+        "age": age,
+    },
+    "choices": {
+        "retirement": {"options": [0, 1]},
+        "consumption": {
+            "grid_type": "linspace",
+            "start": 1,
+            "stop": 400,
+            "n_points": N_GRID_POINTS["consumption"],
+        },
+    },
+    "states": {
+        "wealth": {
+            "grid_type": "linspace",
+            "start": 1,
+            "stop": 400,
+            "n_points": N_GRID_POINTS["wealth"],
+        },
+    },
+    "n_periods": 3,
+}
+
+
+ISKHAKOV_ET_AL_2017_FULLY_DISCRETE = {
+    "description": (
+        "Starts from Iskhakov et al. (2017), removes filters, and makes the "
+        "consumption decision discrete."
+    ),
+    "functions": {
+        "utility": utility,
+        "next_wealth": next_wealth,
+        "consumption_constraint": consumption_constraint,
+        "labor_income": labor_income,
+        "working": working,
+    },
+    "choices": {
+        "retirement": {"options": [0, 1]},
+        "consumption": {"options": [1, 2]},
+    },
+    "states": {
+        "wealth": {
+            "grid_type": "linspace",
+            "start": 1,
+            "stop": 400,
+            "n_points": N_GRID_POINTS["wealth"],
+        },
+    },
+    "n_periods": 3,
+}
+
+
 # ======================================================================================
 # Get models and params
 # ======================================================================================
 
 IMPLEMENTED_MODELS = {
-    "base": BASE_MODEL,
-    "fully_discrete": BASE_MODEL_FULLY_DISCRETE,
     "iskhakov_et_al_2017": ISKHAKOV_ET_AL_2017,
+    "stripped_down": ISKHAKOV_ET_AL_2017_STRIPPED_DOWN,
+    "fully_discrete": ISKHAKOV_ET_AL_2017_FULLY_DISCRETE,
 }
 
 

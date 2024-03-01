@@ -11,7 +11,7 @@ from lcm.state_space import create_state_choice_space
 from pybaum import tree_equal, tree_map
 
 from tests.test_models.deterministic import get_model_config
-from tests.test_models.deterministic import utility as base_model_utility
+from tests.test_models.deterministic import utility as iskhakov_et_al_2017_utility
 
 # ======================================================================================
 # Solve
@@ -22,9 +22,9 @@ from tests.test_models.deterministic import utility as base_model_utility
     "user_model",
     [
         get_model_config(name, n_periods=3)
-        for name in ["base", "fully_discrete", "iskhakov_et_al_2017"]
+        for name in ["stripped_down", "fully_discrete", "iskhakov_et_al_2017"]
     ],
-    ids=["base", "fully_discrete", "iskhakov_et_al_2017"],
+    ids=["stripped_down", "fully_discrete", "iskhakov_et_al_2017"],
 )
 def test_get_lcm_function_with_solve_target(user_model):
     solve_model, params_template = get_lcm_function(model=user_model)
@@ -41,8 +41,11 @@ def test_get_lcm_function_with_solve_target(user_model):
 
 @pytest.mark.parametrize(
     "user_model",
-    [get_model_config(name, n_periods=3) for name in ["base", "fully_discrete"]],
-    ids=["base", "fully_discrete"],
+    [
+        get_model_config(name, n_periods=3)
+        for name in ["stripped_down", "fully_discrete"]
+    ],
+    ids=["stripped_down", "fully_discrete"],
 )
 def test_get_lcm_function_with_simulation_target_simple(user_model):
     simulate, params_template = get_lcm_function(
@@ -62,8 +65,11 @@ def test_get_lcm_function_with_simulation_target_simple(user_model):
 
 @pytest.mark.parametrize(
     "user_model",
-    [get_model_config(name, n_periods=3) for name in ["base", "fully_discrete"]],
-    ids=["base", "fully_discrete"],
+    [
+        get_model_config(name, n_periods=3)
+        for name in ["stripped_down", "fully_discrete"]
+    ],
+    ids=["stripped_down", "fully_discrete"],
 )
 def test_get_lcm_function_with_simulation_is_coherent(user_model):
     """Test that solve_and_simulate creates same output as solve then simulate."""
@@ -133,7 +139,7 @@ def test_get_lcm_function_with_simulation_target_iskhakov_et_al_2017(user_model)
 
 
 def test_create_compute_conditional_continuation_value():
-    model = process_model(get_model_config("base", n_periods=3))
+    model = process_model(get_model_config("stripped_down", n_periods=3))
 
     params = {
         "beta": 1.0,
@@ -172,7 +178,7 @@ def test_create_compute_conditional_continuation_value():
         params=params,
         vf_arr=None,
     )
-    assert val == base_model_utility(
+    assert val == iskhakov_et_al_2017_utility(
         consumption=30.0,
         working=0,
         disutility_of_work=1.0,
@@ -219,7 +225,11 @@ def test_create_compute_conditional_continuation_value_with_discrete_model():
         params=params,
         vf_arr=None,
     )
-    assert val == base_model_utility(consumption=2, working=0, disutility_of_work=1.0)
+    assert val == iskhakov_et_al_2017_utility(
+        consumption=2,
+        working=0,
+        disutility_of_work=1.0,
+    )
 
 
 # ======================================================================================
@@ -228,7 +238,7 @@ def test_create_compute_conditional_continuation_value_with_discrete_model():
 
 
 def test_create_compute_conditional_continuation_policy():
-    model = process_model(get_model_config("base", n_periods=3))
+    model = process_model(get_model_config("stripped_down", n_periods=3))
 
     params = {
         "beta": 1.0,
@@ -268,7 +278,7 @@ def test_create_compute_conditional_continuation_policy():
         vf_arr=None,
     )
     assert policy == 2
-    assert val == base_model_utility(
+    assert val == iskhakov_et_al_2017_utility(
         consumption=30.0,
         working=0,
         disutility_of_work=1.0,
@@ -316,4 +326,8 @@ def test_create_compute_conditional_continuation_policy_with_discrete_model():
         vf_arr=None,
     )
     assert policy == 1
-    assert val == base_model_utility(consumption=2, working=0, disutility_of_work=1.0)
+    assert val == iskhakov_et_al_2017_utility(
+        consumption=2,
+        working=0,
+        disutility_of_work=1.0,
+    )

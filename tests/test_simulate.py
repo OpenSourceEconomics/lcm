@@ -40,7 +40,7 @@ from tests.test_models.deterministic import (
 
 @pytest.fixture()
 def simulate_inputs():
-    model_config = get_model_config("base", n_periods=1)
+    model_config = get_model_config("stripped_down", n_periods=1)
     model = process_model(model_config)
 
     _, space_info, _, _ = create_state_choice_space(
@@ -104,9 +104,9 @@ def test_simulate_using_raw_inputs(simulate_inputs):
 
 
 @pytest.fixture()
-def base_model_solution():
+def stripped_down_model_solution():
     def _model_solution(n_periods):
-        model_config = get_model_config("base", n_periods=n_periods)
+        model_config = get_model_config("stripped_down", n_periods=n_periods)
         model_config["functions"] = {
             # remove dependency on age, so that wage becomes a parameter
             name: func
@@ -122,9 +122,9 @@ def base_model_solution():
     return _model_solution
 
 
-def test_simulate_using_get_lcm_function(base_model_solution):
+def test_simulate_using_get_lcm_function(stripped_down_model_solution):
     n_periods = 3
-    vf_arr_list, params, model = base_model_solution(n_periods=n_periods)
+    vf_arr_list, params, model = stripped_down_model_solution(n_periods=n_periods)
 
     simulate_model, _ = get_lcm_function(model=model, targets="simulate")
 
@@ -166,7 +166,7 @@ def test_simulate_using_get_lcm_function(base_model_solution):
 
 
 def test_effect_of_beta_on_last_period():
-    model_config = get_model_config("base", n_periods=5)
+    model_config = get_model_config("stripped_down", n_periods=5)
 
     # Model solutions
     # ==================================================================================
@@ -210,7 +210,7 @@ def test_effect_of_beta_on_last_period():
 
 
 def test_effect_of_disutility_of_work():
-    model_config = get_model_config("base", n_periods=5)
+    model_config = get_model_config("stripped_down", n_periods=5)
 
     # Model solutions
     # ==================================================================================
