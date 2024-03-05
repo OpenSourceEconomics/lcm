@@ -1,4 +1,5 @@
 import jax
+import nvtx
 
 from lcm.dispatchers import spacemap
 
@@ -57,22 +58,27 @@ def solve(
 
     # backwards induction loop
     for period in reversed(range(n_periods)):
+        with nvtx.annotate("solve_period", color="yellow"):
         # solve continuous problem, conditional on discrete choices
-        conditional_continuation_values = solve_continuous_problem(
-            state_choice_space=state_choice_spaces[period],
-            compute_ccv=compute_ccv_functions[period],
-            continuous_choice_grids=continuous_choice_grids[period],
-            vf_arr=vf_arr,
-            state_indexers=state_indexers[period],
-            params=params,
-        )
+            with nvtx.annotate("solve_cont_p", color="green"):
+                conditional_continuation_values = solve_continuous_problem(
+                    state_choice_space=state_choice_spaces[period],
+                    compute_ccv=compute_ccv_functions[period],
+                    continuous_choice_grids=continuous_choice_grids[period],
+                    vf_arr=vf_arr,
+                    state_indexers=state_indexers[period],
+                    params=params,
+                    period=period
+                )
 
-        # solve discrete problem by calculating expected maximum over discrete choices
-        calculate_emax = emax_calculators[period]
-        vf_arr = calculate_emax(conditional_continuation_values)
-        reversed_solution.append(vf_arr)
+            # solve discrete problem by calculating expected maximum over discrete choices
+            calculate_emax = emax_calculators[period]
+            print("calcEmax")
+            with nvtx.annotate("calc_emax", color="red"):
+                vf_arr = calculate_emax(conditional_continuation_values)
+            reversed_solution.append(vf_arr)
 
-        logger.info("Period: %s", period)
+            logger.info("Period: %s", period)
 
     return list(reversed(reversed_solution))
 
@@ -84,6 +90,7 @@ def solve_continuous_problem(
     vf_arr,
     state_indexers,
     params,
+    period
 ):
     """Solve the agent's continuous choices problem problem.
 
@@ -110,19 +117,33 @@ def solve_continuous_problem(
             by the ``gridmap`` function.
 
     """
-    _gridmapped = spacemap(
-        func=compute_ccv,
-        dense_vars=list(state_choice_space.dense_vars),
-        sparse_vars=list(state_choice_space.sparse_vars),
-        dense_first=False,
-    )
-    gridmapped = jax.jit(_gridmapped)
+    with nvtx.annotate("create_spacemap", color="blue"):
+        _gridmapped = spacemap(
+            func=compute_ccv,
+            dense_vars=list(state_choice_space.dense_vars),
+            sparse_vars=list(state_choice_space.sparse_vars),
+            dense_first=False,
+        )
+    
+    with nvtx.annotate("jitting", color="white"):
+        if period == 20:
+            with open('/home/mj/Desktop/Jaxprs/function.txt', 'w') as f:
+                f.write(str(jax.make_jaxpr(_gridmapped)(
+                **state_choice_space.dense_vars,
+                **continuous_choice_grids,
+                **state_choice_space.sparse_vars,
+                **state_indexers,
+                vf_arr=vf_arr,
+                params=params,
+            )))
+        gridmapped = jax.jit(_gridmapped)
 
-    return gridmapped(
-        **state_choice_space.dense_vars,
-        **continuous_choice_grids,
-        **state_choice_space.sparse_vars,
-        **state_indexers,
-        vf_arr=vf_arr,
-        params=params,
-    )
+    with nvtx.annotate("run_gridmapped", color="red"):
+        return gridmapped(
+            **state_choice_space.dense_vars,
+            **continuous_choice_grids,
+            **state_choice_space.sparse_vars,
+            **state_indexers,
+            vf_arr=vf_arr,
+            params=params,
+        )

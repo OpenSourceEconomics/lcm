@@ -1,4 +1,7 @@
 import pytest
+import timeit
+import jax
+import nvtx
 from lcm.entry_point import get_lcm_function
 from lcm.example_models.example_models_long import PARAMS, PHELPS_DEATON
 
@@ -7,7 +10,13 @@ laptop, such that we can differentiate the performance of running LCM on a GPU v
 on the CPU."""
 
 
-@pytest.skip(reason=SKIP_REASON)
 def test_long():
+    
     solve_model, template = get_lcm_function(PHELPS_DEATON, targets="solve")
-    solve_model(PARAMS)
+    with nvtx.annotate("solve_model", color="blue"):
+        solve_model(PARAMS)
+
+#jax.profiler.start_trace("/tmp/tensorboard")
+test_long()
+#jax.profiler.stop_trace()
+

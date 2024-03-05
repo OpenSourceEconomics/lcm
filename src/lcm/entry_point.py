@@ -3,6 +3,7 @@ from functools import partial
 
 import jax
 import jax.numpy as jnp
+import nvtx
 
 from lcm.argmax import argmax
 from lcm.discrete_emax import get_emax_calculator
@@ -91,6 +92,7 @@ def get_lcm_function(
     # ==================================================================================
     # Create stace choice space for each period
     # ==================================================================================
+
     for period in range(_mod.n_periods):
         is_last_period = period == last_period
 
@@ -121,44 +123,46 @@ def get_lcm_function(
     # ==================================================================================
     # Create model functions
     # ==================================================================================
-    for period in range(_mod.n_periods):
-        is_last_period = period == last_period
+    with nvtx.annotate("create_model_functions", color="green"):
+        for period in range(_mod.n_periods):
+            with nvtx.annotate("period", color="yellow"):
+                is_last_period = period == last_period
 
-        # create the compute conditional continuation value functions and append to list
-        # ==============================================================================
-        u_and_f = get_utility_and_feasibility_function(
-            model=_mod,
-            space_info=space_infos[period],
-            data_name="vf_arr",
-            interpolation_options=interpolation_options,
-            period=period,
-            is_last_period=is_last_period,
-        )
+                # create the compute conditional continuation value functions and append to list
+                # ==============================================================================
+                u_and_f = get_utility_and_feasibility_function(
+                    model=_mod,
+                    space_info=space_infos[period],
+                    data_name="vf_arr",
+                    interpolation_options=interpolation_options,
+                    period=period,
+                    is_last_period=is_last_period,
+                )
 
-        compute_ccv = create_compute_conditional_continuation_value(
-            utility_and_feasibility=u_and_f,
-            continuous_choice_variables=list(_choice_grids),
-        )
-        compute_ccv_functions.append(jax.jit(compute_ccv))
+                compute_ccv = create_compute_conditional_continuation_value(
+                    utility_and_feasibility=u_and_f,
+                    continuous_choice_variables=list(_choice_grids),
+                )
+                compute_ccv_functions.append(compute_ccv)
 
-        compute_ccv_argmax = create_compute_conditional_continuation_policy(
-            utility_and_feasibility=u_and_f,
-            continuous_choice_variables=list(_choice_grids),
-        )
-        compute_ccv_policy_functions.append(jax.jit(compute_ccv_argmax))
+                compute_ccv_argmax = create_compute_conditional_continuation_policy(
+                    utility_and_feasibility=u_and_f,
+                    continuous_choice_variables=list(_choice_grids),
+                )
+                compute_ccv_policy_functions.append(compute_ccv_argmax)
 
-        # create list of emax_calculators
-        # ==============================================================================
-        _shock_type = _mod.shocks.get("additive_utility_shock", None)
+                # create list of emax_calculators
+                # ==============================================================================
+                _shock_type = _mod.shocks.get("additive_utility_shock", None)
 
-        calculator = get_emax_calculator(
-            shock_type=_shock_type,
-            variable_info=_mod.variable_info,
-            is_last_period=is_last_period,
-            choice_segments=choice_segments[period],
-            params=_mod.params,
-        )
-        emax_calculators.append(jax.jit(calculator))
+                calculator = get_emax_calculator(
+                    shock_type=_shock_type,
+                    variable_info=_mod.variable_info,
+                    is_last_period=is_last_period,
+                    choice_segments=choice_segments[period],
+                    params=_mod.params,
+                )
+                emax_calculators.append(calculator)
 
     # ==================================================================================
     # select requested solver and partial arguments into it

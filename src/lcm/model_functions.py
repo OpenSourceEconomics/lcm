@@ -1,6 +1,8 @@
 import inspect
 
 import jax.numpy as jnp
+import nvtx
+import jax
 from dags import concatenate_functions
 from dags.signature import with_signature
 
@@ -89,42 +91,43 @@ def get_utility_and_feasibility_function(
 
         @with_signature(args=arg_names)
         def u_and_f(*args, **kwargs):
-            kwargs = all_as_kwargs(args, kwargs, arg_names=arg_names)
+            with nvtx.annotate("u_and_f", color="green"):
+                kwargs = all_as_kwargs(args, kwargs, arg_names=arg_names)
 
-            states = {k: v for k, v in kwargs.items() if k in state_variables}
-            choices = {k: v for k, v in kwargs.items() if k in choice_variables}
+                states = {k: v for k, v in kwargs.items() if k in state_variables}
+                choices = {k: v for k, v in kwargs.items() if k in choice_variables}
 
-            u, f = current_u_and_f(
-                **states,
-                **choices,
-                _period=period,
-                params=kwargs["params"],
-            )
+                u, f = current_u_and_f(
+                    **states,
+                    **choices,
+                    _period=period,
+                    params=kwargs["params"],
+                )
 
-            _next_state = next_state(
-                **states,
-                **choices,
-                _period=period,
-                params=kwargs["params"],
-            )
-            weights = next_weights(**states, _period=period, params=kwargs["params"])
+                _next_state = next_state(
+                    **states,
+                    **choices,
+                    _period=period,
+                    params=kwargs["params"],
+                )
+                weights = next_weights(**states, _period=period, params=kwargs["params"])
 
-            value_function = productmap(
-                scalar_value_function,
-                variables=[f"next_{var}" for var in stochastic_variables],
-            )
+                value_function = productmap(
+                    scalar_value_function,
+                    variables=[f"next_{var}" for var in stochastic_variables],
+                )
 
-            ccvs_at_nodes = value_function(
-                **_next_state,
-                **{k: v for k, v in kwargs.items() if k in value_function_arguments},
-            )
+                ccvs_at_nodes = value_function(
+                    **_next_state,
+                    **{k: v for k, v in kwargs.items() if k in value_function_arguments},
+                )
 
-            node_weights = multiply_weights(**weights)
+                node_weights = multiply_weights(**weights)
 
-            ccv = (ccvs_at_nodes * node_weights).sum()
+                ccv = (ccvs_at_nodes * node_weights).sum()
 
-            big_u = u + kwargs["params"]["beta"] * ccv
-            return big_u, f
+                big_u = u + kwargs["params"]["beta"] * ccv
+                return big_u, f
 
     return u_and_f
 
