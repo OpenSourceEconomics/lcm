@@ -5,9 +5,11 @@ from lcm.entry_point import (
     create_compute_conditional_continuation_value,
     get_lcm_function,
 )
+from lcm.entry_point_updated import get_lcm_function as get_lcm_function_updated
 from lcm.model_functions import get_utility_and_feasibility_function
 from lcm.process_model import process_model
 from lcm.state_space import create_state_choice_space
+from numpy.testing import assert_array_equal
 from pybaum import tree_equal, tree_map
 
 from tests.test_models.deterministic import get_model_config
@@ -27,6 +29,28 @@ STRIPPED_DOWN_AND_FULLY_DISCRETE_MODELS = [
 # ======================================================================================
 # Solve
 # ======================================================================================
+
+
+@pytest.mark.parametrize(
+    "user_model",
+    [
+        get_model_config(name, n_periods=3)
+        for name in ["iskhakov_et_al_2017", *STRIPPED_DOWN_AND_FULLY_DISCRETE_MODELS]
+    ],
+    ids=["iskhakov_et_al_2017", *STRIPPED_DOWN_AND_FULLY_DISCRETE_MODELS],
+)
+def test_get_lcm_function_with_solve_target_updated(user_model):
+    solve_model, params_template = get_lcm_function(model=user_model)
+    solve_model_updated = get_lcm_function_updated(
+        model_specification=user_model,
+        target="solve",
+    )
+
+    params = tree_map(lambda _: 0.2, params_template)
+
+    solution = solve_model(params)
+    solution_updated = solve_model_updated(params)
+    assert_array_equal(solution, solution_updated)
 
 
 @pytest.mark.parametrize(

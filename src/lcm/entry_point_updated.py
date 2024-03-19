@@ -5,15 +5,15 @@ from lcm.model_block import ModelBlock
 from lcm.simulate_updated import forward_simulation
 from lcm.solve_updated import backward_induction
 
-AllowedTargets = Literal["solve", "simulate", "solve_and_simulate"]
+ValidTargets = Literal["solve", "simulate", "solve_and_simulate"]
 
 
 def get_lcm_function(
     model_specification: dict,
-    target: AllowedTargets,
+    target: ValidTargets,
 ):
-    if target not in get_args(AllowedTargets):
-        raise ValueError(f"Invalid target: {target}. Must be in {AllowedTargets}.")
+    if target not in get_args(ValidTargets):
+        raise ValueError(f"Invalid target: {target}. Must be in {ValidTargets}.")
 
     # Setup
     # ==================================================================================

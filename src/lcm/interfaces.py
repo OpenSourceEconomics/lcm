@@ -1,5 +1,6 @@
 from typing import NamedTuple
 
+import jax.numpy as jnp
 import numpy as np
 import pandas as pd
 
@@ -52,7 +53,7 @@ class Space(NamedTuple):
     """
 
     sparse_vars: dict
-    dense_vars: dict
+    dense_vars: dict[str, jnp.ndarray]
 
 
 class SpaceInfo(NamedTuple):
