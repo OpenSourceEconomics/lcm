@@ -1,12 +1,17 @@
 from typing import Literal
 
+import jax.numpy as jnp
+
+from lcm.interfaces import Model
 from lcm.process_model import process_model
 
 
 class ModelBlock:
     def __init__(self, specification: dict):
         self._specification = process_model(specification)
+
         self.periods = list(range(self._specification.n_periods))
+        self.last_period = self.periods[-1]
 
     def get_state_space(self, period: int):
         pass
@@ -73,7 +78,9 @@ class ModelBlock:
         choice_segment = _get_choice_segments(...)
 
     def get_continuous_choice_grids(self, period: int):
-        pass
+        # Currently only time-invariant choice grids are supported, i.e., the period
+        # argument has no effect.
+        return _get_continuous_choice_grids(self._specification, period=period)
 
     def get_draw_next_state(self, period: int, on: Literal["state_choice"]):
         """Reference: _get_next_state_function_simulation"""
@@ -84,3 +91,25 @@ class ModelBlock:
 
 def _get_choice_segments(*args, **kwargs):
     pass
+
+
+def _get_continuous_choice_grids(model: Model, period: int) -> dict[str, jnp.ndarray]:
+    """Extract continuous choice grids from a model.
+
+    Currently only time-invariant choice grids are supported, i.e., the period argument
+    has no effect.
+
+    Args:
+        model (Model): Processed user model.
+        period (int): Period for which to extract the continuous choice grids.
+
+    Returns:
+        dict[str, jnp.ndarray]: Dictionary with continuous choice grids, that maps names
+            of continuous choice variables to grids of feasible values for that
+            variable.
+
+    """
+    continuous_choice_vars = model.variable_info.query(
+        "is_continuous & is_choice",
+    ).index.tolist()
+    return {var: model.grids[var] for var in continuous_choice_vars}

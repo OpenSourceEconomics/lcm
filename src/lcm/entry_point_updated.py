@@ -1,14 +1,20 @@
 from functools import partial
+from typing import Literal, get_args
 
 from lcm.model_block import ModelBlock
 from lcm.simulate_updated import forward_simulation
 from lcm.solve_updated import backward_induction
 
+AllowedTargets = Literal["solve", "simulate", "solve_and_simulate"]
+
 
 def get_lcm_function(
-    model_specification,
-    targets,
+    model_specification: dict,
+    target: AllowedTargets,
 ):
+    if target not in get_args(AllowedTargets):
+        raise ValueError(f"Invalid target: {target}. Must be in {AllowedTargets}.")
+
     # Setup
     # ==================================================================================
     # Larger models may consist of multiple model blocks. Here we only require one.
@@ -73,9 +79,9 @@ def get_lcm_function(
 
     # Return the requested function
     # ==================================================================================
-    targets = {
+    target_functions = {
         "solve": _solve_model,
         "simulate": _simulate_model,
         "solve_and_simulate": partial(_simulate_model, solve_model=_solve_model),
     }
-    return targets[targets]
+    return target_functions[target]
