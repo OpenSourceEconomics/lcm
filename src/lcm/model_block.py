@@ -5,7 +5,7 @@ import jax.numpy as jnp
 
 from lcm.argmax import argmax
 from lcm.discrete_emax import get_emax_calculator
-from lcm.dispatchers import productmap
+from lcm.dispatchers import productmap, spacemap
 from lcm.interfaces import Model
 from lcm.model_functions import get_utility_and_feasibility_function
 from lcm.process_model import process_model
@@ -82,10 +82,11 @@ class ModelBlock:
         on: Literal["state_choice", "state_choice_space"],
     ):
         """Reference: create_compute_conditional_continuation_value"""
-        return _create_compute_conditional_continuation_value(
+        compute_ccv = _create_compute_conditional_continuation_value(
             utility_and_feasibility=self.get_utility_and_feasibility(period),
             continuous_choice_variables=list(self.get_continuous_choice_grids(period)),
         )
+        return functools.partial(_solve_continuous_problem, compute_ccv=compute_ccv)
 
     def get_argsolve_continuous_problem(
         self,
@@ -279,3 +280,53 @@ def _create_compute_conditional_continuation_policy(
         return _argmax, _max
 
     return compute_ccv_policy
+
+
+def _solve_continuous_problem(
+    state_choice_space,
+    compute_ccv,
+    continuous_choice_grids,
+    vf_arr,
+    state_indexers,
+    params,
+):
+    """Solve the agent's continuous choices problem problem.
+
+    Args:
+        state_choice_space (Space): Namedtuple with entries dense_vars and sparse_vars.
+        compute_ccv (callable): Function that returns the conditional continuation
+            values for a given combination of states and discrete choices. The function
+            depends on:
+            - discrete and continuous state variables
+            - discrete and continuous choice variables
+            - vf_arr
+            - one or several state_indexers
+            - params
+        continuous_choice_grids (list): List of dicts with 1d grids for continuous
+            choice variables.
+        vf_arr (jax.numpy.ndarray): Value function array.
+        state_indexers (list): List of dicts with length n_periods. Each dict contains
+            one or several state indexers.
+        params (dict): Dict of model parameters.
+
+    Returns:
+        jnp.ndarray: Jax array with continuation values for each combination of a
+            state and a discrete choice. The number and order of dimensions is defined
+            by the ``gridmap`` function.
+
+    """
+    gridmapped = spacemap(
+        func=compute_ccv,
+        dense_vars=list(state_choice_space.dense_vars),
+        sparse_vars=list(state_choice_space.sparse_vars),
+        dense_first=False,
+    )
+
+    return gridmapped(
+        **state_choice_space.dense_vars,
+        **continuous_choice_grids,
+        **state_choice_space.sparse_vars,
+        **state_indexers,
+        vf_arr=vf_arr,
+        params=params,
+    )

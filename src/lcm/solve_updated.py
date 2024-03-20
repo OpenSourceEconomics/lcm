@@ -54,10 +54,10 @@ def backward_induction(
     for period in reversed(range(n_periods)):
         # Solve the continuous problem, conditional on discrete choices
         conditional_continuation_values = solve_continuous_problem[period](
-            **state_choice_spaces[period].dense_vars,
-            **continuous_choice_grids[period],
-            **state_choice_spaces[period].sparse_vars,
-            **state_indexers[period],
+            state_choice_space=state_choice_spaces[period],
+            continuous_choice_grids=continuous_choice_grids[period],
+            # **state_choice_spaces[period].sparse_vars,
+            state_indexers=state_indexers[period],
             vf_arr=vf_arr,
             params=params,
         )
