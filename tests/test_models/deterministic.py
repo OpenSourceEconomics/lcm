@@ -83,11 +83,7 @@ def consumption_constraint(consumption, wealth):
 # --------------------------------------------------------------------------------------
 # Filters
 # --------------------------------------------------------------------------------------
-def mandatory_retirement_filter(retirement, age):
-    return jnp.logical_or(retirement == 1, age < RETIREMENT_AGE)
-
-
-def absorbing_retirement_filter(retirement, lagged_retirement):
+def absorbing_retirement_filter(retirement, lagged_retirement, _period):
     return jnp.logical_or(retirement == 1, lagged_retirement == 0)
 
 

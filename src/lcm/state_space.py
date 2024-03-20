@@ -66,7 +66,7 @@ def create_state_choice_space(model, period, *, is_last_period, jit_filter):
         _filter_mask = create_filter_mask(
             model=model,
             subset=vi.query("is_sparse").index.tolist(),
-            fixed_inputs={"period": period},
+            fixed_inputs={"_period": period},
             jit_filter=jit_filter,
         )
 
