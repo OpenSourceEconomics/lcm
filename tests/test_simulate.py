@@ -393,6 +393,7 @@ def test_create_data_state_choice_space():
             "lagged_retirement": jnp.array([0, 1]),
         },
         model=model,
+        period=0,
     )
     assert got_space.dense_vars == {}
     assert_array_equal(got_space.sparse_vars["wealth"], jnp.array([10.0, 10.0, 20.0]))

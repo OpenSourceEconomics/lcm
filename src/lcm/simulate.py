@@ -106,6 +106,7 @@ def simulate(
         data_scs, data_choice_segments = create_data_scs(
             states=states,
             model=model,
+            period=period,
         )
 
         # Compute objects dependent on data-state-choice-space
@@ -472,12 +473,14 @@ def _retrieve_non_sparse_choices(index, grids, grid_shape):
 def create_data_scs(
     states,
     model,
+    period,
 ):
     """Create data state choice space.
 
     Args:
         states (dict): Dict with initial states.
         model (Model): Model instance.
+        period (int): Period.
 
     Returns:
         - Space: Data state choice space.
@@ -548,10 +551,16 @@ def create_data_scs(
             aggregator=jnp.logical_and,
         )
 
-        parameters = list(inspect.signature(scalar_filter).parameters)
-        kwargs = {k: v for k, v in _combination_grid.items() if k in parameters}
+        fixed_inputs = {"_period": period}
+        potential_kwargs = _combination_grid | fixed_inputs
 
-        _filter = vmap_1d(scalar_filter, variables=parameters)
+        parameters = list(inspect.signature(scalar_filter).parameters)
+        kwargs = {k: v for k, v in potential_kwargs.items() if k in parameters}
+
+        # we do not vmap over the period variable
+        vmapped_parameters = [p for p in parameters if p != "_period"]
+
+        _filter = vmap_1d(scalar_filter, variables=vmapped_parameters)
         mask = _filter(**kwargs)
 
         # filter infeasible combinations

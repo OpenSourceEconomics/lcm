@@ -350,3 +350,21 @@ def test_create_compute_conditional_continuation_policy_with_discrete_model():
         working=0,
         disutility_of_work=1.0,
     )
+
+
+# ======================================================================================
+# Test filter with _period argument
+# ======================================================================================
+
+
+def test_get_lcm_function_with_period_argument_in_filter():
+    user_model = get_model_config("iskhakov_et_al_2017", n_periods=3)
+
+    def absorbing_retirement_filter(retirement, lagged_retirement, _period):
+        return jnp.logical_or(retirement == 1, lagged_retirement == 0)
+
+    user_model["functions"]["absorbing_retirement_filter"] = absorbing_retirement_filter
+
+    solve_model, params_template = get_lcm_function(model=user_model)
+    params = tree_map(lambda _: 0.2, params_template)
+    solve_model(params)
