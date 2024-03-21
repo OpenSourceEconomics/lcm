@@ -22,6 +22,7 @@ dependencies:
   - pybaum
 
   # Testing infrastructure
+  - mypy
   - pytest
   - pytest-cov
   - pytest-xdist
