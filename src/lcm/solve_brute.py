@@ -127,7 +127,7 @@ def solve_continuous_problem(
     
     with nvtx.annotate("jitting", color="white"):
         if period == 20:
-            with open('/home/mj/Desktop/Jaxprs/function.txt', 'w') as f:
+            with open('function.txt', 'w') as f:
                 f.write(str(jax.make_jaxpr(_gridmapped)(
                 **state_choice_space.dense_vars,
                 **continuous_choice_grids,
