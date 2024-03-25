@@ -1,5 +1,6 @@
 import jax
 import jax.numpy as jnp
+from jax import Array
 from jax.typing import ArrayLike
 
 # ======================================================================================
@@ -12,7 +13,7 @@ def argmax(
     axis: int | tuple[int, ...] | None = None,
     initial: ArrayLike | None = None,
     where: ArrayLike | None = None,
-) -> tuple[jnp.ndarray, jnp.ndarray]:
+) -> tuple[Array, Array]:
     """Compute the argmax of an n-dim array along axis.
 
     Args:
@@ -25,12 +26,12 @@ def argmax(
             for details.
 
     Returns:
-        - jnp.ndarray: The argmax indices. Array with the same shape as a, except for
+        - Array: The argmax indices. Array with the same shape as a, except for
             the dimensions specified in axis, which are dropped. The value corresponds
             to an index that can be translated into a tuple of indices using
             jnp.unravel_index.
 
-        - jnp.ndarray: The corresponding maximum values.
+        - Array: The corresponding maximum values.
 
     """
     # Preparation
@@ -65,7 +66,7 @@ def argmax(
     return argmax, _max.reshape(argmax.shape)
 
 
-def _move_axes_to_back(a: jnp.ndarray, axes: tuple[int, ...]) -> jnp.ndarray:
+def _move_axes_to_back(a: Array, axes: tuple[int, ...]) -> Array:
     """Move specified axes to the back of the array.
 
     Args:
@@ -80,7 +81,7 @@ def _move_axes_to_back(a: jnp.ndarray, axes: tuple[int, ...]) -> jnp.ndarray:
     return a.transpose((*front_axes, *axes))
 
 
-def _flatten_last_n_axes(a: jnp.ndarray, n: int) -> jnp.ndarray:
+def _flatten_last_n_axes(a: Array, n: int) -> Array:
     """Flatten the last n axes of a to 1 dimension.
 
     Args:
@@ -103,7 +104,7 @@ def segment_argmax(
     data: ArrayLike,
     segment_ids: ArrayLike,
     num_segments: int,
-) -> tuple[jnp.ndarray, jnp.ndarray]:
+) -> tuple[Array, Array]:
     """Computes the maximum within segments of an array over the first axis of data.
 
     See `jax.ops.segment_max` for reference.
@@ -121,10 +122,10 @@ def segment_argmax(
             provided to use segment_max in a JIT-compiled function.
 
     Returns:
-        - jnp.ndarray: Array with shape (num_segments, *a.shape[1:]). The value
+        - Array: Array with shape (num_segments, *a.shape[1:]). The value
             for the k-th segment will be in jnp.arange(segment_ids[k]).
 
-        - jnp.ndarray: Array with shape (num_segments, *a.shape[1:]). The maximum
+        - Array: Array with shape (num_segments, *a.shape[1:]). The maximum
             value for the k-th segment.
 
     """
