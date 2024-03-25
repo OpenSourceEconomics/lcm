@@ -230,8 +230,9 @@ def create_compute_conditional_continuation_value(
 
     @functools.wraps(utility_and_feasibility)
     def compute_ccv(*args, **kwargs):
-        u, f = utility_and_feasibility(*args, **kwargs)
-        return u.max(where=f, initial=-jnp.inf)
+        with nvtx.annotate("compute_ccv", color="orange"):
+            u, f = utility_and_feasibility(*args, **kwargs)
+            return u.max(where=f, initial=-jnp.inf)
 
     return compute_ccv
 
