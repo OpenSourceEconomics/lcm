@@ -56,11 +56,13 @@ def argmax(
         where = _flatten_last_n_axes(where, n=len(axis))
 
     # Compute argmax over last dimension
+    # ----------------------------------------------------------------------------------
+    # Note: If multiple maxima exist, this approach will select the first index.
     # ==================================================================================
     _max = jnp.max(a, axis=-1, keepdims=True, initial=initial, where=where)
     max_value_mask = a == _max
     if where is not None:
-        max_value_mask = max_value_mask & where
+        max_value_mask = jnp.logical_and(max_value_mask, where)
     argmax = jnp.argmax(max_value_mask, axis=-1)
 
     return argmax, _max.reshape(argmax.shape)
@@ -122,10 +124,10 @@ def segment_argmax(
             provided to use segment_max in a JIT-compiled function.
 
     Returns:
-        - Array: Array with shape (num_segments, *a.shape[1:]). The value
+        - Array: Array with shape (num_segments, *data.shape[1:]). The value
             for the k-th segment will be in jnp.arange(segment_ids[k]).
 
-        - Array: Array with shape (num_segments, *a.shape[1:]). The maximum
+        - Array: Array with shape (num_segments, *data.shape[1:]). The maximum
             value for the k-th segment.
 
     """
@@ -148,7 +150,7 @@ def segment_argmax(
     # ==================================================================================
     max_value_mask = data == segment_max_expanded
 
-    # Create index array of argmax indices for each segment (has same shape as a)
+    # Create index array of argmax indices for each segment (has same shape as data)
     # ==================================================================================
     arange = jnp.arange(data.shape[0])
     reshaped = arange.reshape(-1, *((1,) * (len(data.shape) - 1)))
