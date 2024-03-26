@@ -101,29 +101,36 @@ def test_argmax_3d_no_mask():
     assert_array_equal(_max, jnp.array([11, 23]))
 
 
+def test_argmax_with_ties():
+    # If multiple maxima exist, argmax will select the first index.
+    a = jnp.zeros((2, 2, 2))
+    _argmax, _ = jitted_argmax(a, axis=(1, 2))
+    assert_array_equal(_argmax, jnp.array([0, 0]))
+
+
 # ======================================================================================
 # segment argmax
 # ======================================================================================
 
 
 def test_segment_argmax_1d():
-    a = jnp.arange(10)
+    data = jnp.arange(10)
     segment_ids = jnp.array([0, 0, 0, 1, 1, 2, 2, 2, 2, 2])
-    _argmax, _max = jitted_segment_argmax(a, segment_ids, num_segments=3)
+    _argmax, _max = jitted_segment_argmax(data, segment_ids, num_segments=3)
     assert_array_equal(_argmax, jnp.array([2, 4, 9]))
     assert_array_equal(_max, jnp.array([2, 4, 9]))
 
 
 def test_segment_argmax_2d():
-    a = jnp.arange(10).reshape(5, 2)
+    data = jnp.arange(10).reshape(5, 2)
     segment_ids = jnp.array([0, 0, 0, 1, 1])
-    _argmax, _max = jitted_segment_argmax(a, segment_ids, num_segments=2)
+    _argmax, _max = jitted_segment_argmax(data, segment_ids, num_segments=2)
     assert_array_equal(_argmax, jnp.array([[2, 2], [4, 4]]))
     assert_array_equal(_max, jnp.array([[4, 5], [8, 9]]))
 
 
 def test_segment_argmax_3d():
-    a = jnp.array(
+    data = jnp.array(
         [
             [[0, 5], [3, 0]],
             [[1, 2], [0, 0]],
@@ -131,9 +138,17 @@ def test_segment_argmax_3d():
         ],
     )
     segment_ids = jnp.array([0, 0, 1])
-    _argmax, _max = jitted_segment_argmax(a, segment_ids, num_segments=2)
+    _argmax, _max = jitted_segment_argmax(data, segment_ids, num_segments=2)
     assert_array_equal(_argmax, jnp.array([[[1, 0], [0, 1]], [[2, 2], [2, 2]]]))
     assert_array_equal(_max, jnp.array([[[1, 5], [3, 0]], [[0, 0], [0, 0]]]))
+
+
+def test_segment_argmax_ties():
+    # If multiple maxima exist, segment_argmax will select the last index.
+    data = jnp.zeros(3)
+    segment_ids = jnp.array([0, 1, 1])
+    _argmax, _ = jitted_segment_argmax(data, segment_ids, num_segments=2)
+    assert_array_equal(_argmax, jnp.array([0, 2]))
 
 
 # ======================================================================================

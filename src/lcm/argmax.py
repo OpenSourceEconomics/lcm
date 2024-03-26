@@ -16,11 +16,13 @@ def argmax(
 ) -> tuple[Array, Array]:
     """Compute the argmax of an n-dim array along axis.
 
+    If multiple maxima exist, the first index will be selected.
+
     Args:
         a (ArrayLike): Multidimensional array.
         axis (int | tuple | None): Axis along which to compute the argmax. If None, the
             argmax is computed over all axes.
-        initial (scalar): The minimum value of an output element. Must be present to
+        initial (ArrayLike): The minimum value of an output element. Must be present to
             allow computation on empty slice. See ~numpy.ufunc.reduce for details.
         where (ArrayLike): Elements to compare for the maximum. See ~numpy.ufunc.reduce
             for details.
@@ -56,11 +58,13 @@ def argmax(
         where = _flatten_last_n_axes(where, n=len(axis))
 
     # Compute argmax over last dimension
+    # ----------------------------------------------------------------------------------
+    # Note: If multiple maxima exist, this approach will select the first index.
     # ==================================================================================
     _max = jnp.max(a, axis=-1, keepdims=True, initial=initial, where=where)
     max_value_mask = a == _max
     if where is not None:
-        max_value_mask = max_value_mask & where
+        max_value_mask = jnp.logical_and(max_value_mask, where)
     argmax = jnp.argmax(max_value_mask, axis=-1)
 
     return argmax, _max.reshape(argmax.shape)
@@ -70,7 +74,7 @@ def _move_axes_to_back(a: Array, axes: tuple[int, ...]) -> Array:
     """Move specified axes to the back of the array.
 
     Args:
-        a (ArrayLike): Multidimensional jax array.
+        a (Array): Multidimensional jax array.
         axes (tuple): Axes to move to the back.
 
     Returns:
@@ -85,7 +89,7 @@ def _flatten_last_n_axes(a: Array, n: int) -> Array:
     """Flatten the last n axes of a to 1 dimension.
 
     Args:
-        a (ArrayLike): Multidimensional jax array.
+        a (Array): Multidimensional jax array.
         n (int): Number of axes to flatten.
 
     Returns:
@@ -107,7 +111,8 @@ def segment_argmax(
 ) -> tuple[Array, Array]:
     """Computes the maximum within segments of an array over the first axis of data.
 
-    See `jax.ops.segment_max` for reference.
+    See `jax.ops.segment_max` for reference. If multiple maxima exist, the last index
+    will be selected.
 
     Args:
         data (ArrayLike): Multidimensional array.
@@ -122,10 +127,10 @@ def segment_argmax(
             provided to use segment_max in a JIT-compiled function.
 
     Returns:
-        - Array: Array with shape (num_segments, *a.shape[1:]). The value
+        - Array: Array with shape (num_segments, *data.shape[1:]). The value
             for the k-th segment will be in jnp.arange(segment_ids[k]).
 
-        - Array: Array with shape (num_segments, *a.shape[1:]). The maximum
+        - Array: Array with shape (num_segments, *data.shape[1:]). The maximum
             value for the k-th segment.
 
     """
@@ -148,10 +153,10 @@ def segment_argmax(
     # ==================================================================================
     max_value_mask = data == segment_max_expanded
 
-    # Create index array of argmax indices for each segment (has same shape as a)
+    # Create index array of argmax indices for each segment (has same shape as data)
     # ==================================================================================
     arange = jnp.arange(data.shape[0])
-    reshaped = arange.reshape(-1, *((1,) * (len(data.shape) - 1)))
+    reshaped = arange.reshape(-1, *([1] * (data.ndim - 1)))
     segment_argmax_ids = jnp.broadcast_to(reshaped, data.shape)
 
     # Set indices to zero that do not correspond to a maximum
