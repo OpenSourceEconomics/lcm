@@ -34,13 +34,19 @@ jobs:
           cache-environment: true
           create-args: >-
             python=${{ matrix.python-version }}
-      - name: run pytest
+      - name: Run pytest
         shell: bash -l {0}
         run: |
           micromamba activate lcm
           pytest --cov-report=xml --cov=./
-      - name: Upload coverage report.
+      - name: Upload coverage report
         if: runner.os == 'Linux' && matrix.python-version == '3.11'
         uses: codecov/codecov-action@v3
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+      - name: Run mypy
+        shell: bash -l {0}
+        if: runner.os == 'Linux' && matrix.python-version == '3.11'
+        run: |-
+          micromamba activate lcm
+          mypy src

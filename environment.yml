@@ -22,6 +22,8 @@ dependencies:
   - pybaum
 
   # Testing infrastructure
+  - mypy
+  - pandas-stubs
   - pytest
   - pytest-cov
   - pytest-xdist
