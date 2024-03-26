@@ -134,7 +134,7 @@ def segment_argmax(
     data = jnp.asarray(data)
     segment_ids = jnp.asarray(segment_ids)
 
-    # Compute segment maximum and bring to the same shape as a
+    # Compute segment maximum and bring to the same shape as data
     # ==================================================================================
     segment_max = jax.ops.segment_max(
         data=data,
