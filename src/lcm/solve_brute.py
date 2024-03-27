@@ -1,7 +1,7 @@
 import jax
 import nvtx
 import concurrent.futures as futures
-
+import numpy
 from lcm.dispatchers import spacemap
 
 
@@ -59,11 +59,15 @@ def solve(
     compiled_functions = {}
     with futures.ThreadPoolExecutor() as pool:
         for period in reversed(range(n_periods)):
+            if period == n_periods - 1:
+                dummy = None
+            else:
+                dummy = jax.numpy.empty((100,100), numpy.float32)
             lowered = lower_function(
                         state_choice_space=state_choice_spaces[period],
                         compute_ccv=compute_ccv_functions[period],
                         continuous_choice_grids=continuous_choice_grids[period],
-                        vf_arr=vf_arr,
+                        vf_arr=dummy,
                         state_indexers=state_indexers[period],
                         params=params,
                         period=period
@@ -163,4 +167,11 @@ def lower_function(state_choice_space,
             sparse_vars=list(state_choice_space.sparse_vars),
             dense_first=False,
         )
-    gridmapped = jax.jit(_gridmapped).lower()
+    gridmapped = jax.jit(_gridmapped).lower(**state_choice_space.dense_vars,
+            **continuous_choice_grids,
+            **state_choice_space.sparse_vars,
+            **state_indexers,
+            vf_arr=vf_arr,
+            params=params,)
+    
+    return gridmapped
