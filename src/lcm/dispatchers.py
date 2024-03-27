@@ -1,6 +1,7 @@
 import inspect
 
 from jax import vmap
+import jax
 
 from lcm.functools import allow_args, allow_kwargs
 
@@ -61,13 +62,13 @@ def spacemap(func, dense_vars, sparse_vars, *, dense_first):
             in_axes.append(None)
 
     if not sparse_vars:
-        vmapped = _product_map(func, dense_vars)
+        vmapped = jax.jit(_product_map(func, dense_vars))
     elif dense_first:
-        vmapped = vmap(func, in_axes=in_axes)
+        vmapped = jax.jit(vmap(func, in_axes=in_axes))
         vmapped = _product_map(vmapped, dense_vars)
     else:
         vmapped = _product_map(func, dense_vars)
-        vmapped = vmap(vmapped, in_axes=in_axes)
+        vmapped = jax.jit(vmap(vmapped, in_axes=in_axes))
 
     vmapped.__signature__ = signature
 

@@ -284,7 +284,7 @@ def _get_interpolator(data_name, axis_names, map_coordinates_kwargs=None):
             coordinates=coordinates,
         )
 
-    return jax.jit(interpolate)
+    return interpolate
 
 
 def _fail_if_interpolation_axes_are_not_last(space_info):
