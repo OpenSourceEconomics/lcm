@@ -222,6 +222,7 @@ def create_compute_conditional_continuation_value(
             conditional continuation value over the continuous choices.
 
     """
+    
     if continuous_choice_variables:
         utility_and_feasibility = productmap(
             func=utility_and_feasibility,

@@ -1,5 +1,6 @@
 from functools import partial
 
+import jax
 import jax.numpy as jnp
 import numpy as np
 from dags import concatenate_functions
@@ -283,7 +284,7 @@ def _get_interpolator(data_name, axis_names, map_coordinates_kwargs=None):
             coordinates=coordinates,
         )
 
-    return interpolate
+    return jax.jit(interpolate)
 
 
 def _fail_if_interpolation_axes_are_not_last(space_info):
