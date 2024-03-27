@@ -62,17 +62,17 @@ def spacemap(func, dense_vars, sparse_vars, *, dense_first):
             in_axes.append(None)
 
     if not sparse_vars:
-        vmapped = jax.jit(_product_map(func, dense_vars))
+        vmapped = _product_map(func, dense_vars)
     elif dense_first:
-        vmapped = jax.jit(vmap(func, in_axes=in_axes))
+        vmapped = vmap(func, in_axes=in_axes)
         vmapped = _product_map(vmapped, dense_vars)
     else:
         vmapped = _product_map(func, dense_vars)
-        vmapped = jax.jit(vmap(vmapped, in_axes=in_axes))
+        vmapped = vmap(vmapped, in_axes=in_axes)
 
     vmapped.__signature__ = signature
 
-    return allow_kwargs(vmapped)
+    return allow_kwargs(jax.jit(vmapped))
 
 
 def productmap(func, variables):
