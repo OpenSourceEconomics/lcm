@@ -57,44 +57,46 @@ def solve(
 
     logger.info("Starting solution")
     compiled_functions = {}
+    
     with futures.ThreadPoolExecutor() as pool:
+        with nvtx.annotate("compile_functions", color="gray"):
+            for period in reversed(range(n_periods)):
+                if period == n_periods - 1:
+                    dummy = None
+                else:
+                    dummy = jax.numpy.empty((100,100), numpy.float32)
+                lowered = lower_function(
+                            state_choice_space=state_choice_spaces[period],
+                            compute_ccv=compute_ccv_functions[period],
+                            continuous_choice_grids=continuous_choice_grids[period],
+                            vf_arr=dummy,
+                            state_indexers=state_indexers[period],
+                            params=params,
+                            period=period
+                        )
+                compiled_functions[period] = pool.submit(lowered.compile)
+        # backwards induction loop
         for period in reversed(range(n_periods)):
-            if period == n_periods - 1:
-                dummy = None
-            else:
-                dummy = jax.numpy.empty((100,100), numpy.float32)
-            lowered = lower_function(
-                        state_choice_space=state_choice_spaces[period],
-                        compute_ccv=compute_ccv_functions[period],
-                        continuous_choice_grids=continuous_choice_grids[period],
-                        vf_arr=dummy,
-                        state_indexers=state_indexers[period],
+            with nvtx.annotate("solve_period", color="yellow"):
+            # solve continuous problem, conditional on discrete choices
+                with nvtx.annotate("solve_cont_p", color="green"):
+                    conditional_continuation_values = compiled_functions[period].result()(
+                        **state_choice_spaces[period].dense_vars,
+                        **continuous_choice_grids[period],
+                        **state_choice_spaces[period].sparse_vars,
+                        **state_indexers[period],
+                        vf_arr=vf_arr,
                         params=params,
-                        period=period
                     )
-            compiled_functions[period] = pool.submit(lowered.compile)
-    # backwards induction loop
-    for period in reversed(range(n_periods)):
-        with nvtx.annotate("solve_period", color="yellow"):
-        # solve continuous problem, conditional on discrete choices
-            with nvtx.annotate("solve_cont_p", color="green"):
-                conditional_continuation_values = compiled_functions[period].result(
-                    **state_choice_spaces[period].dense_vars,
-                    **continuous_choice_grids[period],
-                    **state_choice_spaces[period].sparse_vars,
-                    **state_indexers[period],
-                    vf_arr=vf_arr,
-                    params=params,
-                )
 
-            # solve discrete problem by calculating expected maximum over discrete choices
-            calculate_emax = emax_calculators[period]
-            print("calcEmax")
-            with nvtx.annotate("calc_emax", color="red"):
-                vf_arr = calculate_emax(conditional_continuation_values)
-            reversed_solution.append(vf_arr)
+                # solve discrete problem by calculating expected maximum over discrete choices
+                calculate_emax = emax_calculators[period]
+                print("calcEmax")
+                with nvtx.annotate("calc_emax", color="red"):
+                    vf_arr = calculate_emax(conditional_continuation_values)
+                reversed_solution.append(vf_arr)
 
-            logger.info("Period: %s", period)
+                logger.info("Period: %s", period)
 
     return list(reversed(reversed_solution))
 
