@@ -1,7 +1,6 @@
 import jax
 import jax.numpy as jnp
 from jax import Array
-from jax.typing import ArrayLike
 
 # ======================================================================================
 # argmax
@@ -9,22 +8,22 @@ from jax.typing import ArrayLike
 
 
 def argmax(
-    a: ArrayLike,
+    a: Array,
     axis: int | tuple[int, ...] | None = None,
-    initial: ArrayLike | None = None,
-    where: ArrayLike | None = None,
+    initial: float | None = None,
+    where: Array | None = None,
 ) -> tuple[Array, Array]:
     """Compute the argmax of an n-dim array along axis.
 
     If multiple maxima exist, the first index will be selected.
 
     Args:
-        a (ArrayLike): Multidimensional array.
+        a (Array): Multidimensional array.
         axis (int | tuple | None): Axis along which to compute the argmax. If None, the
             argmax is computed over all axes.
-        initial (ArrayLike): The minimum value of an output element. Must be present to
+        initial (float): The minimum value of an output element. Must be present to
             allow computation on empty slice. See ~numpy.ufunc.reduce for details.
-        where (ArrayLike): Elements to compare for the maximum. See ~numpy.ufunc.reduce
+        where (Array): Elements to compare for the maximum. See ~numpy.ufunc.reduce
             for details.
 
     Returns:
@@ -38,8 +37,6 @@ def argmax(
     """
     # Preparation
     # ==================================================================================
-    a = jnp.asarray(a)
-
     if axis is None:
         axis = tuple(range(a.ndim))
     elif isinstance(axis, int):
@@ -53,7 +50,6 @@ def argmax(
     # Do same transformation for where
     # ==================================================================================
     if where is not None:
-        where = jnp.asarray(where)
         where = _move_axes_to_back(where, axes=axis)
         where = _flatten_last_n_axes(where, n=len(axis))
 
@@ -105,8 +101,8 @@ def _flatten_last_n_axes(a: Array, n: int) -> Array:
 
 
 def segment_argmax(
-    data: ArrayLike,
-    segment_ids: ArrayLike,
+    data: Array,
+    segment_ids: Array,
     num_segments: int,
 ) -> tuple[Array, Array]:
     """Computes the maximum within segments of an array over the first axis of data.
@@ -115,8 +111,8 @@ def segment_argmax(
     will be selected.
 
     Args:
-        data (ArrayLike): Multidimensional array.
-        segment_ids (ArrayLike): An array with integer dtype that indicates the segments
+        data (Array): Multidimensional array.
+        segment_ids (Array): An array with integer dtype that indicates the segments
             of data (along its leading axis) to be reduced. Values can be repeated and
             need not be sorted. Values outside of the range [0, num_segments) are
             dropped and do not contribute to the result.
@@ -127,18 +123,11 @@ def segment_argmax(
             provided to use segment_max in a JIT-compiled function.
 
     Returns:
-        - Array: Array with shape (num_segments, *data.shape[1:]). The value
-            for the k-th segment will be in jnp.arange(segment_ids[k]).
+        - Array: The argmax values. Has shape (num_segments, *data.shape[1:]).
 
-        - Array: Array with shape (num_segments, *data.shape[1:]). The maximum
-            value for the k-th segment.
+        - Array: The maximum values. Has shape (num_segments, *data.shape[1:]).
 
     """
-    # Preparation
-    # ==================================================================================
-    data = jnp.asarray(data)
-    segment_ids = jnp.asarray(segment_ids)
-
     # Compute segment maximum and bring to the same shape as data
     # ==================================================================================
     segment_max = jax.ops.segment_max(
