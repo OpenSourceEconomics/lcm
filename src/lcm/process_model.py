@@ -8,7 +8,7 @@ from dags import get_ancestors
 from dags.signature import with_signature
 
 import lcm.grids as grids_module
-from lcm.create_params import create_params
+from lcm.create_params import create_params_template
 from lcm.function_evaluator import get_label_translator
 from lcm.functools import all_as_args, all_as_kwargs
 from lcm.interfaces import GridSpec, Model
@@ -38,7 +38,11 @@ def process_model(user_model):
     _gridspecs = _get_gridspecs(user_model, variable_info=_variable_info)
     _grids = _get_grids(gridspecs=_gridspecs, variable_info=_variable_info)
 
-    _params = create_params(user_model, variable_info=_variable_info, grids=_grids)
+    _params = create_params_template(
+        user_model,
+        variable_info=_variable_info,
+        grids=_grids,
+    )
 
     _functions = _get_functions(
         user_model,
