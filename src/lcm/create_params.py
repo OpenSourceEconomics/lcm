@@ -3,10 +3,9 @@
 import inspect
 from typing import Any
 
-import numpy as np
+import jax.numpy as jnp
 import pandas as pd
 from jax import Array
-from jax.typing import ArrayLike
 
 
 def create_params_template(
@@ -14,7 +13,7 @@ def create_params_template(
     variable_info: pd.DataFrame,
     grids: dict[str, Array],
     default_params: dict[str, float] | None = None,
-) -> dict[str, ArrayLike]:
+) -> dict[str, dict[str, Any] | float]:
     """Create parameter template from a model specification.
 
     Args:
@@ -32,13 +31,13 @@ def create_params_template(
             np.nan, "delta": np.nan} for beta-delta discounting.
 
     Returns:
-        dict: A dictionary of model parameters.
+        dict: A (nested) dictionary of model parameters.
 
     """
     if default_params is None:
         # The default lifetime reward objective in LCM is expected discounted utility.
         # For this objective the only additional parameter is the discounting rate beta.
-        default_params = {"beta": np.nan}
+        default_params = {"beta": jnp.nan}
 
     params_template = default_params | _create_function_params(model_spec)
 
@@ -52,7 +51,7 @@ def create_params_template(
     return params_template
 
 
-def _create_function_params(model_spec: dict[str, Any]) -> dict[str, float]:
+def _create_function_params(model_spec: dict[str, Any]) -> dict[str, dict[str, Any]]:
     """Get function parameters from a model specification.
 
     Note: The function argument '_period' is handled separately. It is not treated as a
@@ -67,8 +66,8 @@ def _create_function_params(model_spec: dict[str, Any]) -> dict[str, float]:
             - "shocks": A dictionary of shock variables (optional).
 
     Returns:
-        dict: A dictionary of parameters required in the model functions, initialized
-            with np.nan.
+        dict: A dictionary for each model function, containing a parameters required in
+            the model functions, initialized with jnp.nan.
 
     """
     # Collect all model variables, that includes choices, states, the period, and
@@ -89,7 +88,7 @@ def _create_function_params(model_spec: dict[str, Any]) -> dict[str, float]:
     for name, func in model_spec["functions"].items():
         arguments = set(inspect.signature(func).parameters)
         params = sorted(arguments.difference(variables))
-        function_params[name] = {p: np.nan for p in params}
+        function_params[name] = {p: jnp.nan for p in params}
 
     return function_params
 
@@ -98,7 +97,7 @@ def _create_stochastic_transition_params(
     model_spec: dict[str, Any],
     variable_info: pd.DataFrame,
     grids: dict[str, Array],
-) -> dict[str, ArrayLike]:
+) -> dict[str, Array]:
     """Create parameters for stochastic transitions.
 
     Args:
@@ -113,7 +112,7 @@ def _create_stochastic_transition_params(
 
     Returns:
         dict: A dictionary of parameters required for stochastic transitions,
-            initialized with np.nan matrices of the correct dimensions.
+            initialized with jnp.nan matrices of the correct dimensions.
 
     """
     stochastic_variables = variable_info.query("is_stochastic").index.tolist()
@@ -162,7 +161,7 @@ def _create_stochastic_transition_params(
         # Add the dimension of the stochastic variable itself at the end
         dimensions = (*dimensions_of_deps, len(grids[var]))
 
-        stochastic_transition_params[var] = np.full(dimensions, np.nan)
+        stochastic_transition_params[var] = jnp.full(dimensions, jnp.nan)
 
     # ----------------------------------------------------------------------------------
     # Raise an error if there are invalid arguments
