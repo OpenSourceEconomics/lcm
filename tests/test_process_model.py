@@ -1,4 +1,3 @@
-import jax
 import jax.numpy as jnp
 import lcm.grids as grids_module
 import numpy as np
@@ -144,8 +143,8 @@ def test_process_model_iskhakov_et_al_2017():
     asserted = func(**model.gridspecs["wealth"].specs)
     assert (asserted == model.grids["wealth"]).all()
 
-    assert (model.grids["retirement"] == jax.numpy.array([0, 1])).all()
-    assert (model.grids["lagged_retirement"] == jax.numpy.array([0, 1])).all()
+    assert (model.grids["retirement"] == jnp.array([0, 1])).all()
+    assert (model.grids["lagged_retirement"] == jnp.array([0, 1])).all()
 
     # Functions
     assert (
@@ -202,7 +201,7 @@ def test_process_model():
     asserted = func(**model.gridspecs["wealth"].specs)
     assert (asserted == model.grids["wealth"]).all()
 
-    assert (model.grids["retirement"] == jax.numpy.array([0, 1])).all()
+    assert (model.grids["retirement"] == jnp.array([0, 1])).all()
 
     # Functions
     assert (

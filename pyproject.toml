@@ -163,3 +163,11 @@ norecursedirs = ["docs", ".envs"]
 line_length = 88
 sequence_style = "block_style"
 none_representation = "null"
+
+# ======================================================================================
+# mypy configuration
+# ======================================================================================
+
+[[tool.mypy.overrides]]
+module = ["dags", "dags.signature"]
+ignore_missing_imports = true
