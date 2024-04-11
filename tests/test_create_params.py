@@ -1,9 +1,10 @@
 import numpy as np
 import pandas as pd
+import pytest
 from lcm.create_params import (
     _create_function_params,
-    _create_shock_params,
-    create_params,
+    _create_stochastic_transition_params,
+    create_params_template,
 )
 from numpy.testing import assert_equal
 
@@ -20,7 +21,7 @@ def test_create_params_without_shocks():
             "b": None,
         },
     }
-    got = create_params(
+    got = create_params_template(
         model,
         variable_info=pd.DataFrame({"is_stochastic": [False]}),
         grids=None,
@@ -45,7 +46,7 @@ def test_create_function_params():
 
 
 def test_create_shock_params():
-    def next_a(a):  # noqa: ARG001
+    def next_a(a, _period):  # noqa: ARG001
         pass
 
     variable_info = pd.DataFrame(
@@ -53,9 +54,47 @@ def test_create_shock_params():
         index=["a"],
     )
 
-    got = _create_shock_params(
-        model={"functions": {"next_a": next_a}},
+    got = _create_stochastic_transition_params(
+        model_spec={"functions": {"next_a": next_a}, "n_periods": 3},
         variable_info=variable_info,
         grids={"a": np.array([1, 2])},
     )
-    assert_equal(got["a"], np.full((2, 2), np.nan))
+    assert_equal(got["a"], np.full((2, 3, 2), np.nan))
+
+
+def test_create_shock_params_invalid_variable():
+    def next_a(a):  # noqa: ARG001
+        pass
+
+    variable_info = pd.DataFrame(
+        {"is_stochastic": True, "is_state": True, "is_discrete": False},
+        index=["a"],
+    )
+
+    with pytest.raises(ValueError, match="The following variables are stochastic, but"):
+        _create_stochastic_transition_params(
+            model_spec={"functions": {"next_a": next_a}},
+            variable_info=variable_info,
+            grids={"a": np.array([1, 2])},
+        )
+
+
+def test_create_shock_params_invalid_dependency():
+    def next_a(a, b, _period):  # noqa: ARG001
+        pass
+
+    variable_info = pd.DataFrame(
+        {
+            "is_stochastic": [True, False],
+            "is_state": [True, False],
+            "is_discrete": [True, False],
+        },
+        index=["a", "b"],
+    )
+
+    with pytest.raises(ValueError, match="Stochastic transition functions can only"):
+        _create_stochastic_transition_params(
+            model_spec={"functions": {"next_a": next_a}},
+            variable_info=variable_info,
+            grids={"a": np.array([1, 2])},
+        )
