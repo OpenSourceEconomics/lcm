@@ -74,6 +74,11 @@ def get_emax_calculator(
     )
 
 
+# ======================================================================================
+# Discrete problem with no shocks
+# ======================================================================================
+
+
 def _calculate_emax_no_shocks(
     values,
     choice_axes,
@@ -108,6 +113,36 @@ def _calculate_emax_no_shocks(
     return out
 
 
+def _segment_max_over_first_axis(a, segment_info):
+    """Calculate a segment_max over the first axis of a.
+
+    Wrapper around ``jax.ops.segment_max``.
+
+    Args:
+        a (jax.numpy.ndarray): Multidimensional jax array.
+        segment_info (dict): Dictionary with the entries "segment_ids"
+            and "num_segments". segment_ids are a 1d integer array that partitions the
+            first dimension of a. "num_segments" is the number of segments. The
+            segment_ids are assumed to be sorted.
+
+    Returns:
+        jax.numpy.ndarray
+
+    """
+    return jax.ops.segment_max(
+        data=a,
+        indices_are_sorted=True,
+        **segment_info,
+    )
+
+
+# ======================================================================================
+# Discrete problem with extreme value shocks
+# --------------------------------------------------------------------------------------
+# The following is currently *NOT* used in any examples.
+# ======================================================================================
+
+
 def _calculate_emax_extreme_value_shocks(values, choice_axes, choice_segments, params):
     """Aggregate conditional continuation values over discrete choices.
 
@@ -136,29 +171,6 @@ def _calculate_emax_extreme_value_shocks(values, choice_axes, choice_segments, p
         out = _segment_extreme_value_emax_over_first_axis(out, scale, choice_segments)
 
     return out
-
-
-def _segment_max_over_first_axis(a, segment_info):
-    """Calculate a segment_max over the first axis of a.
-
-    Wrapper around ``jax.ops.segment_max``.
-
-    Args:
-        a (jax.numpy.ndarray): Multidimensional jax array.
-        segment_info (dict): Dictionary with the entries "segment_ids"
-            and "num_segments". segment_ids are a 1d integer array that partitions the
-            first dimension of a. "num_segments" is the number of segments. The
-            segment_ids are assumed to be sorted.
-
-    Returns:
-        jax.numpy.ndarray
-
-    """
-    return jax.ops.segment_max(
-        data=a,
-        indices_are_sorted=True,
-        **segment_info,
-    )
 
 
 def _segment_extreme_value_emax_over_first_axis(a, scale, segment_info):
@@ -212,6 +224,11 @@ def _segment_logsumexp(a, segment_info):
         **segment_info,
     )
     return segmax + jnp.log(summed)
+
+
+# ======================================================================================
+# Auxiliary functions
+# ======================================================================================
 
 
 def _determine_discrete_choice_axes(variable_info):
