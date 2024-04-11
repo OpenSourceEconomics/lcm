@@ -1,23 +1,19 @@
-"""Functions to aggregate conditional continuation values over discrete choices.
+"""Functions that aggregate the conditional continuation values over discrete choices.
 
-By conditional_continuation_value we mean continuation values conditional on a discrete
+By conditional continuation value we mean continuation values conditional on a discrete
 choice, i.e. the result of solving the continuous choice problem conditional on the
-discrete choice.
+discrete choice. These are also _conditional_ on a given state.
 
-By aggregate we mean calculating the expected maximum of the continuation values, given
-based on the distribution of choice shocks. In the long run we plan to support Three
-shock distributions (currently only the first two):
+By aggregate we mean calculating the expected maximum of the continuation values, based
+on the distribution of utility shocks. Currently we support no shocks. In the future,
+we will at least support IID Extreme Value Type 1 shocks.
 
-- no shocks -> simply take the maximum of the continuation values
-- iid extreme value shocks -> do a logsum calculation
-- nested logit shocks -> ???
+How we (want to) solve the problem:
+-----------------------------------
 
-Notes:
-- It is possible that we split the aggregate_conditional_continuation values on one
-function per shock type, so we can inspect the signatures of the individual functions.
-This will only become clear after implementing a few solvers.
-- Hopefully, there will be a better way to do segment_logsumexp soon:
-https://github.com/google/jax/issues/6265
+- No shocks: We take the maximum of the conditional continuation values.
+
+- IID Extreme Value Type 1 shocks: We do a logsum calculation.
 
 """
 
@@ -30,34 +26,37 @@ import jax.numpy as jnp
 import pandas as pd
 from jax import Array
 
+from lcm.typing import SegmentInfo
+
 
 def get_solve_discrete_problem(
     *,
     shock_type: Literal[None, "extreme_value"],
     variable_info: pd.DataFrame,
     is_last_period: bool,
-    choice_segments: dict[str, Array | int] | None,
+    choice_segments: SegmentInfo | None,
     params: dict[str, Any],
 ) -> Callable[[Array], Array]:
-    """Return a function that calculates the expected maximum of continuation values.
+    """Get function that computes the expected max. of conditional continuation values.
 
     The maximum is taken over the discrete choice variables in each state.
 
     Args:
-        shock_type (str or None): One of None, "extreme_value" and "nested_logit".
+        shock_type (Literal[None, "extreme_value"]): Type of choice shock. Currently
+            only None is supported. Work for "extreme_value" is in progress.
         variable_info (pd.DataFrame): DataFrame with information about the variables.
         is_last_period (bool): Whether the function is created for the last period.
-        choice_segments (dict): Dictionary with the entries "segment_ids"
-            and "num_segments". segment_ids are a 1d integer array that partitions the
-            first dimension of values into choice sets over which we need to aggregate.
-            "num_segments" is the number of choice sets.
+        choice_segments (SegmentInfo): Dictionary with the entries "segment_ids" and
+            "num_segments". segment_ids are a 1d integer array that partitions the first
+            dimension of values into choice sets over which we need to aggregate.
+            "num_segments" is the number of choice sets. The segment_ids are assumed to
+            be sorted.
         params (dict): Dictionary with model parameters.
 
     Returns:
-        callable: Function that calculates the expected maximum of conditional
-            continuation values. The function depends on:
-            - values (jax.numpy.ndarray): Multidimensional jax array with conditional
-                continuation values.
+        callable: Function that calculates the expected maximum of the conditional
+            continuation values. The function depends on `cc_values` (jax.Array), the
+            conditional continuation values, and returns the aggregated values.
 
     """
     if is_last_period:
@@ -68,7 +67,7 @@ def get_solve_discrete_problem(
     if shock_type is None:
         func = _solve_discrete_problem_no_shocks
     elif shock_type == "extreme_value":
-        func = _calculate_emax_extreme_value_shocks
+        raise NotImplementedError("Extreme value shocks are not yet implemented.")
     else:
         raise ValueError(f"Invalid shock_type: {shock_type}.")
 
@@ -86,56 +85,59 @@ def get_solve_discrete_problem(
 
 
 def _solve_discrete_problem_no_shocks(
-    values: Array,
+    cc_values: Array,
     choice_axes: tuple[int, ...] | None,
-    choice_segments: dict[str, Array | int] | None,
+    choice_segments: SegmentInfo | None,
     params: dict[str, Any],  # noqa: ARG001
-):
+) -> Array:
     """Aggregate conditional continuation values over discrete choices.
 
     Args:
-        values (jax.numpy.ndarray): Multidimensional jax array with conditional
-            continuation values.
-        choice_axes (int or tuple): Int or tuple of int, specifying which axes in
-            values correspond to dense choice variables.
-        choice_segments (dict): Dictionary with the entries "segment_ids"
-            and "num_segments". segment_ids are a 1d integer array that partitions the
-            first dimension of values into choice sets over which we need to aggregate.
-            "num_segments" is the number of choice sets.
-        params (dict): Params dict that contains the schock_scale if necessary.
+        cc_values (jax.Array): Array with conditional continuation values. Has one
+            dimensions per state and discrete choice variable.
+        choice_axes (tuple[int, ...]): A tuple of indices representing the axes in the
+            value function that correspond to discrete choices. Returns None if there
+            are no discrete choice axes.
+        choice_segments (SegmentInfo): Dictionary with the entries "segment_ids" and
+            "num_segments". segment_ids are a 1d integer array that partitions the first
+            dimension of values into choice sets over which we need to aggregate.
+            "num_segments" is the number of choice sets. The segment_ids are assumed to
+            be sorted.
+        params (dict): Dictionary with model parameters.
 
     Returns:
-        jax.numpy.ndarray: Multidimensional jax array with aggregated continuation
-            values. Has less dimensions than values if choice_axes is not None and
-            is shorter in the first dimension if choice_segments is not None.
+        jax.Array: Array with aggregated continuation values. Has less dimensions than
+            cc_values if choice_axes is not None and is shorter in the first dimension
+            if choice_segments is not None.
 
     """
-    out = values
     if choice_axes is not None:
-        out = out.max(axis=choice_axes)
+        out = cc_values.max(axis=choice_axes)
     if choice_segments is not None:
-        out = _segment_max_over_first_axis(out, choice_segments)
+        out = _segment_max_over_first_axis(cc_values, choice_segments)
 
     return out
 
 
 def _segment_max_over_first_axis(
     data: Array,
-    segment_info: dict[str, Array | int],
+    segment_info: SegmentInfo,
 ) -> Array:
-    """Calculate a segment_max over the first axis of a.
+    """Calculate a segment_max over the first axis of data.
 
     Wrapper around ``jax.ops.segment_max``.
 
     Args:
-        data (jax.numpy.ndarray): Multidimensional jax array.
-        segment_info (dict): Dictionary with the entries "segment_ids"
-            and "num_segments". segment_ids are a 1d integer array that partitions the
-            first dimension of a. "num_segments" is the number of segments. The
-            segment_ids are assumed to be sorted.
+        data (jax.Array): Multidimensional jax array.
+        segment_info (SegmentInfo): Dictionary with the entries "segment_ids" and
+            "num_segments". segment_ids are a 1d integer array that partitions the
+            first dimension of `data` into segments over which we need to aggregate.
+            "num_segments" is the number of segments. The segment_ids are assumed to be
+            sorted.
 
     Returns:
-        jax.numpy.ndarray
+        jax.Array: An array with shape (num_segments,) + data.shape[1:] representing the
+            segment maximums.
 
     """
     return jax.ops.segment_max(
@@ -148,7 +150,7 @@ def _segment_max_over_first_axis(
 # ======================================================================================
 # Discrete problem with extreme value shocks
 # --------------------------------------------------------------------------------------
-# The following is currently *NOT* used in any examples.
+# The following is currently *NOT* supported.
 # ======================================================================================
 
 
@@ -243,7 +245,7 @@ def _segment_logsumexp(a, segment_info):
 def _determine_discrete_choice_axes(
     variable_info: pd.DataFrame,
 ) -> tuple[int, ...] | None:
-    """Determine which axes of a state choice space correspond to discrete choices.
+    """Get axes of a state choice space that correspond to dense discrete choices.
 
     Args:
         variable_info (pd.DataFrame): DataFrame with information about the variables.
