@@ -21,19 +21,24 @@ https://github.com/google/jax/issues/6265
 
 """
 
+from collections.abc import Callable
 from functools import partial
+from typing import Any, Literal
 
 import jax
 import jax.numpy as jnp
+import pandas as pd
+from jax import Array
 
 
 def get_solve_discrete_problem(
-    shock_type,
-    variable_info,
-    is_last_period,
-    choice_segments,
-    params,
-):
+    *,
+    shock_type: Literal[None, "extreme_value"],
+    variable_info: pd.DataFrame,
+    is_last_period: bool,
+    choice_segments: dict[str, Array | int] | None,
+    params: dict[str, Any],
+) -> Callable[[Array], Array]:
     """Return a function that calculates the expected maximum of continuation values.
 
     The maximum is taken over the discrete choice variables in each state.
@@ -42,8 +47,10 @@ def get_solve_discrete_problem(
         shock_type (str or None): One of None, "extreme_value" and "nested_logit".
         variable_info (pd.DataFrame): DataFrame with information about the variables.
         is_last_period (bool): Whether the function is created for the last period.
-        choice_segments (jax.numpy.ndarray): Jax array with the indices of the choice
-            segments that indicate which sparse choice variables belong to one state.
+        choice_segments (dict): Dictionary with the entries "segment_ids"
+            and "num_segments". segment_ids are a 1d integer array that partitions the
+            first dimension of values into choice sets over which we need to aggregate.
+            "num_segments" is the number of choice sets.
         params (dict): Dictionary with model parameters.
 
     Returns:
@@ -55,14 +62,13 @@ def get_solve_discrete_problem(
     """
     if is_last_period:
         variable_info = variable_info.query("~is_auxiliary")
+
     choice_axes = _determine_discrete_choice_axes(variable_info)
 
     if shock_type is None:
-        func = _calculate_emax_no_shocks
+        func = _solve_discrete_problem_no_shocks
     elif shock_type == "extreme_value":
         func = _calculate_emax_extreme_value_shocks
-    elif shock_type == "nested_logit":
-        raise ValueError("Nested logit shocks are not yet supported.")
     else:
         raise ValueError(f"Invalid shock_type: {shock_type}.")
 
@@ -79,11 +85,11 @@ def get_solve_discrete_problem(
 # ======================================================================================
 
 
-def _calculate_emax_no_shocks(
-    values,
-    choice_axes,
-    choice_segments,
-    params,  # noqa: ARG001
+def _solve_discrete_problem_no_shocks(
+    values: Array,
+    choice_axes: tuple[int, ...] | None,
+    choice_segments: dict[str, Array | int] | None,
+    params: dict[str, Any],  # noqa: ARG001
 ):
     """Aggregate conditional continuation values over discrete choices.
 
@@ -113,13 +119,16 @@ def _calculate_emax_no_shocks(
     return out
 
 
-def _segment_max_over_first_axis(a, segment_info):
+def _segment_max_over_first_axis(
+    data: Array,
+    segment_info: dict[str, Array | int],
+) -> Array:
     """Calculate a segment_max over the first axis of a.
 
     Wrapper around ``jax.ops.segment_max``.
 
     Args:
-        a (jax.numpy.ndarray): Multidimensional jax array.
+        data (jax.numpy.ndarray): Multidimensional jax array.
         segment_info (dict): Dictionary with the entries "segment_ids"
             and "num_segments". segment_ids are a 1d integer array that partitions the
             first dimension of a. "num_segments" is the number of segments. The
@@ -130,7 +139,7 @@ def _segment_max_over_first_axis(a, segment_info):
 
     """
     return jax.ops.segment_max(
-        data=a,
+        data=data,
         indices_are_sorted=True,
         **segment_info,
     )
@@ -231,18 +240,23 @@ def _segment_logsumexp(a, segment_info):
 # ======================================================================================
 
 
-def _determine_discrete_choice_axes(variable_info):
-    """Determine which axes of a state_choice_space correspond to discrete choices.
+def _determine_discrete_choice_axes(
+    variable_info: pd.DataFrame,
+) -> tuple[int, ...] | None:
+    """Determine which axes of a state choice space correspond to discrete choices.
 
     Args:
         variable_info (pd.DataFrame): DataFrame with information about the variables.
 
     Returns:
-        tuple[int]: Specifies which axes in a value function correspond to discrete
-            choices. If no axes correspond to discrete choices, returns None.
+        Optional[tuple[int, ...]]: A tuple of indices representing the axes in the value
+            function that correspond to discrete choices. Returns None if there are no
+            discrete choice axes.
 
     """
     has_sparse = variable_info["is_sparse"].any()
+
+    # List of dense variables excluding continuous choice variables.
     dense_vars = variable_info.query(
         "is_dense & ~(is_choice & is_continuous)",
     ).index.tolist()
@@ -253,7 +267,5 @@ def _determine_discrete_choice_axes(variable_info):
 
     choice_indices = tuple(i for i, ax in enumerate(axes) if ax in choice_vars)
 
-    if not choice_indices:
-        choice_indices = None
-
-    return choice_indices
+    # Return None if there are no discrete choice axes, otherwise return the indices.
+    return choice_indices if choice_indices else None

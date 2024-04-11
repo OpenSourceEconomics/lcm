@@ -5,11 +5,11 @@ import pandas as pd
 import pytest
 from lcm.discrete_problem import (
     _calculate_emax_extreme_value_shocks,
-    _calculate_emax_no_shocks,
     _determine_discrete_choice_axes,
     _segment_extreme_value_emax_over_first_axis,
     _segment_logsumexp,
     _segment_max_over_first_axis,
+    _solve_discrete_problem_no_shocks,
     get_solve_discrete_problem,
 )
 from numpy.testing import assert_array_almost_equal as aaae
@@ -176,7 +176,7 @@ def test_calculate_emax_no_shocks_illustrative():
 
     # Only choice axes
     # ==================================================================================
-    got = _calculate_emax_no_shocks(
+    got = _solve_discrete_problem_no_shocks(
         values,
         choice_axes=0,
         choice_segments=None,
@@ -186,7 +186,7 @@ def test_calculate_emax_no_shocks_illustrative():
 
     # Only choice segment
     # ==================================================================================
-    got = _calculate_emax_no_shocks(
+    got = _solve_discrete_problem_no_shocks(
         values,
         choice_axes=None,
         choice_segments={"segment_ids": jnp.array([0, 0, 1]), "num_segments": 2},
@@ -196,7 +196,7 @@ def test_calculate_emax_no_shocks_illustrative():
 
     # Choice axes and choice segment
     # ==================================================================================
-    got = _calculate_emax_no_shocks(
+    got = _solve_discrete_problem_no_shocks(
         values,
         choice_axes=1,
         choice_segments={"segment_ids": jnp.array([0, 0, 1]), "num_segments": 2},
