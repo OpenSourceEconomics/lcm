@@ -124,9 +124,7 @@ def _create_stochastic_transition_params(
     # ----------------------------------------------------------------------------------
     discrete_state_vars = set(variable_info.query("is_state & is_discrete").index)
 
-    invalid = set(stochastic_variables) - discrete_state_vars
-
-    if invalid:
+    if invalid := set(stochastic_variables) - discrete_state_vars:
         raise ValueError(
             f"The following variables are stochastic, but are not discrete state "
             f"variables: {invalid}. This is currently not supported.",
