@@ -27,7 +27,7 @@ import jax
 import jax.numpy as jnp
 
 
-def get_emax_calculator(
+def get_solve_discrete_problem(
     shock_type,
     variable_info,
     is_last_period,

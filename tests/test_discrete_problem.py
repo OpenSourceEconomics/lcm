@@ -3,14 +3,14 @@ from itertools import product
 import jax.numpy as jnp
 import pandas as pd
 import pytest
-from lcm.discrete_emax import (
+from lcm.discrete_problem import (
     _calculate_emax_extreme_value_shocks,
     _calculate_emax_no_shocks,
     _determine_discrete_choice_axes,
     _segment_extreme_value_emax_over_first_axis,
     _segment_logsumexp,
     _segment_max_over_first_axis,
-    get_emax_calculator,
+    get_solve_discrete_problem,
 )
 from numpy.testing import assert_array_almost_equal as aaae
 
@@ -41,7 +41,7 @@ def test_aggregation_without_shocks(values, segment_info, collapse, n_extra_axes
         n_extra_axes,
     )
 
-    calculator = get_emax_calculator(
+    calculator = get_solve_discrete_problem(
         shock_type=None,
         variable_info=var_info,
         is_last_period=False,
@@ -90,7 +90,7 @@ def test_aggregation_with_extreme_value_shocks(
         n_extra_axes,
     )
 
-    calculator = get_emax_calculator(
+    calculator = get_solve_discrete_problem(
         shock_type="extreme_value",
         variable_info=var_info,
         is_last_period=False,
@@ -144,7 +144,7 @@ def test_get_emax_calculator_illustrative():
         },
     )  # leads to choice_axes = [1]
 
-    emax_calculator = get_emax_calculator(
+    emax_calculator = get_solve_discrete_problem(
         shock_type=None,
         variable_info=variable_info,
         is_last_period=False,
