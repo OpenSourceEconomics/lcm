@@ -31,7 +31,7 @@ from lcm.typing import SegmentInfo
 
 def get_solve_discrete_problem(
     *,
-    shock_type: Literal[None, "extreme_value"],
+    shock_type: Literal["extreme_value"] | None,
     variable_info: pd.DataFrame,
     is_last_period: bool,
     choice_segments: SegmentInfo | None,
@@ -42,7 +42,7 @@ def get_solve_discrete_problem(
     The maximum is taken over the discrete choice variables in each state.
 
     Args:
-        shock_type (Literal[None, "extreme_value"]): Type of choice shock. Currently
+        shock_type (Literal["extreme_value"] | None): Type of choice shock. Currently
             only None is supported. Work for "extreme_value" is in progress.
         variable_info (pd.DataFrame): DataFrame with information about the variables.
         is_last_period (bool): Whether the function is created for the last period.
