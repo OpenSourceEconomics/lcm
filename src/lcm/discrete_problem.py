@@ -47,11 +47,8 @@ def get_solve_discrete_problem(
             progress.
         variable_info (pd.DataFrame): DataFrame with information about the variables.
         is_last_period (bool): Whether the function is created for the last period.
-        choice_segments (SegmentInfo): Dictionary with the entries "segment_ids" and
-            "num_segments". segment_ids are a 1d integer array that partitions the first
-            dimension of values into choice sets over which we need to aggregate.
-            "num_segments" is the number of choice sets. The segment_ids are assumed to
-            be sorted.
+        choice_segments (SegmentInfo): Contains segment information of sparse choices.
+            If None, there are no sparse choices.
         params (dict): Dictionary with model parameters.
 
     Returns:
@@ -94,17 +91,13 @@ def _solve_discrete_problem_no_shocks(
     """Aggregate conditional continuation values over discrete choices.
 
     Args:
-        cc_values (jax.Array): Array with conditional continuation values. Has one
-            dimensions per state and discrete choice variable.
+        cc_values (jax.Array): Array with conditional continuation values. For each
+            state and discrete choice variable, it has one axis.
         choice_axes (tuple[int, ...]): A tuple of indices representing the axes in the
             value function that correspond to discrete choices. Returns None if there
             are no discrete choice axes.
-        choice_segments (SegmentInfo): Dictionary with the entries "segment_ids" and
-            "num_segments". segment_ids are a 1d integer array that partitions the first
-            dimension of values into choice sets over which we need to aggregate.
-            "num_segments" is the number of choice sets. The segment_ids are assumed to
-            be sorted.
-        params (dict): Dictionary with model parameters.
+        choice_segments: See `get_solve_discrete_problem`.
+        params: See `get_solve_discrete_problem`.
 
     Returns:
         jax.Array: Array with aggregated continuation values. Has less dimensions than
