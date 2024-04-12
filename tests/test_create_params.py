@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import pytest
-from lcm.create_params import (
+from lcm.create_params_template import (
     _create_function_params,
     _create_stochastic_transition_params,
     create_params_template,
