@@ -8,7 +8,7 @@ from dags import get_ancestors
 from dags.signature import with_signature
 
 import lcm.grids as grids_module
-from lcm.create_params import create_params_template
+from lcm.create_params_template import create_params_template
 from lcm.function_evaluator import get_label_translator
 from lcm.functools import all_as_args, all_as_kwargs
 from lcm.interfaces import GridSpec, Model

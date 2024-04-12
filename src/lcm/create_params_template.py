@@ -1,4 +1,4 @@
-"""Create a parameters for a model specification."""
+"""Create a parameter template for a model specification."""
 
 import inspect
 from typing import Any
@@ -119,9 +119,8 @@ def _create_stochastic_transition_params(
     """
     stochastic_variables = variable_info.query("is_stochastic").index.tolist()
 
-    # ----------------------------------------------------------------------------------
     # Assert that all stochastic variables are discrete state variables
-    # ----------------------------------------------------------------------------------
+    # ==================================================================================
     discrete_state_vars = set(variable_info.query("is_state & is_discrete").index)
 
     if invalid := set(stochastic_variables) - discrete_state_vars:
@@ -130,9 +129,8 @@ def _create_stochastic_transition_params(
             f"variables: {invalid}. This is currently not supported.",
         )
 
-    # ----------------------------------------------------------------------------------
     # Create template matrices for stochastic transitions
-    # ----------------------------------------------------------------------------------
+    # ==================================================================================
 
     # Stochastic transition functions can only depend on discrete vars or '_period'.
     valid_vars = set(variable_info.query("is_discrete").index) | {"_period"}
@@ -161,9 +159,8 @@ def _create_stochastic_transition_params(
 
             stochastic_transition_params[var] = jnp.full(dimensions, jnp.nan)
 
-    # ----------------------------------------------------------------------------------
     # Raise an error if there are invalid arguments
-    # ----------------------------------------------------------------------------------
+    # ==================================================================================
     if invalid_dependencies:
         raise ValueError(
             f"Stochastic transition functions can only depend on discrete variables or "

@@ -73,9 +73,8 @@ def model_and_params():
     model_deterministic = get_model_config("only_discrete_vars_stochastic", n_periods=3)
     model_stochastic = get_model_config("only_discrete_vars_stochastic", n_periods=3)
 
-    # ----------------------------------------------------------------------------------
     # Overwrite health transition with simple stochastic version and deterministic one
-    # ----------------------------------------------------------------------------------
+    # ==================================================================================
     @lcm.mark.stochastic
     def next_health_stochastic(health):  # noqa: ARG001
         pass
