@@ -10,9 +10,8 @@ from tests.test_models.deterministic import get_model_config, get_params
 
 def test_regression_test():
     """Test that the output of lcm does not change."""
-    # ----------------------------------------------------------------------------------
     # Load generated output
-    # ----------------------------------------------------------------------------------
+    # ==================================================================================
     expected_simulate = pd.read_pickle(
         TEST_DATA.joinpath("regression_tests", "simulation.pkl"),
     )
@@ -21,9 +20,8 @@ def test_regression_test():
         TEST_DATA.joinpath("regression_tests", "solution.pkl"),
     )
 
-    # ----------------------------------------------------------------------------------
     # Generate current lcm ouput
-    # ----------------------------------------------------------------------------------
+    # ==================================================================================
     model_config = get_model_config("iskhakov_et_al_2017_stripped_down", n_periods=3)
 
     solve, _ = get_lcm_function(model=model_config, targets="solve")
@@ -47,8 +45,7 @@ def test_regression_test():
         },
     )
 
-    # ----------------------------------------------------------------------------------
     # Compare
-    # ----------------------------------------------------------------------------------
+    # ==================================================================================
     aaae(expected_solve, got_solve, decimal=5)
     assert_frame_equal(expected_simulate, got_simulate)
