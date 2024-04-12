@@ -4,12 +4,12 @@ from itertools import product
 import jax.numpy as jnp
 import pandas as pd
 import pytest
+from jax.ops import segment_max
 from lcm.discrete_problem import (
     _calculate_emax_extreme_value_shocks,
     _determine_dense_discrete_choice_axes,
     _segment_extreme_value_emax_over_first_axis,
     _segment_logsumexp,
-    _segment_max_over_first_axis,
     _solve_discrete_problem_no_shocks,
     get_solve_discrete_problem,
 )
@@ -266,7 +266,7 @@ def test_segment_max_over_first_axis_illustrative():
         "segment_ids": jnp.array([0, 0, 1, 1]),
         "num_segments": 2,
     }
-    got = _segment_max_over_first_axis(a, segment_info=segment_info)
+    got = segment_max(a, indices_are_sorted=True, **segment_info)
     expected = jnp.array([1, 3])
     aaae(got, expected)
 

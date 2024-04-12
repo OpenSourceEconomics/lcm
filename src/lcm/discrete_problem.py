@@ -1,4 +1,4 @@
-"""Functions that aggregate the conditional continuation values over discrete choices.
+"""Functions that reduce the conditional continuation values over discrete choices.
 
 By conditional continuation value we mean continuation values conditional on a discrete
 choice, i.e. the result of solving the continuous choice problem conditional on the
@@ -25,6 +25,7 @@ import jax
 import jax.numpy as jnp
 import pandas as pd
 from jax import Array
+from jax.ops import segment_max
 
 from lcm.typing import SegmentInfo
 
@@ -54,7 +55,7 @@ def get_solve_discrete_problem(
     Returns:
         callable: Function that calculates the expected maximum of the conditional
             continuation values. The function depends on `cc_values` (jax.Array), the
-            conditional continuation values, and returns the aggregated values.
+            conditional continuation values, and returns the reduced values.
 
     """
     if is_last_period:
@@ -100,7 +101,7 @@ def _solve_discrete_problem_no_shocks(
         params: See `get_solve_discrete_problem`.
 
     Returns:
-        jax.Array: Array with aggregated continuation values. Has less dimensions than
+        jax.Array: Array with reduced continuation values. Has less dimensions than
             cc_values if choice_axes is not None and is shorter in the first dimension
             if choice_segments is not None.
 
@@ -109,37 +110,13 @@ def _solve_discrete_problem_no_shocks(
     if choice_axes is not None:
         out = out.max(axis=choice_axes)
     if choice_segments is not None:
-        out = _segment_max_over_first_axis(out, choice_segments)
+        out = segment_max(
+            data=out,
+            indices_are_sorted=True,
+            **choice_segments,
+        )
 
     return out
-
-
-def _segment_max_over_first_axis(
-    data: Array,
-    segment_info: SegmentInfo,
-) -> Array:
-    """Calculate a segment_max over the first axis of data.
-
-    Wrapper around ``jax.ops.segment_max``.
-
-    Args:
-        data (jax.Array): Multidimensional jax array.
-        segment_info (SegmentInfo): Dictionary with the entries "segment_ids" and
-            "num_segments". segment_ids are a 1d integer array that partitions the
-            first dimension of `data` into segments over which we need to aggregate.
-            "num_segments" is the number of segments. The segment_ids are assumed to be
-            sorted.
-
-    Returns:
-        jax.Array: An array with shape (num_segments,) + data.shape[1:] representing the
-            segment maximums.
-
-    """
-    return jax.ops.segment_max(
-        data=data,
-        indices_are_sorted=True,
-        **segment_info,
-    )
 
 
 # ======================================================================================
