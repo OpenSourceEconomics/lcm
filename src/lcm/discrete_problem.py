@@ -248,6 +248,12 @@ def _determine_dense_discrete_choice_axes(
 ) -> tuple[int, ...] | None:
     """Get axes of a state choice space that correspond to dense discrete choices.
 
+    Note: The dense choice axes determine over which axes we aggregate the conditional
+    continuation values using a non-segmented operation. The axes ordering of the
+    conditional continuation value array is given by [sparse_variable, dense_variables].
+    The dense continuous choice dimension is already reduced as we are working with
+    the conditional continuation values.
+
     Args:
         variable_info (pd.DataFrame): DataFrame with information about the variables.
 
