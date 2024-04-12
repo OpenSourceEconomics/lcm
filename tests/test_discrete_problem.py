@@ -48,7 +48,7 @@ def test_aggregation_without_shocks(cc_values, segment_info, collapse, n_extra_a
     )
 
     solve_discrete_problem = get_solve_discrete_problem(
-        shock_type=None,
+        random_utility_shock_type=None,
         variable_info=var_info,
         is_last_period=False,
         choice_segments=segment_info,
@@ -153,7 +153,7 @@ def test_get_solve_discrete_problem_illustrative():
     )  # leads to choice_axes = [1]
 
     solve_discrete_problem = get_solve_discrete_problem(
-        shock_type=None,
+        random_utility_shock_type=None,
         variable_info=variable_info,
         is_last_period=False,
         choice_segments=None,

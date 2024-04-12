@@ -31,7 +31,7 @@ from lcm.typing import SegmentInfo
 
 def get_solve_discrete_problem(
     *,
-    shock_type: Literal["extreme_value"] | None,
+    random_utility_shock_type: Literal["extreme_value"] | None,
     variable_info: pd.DataFrame,
     is_last_period: bool,
     choice_segments: SegmentInfo | None,
@@ -42,8 +42,9 @@ def get_solve_discrete_problem(
     The maximum is taken over the discrete and sparse choice variables in each state.
 
     Args:
-        shock_type (Literal["extreme_value"] | None): Type of choice shock. Currently
-            only None is supported. Work for "extreme_value" is in progress.
+        random_utility_shock_type (Literal["extreme_value"] | None): Type of choice
+            shock. Currently only None is supported. Work for "extreme_value" is in
+            progress.
         variable_info (pd.DataFrame): DataFrame with information about the variables.
         is_last_period (bool): Whether the function is created for the last period.
         choice_segments (SegmentInfo): Dictionary with the entries "segment_ids" and
@@ -64,12 +65,12 @@ def get_solve_discrete_problem(
 
     choice_axes = _determine_dense_discrete_choice_axes(variable_info)
 
-    if shock_type is None:
+    if random_utility_shock_type is None:
         func = _solve_discrete_problem_no_shocks
-    elif shock_type == "extreme_value":
+    elif random_utility_shock_type == "extreme_value":
         raise NotImplementedError("Extreme value shocks are not yet implemented.")
     else:
-        raise ValueError(f"Invalid shock_type: {shock_type}.")
+        raise ValueError(f"Invalid shock_type: {random_utility_shock_type}.")
 
     return partial(
         func,

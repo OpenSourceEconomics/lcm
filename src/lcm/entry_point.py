@@ -152,7 +152,7 @@ def get_lcm_function(
         _shock_type = _mod.shocks.get("additive_utility_shock", None)
 
         calculator = get_solve_discrete_problem(
-            shock_type=_shock_type,
+            random_utility_shock_type=_shock_type,
             variable_info=_mod.variable_info,
             is_last_period=is_last_period,
             choice_segments=choice_segments[period],
