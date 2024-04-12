@@ -17,7 +17,8 @@ from numpy.testing import assert_array_almost_equal as aaae
 
 
 @pytest.fixture()
-def values():
+def cc_values():
+    """Conditional continuation values."""
     v_t = jnp.arange(20).reshape(2, 2, 5) / 2
     # reuse old test case from when segment axis was last
     return jnp.transpose(v_t, axes=(2, 0, 1))
@@ -39,9 +40,9 @@ test_cases = list(product([True, False], range(3)))
 
 
 @pytest.mark.parametrize(("collapse", "n_extra_axes"), test_cases)
-def test_aggregation_without_shocks(values, segment_info, collapse, n_extra_axes):
-    values, var_info = _get_reshaped_values_and_variable_info(
-        values,
+def test_aggregation_without_shocks(cc_values, segment_info, collapse, n_extra_axes):
+    cc_values, var_info = _get_reshaped_cc_values_and_variable_info(
+        cc_values,
         collapse,
         n_extra_axes,
     )
@@ -54,7 +55,7 @@ def test_aggregation_without_shocks(values, segment_info, collapse, n_extra_axes
         params={},
     )
 
-    calculated = solve_discrete_problem(values)
+    calculated = solve_discrete_problem(cc_values)
 
     expected = jnp.array([8, 9.5])
 
@@ -84,15 +85,15 @@ for scale, exp in zip(scaling_factors, expected_results, strict=True):
 
 @pytest.mark.parametrize(("scale", "expected", "collapse", "n_extra_axes"), test_cases)
 def test_aggregation_with_extreme_value_shocks(
-    values,
+    cc_values,
     segment_info,
     scale,
     expected,
     collapse,
     n_extra_axes,
 ):
-    values, var_info = _get_reshaped_values_and_variable_info(
-        values,
+    cc_values, var_info = _get_reshaped_cc_values_and_variable_info(
+        cc_values,
         collapse,
         n_extra_axes,
     )
@@ -105,15 +106,15 @@ def test_aggregation_with_extreme_value_shocks(
         params={"additive_utility_shock": {"scale": scale}},
     )
 
-    calculated = solve_discrete_problem(values)
+    calculated = solve_discrete_problem(cc_values)
 
     expected_shape = tuple([2] + [1] * n_extra_axes)
     assert calculated.shape == expected_shape
     aaae(calculated.flatten(), jnp.array(expected), decimal=5)
 
 
-def _get_reshaped_values_and_variable_info(values, collapse, n_extra_axes):
-    n_variables = values.ndim + 1 + n_extra_axes - collapse
+def _get_reshaped_cc_values_and_variable_info(cc_values, collapse, n_extra_axes):
+    n_variables = cc_values.ndim + 1 + n_extra_axes - collapse
     n_agg_axes = 1 if collapse else 2
     names = [f"v{i}" for i in range(n_variables)]
     is_choice = [False, True] + [False] * n_extra_axes + [True] * n_agg_axes
@@ -125,12 +126,14 @@ def _get_reshaped_values_and_variable_info(values, collapse, n_extra_axes):
     var_info["is_continuous"] = False
 
     if collapse:
-        values = values.reshape(5, 4)
+        cc_values = cc_values.reshape(5, 4)
 
-    new_shape = tuple([values.shape[0]] + [1] * n_extra_axes + list(values.shape[1:]))
-    values = values.reshape(new_shape)
+    new_shape = tuple(
+        [cc_values.shape[0]] + [1] * n_extra_axes + list(cc_values.shape[1:]),
+    )
+    cc_values = cc_values.reshape(new_shape)
 
-    return values, var_info
+    return cc_values, var_info
 
 
 # ======================================================================================
@@ -149,7 +152,7 @@ def test_get_solve_discrete_problem_illustrative():
         },
     )  # leads to choice_axes = [1]
 
-    emax_calculator = get_solve_discrete_problem(
+    solve_discrete_problem = get_solve_discrete_problem(
         shock_type=None,
         variable_info=variable_info,
         is_last_period=False,
@@ -157,7 +160,7 @@ def test_get_solve_discrete_problem_illustrative():
         params=None,
     )
 
-    values = jnp.array(
+    cc_values = jnp.array(
         [
             [0, 1],
             [2, 3],
@@ -165,13 +168,13 @@ def test_get_solve_discrete_problem_illustrative():
         ],
     )
 
-    got = emax_calculator(values)
+    got = solve_discrete_problem(cc_values)
     aaae(got, jnp.array([1, 3, 5]))
 
 
 @pytest.mark.illustrative()
 def test_solve_discrete_problem_no_shocks_illustrative():
-    values = jnp.array(
+    cc_values = jnp.array(
         [
             [0, 1],
             [2, 3],
@@ -182,7 +185,7 @@ def test_solve_discrete_problem_no_shocks_illustrative():
     # Only choice axes
     # ==================================================================================
     got = _solve_discrete_problem_no_shocks(
-        values,
+        cc_values,
         choice_axes=0,
         choice_segments=None,
         params=None,
@@ -192,7 +195,7 @@ def test_solve_discrete_problem_no_shocks_illustrative():
     # Only choice segment
     # ==================================================================================
     got = _solve_discrete_problem_no_shocks(
-        values,
+        cc_values,
         choice_axes=None,
         choice_segments={"segment_ids": jnp.array([0, 0, 1]), "num_segments": 2},
         params=None,
@@ -202,7 +205,7 @@ def test_solve_discrete_problem_no_shocks_illustrative():
     # Choice axes and choice segment
     # ==================================================================================
     got = _solve_discrete_problem_no_shocks(
-        values,
+        cc_values,
         choice_axes=1,
         choice_segments={"segment_ids": jnp.array([0, 0, 1]), "num_segments": 2},
         params=None,
@@ -212,7 +215,7 @@ def test_solve_discrete_problem_no_shocks_illustrative():
 
 @pytest.mark.illustrative()
 def test_calculate_emax_extreme_value_shocks_illustrative():
-    values = jnp.array(
+    cc_values = jnp.array(
         [
             [0, 1],
             [2, 3],
@@ -223,7 +226,7 @@ def test_calculate_emax_extreme_value_shocks_illustrative():
     # Only choice axes
     # ==================================================================================
     got = _calculate_emax_extreme_value_shocks(
-        values,
+        cc_values,
         choice_axes=0,
         choice_segments=None,
         params={"additive_utility_shock": {"scale": 0.1}},
@@ -233,7 +236,7 @@ def test_calculate_emax_extreme_value_shocks_illustrative():
     # Only choice segment
     # ==================================================================================
     got = _calculate_emax_extreme_value_shocks(
-        values,
+        cc_values,
         choice_axes=None,
         choice_segments={"segment_ids": jnp.array([0, 0, 1]), "num_segments": 2},
         params={"additive_utility_shock": {"scale": 0.1}},
@@ -243,7 +246,7 @@ def test_calculate_emax_extreme_value_shocks_illustrative():
     # Choice axes and choice segment
     # ==================================================================================
     got = _calculate_emax_extreme_value_shocks(
-        values,
+        cc_values,
         choice_axes=1,
         choice_segments={"segment_ids": jnp.array([0, 0, 1]), "num_segments": 2},
         params={"additive_utility_shock": {"scale": 0.1}},
