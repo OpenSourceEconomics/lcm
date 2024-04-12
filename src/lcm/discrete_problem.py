@@ -4,7 +4,7 @@ By conditional continuation value we mean continuation values conditional on a d
 choice, i.e. the result of solving the continuous choice problem conditional on the
 discrete choice. These are also _conditional_ on a given state.
 
-By aggregate we mean calculating the expected maximum of the continuation values, based
+By reduce we mean calculating the expected maximum of the continuation values, based
 on the distribution of utility shocks. Currently we support no shocks. In the future,
 we will at least support IID Extreme Value Type 1 shocks.
 
@@ -89,7 +89,7 @@ def _solve_discrete_problem_no_shocks(
     choice_segments: SegmentInfo | None,
     params: dict[str, Any],  # noqa: ARG001
 ) -> Array:
-    """Aggregate conditional continuation values over discrete choices.
+    """Reduce conditional continuation values over discrete choices.
 
     Args:
         cc_values (jax.Array): Array with conditional continuation values. For each
@@ -219,7 +219,7 @@ def _determine_dense_discrete_choice_axes(
 ) -> tuple[int, ...] | None:
     """Get axes of a state choice space that correspond to dense discrete choices.
 
-    Note: The dense choice axes determine over which axes we aggregate the conditional
+    Note: The dense choice axes determine over which axes we reduce the conditional
     continuation values using a non-segmented operation. The axes ordering of the
     conditional continuation value array is given by [sparse_variable, dense_variables].
     The dense continuous choice dimension is already reduced as we are working with
