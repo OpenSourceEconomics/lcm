@@ -39,7 +39,7 @@ def get_solve_discrete_problem(
 ) -> Callable[[Array], Array]:
     """Get function that computes the expected max. of conditional continuation values.
 
-    The maximum is taken over the discrete choice variables in each state.
+    The maximum is taken over the discrete and sparse choice variables in each state.
 
     Args:
         shock_type (Literal["extreme_value"] | None): Type of choice shock. Currently
