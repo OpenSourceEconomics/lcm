@@ -62,7 +62,7 @@ def get_solve_discrete_problem(
     if is_last_period:
         variable_info = variable_info.query("~is_auxiliary")
 
-    choice_axes = _determine_discrete_choice_axes(variable_info)
+    choice_axes = _determine_dense_discrete_choice_axes(variable_info)
 
     if shock_type is None:
         func = _solve_discrete_problem_no_shocks
@@ -111,10 +111,11 @@ def _solve_discrete_problem_no_shocks(
             if choice_segments is not None.
 
     """
+    out = cc_values
     if choice_axes is not None:
-        out = cc_values.max(axis=choice_axes)
+        out = out.max(axis=choice_axes)
     if choice_segments is not None:
-        out = _segment_max_over_first_axis(cc_values, choice_segments)
+        out = _segment_max_over_first_axis(out, choice_segments)
 
     return out
 
@@ -242,7 +243,7 @@ def _segment_logsumexp(a, segment_info):
 # ======================================================================================
 
 
-def _determine_discrete_choice_axes(
+def _determine_dense_discrete_choice_axes(
     variable_info: pd.DataFrame,
 ) -> tuple[int, ...] | None:
     """Get axes of a state choice space that correspond to dense discrete choices.
@@ -251,7 +252,7 @@ def _determine_discrete_choice_axes(
         variable_info (pd.DataFrame): DataFrame with information about the variables.
 
     Returns:
-        Optional[tuple[int, ...]]: A tuple of indices representing the axes in the value
+        tuple[int, ...] | None: A tuple of indices representing the axes in the value
             function that correspond to discrete choices. Returns None if there are no
             discrete choice axes.
 
