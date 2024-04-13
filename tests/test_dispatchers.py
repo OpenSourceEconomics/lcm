@@ -238,12 +238,12 @@ def test_spacemap_all_arguments_mapped(setup_spacemap, expected_spacemap, dense_
     ("error_msg", "dense_vars", "sparse_vars"),
     [
         (
-            "dense_vars and sparse_vars overlap",
+            "Dense and sparse variables must be disjoint. Overlap: {'a'}",
             ["a", "b"],
             ["a", "c", "d"],
         ),
         (
-            "Same argument provided more than once.",
+            "Same argument provided more than once in dense variables: {'a'}",
             ["a", "a", "b"],
             ["c", "d"],
         ),

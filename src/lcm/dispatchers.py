@@ -52,14 +52,20 @@ def spacemap(
     """
     # Check inputs
     # ==================================================================================
-    if not set(dense_vars).isdisjoint(sparse_vars):
-        raise ValueError("dense_vars and sparse_vars overlap.")
+    if overlap := set(dense_vars).intersection(sparse_vars):
+        raise ValueError(
+            f"Dense and sparse variables must be disjoint. Overlap: {overlap}",
+        )
 
-    if len(set(dense_vars)) < len(dense_vars):
-        raise ValueError("Same argument provided more than once in dense variables.")
+    if duplicates := {v for v in dense_vars if dense_vars.count(v) > 1}:
+        raise ValueError(
+            f"Same argument provided more than once in dense variables: {duplicates}",
+        )
 
-    if len(set(sparse_vars)) < len(sparse_vars):
-        raise ValueError("Same argument provided more than once in sparse variables.")
+    if duplicates := {v for v in sparse_vars if sparse_vars.count(v) > 1}:
+        raise ValueError(
+            f"Same argument provided more than once in sparse variables: {duplicates}",
+        )
 
     # Preparations
     # ==================================================================================
@@ -68,25 +74,25 @@ def spacemap(
     signature = inspect.signature(func)
     parameters = list(signature.parameters)
 
-    sparse_positions = [parameters.index(cv) for cv in sparse_vars]
+    positions_of_sparse_vars = [parameters.index(cv) for cv in sparse_vars]
 
-    sparse_in_axes = []  # type: list[int | None]
+    in_axes_for_sparse_vars = []  # type: list[int | None]
     for p in range(len(parameters)):
-        if p in sparse_positions:
-            sparse_in_axes.append(0)
+        if p in positions_of_sparse_vars:
+            in_axes_for_sparse_vars.append(0)
         else:
-            sparse_in_axes.append(None)
+            in_axes_for_sparse_vars.append(None)
 
     # Apply vmap for sparse and _product_map for dense variables
     # ==================================================================================
     if not sparse_vars:
         vmapped = _product_map(func, dense_vars)
     elif dense_first:
-        vmapped = vmap(func, in_axes=sparse_in_axes)
+        vmapped = vmap(func, in_axes=in_axes_for_sparse_vars)
         vmapped = _product_map(vmapped, dense_vars)
     else:
         vmapped = _product_map(func, dense_vars)
-        vmapped = vmap(vmapped, in_axes=sparse_in_axes)
+        vmapped = vmap(vmapped, in_axes=in_axes_for_sparse_vars)
 
     # This raises a mypy error but is perfectly fine to do. See
     # https://github.com/python/mypy/issues/12472
@@ -96,7 +102,7 @@ def spacemap(
 
 
 def productmap(func: F, variables: list[str]) -> F:
-    """Apply vmap such that func is evaluated on the cartesian product of variables.
+    """Apply vmap such that func is evaluated on the Cartesian product of variables.
 
     This is achieved by an iterative application of vmap.
 
@@ -105,7 +111,7 @@ def productmap(func: F, variables: list[str]) -> F:
 
     Args:
         func (callable): The function to be dispatched.
-        variables (list): List with names of arguments that over which the cartesian
+        variables (list): List with names of arguments that over which the Cartesian
             product should be formed.
 
     Returns:
@@ -122,8 +128,10 @@ def productmap(func: F, variables: list[str]) -> F:
     """
     func = allow_args(func)  # vmap cannot deal with keyword-only arguments
 
-    if len(set(variables)) < len(variables):
-        raise ValueError("Same argument provided more than once.")
+    if duplicates := {v for v in variables if variables.count(v) > 1}:
+        raise ValueError(
+            f"Same argument provided more than once in variables: {duplicates}",
+        )
 
     signature = inspect.signature(func)
     vmapped = _product_map(func, variables)
@@ -157,8 +165,10 @@ def vmap_1d(func: F, variables: list[str]) -> F:
             pytree are as described above but there might be additional dimensions.
 
     """
-    if len(set(variables)) < len(variables):
-        raise ValueError("Same argument provided more than once.")
+    if duplicates := {v for v in variables if variables.count(v) > 1}:
+        raise ValueError(
+            f"Same argument provided more than once in variables: {duplicates}",
+        )
 
     signature = inspect.signature(func)
     parameters = list(signature.parameters)
@@ -182,7 +192,7 @@ def vmap_1d(func: F, variables: list[str]) -> F:
 
 
 def _product_map(func: F, product_axes: list[str]) -> F:
-    """Map func over the cartesian product of product_axes.
+    """Map func over the Cartesian product of product_axes.
 
     Args:
         func (callable): The function to be dispatched.
