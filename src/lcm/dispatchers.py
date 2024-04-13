@@ -14,7 +14,7 @@ def spacemap(
     dense_vars: list[str],
     sparse_vars: list[str],
     *,
-    dense_first: bool,
+    put_dense_first: bool,
 ) -> F:
     """Apply vmap such that func is evaluated on a space of dense and sparse variables.
 
@@ -27,13 +27,10 @@ def spacemap(
     Args:
         func (callable): The function to be dispatched.
         dense_vars (list): Names of the dense variables, i.e. those that are stored
-            as arrays of possible values in the grid, because the possible values
-            of those variables do not depend on the value of other variables.
+            as arrays of possible values in the grid.
         sparse_vars (list): Names of the sparse variables, i.e. those that are stored
-            as arrays of possible combinations of variables in the grid because the
-            possible values of these variables does depend on the value of other
-            variables.
-        dense_first (bool): Whether the dense or sparse dimensions should come first
+            as arrays of possible combinations of variables in the grid.
+        put_dense_first (bool): Whether the dense or sparse dimensions should come first
             in the output of the dispatched function.
 
 
@@ -44,7 +41,7 @@ def spacemap(
             jax.numpy.ndarray with k + 1 dimensions, where k is the length of
             ``dense_vars`` and the additional dimension corresponds to the
             ``sparse_vars``. The order of the dimensions is determined by the order of
-            ``dense_vars`` as well as the ``dense_first`` argument.
+            ``dense_vars`` as well as the ``put_dense_first`` argument.
             If the output of ``func`` is a jax pytree, the usual jax behavior applies,
             i.e. the leading dimensions of all arrays in the pytree are as described
             above but there might be additional dimensions.
@@ -74,25 +71,26 @@ def spacemap(
     signature = inspect.signature(func)
     parameters = list(signature.parameters)
 
-    positions_of_sparse_vars = [parameters.index(cv) for cv in sparse_vars]
+    positions_of_sparse_vars = [parameters.index(sv) for sv in sparse_vars]
 
-    in_axes_for_sparse_vars = []  # type: list[int | None]
-    for p in range(len(parameters)):
-        if p in positions_of_sparse_vars:
-            in_axes_for_sparse_vars.append(0)
-        else:
-            in_axes_for_sparse_vars.append(None)
+    # Create in_axes to apply vmap over sparse variables. This has one entry for each
+    # argument of func, indicating whether the argument should be mapped over or not.
+    # None means that the argument should not be mapped over, 0 means that it should be
+    # mapped over the leading axis of the input.
+    in_axes_sparse_vmap = [None] * len(parameters)  # type: list[int | None]
+    for p in positions_of_sparse_vars:
+        in_axes_sparse_vmap[p] = 0
 
     # Apply vmap for sparse and _product_map for dense variables
     # ==================================================================================
     if not sparse_vars:
-        vmapped = _product_map(func, dense_vars)
-    elif dense_first:
-        vmapped = vmap(func, in_axes=in_axes_for_sparse_vars)
-        vmapped = _product_map(vmapped, dense_vars)
+        vmapped = _base_productmap(func, dense_vars)
+    elif put_dense_first:
+        vmapped = vmap(func, in_axes=in_axes_sparse_vmap)
+        vmapped = _base_productmap(vmapped, dense_vars)
     else:
-        vmapped = _product_map(func, dense_vars)
-        vmapped = vmap(vmapped, in_axes=in_axes_for_sparse_vars)
+        vmapped = _base_productmap(func, dense_vars)
+        vmapped = vmap(vmapped, in_axes=in_axes_sparse_vmap)
 
     # This raises a mypy error but is perfectly fine to do. See
     # https://github.com/python/mypy/issues/12472
@@ -106,8 +104,8 @@ def productmap(func: F, variables: list[str]) -> F:
 
     This is achieved by an iterative application of vmap.
 
-    In contrast to vmap, productmap preserves the function signature and allows the
-    function to be called with keyword arguments.
+    In contrast to _base_productmap, productmap preserves the function signature and
+    allows the function to be called with keyword arguments.
 
     Args:
         func (callable): The function to be dispatched.
@@ -134,7 +132,7 @@ def productmap(func: F, variables: list[str]) -> F:
         )
 
     signature = inspect.signature(func)
-    vmapped = _product_map(func, variables)
+    vmapped = _base_productmap(func, variables)
 
     # This raises a mypy error but is perfectly fine to do. See
     # https://github.com/python/mypy/issues/12472
@@ -175,12 +173,13 @@ def vmap_1d(func: F, variables: list[str]) -> F:
 
     positions = [parameters.index(var) for var in variables]
 
-    in_axes = []  # type: list[int | None]
-    for p in range(len(parameters)):
-        if p in positions:
-            in_axes.append(0)
-        else:
-            in_axes.append(None)
+    # Create in_axes to apply vmap over variables. This has one entry for each argument
+    # of func, indicating whether the argument should be mapped over or not. None means
+    # that the argument should not be mapped over, 0 means that it should be mapped over
+    # the leading axis of the input.
+    in_axes = [None] * len(parameters)  # type: list[int | None]
+    for p in positions:
+        in_axes[p] = 0
 
     vmapped = vmap(func, in_axes=in_axes)
 
@@ -191,11 +190,15 @@ def vmap_1d(func: F, variables: list[str]) -> F:
     return allow_kwargs(vmapped)
 
 
-def _product_map(func: F, product_axes: list[str]) -> F:
+def _base_productmap(func: F, product_axes: list[str]) -> F:
     """Map func over the Cartesian product of product_axes.
 
+    Like vmap, this function does not preserve the function signature and does not allow
+    the function to be called with keyword arguments.
+
     Args:
-        func (callable): The function to be dispatched.
+        func (callable): The function to be dispatched. Cannot have keyword-only
+            arguments.
         product_axes (list): List with names of arguments over which we apply vmap.
 
     Returns:
