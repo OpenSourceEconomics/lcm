@@ -1,11 +1,21 @@
 import inspect
+from collections.abc import Callable
+from typing import TypeVar
 
 from jax import vmap
 
 from lcm.functools import allow_args, allow_kwargs
 
+F = TypeVar("F", bound=Callable)
 
-def spacemap(func, dense_vars, sparse_vars, *, dense_first):
+
+def spacemap(
+    func: F,
+    dense_vars: list[str],
+    sparse_vars: list[str],
+    *,
+    dense_first: bool,
+) -> F:
     """Apply vmap such that func is evaluated on a space of dense and sparse variables.
 
     This is achieved by applying a product map for all dense_vars and a vmap for the
@@ -40,25 +50,24 @@ def spacemap(func, dense_vars, sparse_vars, *, dense_first):
             above but there might be additional dimensions.
 
     """
-    func = allow_args(func)  # vmap cannot deal with keyword-only arguments
-
+    # Check inputs
+    # ==================================================================================
     if not set(dense_vars).isdisjoint(sparse_vars):
         raise ValueError("dense_vars and sparse_vars overlap.")
 
-    _all_variables = dense_vars + sparse_vars
-    if len(_all_variables) != len(set(_all_variables)):
-        raise ValueError("Same argument provided more than once.")
+    if len(set(dense_vars)) < len(dense_vars):
+        raise ValueError("Same argument provided more than once in dense variables.")
+
+    if len(set(sparse_vars)) < len(sparse_vars):
+        raise ValueError("Same argument provided more than once in sparse variables.")
+
+    func = allow_args(func)  # vmap cannot deal with keyword-only arguments
 
     signature = inspect.signature(func)
     parameters = list(signature.parameters)
 
     positions = [parameters.index(cv) for cv in sparse_vars]
-    in_axes = []
-    for i in range(len(parameters)):
-        if i in positions:
-            in_axes.append(0)
-        else:
-            in_axes.append(None)
+    in_axes = [0 if p in positions else None for p in range(len(parameters))]
 
     if not sparse_vars:
         vmapped = _product_map(func, dense_vars)
@@ -69,12 +78,14 @@ def spacemap(func, dense_vars, sparse_vars, *, dense_first):
         vmapped = _product_map(func, dense_vars)
         vmapped = vmap(vmapped, in_axes=in_axes)
 
-    vmapped.__signature__ = signature
+    # This raises a mypy error but is perfectly fine to do. See
+    # https://github.com/python/mypy/issues/12472
+    vmapped.__signature__ = signature  # type: ignore[attr-defined]
 
     return allow_kwargs(vmapped)
 
 
-def productmap(func, variables):
+def productmap(func: F, variables: list[str]) -> F:
     """Apply vmap such that func is evaluated on the cartesian product of product_axes.
 
     This is achieved by an iterative application of vmap.
@@ -106,12 +117,15 @@ def productmap(func, variables):
 
     signature = inspect.signature(func)
     vmapped = _product_map(func, variables)
-    vmapped.__signature__ = signature
+
+    # This raises a mypy error but is perfectly fine to do. See
+    # https://github.com/python/mypy/issues/12472
+    vmapped.__signature__ = signature  # type: ignore[attr-defined]
 
     return allow_kwargs(vmapped)
 
 
-def vmap_1d(func, variables):
+def vmap_1d(func: F, variables: list[str]) -> F:
     """Apply vmap such that func is mapped over the specified variables.
 
     In contrast to vmap, vmap_1d preserves the function signature and allows the
@@ -141,17 +155,18 @@ def vmap_1d(func, variables):
 
     positions = [parameters.index(var) for var in variables]
 
-    in_axes = len(parameters) * [None]
-    for pos in positions:
-        in_axes[pos] = 0
+    in_axes = [0 if p in positions else None for p in range(len(parameters))]
 
     vmapped = vmap(func, in_axes=in_axes)
-    vmapped.__signature__ = signature
+
+    # This raises a mypy error but is perfectly fine to do. See
+    # https://github.com/python/mypy/issues/12472
+    vmapped.__signature__ = signature  # type: ignore[attr-defined]
 
     return allow_kwargs(vmapped)
 
 
-def _product_map(func, product_axes):
+def _product_map(func: F, product_axes: list[str] | None) -> F:
     """Do actual product map without signature changes.
 
     Args:
@@ -171,7 +186,7 @@ def _product_map(func, product_axes):
 
     vmap_specs = []
     for pos in reversed(positions):
-        spec = [None] * len(parameters)
+        spec = [None] * len(parameters)  # type: list[int | None]
         spec[pos] = 0
         vmap_specs.append(spec)
 
