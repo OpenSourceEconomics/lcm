@@ -77,20 +77,20 @@ def spacemap(
     # argument of func, indicating whether the argument should be mapped over or not.
     # None means that the argument should not be mapped over, 0 means that it should be
     # mapped over the leading axis of the input.
-    in_axes_sparse_vmap = [None] * len(parameters)  # type: list[int | None]
+    in_axes_for_vmap = [None] * len(parameters)  # type: list[int | None]
     for p in positions_of_sparse_vars:
-        in_axes_sparse_vmap[p] = 0
+        in_axes_for_vmap[p] = 0
 
     # Apply vmap for sparse and _product_map for dense variables
     # ==================================================================================
     if not sparse_vars:
         vmapped = _base_productmap(func, dense_vars)
     elif put_dense_first:
-        vmapped = vmap(func, in_axes=in_axes_sparse_vmap)
+        vmapped = vmap(func, in_axes=in_axes_for_vmap)
         vmapped = _base_productmap(vmapped, dense_vars)
     else:
         vmapped = _base_productmap(func, dense_vars)
-        vmapped = vmap(vmapped, in_axes=in_axes_sparse_vmap)
+        vmapped = vmap(vmapped, in_axes=in_axes_for_vmap)
 
     # This raises a mypy error but is perfectly fine to do. See
     # https://github.com/python/mypy/issues/12472
@@ -177,11 +177,11 @@ def vmap_1d(func: F, variables: list[str]) -> F:
     # of func, indicating whether the argument should be mapped over or not. None means
     # that the argument should not be mapped over, 0 means that it should be mapped over
     # the leading axis of the input.
-    in_axes = [None] * len(parameters)  # type: list[int | None]
+    in_axes_for_vmap = [None] * len(parameters)  # type: list[int | None]
     for p in positions:
-        in_axes[p] = 0
+        in_axes_for_vmap[p] = 0
 
-    vmapped = vmap(func, in_axes=in_axes)
+    vmapped = vmap(func, in_axes=in_axes_for_vmap)
 
     # This raises a mypy error but is perfectly fine to do. See
     # https://github.com/python/mypy/issues/12472
