@@ -54,47 +54,31 @@ def spacemap(
             f"Dense and sparse variables must be disjoint. Overlap: {overlap}",
         )
 
+    # We do need to check duplicates in sparse variables, because this will be done
+    # by the vmap_1d call
     if duplicates := {v for v in dense_vars if dense_vars.count(v) > 1}:
         raise ValueError(
             f"Same argument provided more than once in dense variables: {duplicates}",
-        )
-
-    if duplicates := {v for v in sparse_vars if sparse_vars.count(v) > 1}:
-        raise ValueError(
-            f"Same argument provided more than once in sparse variables: {duplicates}",
         )
 
     # Preparations
     # ==================================================================================
     func = allow_args(func)  # vmap cannot deal with keyword-only arguments
 
-    signature = inspect.signature(func)
-    parameters = list(signature.parameters)
-
-    positions_of_sparse_vars = [parameters.index(sv) for sv in sparse_vars]
-
-    # Create in_axes to apply vmap over sparse variables. This has one entry for each
-    # argument of func, indicating whether the argument should be mapped over or not.
-    # None means that the argument should not be mapped over, 0 means that it should be
-    # mapped over the leading axis of the input.
-    in_axes_for_vmap = [None] * len(parameters)  # type: list[int | None]
-    for p in positions_of_sparse_vars:
-        in_axes_for_vmap[p] = 0
-
     # Apply vmap for sparse and _product_map for dense variables
     # ==================================================================================
     if not sparse_vars:
         vmapped = _base_productmap(func, dense_vars)
     elif put_dense_first:
-        vmapped = vmap(func, in_axes=in_axes_for_vmap)
+        vmapped = vmap_1d(func, variables=sparse_vars, apply_allow_kwargs=False)
         vmapped = _base_productmap(vmapped, dense_vars)
     else:
         vmapped = _base_productmap(func, dense_vars)
-        vmapped = vmap(vmapped, in_axes=in_axes_for_vmap)
+        vmapped = vmap_1d(vmapped, variables=sparse_vars, apply_allow_kwargs=False)
 
     # This raises a mypy error but is perfectly fine to do. See
     # https://github.com/python/mypy/issues/12472
-    vmapped.__signature__ = signature  # type: ignore[attr-defined]
+    vmapped.__signature__ = inspect.signature(func)  # type: ignore[attr-defined]
 
     return allow_kwargs(vmapped)
 
@@ -141,7 +125,7 @@ def productmap(func: F, variables: list[str]) -> F:
     return allow_kwargs(vmapped)
 
 
-def vmap_1d(func: F, variables: list[str]) -> F:
+def vmap_1d(func: F, variables: list[str], *, apply_allow_kwargs: bool = True) -> F:
     """Apply vmap such that func is mapped over the specified variables.
 
     In contrast to vmap, vmap_1d preserves the function signature and allows the
@@ -150,6 +134,8 @@ def vmap_1d(func: F, variables: list[str]) -> F:
     Args:
         func (callable): The function to be dispatched.
         variables (list): List with names of arguments that over which we map.
+        apply_allow_kwargs (bool): Whether to apply the allow_kwargs decorator to the
+            dispatched function.
 
     Returns:
         callable: A callable with the same arguments as func (but with an additional
@@ -187,7 +173,7 @@ def vmap_1d(func: F, variables: list[str]) -> F:
     # https://github.com/python/mypy/issues/12472
     vmapped.__signature__ = signature  # type: ignore[attr-defined]
 
-    return allow_kwargs(vmapped)
+    return allow_kwargs(vmapped) if apply_allow_kwargs else vmapped
 
 
 def _base_productmap(func: F, product_axes: list[str]) -> F:
