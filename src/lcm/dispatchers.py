@@ -110,7 +110,7 @@ def productmap(func: F, variables: list[str]) -> F:
             might be additional dimensions.
 
     """
-    func = allow_args(func)  # vmap cannot deal with keyword-only arguments
+    func = allow_args(func)  # jax.vmap cannot deal with keyword-only arguments
 
     if duplicates := {v for v in variables if variables.count(v) > 1}:
         raise ValueError(
