@@ -127,7 +127,7 @@ extend-ignore = [
 "docs/source/conf.py" = ["E501", "ERA001", "DTZ005"]
 "tests/test_*.py" = ["PLR2004"]
 "examples/*" = ["INP001"]
-"explanations/*" = ["INP001", "B018", "T201", "E402"]
+"explanations/*" = ["INP001", "B018", "T201", "E402", "PD008"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
