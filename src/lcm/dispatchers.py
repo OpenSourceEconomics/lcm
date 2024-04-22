@@ -54,7 +54,7 @@ def spacemap(
             f"Dense and sparse variables must be disjoint. Overlap: {overlap}",
         )
 
-    # We do need to check duplicates in sparse variables, because this will be done
+    # We do not need to check duplicates in sparse variables, because this will be done
     # by the vmap_1d call
     if duplicates := {v for v in dense_vars if dense_vars.count(v) > 1}:
         raise ValueError(
