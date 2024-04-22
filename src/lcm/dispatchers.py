@@ -18,8 +18,8 @@ def spacemap(
 ) -> F:
     """Apply vmap such that func is evaluated on a space of dense and sparse variables.
 
-    This is achieved by applying a product map for all dense variables and a vmap for
-    the sparse variables.
+    This is achieved by applying a _base_productmap for all dense variables and vmap_1d
+    for the sparse variables.
 
     In contrast to vmap, spacemap preserves the function signature and allows the
     function to be called with keyword arguments.
@@ -47,25 +47,27 @@ def spacemap(
             above but there might be additional dimensions.
 
     """
-    # Check inputs
+    # Check inputs and prepare function
     # ==================================================================================
     if overlap := set(dense_vars).intersection(sparse_vars):
         raise ValueError(
             f"Dense and sparse variables must be disjoint. Overlap: {overlap}",
         )
 
-    # We do not need to check duplicates in sparse variables, because this will be done
-    # by the vmap_1d call
     if duplicates := {v for v in dense_vars if dense_vars.count(v) > 1}:
         raise ValueError(
             f"Same argument provided more than once in dense variables: {duplicates}",
         )
 
-    # Preparations
-    # ==================================================================================
-    func = allow_args(func)  # vmap cannot deal with keyword-only arguments
+    if duplicates := {v for v in sparse_vars if sparse_vars.count(v) > 1}:
+        raise ValueError(
+            f"Same argument provided more than once in sparse variables: {duplicates}",
+        )
 
-    # Apply vmap for sparse and _product_map for dense variables
+    # jax.vmap cannot deal with keyword-only arguments
+    func = allow_args(func)
+
+    # Apply vmap_1d for sparse and _base_productmap for dense variables
     # ==================================================================================
     if not sparse_vars:
         vmapped = _base_productmap(func, dense_vars)
