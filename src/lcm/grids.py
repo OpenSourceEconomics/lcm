@@ -1,17 +1,23 @@
 """Functions to generate and work with different kinds of grids.
 
-Grid generation functions have the arguments:
+Grid generation functions must have the following signature:
 
-- start
-- stop
-- n_points
+    Signature (start: ScalarNumeric, stop: ScalarNumeric, n_points: int) -> jax.Array
 
-interpolation info functions have the arguments
+They take start and end points and create a grid of points between them.
 
-- value
-- start
-- stop
-- n_points
+
+Interpolation info functions must have the following signature:
+
+    Signature (
+        value: ScalarNumeric,
+        start: ScalarNumeric,
+        stop: ScalarNumeric,
+        n_points: int
+    ) -> ScalarNumeric
+
+They take the information required to generate a grid, and return an index corresponding
+to the value, which is a point in the space but not necessarily a grid point.
 
 Some of the arguments will not be used by all functions but the aligned interface makes
 it easy to call functions interchangeably.
@@ -19,26 +25,53 @@ it easy to call functions interchangeably.
 """
 
 import jax.numpy as jnp
+from jax import Array
+
+# The functions in this module are designed to work with scalar numerical values. This
+# also includes zero dimensional jax arrays.
+ScalarNumeric = int | float | Array
 
 
-def linspace(start, stop, n_points):
+def linspace(start: ScalarNumeric, stop: ScalarNumeric, n_points: int) -> Array:
+    """Wrapper around jnp.linspace.
+
+    Returns a linearly spaced grid between start and stop with n_points, including both
+    endpoints.
+
+    """
     return jnp.linspace(start, stop, n_points)
 
 
-def get_linspace_coordinate(value, start, stop, n_points):
-    """Map a value into the input needed for map_coordinates."""
+def get_linspace_coordinate(
+    value: ScalarNumeric,
+    start: ScalarNumeric,
+    stop: ScalarNumeric,
+    n_points: int,
+) -> ScalarNumeric:
+    """Map a value into the input needed for jax.scipy.ndimage.map_coordinates."""
     step_length = (stop - start) / (n_points - 1)
     return (value - start) / step_length
 
 
-def logspace(start, stop, n_points):
+def logspace(start: ScalarNumeric, stop: ScalarNumeric, n_points: int) -> Array:
+    """Wrapper around jnp.logspace.
+
+    Returns a logarithmically spaced grid between start and stop with n_points,
+    including both endpoints.
+
+    """
     start_lin = jnp.log(start)
     stop_lin = jnp.log(stop)
     return jnp.logspace(start_lin, stop_lin, n_points, base=2.718281828459045)
 
 
-def get_logspace_coordinate(value, start, stop, n_points):
-    """Map a value into the input needed for map_coordinates."""
+def get_logspace_coordinate(
+    value: ScalarNumeric,
+    start: ScalarNumeric,
+    stop: ScalarNumeric,
+    n_points: int,
+) -> ScalarNumeric:
+    """Map a value into the input needed for jax.scipy.ndimage.map_coordinates."""
     start_lin = jnp.log(start)
     stop_lin = jnp.log(stop)
     value_lin = jnp.log(value)

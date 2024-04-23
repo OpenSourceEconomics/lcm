@@ -15,16 +15,36 @@ def test_linspace():
 
 
 def test_linspace_mapped_value():
+    """For reference of the grid values, see expected grid in `test_linspace`."""
+    # Get position corresponding to a value in the grid
+    calculated = get_linspace_coordinate(
+        value=1.2,
+        start=1,
+        stop=2,
+        n_points=6,
+    )
+    assert np.allclose(calculated, 1.0)
+
+    # Get position corresponding to a value that is between two grid points
+    # ----------------------------------------------------------------------------------
+    # Here, the value is 1.3, that is in the middle of 1.2 and 1.4, which have the
+    # positions 1 and 2, respectively. Therefore, we want the position to be 1.5.
     calculated = get_linspace_coordinate(
         value=1.3,
         start=1,
         stop=2,
         n_points=6,
     )
+    assert np.allclose(calculated, 1.5)
 
-    expected = 1.5
-
-    assert np.allclose(calculated, expected)
+    # Get position corresponding to a value that is outside the grid
+    calculated = get_linspace_coordinate(
+        value=0.6,
+        start=1,
+        stop=2,
+        n_points=6,
+    )
+    assert np.allclose(calculated, -2.0)
 
 
 def test_logspace():
@@ -36,13 +56,11 @@ def test_logspace():
 
 
 def test_logspace_mapped_value():
+    """For reference of the grid values, see expected grid in `test_logspace`."""
     calculated = get_logspace_coordinate(
         value=(2.15443469 + 4.64158883) / 2,
         start=1,
         stop=100,
         n_points=7,
     )
-
-    expected = 1.5
-
-    assert np.allclose(calculated, expected)
+    assert np.allclose(calculated, 1.5)
