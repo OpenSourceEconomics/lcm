@@ -23,6 +23,7 @@ exclude pytask.ini
 
 prune .envs
 prune examples
+prune explanations
 prune docs
 prune src/lcm/sandbox
 prune tests

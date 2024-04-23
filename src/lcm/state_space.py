@@ -245,7 +245,7 @@ def create_forward_mask(
         _next,
         dense_vars=[],
         sparse_vars=list(_needed_initial),
-        dense_first=True,
+        put_dense_first=True,
     )
 
     # calculate next values

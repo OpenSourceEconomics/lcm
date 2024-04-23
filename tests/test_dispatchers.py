@@ -216,19 +216,23 @@ def expected_spacemap():
     return allow_kwargs(allow_args(g))(*helper).reshape(3, 2, 4 * 5)
 
 
-@pytest.mark.parametrize("dense_first", [True, False])
-def test_spacemap_all_arguments_mapped(setup_spacemap, expected_spacemap, dense_first):
+@pytest.mark.parametrize("put_dense_first", [True, False])
+def test_spacemap_all_arguments_mapped(
+    setup_spacemap,
+    expected_spacemap,
+    put_dense_first,
+):
     dense_vars, sparse_vars = setup_spacemap
 
     decorated = spacemap(
         g,
         list(dense_vars),
         list(sparse_vars),
-        dense_first=dense_first,
+        put_dense_first=put_dense_first,
     )
     calculated = decorated(**dense_vars, **sparse_vars)
 
-    if dense_first:
+    if put_dense_first:
         aaae(calculated, expected_spacemap)
     else:
         aaae(calculated, jnp.transpose(expected_spacemap, axes=(2, 0, 1)))
@@ -238,12 +242,12 @@ def test_spacemap_all_arguments_mapped(setup_spacemap, expected_spacemap, dense_
     ("error_msg", "dense_vars", "sparse_vars"),
     [
         (
-            "dense_vars and sparse_vars overlap",
+            "Dense and sparse variables must be disjoint. Overlap: {'a'}",
             ["a", "b"],
             ["a", "c", "d"],
         ),
         (
-            "Same argument provided more than once.",
+            "Same argument provided more than once in dense variables: {'a'}",
             ["a", "a", "b"],
             ["c", "d"],
         ),
@@ -251,7 +255,7 @@ def test_spacemap_all_arguments_mapped(setup_spacemap, expected_spacemap, dense_
 )
 def test_spacemap_arguments_overlap(error_msg, dense_vars, sparse_vars):
     with pytest.raises(ValueError, match=error_msg):
-        spacemap(g, dense_vars, sparse_vars, dense_first=True)
+        spacemap(g, dense_vars, sparse_vars, put_dense_first=True)
 
 
 # ======================================================================================
