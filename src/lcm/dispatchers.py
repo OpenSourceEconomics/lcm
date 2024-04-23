@@ -18,11 +18,11 @@ def spacemap(
 ) -> F:
     """Apply vmap such that func is evaluated on a space of dense and sparse variables.
 
-    This is achieved by applying a _base_productmap for all dense variables and vmap_1d
+    This is achieved by applying _base_productmap for all dense variables and vmap_1d
     for the sparse variables.
 
-    In contrast to vmap, spacemap preserves the function signature and allows the
-    function to be called with keyword arguments.
+    spacemap preserves the function signature and allows the function to be called with
+    keyword arguments.
 
     Args:
         func (callable): The function to be dispatched.
@@ -85,53 +85,12 @@ def spacemap(
     return allow_kwargs(vmapped)
 
 
-def productmap(func: F, variables: list[str]) -> F:
-    """Apply vmap such that func is evaluated on the Cartesian product of variables.
-
-    This is achieved by an iterative application of vmap.
-
-    In contrast to _base_productmap, productmap preserves the function signature and
-    allows the function to be called with keyword arguments.
-
-    Args:
-        func (callable): The function to be dispatched.
-        variables (list): List with names of arguments that over which the Cartesian
-            product should be formed.
-
-    Returns:
-        callable: A callable with the same arguments as func (but with an additional
-            leading dimension) that returns a jax.numpy.ndarray or pytree of arrays.
-            If ``func`` returns a scalar, the dispatched function returns a
-            jax.numpy.ndarray with k dimensions, where k is the length of ``variables``.
-            The order of the dimensions is determined by the order of ``variables``
-            which can be different to the order of ``funcs`` arguments. If the output of
-            ``func`` is a jax pytree, the usual jax behavior applies, i.e. the leading
-            dimensions of all arrays in the pytree are as described above but there
-            might be additional dimensions.
-
-    """
-    func = allow_args(func)  # jax.vmap cannot deal with keyword-only arguments
-
-    if duplicates := {v for v in variables if variables.count(v) > 1}:
-        raise ValueError(
-            f"Same argument provided more than once in variables: {duplicates}",
-        )
-
-    signature = inspect.signature(func)
-    vmapped = _base_productmap(func, variables)
-
-    # This raises a mypy error but is perfectly fine to do. See
-    # https://github.com/python/mypy/issues/12472
-    vmapped.__signature__ = signature  # type: ignore[attr-defined]
-
-    return allow_kwargs(vmapped)
-
-
 def vmap_1d(func: F, variables: list[str], *, apply_allow_kwargs: bool = True) -> F:
     """Apply vmap such that func is mapped over the specified variables.
 
-    In contrast to vmap, vmap_1d preserves the function signature and allows the
-    function to be called with keyword arguments.
+    In contrast to a general vmap call, vmap_1d vectorizes along the leading axis of all
+    of the requested variables simultaneously. Moreover, it preserves the function
+    signature and allows the function to be called with keyword arguments.
 
     Args:
         func (callable): The function to be dispatched.
@@ -176,6 +135,48 @@ def vmap_1d(func: F, variables: list[str], *, apply_allow_kwargs: bool = True) -
     vmapped.__signature__ = signature  # type: ignore[attr-defined]
 
     return allow_kwargs(vmapped) if apply_allow_kwargs else vmapped
+
+
+def productmap(func: F, variables: list[str]) -> F:
+    """Apply vmap such that func is evaluated on the Cartesian product of variables.
+
+    This is achieved by an iterative application of vmap.
+
+    In contrast to _base_productmap, productmap preserves the function signature and
+    allows the function to be called with keyword arguments.
+
+    Args:
+        func (callable): The function to be dispatched.
+        variables (list): List with names of arguments that over which the Cartesian
+            product should be formed.
+
+    Returns:
+        callable: A callable with the same arguments as func (but with an additional
+            leading dimension) that returns a jax.numpy.ndarray or pytree of arrays.
+            If ``func`` returns a scalar, the dispatched function returns a
+            jax.numpy.ndarray with k dimensions, where k is the length of ``variables``.
+            The order of the dimensions is determined by the order of ``variables``
+            which can be different to the order of ``funcs`` arguments. If the output of
+            ``func`` is a jax pytree, the usual jax behavior applies, i.e. the leading
+            dimensions of all arrays in the pytree are as described above but there
+            might be additional dimensions.
+
+    """
+    func = allow_args(func)  # jax.vmap cannot deal with keyword-only arguments
+
+    if duplicates := {v for v in variables if variables.count(v) > 1}:
+        raise ValueError(
+            f"Same argument provided more than once in variables: {duplicates}",
+        )
+
+    signature = inspect.signature(func)
+    vmapped = _base_productmap(func, variables)
+
+    # This raises a mypy error but is perfectly fine to do. See
+    # https://github.com/python/mypy/issues/12472
+    vmapped.__signature__ = signature  # type: ignore[attr-defined]
+
+    return allow_kwargs(vmapped)
 
 
 def _base_productmap(func: F, product_axes: list[str]) -> F:
