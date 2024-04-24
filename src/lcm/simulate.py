@@ -144,7 +144,7 @@ def simulate(
         # choice corresponding to the optimal discrete choice (dense and sparse).
         # ==============================================================================
         cont_choice_argmax = filter_ccv_policy(
-            ccv_policy,
+            ccv_policy=ccv_policy,
             dense_argmax=dense_argmax,
             dense_vars_grid_shape=dense_vars_grid_shape,
         )
