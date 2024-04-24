@@ -4,7 +4,7 @@ from typing import TypeVar
 
 from jax import vmap
 
-from lcm.functools import allow_args, allow_kwargs, allow_only_kwargs
+from lcm.functools import allow_args, allow_only_kwargs
 
 F = TypeVar("F", bound=Callable)
 
@@ -134,7 +134,7 @@ def vmap_1d(func: F, variables: list[str], *, apply_allow_kwargs: bool = True) -
     # https://github.com/python/mypy/issues/12472
     vmapped.__signature__ = signature  # type: ignore[attr-defined]
 
-    return allow_kwargs(vmapped) if apply_allow_kwargs else vmapped
+    return allow_only_kwargs(vmapped) if apply_allow_kwargs else vmapped
 
 
 def productmap(func: F, variables: list[str]) -> F:

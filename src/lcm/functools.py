@@ -7,19 +7,19 @@ F = TypeVar("F", bound=Callable)
 
 
 # ======================================================================================
-# Decorator
+# Decorators
 # ======================================================================================
 
 
 def allow_only_kwargs(func: F) -> F:
-    """Allow a function to be called with *only* keyword arguments.
+    """Restrict a function to be called with *only* keyword arguments.
 
     Args:
         func (Callable): The function to be wrapped.
 
     Returns:
         Callable: A Callable with the same arguments as func (but with the additional
-            restriction to call it with *only* with keyword arguments).
+            restriction that it is *only* callable with keyword arguments).
 
     """
     signature = inspect.signature(func)
@@ -44,8 +44,11 @@ def allow_only_kwargs(func: F) -> F:
     @functools.wraps(func)
     def allow_only_kwargs_wrapper(**kwargs):
         # Check if the total number of arguments matches the function signature
-        if len(kwargs) != len(parameters):
-            raise ValueError(_error_message(kwargs, parameters))
+        if extra := set(kwargs).difference(parameters):
+            raise ValueError(f"Unknown arguments provided: {extra}")
+
+        if missing := set(parameters).difference(kwargs):
+            raise ValueError(f"Missing arguments: {missing}")
 
         # Retrieve keyword-only arguments
         kw_only_kwargs = {k: kwargs[k] for k in kw_only_parameters}

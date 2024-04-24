@@ -15,12 +15,12 @@ from lcm.simulate import (
     _compute_targets,
     _generate_simulation_keys,
     _process_simulated_data,
-    _retrieve_non_sparse_choices,
     create_choice_segments,
     create_data_scs,
     determine_discrete_dense_choice_axes,
     dict_product,
     filter_ccv_policy,
+    retrieve_non_sparse_choices,
     simulate,
 )
 from lcm.state_space import create_state_choice_space
@@ -358,8 +358,8 @@ def test_process_simulated_data():
 
 
 def test_retrieve_non_sparse_choices():
-    got = _retrieve_non_sparse_choices(
-        index=jnp.array([0, 3, 7]),
+    got = retrieve_non_sparse_choices(
+        indices=jnp.array([0, 3, 7]),
         grids={"a": jnp.linspace(0, 1, 5), "b": jnp.linspace(10, 20, 6)},
         grid_shape=(5, 6),
     )

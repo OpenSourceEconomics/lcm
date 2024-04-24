@@ -444,7 +444,7 @@ def retrieve_non_sparse_choices(indices, grids, grid_shape):
     return out
 
 
-@partial(vmap_1d, variables=["index"])
+@partial(vmap_1d, variables=["index"], apply_allow_kwargs=False)
 def _retrieve_non_sparse_choices(index, grids, grid_shape):
     """Retrieve dense or continuous choices given index.
 

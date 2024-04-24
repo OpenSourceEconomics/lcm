@@ -7,7 +7,7 @@ from lcm.dispatchers import (
     spacemap,
     vmap_1d,
 )
-from lcm.functools import allow_args, allow_kwargs
+from lcm.functools import allow_args
 from numpy.testing import assert_array_almost_equal as aaae
 
 
@@ -58,7 +58,7 @@ def expected_productmap_f():
     }
 
     helper = jnp.array(list(itertools.product(*grids.values()))).T
-    return allow_kwargs(allow_args(f))(*helper).reshape(10, 7, 5)
+    return allow_args(f)(*helper).reshape(10, 7, 5)
 
 
 @pytest.fixture()
@@ -81,7 +81,7 @@ def expected_productmap_g():
     }
 
     helper = jnp.array(list(itertools.product(*grids.values()))).T
-    return allow_kwargs(allow_args(g))(*helper).reshape(10, 7, 5, 4)
+    return allow_args(g)(*helper).reshape(10, 7, 5, 4)
 
 
 @pytest.mark.parametrize(
@@ -131,7 +131,7 @@ def test_productmap_with_all_arguments_mapped_some_len_one():
 
     helper = jnp.array(list(itertools.product(*grids.values()))).T
 
-    expected = allow_kwargs(allow_args(f))(*helper).reshape(1, 1, 5)
+    expected = allow_args(f)(*helper).reshape(1, 1, 5)
 
     decorated = productmap(f, ["a", "b", "c"])
     calculated = decorated(**grids)
@@ -159,7 +159,7 @@ def test_productmap_with_some_arguments_mapped():
 
     helper = jnp.array(list(itertools.product(grids["a"], [grids["b"]], grids["c"]))).T
 
-    expected = allow_kwargs(allow_args(f))(*helper).reshape(10, 5)
+    expected = allow_args(f)(*helper).reshape(10, 5)
 
     decorated = productmap(f, ["a", "c"])
     calculated = decorated(**grids)
@@ -213,7 +213,7 @@ def expected_spacemap():
     all_grids = {**value_grid, **combination_grid}
     helper = jnp.array(list(itertools.product(*all_grids.values()))).T
 
-    return allow_kwargs(allow_args(g))(*helper).reshape(3, 2, 4 * 5)
+    return allow_args(g)(*helper).reshape(3, 2, 4 * 5)
 
 
 @pytest.mark.parametrize("put_dense_first", [True, False])
