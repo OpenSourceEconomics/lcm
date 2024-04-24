@@ -1,5 +1,6 @@
 import jax
-
+import numpy
+import futures
 from lcm.dispatchers import spacemap
 
 
@@ -54,11 +55,34 @@ def solve(
     vf_arr = None
 
     logger.info("Starting solution")
+    compiled_functions = {}
+    
+    # Precompile the continuous problem functions
+    with futures.ThreadPoolExecutor() as pool:
+            for period in reversed(range(n_periods)):
+                # First dummy needs to be empty
+                if period == n_periods - 1:
+                    dummy = None
+                else:
+                    # Create dummy array, so that the compiler knows the input size
+                    dummy = jax.numpy.empty((100,100), numpy.float32)
+                # Lower function to the jax compiler language
+                lowered = lower_function(
+                            state_choice_space=state_choice_spaces[period],
+                            compute_ccv=compute_ccv_functions[period],
+                            continuous_choice_grids=continuous_choice_grids[period],
+                            vf_arr=dummy,
+                            state_indexers=state_indexers[period],
+                            params=params,
+                            period=period
+                        )
+                # Start threads to compile the functions
+                compiled_functions[period] = pool.submit(lowered.compile)
 
-    # backwards induction loop
+    # Backwards induction loop
     for period in reversed(range(n_periods)):
         # solve continuous problem, conditional on discrete choices
-        conditional_continuation_values = solve_continuous_problem(
+        conditional_continuation_values = compiled_functions[period].result()(
             state_choice_space=state_choice_spaces[period],
             compute_ccv=compute_ccv_functions[period],
             continuous_choice_grids=continuous_choice_grids[period],
@@ -126,3 +150,50 @@ def solve_continuous_problem(
         vf_arr=vf_arr,
         params=params,
     )
+
+
+def lower_function(state_choice_space,
+    compute_ccv,
+    continuous_choice_grids,
+    vf_arr,
+    state_indexers,
+    params
+):
+    """Jit and the lower the continuous problem function.
+
+    Args:
+        state_choice_space (Space): Namedtuple with entries dense_vars and sparse_vars.
+        compute_ccv (callable): Function that returns the conditional continuation
+            values for a given combination of states and discrete choices. The function
+            depends on:
+            - discrete and continuous state variables
+            - discrete and continuous choice variables
+            - vf_arr
+            - one or several state_indexers
+            - params
+        continuous_choice_grids (list): List of dicts with 1d grids for continuous
+            choice variables.
+        vf_arr (jax.numpy.ndarray): Value function array.
+        state_indexers (list): List of dicts with length n_periods. Each dict contains
+            one or several state indexers.
+        params (dict): Dict of model parameters.
+
+    Returns:
+        jax.stages.Lowered: Lowering of a continuous problem function.
+    
+    """
+    _gridmapped = spacemap(
+            func=compute_ccv,
+            dense_vars=list(state_choice_space.dense_vars),
+            sparse_vars=list(state_choice_space.sparse_vars),
+            dense_first=False,
+        )
+    # Jitting and the lowering the function with respect to the provided argument values
+    gridmapped = jax.jit(_gridmapped).lower(**state_choice_space.dense_vars,
+            **continuous_choice_grids,
+            **state_choice_space.sparse_vars,
+            **state_indexers,
+            vf_arr=vf_arr,
+            params=params,)
+    
+    return gridmapped
