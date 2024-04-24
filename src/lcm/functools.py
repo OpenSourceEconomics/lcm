@@ -3,8 +3,7 @@ import inspect
 from collections.abc import Callable
 from typing import Any, TypeVar
 
-F = TypeVar("F", bound=Callable)
-
+F = TypeVar("F", bound=Callable[..., Any])
 
 # ======================================================================================
 # Decorators
@@ -42,13 +41,20 @@ def allow_only_kwargs(func: F) -> F:
     new_signature = signature.replace(parameters=new_parameters)
 
     @functools.wraps(func)
-    def allow_only_kwargs_wrapper(**kwargs):
-        # Check if the total number of arguments matches the function signature
+    def allow_kwargs_wrapper(*args, **kwargs):
+        if args:
+            raise ValueError(
+                (
+                    "This function was decorated with allow_only_kwargs, but was "
+                    "called with positional arguments."
+                ),
+            )
+
         if extra := set(kwargs).difference(parameters):
-            raise ValueError(f"Unknown arguments provided: {extra}")
+            raise ValueError(f"Expected arguments: {parameters}, got extra: {extra}")
 
         if missing := set(parameters).difference(kwargs):
-            raise ValueError(f"Missing arguments: {missing}")
+            raise ValueError(f"Expected arguments: {parameters}, missing: {missing}")
 
         # Retrieve keyword-only arguments
         kw_only_kwargs = {k: kwargs[k] for k in kw_only_parameters}
@@ -61,11 +67,13 @@ def allow_only_kwargs(func: F) -> F:
 
         return func(*positional, **kw_only_kwargs)
 
-    allow_only_kwargs_wrapper.__signature__ = new_signature
-    return allow_only_kwargs_wrapper
+    # This raises a mypy error but is perfectly fine to do. See
+    # https://github.com/python/mypy/issues/12472
+    allow_kwargs_wrapper.__signature__ = new_signature  # type: ignore[attr-defined]
+    return allow_kwargs_wrapper
 
 
-def allow_kwargs(func: F) -> F:
+def allow_kwargs(func):
     """Allow a function to be called with keyword arguments.
 
     Args:
@@ -116,7 +124,7 @@ def allow_kwargs(func: F) -> F:
     return allow_kwargs_wrapper
 
 
-def allow_args(func: F) -> F:
+def allow_args(func):
     """Allow a function to be called with positional arguments.
 
     Args:

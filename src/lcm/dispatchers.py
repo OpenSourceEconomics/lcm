@@ -2,11 +2,11 @@ import inspect
 from collections.abc import Callable
 from typing import TypeVar
 
-from jax import vmap
+from jax import Array, vmap
 
 from lcm.functools import allow_args, allow_only_kwargs
 
-F = TypeVar("F", bound=Callable)
+F = TypeVar("F", bound=Callable[..., Array])
 
 
 def spacemap(
