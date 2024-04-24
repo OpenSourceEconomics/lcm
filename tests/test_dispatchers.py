@@ -96,21 +96,21 @@ def test_productmap_with_all_arguments_mapped(func, args, grids, expected, reque
     expected = request.getfixturevalue(expected)
 
     decorated = productmap(func, args)
-    calculated_args = decorated(*grids.values())
-    calculated_kwargs = decorated(**grids)
+    calculated = decorated(**grids)
+    aaae(calculated, expected)
 
-    aaae(calculated_args, expected)
-    aaae(calculated_kwargs, expected)
+    with pytest.raises(TypeError, match="takes 0 positional arguments but"):
+        decorated(*grids.values())
 
 
 def test_productmap_different_func_order(setup_productmap_f):
     decorated_f = productmap(f, ["a", "b", "c"])
-    expected = decorated_f(*setup_productmap_f.values())
+    expected = decorated_f(**setup_productmap_f)
 
     decorated_f2 = productmap(f2, ["a", "b", "c"])
-    calculated_f2_kwargs = decorated_f2(**setup_productmap_f)
+    calculated_f2 = decorated_f2(**setup_productmap_f)
 
-    aaae(calculated_f2_kwargs, expected)
+    aaae(calculated_f2, expected)
 
 
 def test_productmap_change_arg_order(setup_productmap_f, expected_productmap_f):
@@ -134,7 +134,7 @@ def test_productmap_with_all_arguments_mapped_some_len_one():
     expected = allow_kwargs(allow_args(f))(*helper).reshape(1, 1, 5)
 
     decorated = productmap(f, ["a", "b", "c"])
-    calculated = decorated(*grids.values())
+    calculated = decorated(**grids)
     aaae(calculated, expected)
 
 
@@ -147,7 +147,7 @@ def test_productmap_with_all_arguments_mapped_some_scalar():
 
     decorated = productmap(f, ["a", "b", "c"])
     with pytest.raises(ValueError, match="vmap was requested to map its argument"):
-        decorated(*grids.values())
+        decorated(**grids)
 
 
 def test_productmap_with_some_arguments_mapped():
@@ -162,7 +162,7 @@ def test_productmap_with_some_arguments_mapped():
     expected = allow_kwargs(allow_args(f))(*helper).reshape(10, 5)
 
     decorated = productmap(f, ["a", "c"])
-    calculated = decorated(*grids.values())
+    calculated = decorated(**grids)
     aaae(calculated, expected)
 
 

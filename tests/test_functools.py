@@ -144,10 +144,10 @@ def test_allow_kwargs_incorrect_number_of_args():
     def f(a, /, b):
         return a + b
 
-    with pytest.raises(ValueError, match="Not enough or too many arguments"):
+    with pytest.raises(ValueError, match="Too many arguments provided."):
         allow_kwargs(f)(a=1, b=2, c=3)
 
-    with pytest.raises(ValueError, match="Not enough or too many arguments"):
+    with pytest.raises(ValueError, match="Not all arguments provided."):
         allow_kwargs(f)(a=1)
 
 
@@ -196,10 +196,10 @@ def test_allow_args_incorrect_number_of_args():
     def f(a, *, b):
         return a + b
 
-    with pytest.raises(ValueError, match="Not enough or too many arguments"):
+    with pytest.raises(ValueError, match="Too many arguments provided."):
         allow_args(f)(1, 2, b=3)
 
-    with pytest.raises(ValueError, match="Not enough or too many arguments"):
+    with pytest.raises(ValueError, match="Not all arguments provided."):
         allow_args(f)(1)
 
 

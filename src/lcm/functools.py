@@ -6,56 +6,60 @@ from typing import Any, TypeVar
 F = TypeVar("F", bound=Callable)
 
 
-def get_union_of_arguments(list_of_functions: list[Callable]) -> set[str]:
-    """Return the union of arguments of a list of functions.
+# ======================================================================================
+# Decorator
+# ======================================================================================
+
+
+def allow_only_kwargs(func: F) -> F:
+    """Allow a function to be called with *only* keyword arguments.
 
     Args:
-        list_of_functions (list): A list of functions.
+        func (Callable): The function to be wrapped.
 
     Returns:
-        set: The union of arguments of all functions in list_of_functions.
+        Callable: A Callable with the same arguments as func (but with the additional
+            restriction to call it with *only* with keyword arguments).
 
     """
-    arguments = [inspect.signature(f).parameters for f in list_of_functions]
-    return set().union(*arguments)
+    signature = inspect.signature(func)
+    parameters = signature.parameters
 
+    # Get names of keyword-only arguments
+    kw_only_parameters = [
+        p.name for p in parameters.values() if p.kind == inspect.Parameter.KEYWORD_ONLY
+    ]
 
-def all_as_kwargs(
-    args: tuple[Any],
-    kwargs: dict[str, Any],
-    arg_names: list[str],
-) -> dict[str, Any]:
-    """Return kwargs dictionary containing all arguments.
+    # Create new signature without positional-only arguments
+    new_parameters = [
+        (
+            p.replace(kind=inspect.Parameter.POSITIONAL_OR_KEYWORD)
+            if p.kind == inspect.Parameter.POSITIONAL_ONLY
+            else p
+        )
+        for p in parameters.values()
+    ]
+    new_signature = signature.replace(parameters=new_parameters)
 
-    Args:
-        args (tuple): Positional arguments.
-        kwargs (dict): Keyword arguments.
-        arg_names (list): Names of arguments.
+    @functools.wraps(func)
+    def allow_only_kwargs_wrapper(**kwargs):
+        # Check if the total number of arguments matches the function signature
+        if len(kwargs) != len(parameters):
+            raise ValueError(_error_message(kwargs, parameters))
 
-    Returns:
-        dict: A dictionary of all arguments.
+        # Retrieve keyword-only arguments
+        kw_only_kwargs = {k: kwargs[k] for k in kw_only_parameters}
 
-    """
-    return dict(zip(arg_names[: len(args)], args, strict=True)) | kwargs
+        # Get kwargs that must be converted to positional arguments
+        pos_kwargs = {k: v for k, v in kwargs.items() if k not in kw_only_parameters}
 
+        # Collect all positional arguments in correct order
+        positional = convert_kwargs_to_args(pos_kwargs, list(parameters))
 
-def all_as_args(
-    args: tuple[Any],
-    kwargs: dict[str, Any],
-    arg_names: list[str],
-) -> tuple[Any]:
-    """Return args tuple containing all arguments.
+        return func(*positional, **kw_only_kwargs)
 
-    Args:
-        args (tuple): Positional arguments.
-        kwargs (dict): Keyword arguments.
-        arg_names (list): Names of arguments.
-
-    Returns:
-        tuple: A tuple of all arguments.
-
-    """
-    return args + tuple(convert_kwargs_to_args(kwargs, arg_names))
+    allow_only_kwargs_wrapper.__signature__ = new_signature
+    return allow_only_kwargs_wrapper
 
 
 def allow_kwargs(func: F) -> F:
@@ -165,6 +169,63 @@ def allow_args(func: F) -> F:
 
     allow_args_wrapper.__signature__ = new_signature
     return allow_args_wrapper
+
+
+# ======================================================================================
+# Auxiliary functions
+# ======================================================================================
+
+
+def get_union_of_arguments(list_of_functions: list[Callable]) -> set[str]:
+    """Return the union of arguments of a list of functions.
+
+    Args:
+        list_of_functions (list): A list of functions.
+
+    Returns:
+        set: The union of arguments of all functions in list_of_functions.
+
+    """
+    arguments = [inspect.signature(f).parameters for f in list_of_functions]
+    return set().union(*arguments)
+
+
+def all_as_kwargs(
+    args: tuple[Any],
+    kwargs: dict[str, Any],
+    arg_names: list[str],
+) -> dict[str, Any]:
+    """Return kwargs dictionary containing all arguments.
+
+    Args:
+        args (tuple): Positional arguments.
+        kwargs (dict): Keyword arguments.
+        arg_names (list): Names of arguments.
+
+    Returns:
+        dict: A dictionary of all arguments.
+
+    """
+    return dict(zip(arg_names[: len(args)], args, strict=True)) | kwargs
+
+
+def all_as_args(
+    args: tuple[Any],
+    kwargs: dict[str, Any],
+    arg_names: list[str],
+) -> tuple[Any]:
+    """Return args tuple containing all arguments.
+
+    Args:
+        args (tuple): Positional arguments.
+        kwargs (dict): Keyword arguments.
+        arg_names (list): Names of arguments.
+
+    Returns:
+        tuple: A tuple of all arguments.
+
+    """
+    return args + tuple(convert_kwargs_to_args(kwargs, arg_names))
 
 
 def convert_kwargs_to_args(kwargs: dict[str, Any], parameters: list[str]) -> list[Any]:
