@@ -1,6 +1,7 @@
 from concurrent import futures
 
 import jax
+import numpy as np
 
 from lcm.dispatchers import spacemap
 
@@ -66,7 +67,7 @@ def solve(
                 dummy = None
             else:
                 # Create dummy array, so that the compiler knows the input size
-                dummy = jax.numpy.empty((100, 100), numpy.float32)
+                dummy = jax.numpy.empty((100, 100), np.float32)
             # Lower function to the jax compiler language
             lowered = lower_function(
                 state_choice_space=state_choice_spaces[period],
