@@ -139,13 +139,13 @@ def get_lcm_function(
             utility_and_feasibility=u_and_f,
             continuous_choice_variables=list(_choice_grids),
         )
-        compute_ccv_functions.append(jax.jit(compute_ccv))
+        compute_ccv_functions.append(compute_ccv)
 
         compute_ccv_argmax = create_compute_conditional_continuation_policy(
             utility_and_feasibility=u_and_f,
             continuous_choice_variables=list(_choice_grids),
         )
-        compute_ccv_policy_functions.append(jax.jit(compute_ccv_argmax))
+        compute_ccv_policy_functions.append(compute_ccv_argmax)
 
         # create list of emax_calculators
         # ==============================================================================
@@ -158,7 +158,7 @@ def get_lcm_function(
             choice_segments=choice_segments[period],
             params=_mod.params,
         )
-        emax_calculators.append(jax.jit(calculator))
+        emax_calculators.append(calculator)
 
     # ==================================================================================
     # select requested solver and partial arguments into it

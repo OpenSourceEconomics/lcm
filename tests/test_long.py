@@ -16,7 +16,7 @@ def test_long():
     with nvtx.annotate("solve_model", color="blue"):
         solve_model(PARAMS)
 
-#jax.profiler.start_trace("/tmp/tensorboard")
+
 test_long()
-#jax.profiler.stop_trace()
+
 

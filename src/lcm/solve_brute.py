@@ -1,5 +1,5 @@
 import jax
-import numpy
+import numpy as np
 import concurrent.futures as futures
 from lcm.dispatchers import spacemap
 
@@ -65,7 +65,7 @@ def solve(
                     dummy = None
                 else:
                     # Create dummy array, so that the compiler knows the input size
-                    dummy = jax.numpy.empty((100,100), numpy.float32)
+                    dummy = jax.numpy.empty((100,100), np.float32)
                 # Lower function to the jax compiler language
                 lowered = lower_function(
                             state_choice_space=state_choice_spaces[period],
@@ -188,11 +188,10 @@ def lower_function(state_choice_space,
             put_dense_first=False,
         )
     # Jitting and the lowering the function with respect to the provided argument values
-    gridmapped = jax.jit(_gridmapped).lower(**state_choice_space.dense_vars,
+    return jax.jit(_gridmapped).lower(**state_choice_space.dense_vars,
             **continuous_choice_grids,
             **state_choice_space.sparse_vars,
             **state_indexers,
             vf_arr=vf_arr,
             params=params,)
     
-    return gridmapped

@@ -1,4 +1,3 @@
-import jax
 
 from lcm import mark
 
