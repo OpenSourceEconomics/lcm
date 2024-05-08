@@ -1,6 +1,6 @@
 import jax
 import numpy
-import futures
+import concurrent.futures as futures
 from lcm.dispatchers import spacemap
 
 
@@ -74,7 +74,6 @@ def solve(
                             vf_arr=dummy,
                             state_indexers=state_indexers[period],
                             params=params,
-                            period=period
                         )
                 # Start threads to compile the functions
                 compiled_functions[period] = pool.submit(lowered.compile)
@@ -186,7 +185,7 @@ def lower_function(state_choice_space,
             func=compute_ccv,
             dense_vars=list(state_choice_space.dense_vars),
             sparse_vars=list(state_choice_space.sparse_vars),
-            dense_first=False,
+            put_dense_first=False,
         )
     # Jitting and the lowering the function with respect to the provided argument values
     gridmapped = jax.jit(_gridmapped).lower(**state_choice_space.dense_vars,
