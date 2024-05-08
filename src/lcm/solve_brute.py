@@ -82,11 +82,11 @@ def solve(
     for period in reversed(range(n_periods)):
         # solve continuous problem, conditional on discrete choices
         conditional_continuation_values = compiled_functions[period].result()(
-            state_choice_space=state_choice_spaces[period],
-            compute_ccv=compute_ccv_functions[period],
-            continuous_choice_grids=continuous_choice_grids[period],
+            **state_choice_spaces[period].dense_vars,
+            **continuous_choice_grids[period],
+            **state_choice_spaces[period].sparse_vars,
+            **state_indexers[period],
             vf_arr=vf_arr,
-            state_indexers=state_indexers[period],
             params=params,
         )
 
