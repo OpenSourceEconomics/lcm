@@ -1,6 +1,8 @@
+from concurrent import futures
+
 import jax
 import numpy
-import concurrent.futures as futures
+
 from lcm.dispatchers import spacemap
 
 
@@ -56,27 +58,27 @@ def solve(
 
     logger.info("Starting solution")
     compiled_functions = {}
-    
+
     # Precompile the continuous problem functions
     with futures.ThreadPoolExecutor() as pool:
-            for period in reversed(range(n_periods)):
-                # First dummy needs to be empty
-                if period == n_periods - 1:
-                    dummy = None
-                else:
-                    # Create dummy array, so that the compiler knows the input size
-                    dummy = jax.numpy.empty((100,100), numpy.float32)
-                # Lower function to the jax compiler language
-                lowered = lower_function(
-                            state_choice_space=state_choice_spaces[period],
-                            compute_ccv=compute_ccv_functions[period],
-                            continuous_choice_grids=continuous_choice_grids[period],
-                            vf_arr=dummy,
-                            state_indexers=state_indexers[period],
-                            params=params,
-                        )
-                # Start threads to compile the functions
-                compiled_functions[period] = pool.submit(lowered.compile)
+        for period in reversed(range(n_periods)):
+            # First dummy needs to be empty
+            if period == n_periods - 1:
+                dummy = None
+            else:
+                # Create dummy array, so that the compiler knows the input size
+                dummy = jax.numpy.empty((100, 100), numpy.float32)
+            # Lower function to the jax compiler language
+            lowered = lower_function(
+                state_choice_space=state_choice_spaces[period],
+                compute_ccv=compute_ccv_functions[period],
+                continuous_choice_grids=continuous_choice_grids[period],
+                vf_arr=dummy,
+                state_indexers=state_indexers[period],
+                params=params,
+            )
+            # Start threads to compile the functions
+            compiled_functions[period] = pool.submit(lowered.compile)
 
     # Backwards induction loop
     for period in reversed(range(n_periods)):
@@ -151,12 +153,13 @@ def solve_continuous_problem(
     )
 
 
-def lower_function(state_choice_space,
+def lower_function(
+    state_choice_space,
     compute_ccv,
     continuous_choice_grids,
     vf_arr,
     state_indexers,
-    params
+    params,
 ):
     """Jit and the lower the continuous problem function.
 
@@ -179,20 +182,22 @@ def lower_function(state_choice_space,
 
     Returns:
         jax.stages.Lowered: Lowering of a continuous problem function.
-    
+
     """
     _gridmapped = spacemap(
-            func=compute_ccv,
-            dense_vars=list(state_choice_space.dense_vars),
-            sparse_vars=list(state_choice_space.sparse_vars),
-            put_dense_first=False,
-        )
+        func=compute_ccv,
+        dense_vars=list(state_choice_space.dense_vars),
+        sparse_vars=list(state_choice_space.sparse_vars),
+        put_dense_first=False,
+    )
     # Jitting and the lowering the function with respect to the provided argument values
-    gridmapped = jax.jit(_gridmapped).lower(**state_choice_space.dense_vars,
-            **continuous_choice_grids,
-            **state_choice_space.sparse_vars,
-            **state_indexers,
-            vf_arr=vf_arr,
-            params=params,)
-    
+    gridmapped = jax.jit(_gridmapped).lower(
+        **state_choice_space.dense_vars,
+        **continuous_choice_grids,
+        **state_choice_space.sparse_vars,
+        **state_indexers,
+        vf_arr=vf_arr,
+        params=params,
+    )
+
     return gridmapped
