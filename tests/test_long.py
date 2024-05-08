@@ -1,6 +1,3 @@
-import pytest
-import timeit
-import jax
 import nvtx
 from lcm.entry_point import get_lcm_function
 from lcm.example_models.example_models_long import PARAMS, PHELPS_DEATON
@@ -11,7 +8,7 @@ on the CPU."""
 
 
 def test_long():
-    
+
     solve_model, template = get_lcm_function(PHELPS_DEATON, targets="solve")
     with nvtx.annotate("solve_model", color="blue"):
         solve_model(PARAMS)
