@@ -4253,8 +4253,8 @@ packages:
 - kind: pypi
   name: jaxlib
   version: 0.4.28
-  url: https://files.pythonhosted.org/packages/09/5a/a6691029a30bbb51ede633b5289b4a1c7dd58fe7a109c7a103f7554c9069/jaxlib-0.4.28-cp312-cp312-macosx_11_0_arm64.whl
-  sha256: 8dd8bffe3853702f63cd924da0ee25734a4d19cd5c926be033d772ba7d1c175d
+  url: https://files.pythonhosted.org/packages/de/2c/598e797189e4bbc19a041be8ca048ada903c1fbf9129a4f912edd2657858/jaxlib-0.4.28-cp312-cp312-macosx_10_14_x86_64.whl
+  sha256: d6c09a545329722461af056e735146d2c8c74c22ac7426a845eb69f326b4f7a0
   requires_dist:
   - scipy>=1.9
   - numpy>=1.22
@@ -4274,8 +4274,8 @@ packages:
 - kind: pypi
   name: jaxlib
   version: 0.4.28
-  url: https://files.pythonhosted.org/packages/de/2c/598e797189e4bbc19a041be8ca048ada903c1fbf9129a4f912edd2657858/jaxlib-0.4.28-cp312-cp312-macosx_10_14_x86_64.whl
-  sha256: d6c09a545329722461af056e735146d2c8c74c22ac7426a845eb69f326b4f7a0
+  url: https://files.pythonhosted.org/packages/09/5a/a6691029a30bbb51ede633b5289b4a1c7dd58fe7a109c7a103f7554c9069/jaxlib-0.4.28-cp312-cp312-macosx_11_0_arm64.whl
+  sha256: 8dd8bffe3853702f63cd924da0ee25734a4d19cd5c926be033d772ba7d1c175d
   requires_dist:
   - scipy>=1.9
   - numpy>=1.22
@@ -4942,9 +4942,9 @@ packages:
   timestamp: 1664996250081
 - kind: pypi
   name: lcm
-  version: 0.1.dev159+ge318f83.d20240518
+  version: 0.1.dev160+g3b5533e
   path: .
-  sha256: f9f8ef5eb5dbfcee34f6e7d29a4c8f304cc9869e8f0659bea59f31d882fd940f
+  sha256: b8835165361c4fca6436f3842b00a44096383c865fc72c83b80612841e9397b4
   requires_dist:
   - dags
   - jax>=0.4.28
@@ -8467,8 +8467,8 @@ packages:
 - kind: pypi
   name: pandas
   version: 2.2.2
-  url: https://files.pythonhosted.org/packages/db/7c/9a60add21b96140e22465d9adf09832feade45235cd22f4cb1668a25e443/pandas-2.2.2-cp312-cp312-macosx_11_0_arm64.whl
-  sha256: e9b79011ff7a0f4b1d6da6a61aa1aa604fb312d6647de5bad20013682d1429ce
+  url: https://files.pythonhosted.org/packages/dd/49/de869130028fb8d90e25da3b7d8fb13e40f5afa4c4af1781583eb1ff3839/pandas-2.2.2-cp312-cp312-macosx_10_9_x86_64.whl
+  sha256: 9dfde2a0ddef507a631dc9dc4af6a9489d5e2e740e226ad426a05cabfbd7c8ef
   requires_dist:
   - numpy>=1.22.4 ; python_version < '3.11'
   - numpy>=1.23.2 ; python_version == '3.11'
@@ -8559,8 +8559,8 @@ packages:
 - kind: pypi
   name: pandas
   version: 2.2.2
-  url: https://files.pythonhosted.org/packages/dd/49/de869130028fb8d90e25da3b7d8fb13e40f5afa4c4af1781583eb1ff3839/pandas-2.2.2-cp312-cp312-macosx_10_9_x86_64.whl
-  sha256: 9dfde2a0ddef507a631dc9dc4af6a9489d5e2e740e226ad426a05cabfbd7c8ef
+  url: https://files.pythonhosted.org/packages/db/7c/9a60add21b96140e22465d9adf09832feade45235cd22f4cb1668a25e443/pandas-2.2.2-cp312-cp312-macosx_11_0_arm64.whl
+  sha256: e9b79011ff7a0f4b1d6da6a61aa1aa604fb312d6647de5bad20013682d1429ce
   requires_dist:
   - numpy>=1.22.4 ; python_version < '3.11'
   - numpy>=1.23.2 ; python_version == '3.11'
@@ -10476,10 +10476,10 @@ packages:
 - kind: pypi
   name: scipy
   version: 1.13.0
-  url: https://files.pythonhosted.org/packages/fb/a3/328965862f41ba67d27ddd26205962007ec87d99eec6d364a29bf00ac093/scipy-1.13.0.tar.gz
-  sha256: 58569af537ea29d3f78e5abd18398459f195546bb3be23d16677fb26616cc11e
+  url: https://files.pythonhosted.org/packages/fc/4e/67541c3d681bb6fb96acbc3581fb155c881a0d993d0aa3e8708493b70e79/scipy-1.13.0-cp312-cp312-macosx_10_9_x86_64.whl
+  sha256: d0de696f589681c2802f9090fff730c218f7c51ff49bf252b6a97ec4a5d19e8b
   requires_dist:
-  - numpy>=1.22.4,<2.3
+  - numpy<2.3,>=1.22.4
   - pytest ; extra == 'test'
   - pytest-cov ; extra == 'test'
   - pytest-timeout ; extra == 'test'
@@ -10515,10 +10515,10 @@ packages:
 - kind: pypi
   name: scipy
   version: 1.13.0
-  url: https://files.pythonhosted.org/packages/fc/4e/67541c3d681bb6fb96acbc3581fb155c881a0d993d0aa3e8708493b70e79/scipy-1.13.0-cp312-cp312-macosx_10_9_x86_64.whl
-  sha256: d0de696f589681c2802f9090fff730c218f7c51ff49bf252b6a97ec4a5d19e8b
+  url: https://files.pythonhosted.org/packages/fb/a3/328965862f41ba67d27ddd26205962007ec87d99eec6d364a29bf00ac093/scipy-1.13.0.tar.gz
+  sha256: 58569af537ea29d3f78e5abd18398459f195546bb3be23d16677fb26616cc11e
   requires_dist:
-  - numpy<2.3,>=1.22.4
+  - numpy>=1.22.4,<2.3
   - pytest ; extra == 'test'
   - pytest-cov ; extra == 'test'
   - pytest-timeout ; extra == 'test'
