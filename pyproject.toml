@@ -4,15 +4,16 @@
 
 [project]
 name = "lcm"
-dynamic = ["version"]
-authors = [
-    { name = "Tim Mensinger", email = "mensingertim@gmail.com" },
-    { name = "Hans-Martin von Gaudecker", email = "hmgaudecker@uni-bonn.de" },
-    { name = "Janos Gabler" },
+description = "lcm aims to generalize and facilitate the specification, solving, and estimation of dynamic choice models."
+requires-python = ">=3.11"
+dependencies = [
+    "dags",
+    "jax>=0.4.28",
+    "jaxlib>=0.4.28",
+    "numpy",
+    "pandas",
 ]
-description = "This package aims to generalize and facilitate the specification, solving, and estimation of dynamic choice models."
-readme = { file = "README.md", content-type = "text/markdown" }
-license = { file = "LICENSE" }
+dynamic = ["version"]
 keywords = [
     "Dynamic programming",
     "Econometrics",
@@ -22,7 +23,7 @@ keywords = [
     "Statistics",
 ]
 classifiers = [
-    "Development Status :: 1 - Planning",
+    "Development Status :: 2 - Pre-Alpha",
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: MIT License",
     "Operating System :: MacOS :: MacOS X",
@@ -33,14 +34,21 @@ classifiers = [
     "Programming Language :: Python :: 3 :: Only",
     "Topic :: Scientific/Engineering",
 ]
-requires-python = ">=3.11"
-dependencies = [
-    "dags",
-    "jax>=0.4.10",
-    "jaxlib>=0.4.10",
-    "numpy",
-    "pandas",
+authors = [
+    { name = "Tim Mensinger", email = "mensingertim@gmail.com" },
+    { name = "Janos Gabler" },
 ]
+maintainers = [
+    { name = "Tim Mensinger", email = "mensingertim@gmail.com" },
+    { name = "Hans-Martin von Gaudecker", email = "hmgaudecker@uni-bonn.de" },
+]
+
+[project.readme]
+file = "README.md"
+content-type = "text/markdown"
+
+[project.license]
+text = "MIT"
 
 [project.urls]
 Repository = "https://github.com/opensourceeconomics/lcm"
@@ -61,6 +69,50 @@ write_to = "src/lcm/_version.py"
 
 [tool.check-manifest]
 ignore = ["src/lcm/_version.py"]
+
+
+# ======================================================================================
+# Pixi
+# ======================================================================================
+
+[tool.pixi.project]
+name = "lcm"
+channels = ["conda-forge", "nodefaults"]
+platforms = ["win-64", "linux-64", "osx-64", "osx-arm64"]
+
+[tool.pixi.dependencies]
+jupyterlab = "*"
+matplotlib = "*"
+pdbpp = "*"
+pre-commit = "*"
+snakeviz = "*"
+memory_profiler = "*"
+
+[tool.pixi.feature.test.dependencies]
+scipy = "*"
+pybaum = "*"
+mypy = "*"
+pandas-stubs = "*"
+pytest = "*"
+pytest-cov = "*"
+pytest-xdist = "*"
+
+[tool.pixi.feature.test.tasks]
+test = "pytest tests"
+test-cov = "pytest tests --cov-report=xml --cov=./"
+mypy = "mypy src"
+
+# [tool.pixi.feature.cuda]
+# platforms = ["linux-64"]
+# channels = ["nvidia"]
+# dependencies = {cuda-nvcc = {version = "*", channel = "nvidia"}}
+
+[tool.pixi.pypi-dependencies]
+lcm = { path = ".", editable = true }
+
+[tool.pixi.environments]
+test = { features = ["test"], solve-group = "default" }
+# cuda = { features = ["cuda"], solve-group = "default" }
 
 
 # ======================================================================================

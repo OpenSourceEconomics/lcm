@@ -19,7 +19,7 @@ exclude *.sh
 exclude *.yaml
 exclude *.yml
 exclude *.pickle
-exclude pytask.ini
+exclude *.lock
 
 prune .envs
 prune examples
