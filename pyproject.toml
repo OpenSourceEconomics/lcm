@@ -79,6 +79,9 @@ ignore = ["src/lcm/_version.py"]
 channels = ["conda-forge", "nodefaults"]
 platforms = ["win-64", "linux-64", "osx-64", "osx-arm64"]
 
+# Dependencies
+# ======================================================================================
+
 [tool.pixi.dependencies]
 jupyterlab = "*"
 matplotlib = "*"
@@ -87,8 +90,21 @@ pre-commit = "*"
 snakeviz = "*"
 memory_profiler = "*"
 
+[tool.pixi.target.linux-64.dependencies]
+cuda-nvcc = { version = "*", channel = "nvidia"}
+
+[tool.pixi.target.linux-64.pypi-dependencies]
+jax = { version = ">=0.4.28", extras = ["cuda12"] }
+jaxlib = ">=0.4.28"
+
+[tool.pixi.pypi-dependencies]
+lcm = { path = ".", editable = true }
+
+# Features
+# ======================================================================================
+
 [tool.pixi.feature.test.dependencies]
-scipy = "*"
+scipy = "<1.13"
 pybaum = "*"
 mypy = "*"
 pandas-stubs = "*"
@@ -97,21 +113,15 @@ pytest-cov = "*"
 pytest-xdist = "*"
 
 [tool.pixi.feature.test.tasks]
-test = "pytest tests"
-test-cov = "pytest tests --cov-report=xml --cov=./"
+tests = "pytest tests"
+tests-cov = "pytest tests --cov-report=xml --cov=./"
 mypy = "mypy src"
 
-# [tool.pixi.feature.cuda]
-# platforms = ["linux-64"]
-# channels = ["nvidia"]
-# dependencies = {cuda-nvcc = {version = "*", channel = "nvidia"}}
-
-[tool.pixi.pypi-dependencies]
-lcm = { path = ".", editable = true }
+# Environments
+# ======================================================================================
 
 [tool.pixi.environments]
 test = { features = ["test"], solve-group = "default" }
-# cuda = { features = ["cuda"], solve-group = "default" }
 
 
 # ======================================================================================
