@@ -27,9 +27,6 @@ it easy to call functions interchangeably.
 import jax.numpy as jnp
 from jax import Array
 
-# Define Euler's number for logspace. This is not equal to
-EULERS_NUMBER = 2.718281828459045
-
 # The functions in this module are designed to work with scalar numerical values. This
 # also includes zero dimensional jax arrays.
 ScalarNumeric = int | float | Array
