@@ -6,6 +6,7 @@ import jax.numpy as jnp
 import pandas as pd
 from dags import get_ancestors
 from dags.signature import with_signature
+from jax import Array
 
 import lcm.grids as grids_module
 from lcm.create_params_template import create_params_template
@@ -192,7 +193,10 @@ def _get_gridspecs(user_model, variable_info):
     return {k: variables[k] for k in order}
 
 
-def _get_grids(gridspecs: dict[str, GridSpec], variable_info: pd.DataFrame):
+def _get_grids(
+    gridspecs: dict[str, GridSpec],
+    variable_info: pd.DataFrame,
+) -> dict[str, Array]:
     """Create a dictionary of grids for each variable in the model.
 
     Args:
@@ -213,11 +217,11 @@ def _get_grids(gridspecs: dict[str, GridSpec], variable_info: pd.DataFrame):
     """
     grids = {}
     for name, grid_spec in gridspecs.items():
-        if variable_info.loc[name, "is_discrete"]:
-            grids[name] = jnp.array(grid_spec)
-        else:
+        if isinstance(grid_spec, ContinuousGridSpec):
             build_grid = getattr(grids_module, grid_spec.kind)
             grids[name] = build_grid(**grid_spec.info._asdict())
+        else:
+            grids[name] = jnp.array(grid_spec)
 
     order = variable_info.index.tolist()
     return {k: grids[k] for k in order}
