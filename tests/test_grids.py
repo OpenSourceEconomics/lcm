@@ -71,13 +71,13 @@ def test_logspace_mapped_value():
 @pytest.mark.illustrative()
 def test_map_coordinates_linear():
     """Illustrative test on how the output of get_linspace_coordinate can be used."""
-    grid_spec = {
+    grid_info = {
         "start": 0,
         "stop": 1,
         "n_points": 3,
     }
 
-    grid = linspace(**grid_spec)  # [0, 0.5, 1]
+    grid = linspace(**grid_info)  # [0, 0.5, 1]
 
     values = 2 * grid  # [0, 1.0, 2.0]
 
@@ -85,7 +85,7 @@ def test_map_coordinates_linear():
     # entry of the grid.
     coordinate = get_linspace_coordinate(
         value=0.25,
-        **grid_spec,
+        **grid_info,
     )
 
     # Perform the linear interpolation
@@ -96,13 +96,13 @@ def test_map_coordinates_linear():
 @pytest.mark.illustrative()
 def test_map_coordinates_logarithmic():
     """Illustrative test on how the output of get_logspace_coordinate can be used."""
-    grid_spec = {
+    grid_info = {
         "start": 1,
         "stop": 2,
         "n_points": 3,
     }
 
-    grid = logspace(**grid_spec)  # [1.0, 1.414213562373095, 2.0]
+    grid = logspace(**grid_info)  # [1.0, 1.414213562373095, 2.0]
 
     values = 2 * grid  # [2.0, 2.82842712474619, 4.0]
 
@@ -110,7 +110,7 @@ def test_map_coordinates_logarithmic():
     # entry of the grid.
     coordinate = get_logspace_coordinate(
         value=(1.0 + 1.414213562373095) / 2,
-        **grid_spec,
+        **grid_info,
     )
 
     # Perform the linear interpolation

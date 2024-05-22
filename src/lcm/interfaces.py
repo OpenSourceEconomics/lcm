@@ -1,7 +1,9 @@
-from typing import NamedTuple
+from typing import Literal, NamedTuple
 
-import numpy as np
 import pandas as pd
+from jax import Array
+
+from lcm.typing import Scalar
 
 
 class IndexerInfo(NamedTuple):
@@ -25,18 +27,44 @@ class IndexerInfo(NamedTuple):
     out_name: str
 
 
-class GridSpec(NamedTuple):
-    """Information needed to define or interpret a grid.
+class ContinuousGridInfo(NamedTuple):
+    """Information on how to build a grid for a continuous variable.
 
     Attributes:
-        kind (str): Name of a grid type implemented in lcm.grids.
-        specs (dict, np.ndarray): Specification of the grid. E.g. {"start": float,
-            "stop": float, "n_points": int} for a linspace.
+        start (Scalar): Start of the grid.
+        stop (Scalar): End of the grid.
+        n_points (int): Number of points in the grid.
 
     """
 
-    kind: str
-    specs: dict | np.ndarray
+    start: Scalar
+    stop: Scalar
+    n_points: int
+
+
+ContinuousGridType = Literal["linspace", "logspace"]
+
+
+class ContinuousGridSpec(NamedTuple):
+    """Specification of a grid for continuous variables.
+
+    Contains all information necessary to build and work with a grid of a continuous
+    variable.
+
+
+    Attributes:
+        kind (ContinuousGridType): Name of a grid type implemented in lcm.grids.
+        info (ContinuousGridInfo): Information on how to build the grid. E.g., start,
+            stop, and n_points.
+
+    """
+
+    kind: ContinuousGridType
+    info: ContinuousGridInfo
+
+
+DiscreteGridSpec = Array
+GridSpec = ContinuousGridSpec | DiscreteGridSpec
 
 
 class Space(NamedTuple):
@@ -71,7 +99,7 @@ class SpaceInfo(NamedTuple):
 
     axis_names: list[str]
     lookup_info: dict[str, list[str]]
-    interpolation_info: dict[str, GridSpec]
+    interpolation_info: dict[str, ContinuousGridSpec]
     indexer_infos: list[IndexerInfo]
 
 
