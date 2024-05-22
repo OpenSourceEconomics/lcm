@@ -27,6 +27,9 @@ it easy to call functions interchangeably.
 import jax.numpy as jnp
 from jax import Array
 
+# Define Euler's number for logspace. This is not equal to
+EULERS_NUMBER = 2.718281828459045
+
 # The functions in this module are designed to work with scalar numerical values. This
 # also includes zero dimensional jax arrays.
 ScalarNumeric = int | float | Array
@@ -62,7 +65,7 @@ def logspace(start: ScalarNumeric, stop: ScalarNumeric, n_points: int) -> Array:
     """
     start_lin = jnp.log(start)
     stop_lin = jnp.log(stop)
-    return jnp.logspace(start_lin, stop_lin, n_points, base=2.718281828459045)
+    return jnp.logspace(start_lin, stop_lin, n_points, base=jnp.e)
 
 
 def get_logspace_coordinate(
