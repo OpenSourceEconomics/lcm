@@ -59,10 +59,15 @@ def logspace(start: ScalarNumeric, stop: ScalarNumeric, n_points: int) -> Array:
     Returns a logarithmically spaced grid between start and stop with n_points,
     including both endpoints.
 
+    From the JAX documentation:
+
+        In linear space, the sequence starts at base ** start (base to the power of
+        start) and ends with base ** stop [...].
+
     """
-    start_lin = jnp.log(start)
-    stop_lin = jnp.log(stop)
-    return jnp.logspace(start_lin, stop_lin, n_points, base=jnp.e)
+    start_linear = jnp.log(start)
+    stop_linear = jnp.log(stop)
+    return jnp.logspace(start_linear, stop_linear, n_points, base=jnp.e)
 
 
 def get_logspace_coordinate(
@@ -72,21 +77,37 @@ def get_logspace_coordinate(
     n_points: int,
 ) -> ScalarNumeric:
     """Map a value into the input needed for jax.scipy.ndimage.map_coordinates."""
-    start_lin = jnp.log(start)
-    stop_lin = jnp.log(stop)
-    value_lin = jnp.log(value)
+    # Transform start, stop, and value to linear scale
+    start_linear = jnp.log(start)
+    stop_linear = jnp.log(stop)
+    value_linear = jnp.log(value)
 
-    mapped_point_lin = get_linspace_coordinate(value_lin, start_lin, stop_lin, n_points)
+    # Calculate coordinate in linear space
+    coordinate_in_linear_space = get_linspace_coordinate(
+        value_linear,
+        start_linear,
+        stop_linear,
+        n_points,
+    )
 
-    # Calculate lower and upper point on log/exp scale
-    step_length = (stop_lin - start_lin) / (n_points - 1)
-    rank_lower_gridpoint = jnp.floor(mapped_point_lin)
+    # Calculate rank of lower and upper point in logarithmic space
+    rank_lower_gridpoint = jnp.floor(coordinate_in_linear_space)
     rank_upper_gridpoint = rank_lower_gridpoint + 1
 
-    # Calc
-    lower_gridpoint = jnp.exp(start_lin + step_length * rank_lower_gridpoint)
-    upper_gridpoint = jnp.exp(start_lin + step_length * rank_upper_gridpoint)
+    # Calculate lower and upper point in logarithmic space
+    step_length_linear = (stop_linear - start_linear) / (n_points - 1)
+    lower_gridpoint = jnp.exp(start_linear + step_length_linear * rank_lower_gridpoint)
+    upper_gridpoint = jnp.exp(start_linear + step_length_linear * rank_upper_gridpoint)
 
-    # Calculate transformed mapped point
-    decimal = (value - lower_gridpoint) / (upper_gridpoint - lower_gridpoint)
-    return rank_lower_gridpoint + decimal
+    # Calculate the decimal part of coordinate
+    logarithmic_step_size_at_coordinate = upper_gridpoint - lower_gridpoint
+    distance_from_lower_gridpoint = value - lower_gridpoint
+
+    # If the distance from the lower gridpoint is zero, the coordinate corresponds to
+    # the rank of the lower gridpoint. The other extreme is when the distance is equal
+    # to the logarithmic step size at the coordinate, in which case the coordinate
+    # corresponds to the rank of the upper gridpoint. For values in between, the
+    # coordinate lies on a linear scale between the ranks of the lower and upper
+    # gridpoints.
+    decimal_part = distance_from_lower_gridpoint / logarithmic_step_size_at_coordinate
+    return rank_lower_gridpoint + decimal_part
