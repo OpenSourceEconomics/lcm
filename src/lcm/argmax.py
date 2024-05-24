@@ -1,6 +1,6 @@
-import jax
 import jax.numpy as jnp
 from jax import Array
+from jax.ops import segment_max
 
 # ======================================================================================
 # argmax
@@ -130,17 +130,17 @@ def segment_argmax(
     """
     # Compute segment maximum and bring to the same shape as data
     # ==================================================================================
-    segment_max = jax.ops.segment_max(
+    segment_maximum = segment_max(
         data=data,
         segment_ids=segment_ids,
         num_segments=num_segments,
         indices_are_sorted=True,
     )
-    segment_max_expanded = segment_max[segment_ids]
+    segment_maximum_expanded = segment_maximum[segment_ids]
 
     # Check where the array attains its maximum
     # ==================================================================================
-    max_value_mask = data == segment_max_expanded
+    max_value_mask = data == segment_maximum_expanded
 
     # Create index array of argmax indices for each segment (has same shape as data)
     # ==================================================================================
@@ -156,11 +156,11 @@ def segment_argmax(
     # ----------------------------------------------------------------------------------
     # Note: If multiple maxima exist, this approach will select the last index.
     # ==================================================================================
-    segment_argmax = jax.ops.segment_max(
+    segment_argmax = segment_max(
         data=max_value_indices,
         segment_ids=segment_ids,
         num_segments=num_segments,
         indices_are_sorted=True,
     )
 
-    return segment_argmax, segment_max
+    return segment_argmax, segment_maximum

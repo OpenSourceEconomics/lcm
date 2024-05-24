@@ -59,9 +59,8 @@ def test_analytical_solution(model_name, model_and_params):
     in the development repository: github.com/opensourceeconomics/lcm-dev.
 
     """
-    # ----------------------------------------------------------------------------------
     # Compute LCM solution
-    # ----------------------------------------------------------------------------------
+    # ==================================================================================
     solve_model, _ = get_lcm_function(model=model_and_params["model"])
 
     vf_arr_list = solve_model(params=model_and_params["params"])
@@ -71,9 +70,8 @@ def test_analytical_solution(model_name, model_and_params):
         "retired": _numerical[:, 1, :],
     }
 
-    # ----------------------------------------------------------------------------------
     # Load analytical solution
-    # ----------------------------------------------------------------------------------
+    # ==================================================================================
     analytical = {
         _type: np.genfromtxt(
             TEST_DATA.joinpath(
@@ -85,9 +83,8 @@ def test_analytical_solution(model_name, model_and_params):
         for _type in ["worker", "retired"]
     }
 
-    # ----------------------------------------------------------------------------------
     # Compare
-    # ----------------------------------------------------------------------------------
+    # ==================================================================================
     for _type in ["worker", "retired"]:
         _analytical = np.array(analytical[_type])
         _numerical = numerical[_type]

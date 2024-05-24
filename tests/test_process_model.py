@@ -3,7 +3,7 @@ import lcm.grids as grids_module
 import numpy as np
 import pandas as pd
 import pytest
-from lcm.interfaces import GridSpec
+from lcm.interfaces import ContinuousGridInfo, ContinuousGridSpec
 from lcm.mark import StochasticInfo
 from lcm.process_model import (
     _get_function_info,
@@ -118,16 +118,20 @@ def test_process_model_iskhakov_et_al_2017():
     ).all()
 
     # Gridspecs
-    wealth_specs = GridSpec(
+    wealth_specs = ContinuousGridSpec(
         kind="linspace",
-        specs={"start": 1, "stop": 400, "n_points": N_GRID_POINTS["wealth"]},
+        info=ContinuousGridInfo(start=1, stop=400, n_points=N_GRID_POINTS["wealth"]),
     )
 
     assert model.gridspecs["wealth"] == wealth_specs
 
-    consumption_specs = GridSpec(
+    consumption_specs = ContinuousGridSpec(
         kind="linspace",
-        specs={"start": 1, "stop": 400, "n_points": N_GRID_POINTS["consumption"]},
+        info=ContinuousGridInfo(
+            start=1,
+            stop=400,
+            n_points=N_GRID_POINTS["consumption"],
+        ),
     )
     assert model.gridspecs["consumption"] == consumption_specs
 
@@ -136,11 +140,11 @@ def test_process_model_iskhakov_et_al_2017():
 
     # Grids
     func = getattr(grids_module, model.gridspecs["consumption"].kind)
-    asserted = func(**model.gridspecs["consumption"].specs)
+    asserted = func(**model.gridspecs["consumption"].info._asdict())
     assert (asserted == model.grids["consumption"]).all()
 
     func = getattr(grids_module, model.gridspecs["wealth"].kind)
-    asserted = func(**model.gridspecs["wealth"].specs)
+    asserted = func(**model.gridspecs["wealth"].info._asdict())
     assert (asserted == model.grids["wealth"]).all()
 
     assert (model.grids["retirement"] == jnp.array([0, 1])).all()
@@ -177,16 +181,20 @@ def test_process_model():
     ).all()
 
     # Gridspecs
-    wealth_specs = GridSpec(
+    wealth_specs = ContinuousGridSpec(
         kind="linspace",
-        specs={"start": 1, "stop": 400, "n_points": N_GRID_POINTS["wealth"]},
+        info=ContinuousGridInfo(start=1, stop=400, n_points=N_GRID_POINTS["wealth"]),
     )
 
     assert model.gridspecs["wealth"] == wealth_specs
 
-    consumption_specs = GridSpec(
+    consumption_specs = ContinuousGridSpec(
         kind="linspace",
-        specs={"start": 1, "stop": 400, "n_points": N_GRID_POINTS["consumption"]},
+        info=ContinuousGridInfo(
+            start=1,
+            stop=400,
+            n_points=N_GRID_POINTS["consumption"],
+        ),
     )
     assert model.gridspecs["consumption"] == consumption_specs
 
@@ -194,11 +202,11 @@ def test_process_model():
 
     # Grids
     func = getattr(grids_module, model.gridspecs["consumption"].kind)
-    asserted = func(**model.gridspecs["consumption"].specs)
+    asserted = func(**model.gridspecs["consumption"].info._asdict())
     assert (asserted == model.grids["consumption"]).all()
 
     func = getattr(grids_module, model.gridspecs["wealth"].kind)
-    asserted = func(**model.gridspecs["wealth"].specs)
+    asserted = func(**model.gridspecs["wealth"].info._asdict())
     assert (asserted == model.grids["wealth"]).all()
 
     assert (model.grids["retirement"] == jnp.array([0, 1])).all()

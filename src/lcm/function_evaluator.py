@@ -8,6 +8,7 @@ from jax.scipy.ndimage import map_coordinates
 
 import lcm.grids as grids_module
 from lcm.functools import all_as_kwargs
+from lcm.interfaces import ContinuousGridInfo, ContinuousGridType
 
 
 def get_function_evaluator(
@@ -117,11 +118,11 @@ def get_function_evaluator(
         # ==============================================================================
         # create functions to find coordinates for the interpolation
         # ==============================================================================
-        for var, grid_info in space_info.interpolation_info.items():
+        for var, grid_spec in space_info.interpolation_info.items():
             funcs[f"__{var}_coord__"] = _get_coordinate_finder(
                 in_name=input_prefix + var,
-                grid_type=grid_info.kind,
-                grid_info=grid_info.specs,
+                grid_type=grid_spec.kind,
+                grid_info=grid_spec.info,
             )
 
         # ==============================================================================
@@ -219,30 +220,30 @@ def _get_lookup_function(array_name, axis_names):
     return lookup_wrapper
 
 
-def _get_coordinate_finder(in_name, grid_type, grid_info):
+def _get_coordinate_finder(
+    in_name: str,
+    grid_type: ContinuousGridType,
+    grid_info: ContinuousGridInfo,
+):
     """Create a function that translates a value into coordinates on a grid.
 
     The resulting coordinates can be used to do linear interpolation via
     jax.scipy.ndimage.map_coordinates.
 
     Args:
-        in_name (str): Name via which the value to be translated into coordinates
-            will be passed into the resulting function.
-        grid_type (str): Type of the grid, e.g. "linspace" or "logspace". The type of
-            grid must be implemented in lcm.grids.
-        grid_info (dict): Dict with information that defines the grid. E.g. for a
-            linspace those are {"start": float, "stop": float, "n_points": int}. See
-            lcm.grids for details.
+        in_name: Name via which the value to be translated into coordinates will be
+            passed into the resulting function.
+        grid_type: Type of the grid, e.g. "linspace" or "logspace". The type of grid
+            must be implemented in lcm.grids.
+        grid_info: Information on how to build the grid, e.g. start, stop, and n_points.
 
     Returns:
         callable: A callable with keyword-only argument [in_name] that translates a
             value into coordinates on a grid.
 
     """
-    grid_info = {} if grid_info is None else grid_info
-
     raw_func = getattr(grids_module, f"get_{grid_type}_coordinate")
-    partialled_func = partial(raw_func, **grid_info)
+    partialled_func = partial(raw_func, **grid_info._asdict())
 
     @with_signature(args=[in_name])
     def find_coordinate(*args, **kwargs):

@@ -5,7 +5,7 @@ import jax
 import jax.numpy as jnp
 
 from lcm.argmax import argmax
-from lcm.discrete_emax import get_emax_calculator
+from lcm.discrete_problem import get_solve_discrete_problem
 from lcm.dispatchers import productmap
 from lcm.logging import get_logger
 from lcm.model_functions import (
@@ -151,8 +151,8 @@ def get_lcm_function(
         # ==============================================================================
         _shock_type = _mod.shocks.get("additive_utility_shock", None)
 
-        calculator = get_emax_calculator(
-            shock_type=_shock_type,
+        calculator = get_solve_discrete_problem(
+            random_utility_shock_type=_shock_type,
             variable_info=_mod.variable_info,
             is_last_period=is_last_period,
             choice_segments=choice_segments[period],

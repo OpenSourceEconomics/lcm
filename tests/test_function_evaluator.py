@@ -12,22 +12,27 @@ from lcm.function_evaluator import (
     get_label_translator,
 )
 from lcm.grids import linspace
-from lcm.interfaces import GridSpec, IndexerInfo, SpaceInfo
+from lcm.interfaces import (
+    ContinuousGridInfo,
+    ContinuousGridSpec,
+    IndexerInfo,
+    SpaceInfo,
+)
 
 
 def test_function_evaluator_with_one_continuous_variable():
-    grid_specs = {"start": -3, "stop": 3, "n_points": 7}
+    grid_info = ContinuousGridInfo(start=-3, stop=3, n_points=7)
 
     space_info = SpaceInfo(
         axis_names=["wealth"],
         lookup_info={},
         interpolation_info={
-            "wealth": GridSpec(kind="linspace", specs=grid_specs),
+            "wealth": ContinuousGridSpec(kind="linspace", info=grid_info),
         },
         indexer_infos=[],
     )
 
-    grid = linspace(**grid_specs)
+    grid = linspace(**grid_info._asdict())
     vf_arr = jnp.pi * grid + 2
 
     # create the evaluator
@@ -114,13 +119,13 @@ def test_function_evaluator():
 
     # create info on continuous grids
     interpolation_info = {
-        "wealth": GridSpec(
+        "wealth": ContinuousGridSpec(
             kind="linspace",
-            specs={"start": 100, "stop": 1100, "n_points": 6},
+            info=ContinuousGridInfo(start=100, stop=1100, n_points=6),
         ),
-        "human_capital": GridSpec(
+        "human_capital": ContinuousGridSpec(
             kind="linspace",
-            specs={"start": -3, "stop": 3, "n_points": 7},
+            info=ContinuousGridInfo(start=-3, stop=3, n_points=7),
         ),
     }
 
@@ -197,13 +202,13 @@ def test_function_evaluator_longer_indexer():
 
     # create info on continuous grids
     interpolation_info = {
-        "wealth": GridSpec(
+        "wealth": ContinuousGridSpec(
             kind="linspace",
-            specs={"start": 100, "stop": 1100, "n_points": 6},
+            info=ContinuousGridInfo(start=100, stop=1100, n_points=6),
         ),
-        "human_capital": GridSpec(
+        "human_capital": ContinuousGridSpec(
             kind="linspace",
-            specs={"start": -3, "stop": 3, "n_points": 7},
+            info=ContinuousGridInfo(start=-3, stop=3, n_points=7),
         ),
     }
 
@@ -261,7 +266,7 @@ def test_get_coordinate_finder():
     find_coordinate = _get_coordinate_finder(
         in_name="wealth",
         grid_type="linspace",
-        grid_info={"start": 0, "stop": 10, "n_points": 21},
+        grid_info=ContinuousGridInfo(start=0, stop=10, n_points=21),
     )
 
     calculated = find_coordinate(wealth=5.75)
@@ -293,18 +298,18 @@ def test_get_interpolator():
 
 @pytest.mark.illustrative()
 def test_get_function_evaluator_illustrative():
-    grid_specs = {"start": 0, "stop": 1, "n_points": 3}
+    grid_info = ContinuousGridInfo(start=0, stop=1, n_points=3)
 
     space_info = SpaceInfo(
         axis_names=["a"],
         lookup_info={},
         interpolation_info={
-            "a": GridSpec(kind="linspace", specs=grid_specs),
+            "a": ContinuousGridSpec(kind="linspace", info=grid_info),
         },
         indexer_infos=[],
     )
 
-    grid = linspace(**grid_specs)
+    grid = linspace(**grid_info._asdict())
 
     values = jnp.pi * grid + 2
 
@@ -357,7 +362,7 @@ def test_get_coordinate_finder_illustrative():
     find_coordinate = _get_coordinate_finder(
         in_name="a",
         grid_type="linspace",
-        grid_info={"start": 0, "stop": 1, "n_points": 3},
+        grid_info=ContinuousGridInfo(start=0, stop=1, n_points=3),
     )
 
     assert find_coordinate(a=0) == 0
