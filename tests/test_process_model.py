@@ -273,3 +273,19 @@ def test_get_stochastic_weight_function_non_state_dependency():
             variable_info=variable_info,
             grids=None,
         )
+
+
+def test_variable_info_with_continuous_filter_has_unique_index():
+    user_model = get_model_config("iskhakov_et_al_2017", n_periods=3)
+
+    def wealth_filter(wealth):
+        return wealth > 200
+
+    user_model["functions"]["wealth_filter"] = wealth_filter
+
+    function_info = _get_function_info(user_model)
+    got = _get_variable_info(
+        user_model,
+        function_info,
+    )
+    assert got.index.is_unique
