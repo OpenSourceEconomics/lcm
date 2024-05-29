@@ -107,7 +107,7 @@ jaxlib = ">=0.4.20"
 platforms = ["linux-64"]
 system-requirements = {cuda = "12"}
 
-[tool.pixi.feature.cuda.dependencies]
+[tool.pixi.feature.cuda.target.linux-64.dependencies]
 cuda-nvcc = ">=12"
 jax = ">=0.4.20"
 jaxlib = { version = ">=0.4.20", build = "cuda12*" }
