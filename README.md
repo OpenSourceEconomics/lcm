@@ -6,3 +6,11 @@
 
 This package aims to generalize and facilitate the specification, solution, and
 estimation of dynamic choice models.
+
+## Installation
+
+`LCM` currently needs to be installed from GitHub and requires `jax` and `jaxlib`. If
+you aim to run `LCM` on a GPU, you need to install `jaxlib` with CUDA support (for
+Linux) or with support for AMD GPUs / ARM-based Silicon GPUs (for MacOS). In any case,
+please consult the `jax`
+[docs](https://jax.readthedocs.io/en/latest/installation.html#supported-platforms).
