@@ -5,11 +5,9 @@
 [project]
 name = "lcm"
 description = "lcm aims to generalize and facilitate the specification, solving, and estimation of dynamic choice models."
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 dependencies = [
     "dags",
-    "jax>=0.4.28",
-    "jaxlib>=0.4.28",
     "numpy",
     "pandas",
 ]
@@ -76,13 +74,15 @@ ignore = ["src/lcm/_version.py"]
 # ======================================================================================
 
 [tool.pixi.project]
-channels = ["conda-forge", "nodefaults"]
-platforms = ["win-64", "linux-64", "osx-64", "osx-arm64"]
+channels = ["conda-forge"]
+platforms = ["linux-64", "win-64", "osx-64", "osx-arm64"]
 
-# Dependencies
-# ======================================================================================
+# Development Dependencies
+# --------------------------------------------------------------------------------------
 
 [tool.pixi.dependencies]
+python = "3.12"
+pybaum = "*"
 jupyterlab = "*"
 matplotlib = "*"
 pdbpp = "*"
@@ -90,24 +90,28 @@ pre-commit = "*"
 snakeviz = "*"
 memory_profiler = "*"
 
-[tool.pixi.target.linux-64.dependencies]
-cuda-nvcc = { version = "*", channel = "nvidia"}
-
-[tool.pixi.target.linux-64.pypi-dependencies]
-jax = { version = ">=0.4.28", extras = ["cuda12"] }
-jaxlib = ">=0.4.28"
-
 [tool.pixi.pypi-dependencies]
-lcm = { path = ".", editable = true }
+jax = ">=0.4.20"
+jaxlib = ">=0.4.20"
+lcm = {path = ".", editable = true}
 
-# Features
-# ======================================================================================
+[tool.pixi.target.win-64.pypi-dependencies]
+jax = { version = ">=0.4.20", extras = ["cpu"] }
+jaxlib = ">=0.4.20"
+
+# Features and Tasks
+# --------------------------------------------------------------------------------------
+
+[tool.pixi.feature.cuda]
+platforms = ["linux-64"]
+system-requirements = {cuda = "12"}
+
+[tool.pixi.feature.cuda.dependencies]
+cuda-nvcc = ">=12"
+jax = ">=0.4.20"
+jaxlib = { version = ">=0.4.20", build = "cuda12*" }
 
 [tool.pixi.feature.test.dependencies]
-scipy = "<1.13"
-pybaum = "*"
-mypy = "*"
-pandas-stubs = "*"
 pytest = "*"
 pytest-cov = "*"
 pytest-xdist = "*"
@@ -115,13 +119,22 @@ pytest-xdist = "*"
 [tool.pixi.feature.test.tasks]
 tests = "pytest tests"
 tests-cov = "pytest tests --cov-report=xml --cov=./"
+
+[tool.pixi.feature.mypy.dependencies]
+mypy = "*"
+pandas-stubs = "*"
+
+[tool.pixi.feature.mypy.tasks]
 mypy = "mypy src"
 
 # Environments
-# ======================================================================================
+# --------------------------------------------------------------------------------------
 
 [tool.pixi.environments]
-test = { features = ["test"], solve-group = "default" }
+cuda = {features = ["cuda"]}
+mypy = {features = ["mypy"]}
+test-cpu = {features = ["test"], solve-group = "test"}
+test-gpu = {features = ["test", "cuda"], solve-group = "test"}
 
 
 # ======================================================================================
