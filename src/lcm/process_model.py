@@ -6,12 +6,13 @@ import jax.numpy as jnp
 import pandas as pd
 from dags import get_ancestors
 from dags.signature import with_signature
+from jax import Array
 
 import lcm.grids as grids_module
 from lcm.create_params_template import create_params_template
 from lcm.function_evaluator import get_label_translator
 from lcm.functools import all_as_args, all_as_kwargs
-from lcm.interfaces import GridSpec, Model
+from lcm.interfaces import ContinuousGridInfo, ContinuousGridSpec, GridSpec, Model
 
 
 def process_model(user_model):
@@ -123,8 +124,8 @@ def _get_variable_info(user_model, function_info):
     order += info.query("is_sparse & is_choice").index.tolist()
     order += info.query("is_dense & is_discrete & is_state").index.tolist()
     order += info.query("is_dense & is_discrete & is_choice").index.tolist()
-    order += info.query("is_continuous & is_state").index.tolist()
-    order += info.query("is_continuous & is_choice").index.tolist()
+    order += info.query("is_dense & is_continuous & is_state").index.tolist()
+    order += info.query("is_dense & is_continuous & is_choice").index.tolist()
 
     if set(order) != set(info.index):
         raise ValueError("Order and index do not match.")
@@ -182,28 +183,32 @@ def _get_gridspecs(user_model, variable_info):
         if "options" in spec:
             variables[name] = spec["options"]
         else:
-            variables[name] = GridSpec(
+            grid_info = {k: v for k, v in spec.items() if k != "grid_type"}
+            variables[name] = ContinuousGridSpec(
                 kind=spec["grid_type"],
-                specs={k: v for k, v in spec.items() if k != "grid_type"},
+                info=ContinuousGridInfo(**grid_info),
             )
 
     order = variable_info.index.tolist()
     return {k: variables[k] for k in order}
 
 
-def _get_grids(gridspecs, variable_info):
+def _get_grids(
+    gridspecs: dict[str, GridSpec],
+    variable_info: pd.DataFrame,
+) -> dict[str, Array]:
     """Create a dictionary of grids for each variable in the model.
 
     Args:
-        gridspecs (dict): Dictionary containing all variables of the model. The keys
-            are the names of the variables. The values describe which values the
-            variable can take. For discrete variables these are the options. For
-            continuous variables this is information about how to build the grids.
-        variable_info (pandas.DataFrame): A table with information about all
-            variables in the model. The index contains the name of a model variable.
-            The columns are booleans that are True if the variable has the
-            corresponding property. The columns are: is_state, is_choice, is_continuous,
-            is_discrete, is_sparse, is_dense.
+        gridspecs: Dictionary containing all variables of the model. The keys are the
+            names of the variables. The values describe which values the variable can
+            take. For discrete variables these are the options (jnp.array). For
+            continuous variables this is information about how to build the grids
+            (ContinuousGridSpec).
+        variable_info: A table with information about all variables in the model. The
+            index contains the name of a model variable. The columns are booleans that
+            are True if the variable has the corresponding property. The columns are:
+            is_state, is_choice, is_continuous, is_discrete, is_sparse, is_dense.
 
     Returns:
         dict: Dictionary containing all variables of the model. The keys are
@@ -211,12 +216,12 @@ def _get_grids(gridspecs, variable_info):
 
     """
     grids = {}
-    for name, grid_info in gridspecs.items():
-        if variable_info.loc[name, "is_discrete"]:
-            grids[name] = jnp.array(grid_info)
+    for name, grid_spec in gridspecs.items():
+        if isinstance(grid_spec, ContinuousGridSpec):
+            build_grid = getattr(grids_module, grid_spec.kind)
+            grids[name] = build_grid(**grid_spec.info._asdict())
         else:
-            func = getattr(grids_module, grid_info.kind)
-            grids[name] = func(**grid_info.specs)
+            grids[name] = jnp.array(grid_spec)
 
     order = variable_info.index.tolist()
     return {k: grids[k] for k in order}
