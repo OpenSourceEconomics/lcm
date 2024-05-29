@@ -82,6 +82,7 @@ platforms = ["linux-64", "win-64", "osx-64", "osx-arm64"]
 
 [tool.pixi.dependencies]
 python = "3.12"
+scipy = "<=1.13"
 pybaum = "*"
 jupyterlab = "*"
 matplotlib = "*"
