@@ -134,8 +134,8 @@ mypy = "mypy src"
 [tool.pixi.environments]
 cuda = {features = ["cuda"]}
 mypy = {features = ["mypy"]}
-test-cpu = {features = ["test"], solve-group = "test"}
-test-gpu = {features = ["test", "cuda"], solve-group = "test"}
+test-cpu = {features = ["test"]}
+test-gpu = {features = ["test", "cuda"]}
 
 
 # ======================================================================================
