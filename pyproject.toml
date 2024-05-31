@@ -156,10 +156,10 @@ mypy = "mypy src"
 # --------------------------------------------------------------------------------------
 
 [tool.pixi.environments]
-cuda = {features = ["cuda"], solve-group = "default"}
+cuda = {features = ["cuda"], solve-group = "cuda"}
 mypy = {features = ["mypy"], solve-group = "default"}
 test-cpu = {features = ["test"], solve-group = "default"}
-test-gpu = {features = ["test", "cuda"], solve-group = "default"}
+test-gpu = {features = ["test", "cuda"], solve-group = "cuda"}
 
 
 # ======================================================================================
