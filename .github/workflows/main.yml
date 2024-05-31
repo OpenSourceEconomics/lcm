@@ -35,11 +35,7 @@ jobs:
           activate-environment: true
       - name: Run pytest
         shell: bash -l {0}
-        # Cannot use `pixi run -e test-cpu tests` because the test-cpu environment
-        # overlaps with the test-gpu environment, which is erroneously checked and
-        # fails on CI because CUDA12 is not installed. Therefore we run pytest directly
-        # inside the activated test-cpu environment.
-        run: pytest tests --cov-report=xml --cov=./
+        run: pixi run -e test-cpu tests
       - name: Upload coverage report
         if: runner.os == 'Linux' && matrix.python-version == '3.12'
         uses: codecov/codecov-action@v4
