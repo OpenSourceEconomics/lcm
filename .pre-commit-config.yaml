@@ -49,7 +49,7 @@ repos:
     rev: 24.4.2
     hooks:
       - id: black
-        language_version: python3.11
+        language_version: python3.12
   - repo: https://github.com/asottile/blacken-docs
     rev: 1.16.0
     hooks:
@@ -65,10 +65,10 @@ repos:
     hooks:
       - id: nbqa-black
         additional_dependencies:
-          - black==24.4.0
+          - black==24.4.2
       - id: nbqa-ruff
         additional_dependencies:
-          - ruff==v0.3.7
+          - ruff==v0.4.6
   - repo: https://github.com/executablebooks/mdformat
     rev: 0.7.17
     hooks:
