@@ -101,6 +101,7 @@ pdbpp = "*"
 pre-commit = "*"
 snakeviz = "*"
 memory_profiler = "*"
+pyyaml = "*"
 
 [tool.pixi.pypi-dependencies]
 jax = ">=0.4.20"
@@ -217,6 +218,7 @@ extend-ignore = [
 "tests/test_*.py" = ["PLR2004"]
 "examples/*" = ["INP001"]
 "explanations/*" = ["INP001", "B018", "T201", "E402", "PD008"]
+"scripts/*" = ["INP001", "D101", "RET503"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
