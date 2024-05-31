@@ -15,4 +15,4 @@ Linux) or with support for AMD GPUs / ARM-based Silicon GPUs (for MacOS). In any
 for installation of `jax` and `jaxlib`, please consult the `jax`
 [docs](https://jax.readthedocs.io/en/latest/installation.html#supported-platforms).
 
-> \[!NOTE\] We currently test GPU support for `LCM` only on Linux with CUDA 12.
+> **Note:** We currently test GPU support for `LCM` only on Linux with CUDA 12.
