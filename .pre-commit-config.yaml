@@ -12,7 +12,7 @@ repos:
   - repo: local
     hooks:
       - id: update-black-and-ruff-nbqa-versions
-        name: Update versions of black and ruff for nbQA
+        name: Check for version mismatch between black, ruff, and nbQA
         entry: python scripts/check_nbqa_version_mismatch.py
         language: python
         always_run: true
