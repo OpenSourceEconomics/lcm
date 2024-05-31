@@ -101,16 +101,12 @@ pdbpp = "*"
 pre-commit = "*"
 snakeviz = "*"
 memory_profiler = "*"
-pyyaml = "*"
+
 
 [tool.pixi.pypi-dependencies]
-jax = ">=0.4.20"
-jaxlib = ">=0.4.20"
-lcm = {path = ".", editable = true}
-
-[tool.pixi.target.win-64.pypi-dependencies]
 jax = { version = ">=0.4.20", extras = ["cpu"] }
 jaxlib = ">=0.4.20"
+lcm = {path = ".", editable = true}
 
 # Features and Tasks
 # --------------------------------------------------------------------------------------
