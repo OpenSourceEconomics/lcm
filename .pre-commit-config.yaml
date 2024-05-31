@@ -11,7 +11,7 @@ repos:
       - id: yamlfix
   - repo: local
     hooks:
-      - id: update-black-and-ruff-nbqa-versions
+      - id: check-nbqa-version-mismatch
         name: Check for version mismatch between black, ruff, and nbQA
         entry: python scripts/check_nbqa_version_mismatch.py
         language: python

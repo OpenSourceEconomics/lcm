@@ -28,11 +28,9 @@ class NbQAHook(TypedDict):
 
 
 class NbQARepo(PreCommitRepo):
+    repo: str
     hooks: list[NbQAHook]
     rev: str
-
-
-PRE_COMMIT_CONFIG_FILE = Path(".pre-commit-config.yaml")
 
 
 TOOL_TO_REPO = {
@@ -42,16 +40,16 @@ TOOL_TO_REPO = {
 }
 
 
-def read_yaml(file: Path) -> PreCommitConfig:
+def read_pre_commit_config() -> PreCommitConfig:
     """Read a YAML file."""
-    with file.open() as stream:
+    with Path(".pre-commit-config.yaml").open() as stream:
         try:
             return yaml.safe_load(stream)
         except yaml.YAMLError as error:
             raise ValueError("Failed to parse .pre-commit-config.yaml file") from error
 
 
-def get_nbqa_repo(pre_commit_config: PreCommitConfig) -> NbQARepo | None:
+def get_nbqa_repo(pre_commit_config: PreCommitConfig) -> NbQARepo:
     """Get the nbQA repo from the pre-commit config.
 
     Args:
@@ -66,7 +64,7 @@ def get_nbqa_repo(pre_commit_config: PreCommitConfig) -> NbQARepo | None:
             return repo
 
 
-def get_primary_version(pre_commit_config: PreCommitConfig, tool: str) -> str | None:
+def get_primary_version(pre_commit_config: PreCommitConfig, tool: str) -> str:
     """Get the primary version of the tool used in the pre-commit config.
 
     Args:
@@ -115,6 +113,6 @@ def check_for_version_mismatch(
 
 
 if __name__ == "__main__":
-    pre_commit_config = read_yaml(PRE_COMMIT_CONFIG_FILE)
+    pre_commit_config = read_pre_commit_config()
     nbqa_repo = get_nbqa_repo(pre_commit_config)
     check_for_version_mismatch(pre_commit_config, nbqa_repo)
