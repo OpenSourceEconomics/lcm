@@ -86,15 +86,13 @@ allow-direct-references = true
 
 [tool.pixi.project]
 channels = ["conda-forge"]
-platforms = ["linux-64", "osx-64", "osx-arm64"]
+platforms = ["linux-64", "osx-64", "osx-arm64", "win-64"]
 
-# Development Dependencies
+# Development Dependencies (conda)
 # --------------------------------------------------------------------------------------
 
 [tool.pixi.dependencies]
 python = "3.12"
-jax = ">=0.4.20"
-jaxlib = ">=0.4.20"
 scipy = "<=1.13"
 pybaum = "*"
 jupyterlab = "*"
@@ -104,9 +102,27 @@ pre-commit = "*"
 snakeviz = "*"
 memory_profiler = "*"
 
+[tool.pixi.target.linux-64.dependencies]
+jax = ">=0.4.20"
+jaxlib = ">=0.4.20"
+
+[tool.pixi.target.osx-64.dependencies]
+jax = ">=0.4.20"
+jaxlib = ">=0.4.20"
+
+[tool.pixi.target.osx-arm64.dependencies]
+jax = ">=0.4.20"
+jaxlib = ">=0.4.20"
+
+# Development Dependencies (pypi)
+# --------------------------------------------------------------------------------------
 
 [tool.pixi.pypi-dependencies]
 lcm = {path = ".", editable = true}
+
+[tool.pixi.target.win-64.pypi-dependencies]
+jax = { version = ">=0.4.20", extras = ["cpu"] }
+jaxlib = ">=0.4.20"
 
 # Features and Tasks
 # --------------------------------------------------------------------------------------
