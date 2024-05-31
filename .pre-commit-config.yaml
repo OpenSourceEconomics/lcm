@@ -13,10 +13,12 @@ repos:
     hooks:
       - id: update-black-and-ruff-nbqa-versions
         name: Update versions of black and ruff for nbQA
-        entry: .pixi/envs/default/bin/python scripts/check_nbqa_version_mismatch.py
+        entry: python scripts/check_nbqa_version_mismatch.py
         language: python
         always_run: true
         require_serial: true
+        additional_dependencies:
+          - pyyaml
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.6.0
     hooks:

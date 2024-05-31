@@ -131,7 +131,7 @@ pytest-xdist = "*"
 
 [tool.pixi.feature.test.tasks]
 tests = "pytest tests"
-tests-cov = "pytest tests --cov-report=xml --cov=./"
+tests-with-cov = "pytest tests --cov-report=xml --cov=./"
 
 [tool.pixi.feature.mypy.dependencies]
 mypy = "*"

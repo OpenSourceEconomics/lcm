@@ -12,5 +12,7 @@ estimation of dynamic choice models.
 `LCM` currently needs to be installed from GitHub and requires `jax` and `jaxlib`. If
 you aim to run `LCM` on a GPU, you need to install `jaxlib` with CUDA support (for
 Linux) or with support for AMD GPUs / ARM-based Silicon GPUs (for MacOS). In any case,
-please consult the `jax`
+for installation of `jax` and `jaxlib`, please consult the `jax`
 [docs](https://jax.readthedocs.io/en/latest/installation.html#supported-platforms).
+
+> \[!NOTE\] We currently test GPU support for `LCM` only on Linux with CUDA 12.
