@@ -59,14 +59,25 @@ Tracker = "https://github.com/OpenSourceEconomics/lcm/issues"
 # ======================================================================================
 
 [build-system]
-requires = ["setuptools>=45", "wheel", "setuptools_scm[toml]>=6.0"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling", "hatch_vcs"]
+build-backend = "hatchling.build"
 
-[tool.setuptools_scm]
-write_to = "src/lcm/_version.py"
+[tool.hatch.build.hooks.vcs]
+version-file = "src/lcm/_version.py"
 
-[tool.check-manifest]
-ignore = ["src/lcm/_version.py"]
+[tool.hatch.build.targets.sdist]
+exclude = ["tests"]
+only-packages = true
+
+[tool.hatch.build.targets.wheel]
+only-include = ["src"]
+sources = ["src"]
+
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.metadata]
+allow-direct-references = true
 
 
 # ======================================================================================
