@@ -4,15 +4,14 @@
 
 [project]
 name = "lcm"
-dynamic = ["version"]
-authors = [
-    { name = "Tim Mensinger", email = "mensingertim@gmail.com" },
-    { name = "Hans-Martin von Gaudecker", email = "hmgaudecker@uni-bonn.de" },
-    { name = "Janos Gabler" },
+description = "lcm aims to generalize and facilitate the specification, solving, and estimation of dynamic choice models."
+requires-python = ">=3.12"
+dependencies = [
+    "dags",
+    "numpy",
+    "pandas",
 ]
-description = "This package aims to generalize and facilitate the specification, solving, and estimation of dynamic choice models."
-readme = { file = "README.md", content-type = "text/markdown" }
-license = { file = "LICENSE" }
+dynamic = ["version"]
 keywords = [
     "Dynamic programming",
     "Econometrics",
@@ -22,7 +21,7 @@ keywords = [
     "Statistics",
 ]
 classifiers = [
-    "Development Status :: 1 - Planning",
+    "Development Status :: 2 - Pre-Alpha",
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: MIT License",
     "Operating System :: MacOS :: MacOS X",
@@ -33,14 +32,21 @@ classifiers = [
     "Programming Language :: Python :: 3 :: Only",
     "Topic :: Scientific/Engineering",
 ]
-requires-python = ">=3.11"
-dependencies = [
-    "dags",
-    "jax>=0.4.10",
-    "jaxlib>=0.4.10",
-    "numpy",
-    "pandas",
+authors = [
+    { name = "Tim Mensinger", email = "mensingertim@gmail.com" },
+    { name = "Janos Gabler" },
 ]
+maintainers = [
+    { name = "Tim Mensinger", email = "mensingertim@gmail.com" },
+    { name = "Hans-Martin von Gaudecker", email = "hmgaudecker@uni-bonn.de" },
+]
+
+[project.readme]
+file = "README.md"
+content-type = "text/markdown"
+
+[project.license]
+text = "MIT"
 
 [project.urls]
 Repository = "https://github.com/opensourceeconomics/lcm"
@@ -53,14 +59,107 @@ Tracker = "https://github.com/OpenSourceEconomics/lcm/issues"
 # ======================================================================================
 
 [build-system]
-requires = ["setuptools>=45", "wheel", "setuptools_scm[toml]>=6.0"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling", "hatch_vcs"]
+build-backend = "hatchling.build"
 
-[tool.setuptools_scm]
-write_to = "src/lcm/_version.py"
+[tool.hatch.build.hooks.vcs]
+version-file = "src/lcm/_version.py"
 
-[tool.check-manifest]
-ignore = ["src/lcm/_version.py"]
+[tool.hatch.build.targets.sdist]
+exclude = ["tests"]
+only-packages = true
+
+[tool.hatch.build.targets.wheel]
+only-include = ["src"]
+sources = ["src"]
+
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+
+# ======================================================================================
+# Pixi
+# ======================================================================================
+
+[tool.pixi.project]
+channels = ["conda-forge"]
+platforms = ["linux-64", "osx-64", "osx-arm64", "win-64"]
+
+# Development Dependencies (conda)
+# --------------------------------------------------------------------------------------
+
+[tool.pixi.dependencies]
+python = "3.12"
+scipy = "<=1.13"
+pybaum = "*"
+jupyterlab = "*"
+matplotlib = "*"
+pdbpp = "*"
+pre-commit = "*"
+snakeviz = "*"
+memory_profiler = "*"
+
+[tool.pixi.target.linux-64.dependencies]
+jax = ">=0.4.20"
+jaxlib = ">=0.4.20"
+
+[tool.pixi.target.osx-64.dependencies]
+jax = ">=0.4.20"
+jaxlib = ">=0.4.20"
+
+[tool.pixi.target.osx-arm64.dependencies]
+jax = ">=0.4.20"
+jaxlib = ">=0.4.20"
+
+# Development Dependencies (pypi)
+# --------------------------------------------------------------------------------------
+
+[tool.pixi.pypi-dependencies]
+lcm = {path = ".", editable = true}
+
+[tool.pixi.target.win-64.pypi-dependencies]
+jax = { version = ">=0.4.20", extras = ["cpu"] }
+jaxlib = ">=0.4.20"
+
+# Features and Tasks
+# --------------------------------------------------------------------------------------
+
+[tool.pixi.feature.cuda]
+platforms = ["linux-64"]
+system-requirements = {cuda = "12"}
+
+[tool.pixi.feature.cuda.target.linux-64.dependencies]
+cuda-nvcc = ">=12"
+jax = ">=0.4.20"
+jaxlib = { version = ">=0.4.20", build = "cuda12*" }
+
+[tool.pixi.feature.test.dependencies]
+pytest = "*"
+pytest-cov = "*"
+pytest-xdist = "*"
+
+[tool.pixi.feature.test.tasks]
+tests = "pytest tests"
+tests-with-cov = "pytest tests --cov-report=xml --cov=./"
+
+[tool.pixi.feature.mypy.dependencies]
+mypy = "*"
+pandas-stubs = "*"
+
+[tool.pixi.feature.mypy.tasks]
+mypy = "mypy src"
+
+# Environments
+# --------------------------------------------------------------------------------------
+
+[tool.pixi.environments]
+cuda = {features = ["cuda"], solve-group = "cuda"}
+mypy = {features = ["mypy"], solve-group = "default"}
+test-cpu = {features = ["test"], solve-group = "default"}
+test-gpu = {features = ["test", "cuda"], solve-group = "cuda"}
 
 
 # ======================================================================================
@@ -68,7 +167,7 @@ ignore = ["src/lcm/_version.py"]
 # ======================================================================================
 
 [tool.ruff]
-target-version = "py311"
+target-version = "py312"
 fix = true
 
 [tool.ruff.lint]
@@ -128,6 +227,7 @@ extend-ignore = [
 "tests/test_*.py" = ["PLR2004"]
 "examples/*" = ["INP001"]
 "explanations/*" = ["INP001", "B018", "T201", "E402", "PD008"]
+"scripts/*" = ["INP001", "D101", "RET503"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
