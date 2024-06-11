@@ -9,6 +9,16 @@ repos:
     rev: 1.16.0
     hooks:
       - id: yamlfix
+  - repo: local
+    hooks:
+      - id: check-nbqa-version-mismatch
+        name: Check for version mismatch between black, ruff, and nbQA
+        entry: python scripts/check_nbqa_version_mismatch.py
+        language: python
+        always_run: true
+        require_serial: true
+        additional_dependencies:
+          - pyyaml
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.6.0
     hooks:
@@ -46,16 +56,16 @@ repos:
     hooks:
       - id: yamllint
   - repo: https://github.com/psf/black
-    rev: 24.4.0
+    rev: 24.4.2
     hooks:
       - id: black
-        language_version: python3.11
+        language_version: python3.12
   - repo: https://github.com/asottile/blacken-docs
     rev: 1.16.0
     hooks:
       - id: blacken-docs
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.3.7
+    rev: v0.4.6
     hooks:
       - id: ruff
       #   args:
@@ -65,10 +75,10 @@ repos:
     hooks:
       - id: nbqa-black
         additional_dependencies:
-          - black==24.4.0
+          - black==24.4.2
       - id: nbqa-ruff
         additional_dependencies:
-          - ruff==v0.3.7
+          - ruff==v0.4.6
   - repo: https://github.com/executablebooks/mdformat
     rev: 0.7.17
     hooks:
@@ -80,14 +90,5 @@ repos:
           - --wrap
           - '88'
         files: (README\.md)
-  - repo: https://github.com/mgedmin/check-manifest
-    rev: '0.49'
-    hooks:
-      - id: check-manifest
-        args:
-          - --no-build-isolation
-        additional_dependencies:
-          - setuptools-scm
-          - toml
 ci:
   autoupdate_schedule: monthly
