@@ -78,7 +78,7 @@ repos:
           - black==24.4.2
       - id: nbqa-ruff
         additional_dependencies:
-          - ruff==v0.4.6
+          - ruff==v0.4.7
   - repo: https://github.com/executablebooks/mdformat
     rev: 0.7.17
     hooks:
