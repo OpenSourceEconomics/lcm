@@ -11,14 +11,14 @@ F = TypeVar("F", bound=Callable[..., Any])
 
 
 def allow_only_kwargs(func: F) -> F:
-    """Restrict a function to be called with *only* keyword arguments.
+    """Restrict a function to be called with only keyword arguments.
 
     Args:
         func (Callable): The function to be wrapped.
 
     Returns:
         Callable: A Callable with the same arguments as func (but with the additional
-            restriction that it is *only* callable with keyword arguments).
+            restriction that it is only callable with keyword arguments).
 
     """
     signature = inspect.signature(func)
@@ -41,7 +41,7 @@ def allow_only_kwargs(func: F) -> F:
     new_signature = signature.replace(parameters=new_parameters)
 
     @functools.wraps(func)
-    def allow_kwargs_wrapper(*args, **kwargs):
+    def func_with_only_kwargs(*args, **kwargs):
         if args:
             raise ValueError(
                 (
@@ -69,8 +69,8 @@ def allow_only_kwargs(func: F) -> F:
 
     # This raises a mypy error but is perfectly fine to do. See
     # https://github.com/python/mypy/issues/12472
-    allow_kwargs_wrapper.__signature__ = new_signature  # type: ignore[attr-defined]
-    return allow_kwargs_wrapper
+    func_with_only_kwargs.__signature__ = new_signature  # type: ignore[attr-defined]
+    return func_with_only_kwargs
 
 
 def allow_kwargs(func):

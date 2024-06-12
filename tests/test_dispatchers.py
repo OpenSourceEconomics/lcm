@@ -99,7 +99,11 @@ def test_productmap_with_all_arguments_mapped(func, args, grids, expected, reque
     calculated = decorated(**grids)
     aaae(calculated, expected)
 
-    with pytest.raises(TypeError, match="takes 0 positional arguments but"):
+    match = (
+        "This function was decorated with allow_only_kwargs, but was called with "
+        "positional arguments."
+    )
+    with pytest.raises(ValueError, match=match):
         decorated(*grids.values())
 
 
