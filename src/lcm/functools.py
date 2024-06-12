@@ -5,10 +5,6 @@ from typing import Any, TypeVar, cast
 
 F = TypeVar("F", bound=Callable[..., Any])
 
-# ======================================================================================
-# Decorators
-# ======================================================================================
-
 
 def allow_only_kwargs(func: F) -> F:
     """Restrict a function to be called with only keyword arguments.
@@ -153,11 +149,6 @@ def allow_args(func: F) -> F:
     # change from positional to keyword-only parameter in the function signature
     # https://github.com/OpenSourceEconomics/lcm/issues/80.
     return cast(F, allow_args_wrapper)
-
-
-# ======================================================================================
-# Auxiliary functions
-# ======================================================================================
 
 
 def get_union_of_arguments(list_of_functions: list[Callable]) -> set[str]:
