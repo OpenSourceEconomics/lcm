@@ -10,11 +10,11 @@ def allow_only_kwargs(func: F) -> F:
     """Restrict a function to be called with only keyword arguments.
 
     Args:
-        func (Callable): The function to be wrapped.
+        func: The function to be wrapped.
 
     Returns:
-        Callable: A Callable with the same arguments as func (but with the additional
-            restriction that it is only callable with keyword arguments).
+        A Callable with the same arguments as func (but with the additional restriction
+            that it is only callable with keyword arguments).
 
     """
     signature = inspect.signature(func)
@@ -82,11 +82,11 @@ def allow_args(func: F) -> F:
     that the function is called only with positional arguments.
 
     Args:
-        func (Callable): The function to be wrapped.
+        func: The function to be wrapped.
 
     Returns:
-        Callable: A Callable with the same arguments as func (but with the additional
-            possibility to call it with positional arguments).
+        A Callable with the same arguments as func (but with the additional possibility
+            to call it with positional arguments).
 
     """
     signature = inspect.signature(func)
@@ -155,10 +155,10 @@ def get_union_of_arguments(list_of_functions: list[Callable]) -> set[str]:
     """Return the union of arguments of a list of functions.
 
     Args:
-        list_of_functions (list): A list of functions.
+        list_of_functions: A list of functions.
 
     Returns:
-        set: The union of arguments of all functions in list_of_functions.
+        The union of arguments of all functions in list_of_functions.
 
     """
     arguments = [inspect.signature(f).parameters for f in list_of_functions]
@@ -173,12 +173,12 @@ def all_as_kwargs(
     """Return kwargs dictionary containing all arguments.
 
     Args:
-        args (tuple): Positional arguments.
-        kwargs (dict): Keyword arguments.
-        arg_names (list): Names of arguments.
+        args: Positional arguments.
+        kwargs: Keyword arguments.
+        arg_names: Names of arguments.
 
     Returns:
-        dict: A dictionary of all arguments.
+        A dictionary of all arguments.
 
     """
     return dict(zip(arg_names[: len(args)], args, strict=True)) | kwargs
@@ -192,12 +192,12 @@ def all_as_args(
     """Return args tuple containing all arguments.
 
     Args:
-        args (tuple): Positional arguments.
-        kwargs (dict): Keyword arguments.
-        arg_names (list): Names of arguments.
+        args: Positional arguments.
+        kwargs: Keyword arguments.
+        arg_names: Names of arguments.
 
     Returns:
-        tuple: A tuple of all arguments.
+        A tuple of all arguments.
 
     """
     return args + tuple(convert_kwargs_to_args(kwargs, arg_names))
@@ -207,11 +207,11 @@ def convert_kwargs_to_args(kwargs: dict[str, Any], parameters: list[str]) -> lis
     """Convert kwargs to args in the order of parameters.
 
     Args:
-        kwargs (dict): Keyword arguments.
-        parameters (list): List of parameter names in the order they should be.
+        kwargs: Keyword arguments.
+        parameters: List of parameter names in the order they should be.
 
     Returns:
-        list: List of arguments in the order of parameters.
+        List of arguments in the order of parameters.
 
     """
     sorted_kwargs = dict(sorted(kwargs.items(), key=lambda kw: parameters.index(kw[0])))
