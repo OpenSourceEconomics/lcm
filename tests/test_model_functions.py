@@ -102,6 +102,6 @@ def test_get_multiply_weights():
     a = jnp.array([1, 2])
     b = jnp.array([3, 4])
 
-    got = multiply_weights(a, b)
+    got = multiply_weights(weight_next_a=a, weight_next_b=b)
     expected = jnp.array([[3, 4], [6, 8]])
     assert_array_equal(got, expected)

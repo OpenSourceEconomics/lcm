@@ -1,4 +1,5 @@
 import inspect
+import re
 
 import jax.numpy as jnp
 import pytest
@@ -7,7 +8,7 @@ from lcm.functools import (
     all_as_args,
     all_as_kwargs,
     allow_args,
-    allow_kwargs,
+    allow_only_kwargs,
     convert_kwargs_to_args,
     get_union_of_arguments,
 )
@@ -119,7 +120,7 @@ def test_convert_kwargs_to_args():
 # ======================================================================================
 
 
-def test_allow_kwargs():
+def test_allow_only_kwargs():
     def f(a, /, b):
         # a is positional-only
         return a + b
@@ -127,39 +128,46 @@ def test_allow_kwargs():
     with pytest.raises(TypeError):
         f(a=1, b=2)
 
-    assert allow_kwargs(f)(a=1, b=2) == 3
+    assert allow_only_kwargs(f)(a=1, b=2) == 3
 
 
-def test_allow_kwargs_with_keyword_only_args():
+def test_allow_only_kwargs_with_keyword_only_args():
     def f(a, /, *, b):
         return a + b
 
     with pytest.raises(TypeError):
         f(a=1, b=2)
 
-    assert allow_kwargs(f)(a=1, b=2) == 3
+    assert allow_only_kwargs(f)(a=1, b=2) == 3
 
 
-def test_allow_kwargs_incorrect_number_of_args():
+def test_allow_only_kwargs_too_many_args():
     def f(a, /, b):
         return a + b
 
-    with pytest.raises(ValueError, match="Not enough or too many arguments"):
-        allow_kwargs(f)(a=1, b=2, c=3)
-
-    with pytest.raises(ValueError, match="Not enough or too many arguments"):
-        allow_kwargs(f)(a=1)
+    too_many_match = re.escape("Expected arguments: ['a', 'b'], got extra: {'c'}")
+    with pytest.raises(ValueError, match=too_many_match):
+        allow_only_kwargs(f)(a=1, b=2, c=3)
 
 
-def test_allow_kwargs_signature_change():
+def test_allow_only_kwargs_too_few_args():
+    def f(a, /, b):
+        return a + b
+
+    too_few_match = re.escape("Expected arguments: ['a', 'b'], missing: {'b'}")
+    with pytest.raises(ValueError, match=too_few_match):
+        allow_only_kwargs(f)(a=1)
+
+
+def test_allow_only_kwargs_signature_change():
     def f(a, /, b, *, c):  # noqa: ARG001
         pass
 
-    decorated = allow_kwargs(f)
+    decorated = allow_only_kwargs(f)
     parameters = inspect.signature(decorated).parameters
 
-    assert parameters["a"].kind == inspect.Parameter.POSITIONAL_OR_KEYWORD
-    assert parameters["b"].kind == inspect.Parameter.POSITIONAL_OR_KEYWORD
+    assert parameters["a"].kind == inspect.Parameter.KEYWORD_ONLY
+    assert parameters["b"].kind == inspect.Parameter.KEYWORD_ONLY
     assert parameters["c"].kind == inspect.Parameter.KEYWORD_ONLY
 
 
@@ -192,14 +200,19 @@ def test_allow_args_different_kwargs_order():
     assert allow_args(f)(1, 2, d=4, c=3) == 10
 
 
-def test_allow_args_incorrect_number_of_args():
+def test_allow_args_too_many_args():
     def f(a, *, b):
         return a + b
 
-    with pytest.raises(ValueError, match="Not enough or too many arguments"):
+    with pytest.raises(ValueError, match="Too many arguments provided."):
         allow_args(f)(1, 2, b=3)
 
-    with pytest.raises(ValueError, match="Not enough or too many arguments"):
+
+def test_allow_args_too_few_args():
+    def f(a, *, b):
+        return a + b
+
+    with pytest.raises(ValueError, match="Not all arguments provided."):
         allow_args(f)(1)
 
 
