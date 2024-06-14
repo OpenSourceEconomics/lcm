@@ -427,7 +427,7 @@ def _get_stochastic_weight_function(raw_func, name, variable_info, grids):
         params = args[-1]  # by definition of new_kargs, params is the last argument
 
         indices = [
-            label_translators[arg_name](arg)
+            label_translators[arg_name](**{arg_name: arg})
             for arg_name, arg in zip(function_parameters, args, strict=False)
         ]
 

@@ -46,7 +46,6 @@ def get_utility_and_feasibility_function(
             data_name=data_name,
             interpolation_options=interpolation_options,
             input_prefix="next_",
-            out_name="continuation_value",
         )
 
         multiply_weights = get_multiply_weights(stochastic_variables)

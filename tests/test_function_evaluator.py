@@ -331,21 +331,22 @@ def test_get_function_evaluator_illustrative():
 
 @pytest.mark.illustrative()
 def test_get_label_translator_illustrative():
-    # Numerical labels
+    # Range (fast "lookup")
     # ==================================================================================
     f = get_label_translator(
-        labels=jnp.array([1, 2, 3]),
+        labels=jnp.array([0, 1, 2, 3]),
         in_name="a",
     )
-    assert f(a=1) == 0
+    assert f(a=1) == 1
 
-    # Character labels
+    # Non-range (slow lookup compared to range)
     # ==================================================================================
     g = get_label_translator(
-        labels=["a", "b", "c"],
-        in_name="x",
+        labels=jnp.array([-1, 0, 2, 10]),
+        in_name="a",
     )
-    assert g(x="c") == 2
+    assert g(a=0) == 1
+    assert g(a=10) == 3
 
 
 @pytest.mark.illustrative()
