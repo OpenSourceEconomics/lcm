@@ -96,15 +96,19 @@ def test_productmap_with_all_arguments_mapped(func, args, grids, expected, reque
     expected = request.getfixturevalue(expected)
 
     decorated = productmap(func, args)
+
     calculated = decorated(**grids)
     aaae(calculated, expected)
 
+
+def test_productmap_with_positional_args(setup_productmap_f):
+    decorated = productmap(f, ["a", "b", "c"])
     match = (
-        "This function was decorated with allow_only_kwargs, but was called with "
-        "positional arguments."
+        "This function has been decorated so that it allows only kwargs, but was "
+        "called with positional arguments."
     )
     with pytest.raises(ValueError, match=match):
-        decorated(*grids.values())
+        decorated(*setup_productmap_f.values())
 
 
 def test_productmap_different_func_order(setup_productmap_f):

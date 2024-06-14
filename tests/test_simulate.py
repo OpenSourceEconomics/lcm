@@ -367,6 +367,15 @@ def test_retrieve_non_sparse_choices():
     assert_array_equal(got["b"], jnp.array([10, 16, 12]))
 
 
+def test_retrieve_non_sparse_choices_no_indices():
+    got = retrieve_non_sparse_choices(
+        indices=None,
+        grids={"a": jnp.linspace(0, 1, 5), "b": jnp.linspace(10, 20, 6)},
+        grid_shape=(5, 6),
+    )
+    assert got == {}
+
+
 def test_filter_ccv_policy():
     ccc_policy = jnp.array(
         [

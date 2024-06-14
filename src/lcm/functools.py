@@ -36,8 +36,8 @@ def allow_only_kwargs(func: F) -> F:
         if args:
             raise ValueError(
                 (
-                    "This function was decorated with allow_only_kwargs, but was "
-                    "called with positional arguments."
+                    "This function has been decorated so that it allows only kwargs, "
+                    "but was called with positional arguments."
                 ),
             )
 

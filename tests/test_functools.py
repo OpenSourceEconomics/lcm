@@ -141,13 +141,18 @@ def test_allow_only_kwargs_with_keyword_only_args():
     assert allow_only_kwargs(f)(a=1, b=2) == 3
 
 
-def test_allow_only_kwargs_incorrect_number_of_args():
+def test_allow_only_kwargs_too_many_args():
     def f(a, /, b):
         return a + b
 
     too_many_match = re.escape("Expected arguments: ['a', 'b'], got extra: {'c'}")
     with pytest.raises(ValueError, match=too_many_match):
         allow_only_kwargs(f)(a=1, b=2, c=3)
+
+
+def test_allow_only_kwargs_too_few_args():
+    def f(a, /, b):
+        return a + b
 
     too_few_match = re.escape("Expected arguments: ['a', 'b'], missing: {'b'}")
     with pytest.raises(ValueError, match=too_few_match):
@@ -195,12 +200,17 @@ def test_allow_args_different_kwargs_order():
     assert allow_args(f)(1, 2, d=4, c=3) == 10
 
 
-def test_allow_args_incorrect_number_of_args():
+def test_allow_args_too_many_args():
     def f(a, *, b):
         return a + b
 
     with pytest.raises(ValueError, match="Too many arguments provided."):
         allow_args(f)(1, 2, b=3)
+
+
+def test_allow_args_too_few_args():
+    def f(a, *, b):
+        return a + b
 
     with pytest.raises(ValueError, match="Not all arguments provided."):
         allow_args(f)(1)
