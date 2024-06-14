@@ -1,6 +1,6 @@
 import inspect
 from collections.abc import Callable
-from typing import TypeVar
+from typing import Literal, TypeVar
 
 from jax import Array, vmap
 
@@ -72,11 +72,11 @@ def spacemap(
     if not sparse_vars:
         vmapped = _base_productmap(func, dense_vars)
     elif put_dense_first:
-        vmapped = vmap_1d(func, variables=sparse_vars, apply_allow_kwargs=False)
+        vmapped = vmap_1d(func, variables=sparse_vars, callable_with="only_args")
         vmapped = _base_productmap(vmapped, dense_vars)
     else:
         vmapped = _base_productmap(func, dense_vars)
-        vmapped = vmap_1d(vmapped, variables=sparse_vars, apply_allow_kwargs=False)
+        vmapped = vmap_1d(vmapped, variables=sparse_vars, callable_with="only_args")
 
     # This raises a mypy error but is perfectly fine to do. See
     # https://github.com/python/mypy/issues/12472
@@ -85,7 +85,12 @@ def spacemap(
     return allow_only_kwargs(vmapped)
 
 
-def vmap_1d(func: F, variables: list[str], *, apply_allow_kwargs: bool = True) -> F:
+def vmap_1d(
+    func: F,
+    variables: list[str],
+    *,
+    callable_with: Literal["only_args", "only_kwargs"] = "only_kwargs",
+) -> F:
     """Apply vmap such that func is mapped over the specified variables.
 
     In contrast to a general vmap call, vmap_1d vectorizes along the leading axis of all
@@ -95,8 +100,10 @@ def vmap_1d(func: F, variables: list[str], *, apply_allow_kwargs: bool = True) -
     Args:
         func (callable): The function to be dispatched.
         variables (list): List with names of arguments that over which we map.
-        apply_allow_kwargs (bool): Whether to apply the allow_kwargs decorator to the
-            dispatched function.
+        callable_with (str): Whether to apply the allow_kwargs decorator to the
+            dispatched function. If "only_args", the returned function can only be
+            called with positional arguments. If "only_kwargs", the returned function
+            can only be called with keyword arguments.
 
     Returns:
         callable: A callable with the same arguments as func (but with an additional
@@ -134,7 +141,17 @@ def vmap_1d(func: F, variables: list[str], *, apply_allow_kwargs: bool = True) -
     # https://github.com/python/mypy/issues/12472
     vmapped.__signature__ = signature  # type: ignore[attr-defined]
 
-    return allow_only_kwargs(vmapped) if apply_allow_kwargs else vmapped
+    if callable_with == "only_kwargs":
+        out = allow_only_kwargs(vmapped)
+    elif callable_with == "only_args":
+        out = vmapped
+    else:
+        raise ValueError(
+            f"Invalid callable_with option: {callable_with}. Possible options are "
+            "('only_args', 'only_kwargs')",
+        )
+
+    return out
 
 
 def productmap(func: F, variables: list[str]) -> F:
