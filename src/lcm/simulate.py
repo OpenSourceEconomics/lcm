@@ -5,6 +5,7 @@ import jax
 import jax.numpy as jnp
 import pandas as pd
 from dags import concatenate_functions
+from jax import vmap
 
 from lcm.argmax import argmax, segment_argmax
 from lcm.dispatchers import spacemap, vmap_1d
@@ -145,7 +146,7 @@ def simulate(
         # choice corresponding to the optimal discrete choice (dense and sparse).
         # ==============================================================================
         cont_choice_argmax = filter_ccv_policy(
-            ccv_policy,
+            ccv_policy=ccv_policy,
             dense_argmax=dense_argmax,
             dense_vars_grid_shape=dense_vars_grid_shape,
         )
@@ -441,28 +442,17 @@ def retrieve_non_sparse_choices(indices, grids, grid_shape):
     if indices is None:
         out = {}
     else:
-        out = _retrieve_non_sparse_choices(indices, grids, grid_shape)
+        indices = vmapped_unravel_index(indices, grid_shape)
+        out = {
+            name: grid[index]
+            for (name, grid), index in zip(grids.items(), indices, strict=True)
+        }
     return out
 
 
-@partial(vmap_1d, variables=["index"])
-def _retrieve_non_sparse_choices(index, grids, grid_shape):
-    """Retrieve dense or continuous choices given index.
-
-    Args:
-        index (int): General index. Represents the index of the flattened grid.
-        grids (dict): Dictionary of grids.
-        grid_shape (tuple): Shape of the grids. Is used to unravel the index.
-
-    Returns:
-        dict: Dictionary of choices.
-
-    """
-    indices = jnp.unravel_index(index, shape=grid_shape)
-    return {
-        name: grid[index]
-        for (name, grid), index in zip(grids.items(), indices, strict=True)
-    }
+# vmap jnp.unravel_index over the first axis of the `indices` argument, while holding
+# the `shape` argument constant (in_axes = (0, None)).
+vmapped_unravel_index = vmap(jnp.unravel_index, in_axes=(0, None))
 
 
 # ======================================================================================

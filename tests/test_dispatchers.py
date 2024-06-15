@@ -7,7 +7,7 @@ from lcm.dispatchers import (
     spacemap,
     vmap_1d,
 )
-from lcm.functools import allow_args, allow_kwargs
+from lcm.functools import allow_args
 from numpy.testing import assert_array_almost_equal as aaae
 
 
@@ -58,7 +58,7 @@ def expected_productmap_f():
     }
 
     helper = jnp.array(list(itertools.product(*grids.values()))).T
-    return allow_kwargs(allow_args(f))(*helper).reshape(10, 7, 5)
+    return allow_args(f)(*helper).reshape(10, 7, 5)
 
 
 @pytest.fixture()
@@ -81,7 +81,7 @@ def expected_productmap_g():
     }
 
     helper = jnp.array(list(itertools.product(*grids.values()))).T
-    return allow_kwargs(allow_args(g))(*helper).reshape(10, 7, 5, 4)
+    return allow_args(g)(*helper).reshape(10, 7, 5, 4)
 
 
 @pytest.mark.parametrize(
@@ -96,21 +96,29 @@ def test_productmap_with_all_arguments_mapped(func, args, grids, expected, reque
     expected = request.getfixturevalue(expected)
 
     decorated = productmap(func, args)
-    calculated_args = decorated(*grids.values())
-    calculated_kwargs = decorated(**grids)
 
-    aaae(calculated_args, expected)
-    aaae(calculated_kwargs, expected)
+    calculated = decorated(**grids)
+    aaae(calculated, expected)
+
+
+def test_productmap_with_positional_args(setup_productmap_f):
+    decorated = productmap(f, ["a", "b", "c"])
+    match = (
+        "This function has been decorated so that it allows only kwargs, but was "
+        "called with positional arguments."
+    )
+    with pytest.raises(ValueError, match=match):
+        decorated(*setup_productmap_f.values())
 
 
 def test_productmap_different_func_order(setup_productmap_f):
     decorated_f = productmap(f, ["a", "b", "c"])
-    expected = decorated_f(*setup_productmap_f.values())
+    expected = decorated_f(**setup_productmap_f)
 
     decorated_f2 = productmap(f2, ["a", "b", "c"])
-    calculated_f2_kwargs = decorated_f2(**setup_productmap_f)
+    calculated_f2 = decorated_f2(**setup_productmap_f)
 
-    aaae(calculated_f2_kwargs, expected)
+    aaae(calculated_f2, expected)
 
 
 def test_productmap_change_arg_order(setup_productmap_f, expected_productmap_f):
@@ -131,10 +139,10 @@ def test_productmap_with_all_arguments_mapped_some_len_one():
 
     helper = jnp.array(list(itertools.product(*grids.values()))).T
 
-    expected = allow_kwargs(allow_args(f))(*helper).reshape(1, 1, 5)
+    expected = allow_args(f)(*helper).reshape(1, 1, 5)
 
     decorated = productmap(f, ["a", "b", "c"])
-    calculated = decorated(*grids.values())
+    calculated = decorated(**grids)
     aaae(calculated, expected)
 
 
@@ -147,7 +155,7 @@ def test_productmap_with_all_arguments_mapped_some_scalar():
 
     decorated = productmap(f, ["a", "b", "c"])
     with pytest.raises(ValueError, match="vmap was requested to map its argument"):
-        decorated(*grids.values())
+        decorated(**grids)
 
 
 def test_productmap_with_some_arguments_mapped():
@@ -159,10 +167,10 @@ def test_productmap_with_some_arguments_mapped():
 
     helper = jnp.array(list(itertools.product(grids["a"], [grids["b"]], grids["c"]))).T
 
-    expected = allow_kwargs(allow_args(f))(*helper).reshape(10, 5)
+    expected = allow_args(f)(*helper).reshape(10, 5)
 
     decorated = productmap(f, ["a", "c"])
-    calculated = decorated(*grids.values())
+    calculated = decorated(**grids)
     aaae(calculated, expected)
 
 
@@ -213,7 +221,7 @@ def expected_spacemap():
     all_grids = {**value_grid, **combination_grid}
     helper = jnp.array(list(itertools.product(*all_grids.values()))).T
 
-    return allow_kwargs(allow_args(g))(*helper).reshape(3, 2, 4 * 5)
+    return allow_args(g)(*helper).reshape(3, 2, 4 * 5)
 
 
 @pytest.mark.parametrize("put_dense_first", [True, False])
@@ -278,3 +286,46 @@ def test_vmap_1d():
 def test_vmap_1d_error():
     with pytest.raises(ValueError, match="Same argument provided more than once."):
         vmap_1d(None, variables=["a", "a"])
+
+
+def test_vmap_1d_callable_with_only_args():
+    def func(a):
+        return a
+
+    vmapped = vmap_1d(func, variables=["a"], callable_with="only_args")
+    a = jnp.array([1, 2])
+    # check that the function works with positional arguments
+    aaae(vmapped(a), a)
+    # check that the function fails with keyword arguments
+    with pytest.raises(
+        ValueError,
+        match="vmap in_axes must be an int, None, or a tuple of entries corresponding",
+    ):
+        vmapped(a=1)
+
+
+def test_vmap_1d_callable_with_only_kwargs():
+    def func(a):
+        return a
+
+    vmapped = vmap_1d(func, variables=["a"], callable_with="only_kwargs")
+    a = jnp.array([1, 2])
+    # check that the function works with keyword arguments
+    aaae(vmapped(a=a), a)
+    # check that the function fails with positional arguments
+    with pytest.raises(
+        ValueError,
+        match="This function has been decorated so that it allows only kwargs, but was",
+    ):
+        vmapped(a)
+
+
+def test_vmap_1d_callable_with_invalid():
+    def func(a):
+        return a
+
+    with pytest.raises(
+        ValueError,
+        match="Invalid callable_with option: invalid. Possible options are",
+    ):
+        vmap_1d(func, variables=["a"], callable_with="invalid")
