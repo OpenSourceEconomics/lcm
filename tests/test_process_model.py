@@ -35,7 +35,7 @@ def user_model():
             "a": {"options": [0, 1]},
         },
         "states": {
-            "c": {"options": [2, 3]},
+            "c": {"options": [0, 1]},
         },
         "n_periods": 2,
     }
@@ -83,7 +83,7 @@ def test_get_gridspecs(user_model):
         function_info=_get_function_info(user_model),
     )
     got = _get_gridspecs(user_model, variable_info)
-    exp = {"a": [0, 1], "c": [2, 3]}
+    exp = {"a": [0, 1], "c": [0, 1]}
     assert got == exp
 
 
@@ -95,7 +95,7 @@ def test_get_grids(user_model):
     gridspecs = _get_gridspecs(user_model, variable_info)
     got = _get_grids(gridspecs, variable_info)
     assert_array_equal(got["a"], jnp.array([0, 1]))
-    assert_array_equal(got["c"], jnp.array([2, 3]))
+    assert_array_equal(got["c"], jnp.array([0, 1]))
 
 
 def test_process_model_iskhakov_et_al_2017():
@@ -237,8 +237,8 @@ def test_get_stochastic_weight_function():
     )
 
     grids = {
-        "health": jnp.array([1, 4]),
-        "wealth": jnp.array([-1, 2, 5]),
+        "health": jnp.array([0, 1]),
+        "wealth": jnp.array([0, 1, 2]),
     }
 
     got_function = _get_stochastic_weight_function(
@@ -250,7 +250,7 @@ def test_get_stochastic_weight_function():
 
     params = {"shocks": {"health": np.arange(12).reshape(2, 3, 2)}}
 
-    got = got_function(health=4, wealth=-1, params=params)
+    got = got_function(health=1, wealth=0, params=params)
     expected = np.array([6, 7])
     assert_array_equal(got, expected)
 

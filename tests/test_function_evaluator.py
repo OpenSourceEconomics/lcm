@@ -1,3 +1,4 @@
+import re
 from functools import partial
 
 import jax.numpy as jnp
@@ -56,7 +57,7 @@ def test_function_evaluator_with_one_discrete_variable():
 
     space_info = SpaceInfo(
         axis_names=["working"],
-        lookup_info={"working": [True, False]},
+        lookup_info={"working": [0, 1]},
         interpolation_info={},
         indexer_infos=[],
     )
@@ -72,8 +73,8 @@ def test_function_evaluator_with_one_discrete_variable():
     func = partial(evaluator, vf_arr=vf_arr)
 
     # test the evaluator
-    assert func(next_working=True) == 1
-    assert func(next_working=False) == 2
+    assert func(next_working=0) == 1
+    assert func(next_working=1) == 2
 
 
 def test_function_evaluator():
@@ -101,9 +102,9 @@ def test_function_evaluator():
 
     # create info on discrete variables
     lookup_info = {
-        "retired": [True, False],
+        "retired": [0, 1],
         "working": [0, 1],
-        "insured": ["yes", "no"],
+        "insured": [0, 1],
     }
 
     # create an indexer for the sparse discrete part
@@ -147,9 +148,9 @@ def test_function_evaluator():
 
     # test the evaluator
     out = evaluator(
-        retired=False,
+        retired=1,
         working=1,
-        insured="yes",
+        insured=0,
         wealth=600,
         human_capital=1.5,
         state_indexer=indexer_array,
@@ -184,9 +185,9 @@ def test_function_evaluator_longer_indexer():
 
     # create info on discrete variables
     lookup_info = {
-        "retired": ["working", "part-retired", "retired"],
+        "retired": [0, 1, 2],
         "working": [0, 1, 2],
-        "insured": ["yes", "no"],
+        "insured": [0, 1],
     }
 
     # create an indexer for the sparse discrete part
@@ -230,9 +231,9 @@ def test_function_evaluator_longer_indexer():
 
     # test the evaluator
     out = evaluator(
-        retired="working",
+        retired=0,
         working=1,
-        insured="yes",
+        insured=0,
         wealth=600,
         human_capital=1.5,
         state_indexer=indexer_array,
@@ -243,14 +244,23 @@ def test_function_evaluator_longer_indexer():
 
 
 def test_get_label_translator():
-    grid = jnp.array([9, 10, 13])
-
     func = get_label_translator(
-        labels=grid,
         in_name="schooling",
     )
 
-    assert func(schooling=10) == 1
+    assert func(1) == 1
+    assert func(schooling=1) == 1
+
+
+def test_get_label_translator_wrong_kwarg():
+    func = get_label_translator(
+        in_name="schooling",
+    )
+    with pytest.raises(
+        TypeError,
+        match=re.escape("translate_label() got unexpected keyword argument health"),
+    ):
+        func(health=1)
 
 
 def test_get_lookup_function():
@@ -331,26 +341,6 @@ def test_get_function_evaluator_illustrative():
     expected = jnp.pi * 0.25 + 2
 
     assert jnp.allclose(got, expected)
-
-
-@pytest.mark.illustrative()
-def test_get_label_translator_illustrative():
-    # Range (fast "lookup")
-    # ==================================================================================
-    f = get_label_translator(
-        labels=jnp.array([0, 1, 2, 3]),
-        in_name="a",
-    )
-    assert f(a=1) == 1
-
-    # Non-range (slow lookup compared to range)
-    # ==================================================================================
-    g = get_label_translator(
-        labels=jnp.array([-1, 0, 2, 10]),
-        in_name="a",
-    )
-    assert g(a=0) == 1
-    assert g(a=10) == 3
 
 
 @pytest.mark.illustrative()

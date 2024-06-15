@@ -2,7 +2,6 @@ from collections.abc import Callable
 from functools import partial
 
 import jax.numpy as jnp
-import numpy as np
 from dags import concatenate_functions
 from dags.signature import with_signature
 from jax import Array
@@ -11,7 +10,7 @@ from jax.scipy.ndimage import map_coordinates
 import lcm.grids as grids_module
 from lcm.functools import all_as_kwargs
 from lcm.interfaces import ContinuousGridInfo, ContinuousGridType, SpaceInfo
-from lcm.typing import DiscreteLabels, MapCoordinatesOptions
+from lcm.typing import MapCoordinatesOptions
 
 
 def get_function_evaluator(
@@ -85,9 +84,8 @@ def get_function_evaluator(
     # ==================================================================================
     funcs = {}
 
-    for var, labels in space_info.lookup_info.items():
+    for var in space_info.lookup_info:
         funcs[f"__{var}_pos__"] = get_label_translator(
-            labels=labels,
             in_name=input_prefix + var,
         )
 
@@ -146,13 +144,14 @@ def get_function_evaluator(
 
 
 def get_label_translator(
-    labels: DiscreteLabels,
     in_name: str,
 ) -> Callable[..., Array]:
     """Create a function that translates a label into a position in a list of labels.
 
+    Currently, only labels are supported that are themselves indices. The label
+    translator in this case is thus just the identity function.
+
     Args:
-        labels: List of allowed labels.
         in_name: Name of the variable that provides the label in the signature of trche
             resulting function.
 
@@ -161,28 +160,11 @@ def get_label_translator(
             label into a position in a list of labels.
 
     """
-    if isinstance(labels, np.ndarray | jnp.ndarray):
-        # tolist converts jax or numpy specific dtypes to python types
-        _grid = labels.tolist()
-    elif not isinstance(labels, list):
-        _grid = list(labels)
-    else:
-        _grid = labels
 
-    if _grid == list(range(len(labels))):
-
-        @with_signature(args=[in_name])
-        def translate_label(*args, **kwargs):
-            kwargs = all_as_kwargs(args, kwargs, arg_names=[in_name])
-            return kwargs[in_name]
-
-    else:
-        val_to_pos = {val: pos for pos, val in enumerate(_grid)}
-
-        @with_signature(args=[in_name])
-        def translate_label(*args, **kwargs):
-            kwargs = all_as_kwargs(args, kwargs, arg_names=[in_name])
-            return val_to_pos[kwargs[in_name]]
+    @with_signature(args=[in_name])
+    def translate_label(*args, **kwargs):
+        kwargs = all_as_kwargs(args, kwargs, arg_names=[in_name])
+        return kwargs[in_name]
 
     return translate_label
 
