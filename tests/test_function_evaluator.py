@@ -243,12 +243,17 @@ def test_function_evaluator_longer_indexer():
     assert jnp.allclose(out, 601.5)
 
 
-def test_get_label_translator():
+def test_get_label_translator_with_args():
     func = get_label_translator(
         in_name="schooling",
     )
-
     assert func(1) == 1
+
+
+def test_get_label_translator_with_kwargs():
+    func = get_label_translator(
+        in_name="schooling",
+    )
     assert func(schooling=1) == 1
 
 

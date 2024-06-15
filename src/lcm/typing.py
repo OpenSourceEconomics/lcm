@@ -1,4 +1,4 @@
-from typing import Literal, TypedDict
+from typing import Annotated, Literal, TypedDict
 
 from jax import Array
 
@@ -6,8 +6,7 @@ from jax import Array
 # includes zero dimensional jax arrays.
 Scalar = int | float | Array
 
-
-DiscreteLabels = list[int]
+DiscreteLabels = Annotated[list[int], "Int range starting from 0 with increments of 1"]
 
 
 class SegmentInfo(TypedDict):
