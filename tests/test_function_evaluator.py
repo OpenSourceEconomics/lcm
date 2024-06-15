@@ -274,7 +274,11 @@ def test_get_coordinate_finder():
 
 
 def test_get_interpolator():
-    interpolate = _get_interpolator(data_name="vf", axis_names=["wealth", "working"])
+    interpolate = _get_interpolator(
+        data_name="vf",
+        axis_names=["wealth", "working"],
+        map_coordinates_options=None,
+    )
 
     def _utility(wealth, working):
         return 2 * wealth - working
@@ -374,7 +378,11 @@ def test_get_coordinate_finder_illustrative():
 
 @pytest.mark.illustrative()
 def test_get_interpolator_illustrative():
-    interpolate = _get_interpolator(data_name="data_name", axis_names=["a", "b"])
+    interpolate = _get_interpolator(
+        data_name="data_name",
+        axis_names=["a", "b"],
+        map_coordinates_options=None,
+    )
 
     def f(a, b):
         return a - b

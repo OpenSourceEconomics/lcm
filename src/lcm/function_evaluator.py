@@ -11,13 +11,7 @@ from jax.scipy.ndimage import map_coordinates
 import lcm.grids as grids_module
 from lcm.functools import all_as_kwargs
 from lcm.interfaces import ContinuousGridInfo, ContinuousGridType, SpaceInfo
-from lcm.typing import MapCoordinatesOptions, Scalar
-
-DefaultMapCoordinatesOptions: MapCoordinatesOptions = {
-    "order": 1,
-    "mode": "nearest",
-    "cval": 0.0,
-}
+from lcm.typing import DiscreteLabels, MapCoordinatesOptions
 
 
 def get_function_evaluator(
@@ -142,7 +136,7 @@ def get_function_evaluator(
         funcs["__fval__"] = _get_interpolator(
             data_name="__interpolation_data__",
             axis_names=_interpolation_axes,
-            map_coordinates_kwargs=interpolation_options,
+            map_coordinates_options=interpolation_options,
         )
 
     return concatenate_functions(
@@ -152,13 +146,13 @@ def get_function_evaluator(
 
 
 def get_label_translator(
-    labels: np.ndarray | jnp.ndarray | list[Scalar],
+    labels: DiscreteLabels,
     in_name: str,
-):
+) -> Callable[..., Array]:
     """Create a function that translates a label into a position in a list of labels.
 
     Args:
-        labels: List of allowed labels, or object that can be converted to a list.
+        labels: List of allowed labels.
         in_name: Name of the variable that provides the label in the signature of trche
             resulting function.
 
@@ -193,7 +187,10 @@ def get_label_translator(
     return translate_label
 
 
-def _get_lookup_function(array_name, axis_names):
+def _get_lookup_function(
+    array_name: str,
+    axis_names: list[str],
+) -> Callable[..., Array]:
     """Create a function that emulates indexing into an array via named axes.
 
     Args:
@@ -221,7 +218,7 @@ def _get_coordinate_finder(
     in_name: str,
     grid_type: ContinuousGridType,
     grid_info: ContinuousGridInfo,
-):
+) -> Callable[..., Array]:
     """Create a function that translates a value into coordinates on a grid.
 
     The resulting coordinates can be used to do linear interpolation via
@@ -250,24 +247,33 @@ def _get_coordinate_finder(
     return find_coordinate
 
 
-def _get_interpolator(data_name, axis_names, map_coordinates_kwargs=None):
+DefaultMapCoordinatesOptions: MapCoordinatesOptions = {
+    "order": 1,
+    "mode": "nearest",
+    "cval": 0.0,
+}
+
+
+def _get_interpolator(
+    data_name: str,
+    axis_names: list[str],
+    map_coordinates_options: MapCoordinatesOptions | None,
+) -> Callable[..., Array]:
     """Create a function interpolator via named axes.
 
     Args:
-        data_name (str): Name of the argument via which function values on which the
+        data_name: Name of the argument via which function values on which the
             interpolation is done are passed into the interpolator.
-        axis_names (str): Names of the axes in the data array.
-        map_coordinates_kwargs (dict): Keyword arguments for
-            jax.scipy.ndimage.map_coordinates.
+        axis_names: Names of the axes in the data array.
+        map_coordinates_options: Dictionary of interpolation options that will be passed
+            to jax.scipy.ndimage.map_coordinates. If None, DefaultMapCoordinatesOptions
+            will be used.
 
     Returns:
         callable: A callable that interpolates a function via named axes.
 
     """
-    kwargs = {"order": 1, "mode": "nearest"}
-    if map_coordinates_kwargs is not None:
-        kwargs = {**kwargs, **map_coordinates_kwargs}
-
+    kwargs = DefaultMapCoordinatesOptions | (map_coordinates_options or {})
     partialled_map_coordinates = partial(map_coordinates, **kwargs)
 
     arg_names = [data_name, *axis_names]

@@ -7,6 +7,9 @@ from jax import Array
 Scalar = int | float | Array
 
 
+DiscreteLabels = list[int]
+
+
 class SegmentInfo(TypedDict):
     """Information on segments which is passed to `jax.ops.segment_max`.
 
