@@ -300,7 +300,6 @@ def _get_functions(user_model, function_info, variable_info, grids, params):
                 raw_func=raw_functions[f"next_{var}"],
                 name=var,
                 variable_info=variable_info,
-                grids=grids,
             )
 
     # ==================================================================================

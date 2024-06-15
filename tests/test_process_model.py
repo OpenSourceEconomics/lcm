@@ -236,16 +236,10 @@ def test_get_stochastic_weight_function():
         index=["health", "wealth"],
     )
 
-    grids = {
-        "health": jnp.array([0, 1]),
-        "wealth": jnp.array([0, 1, 2]),
-    }
-
     got_function = _get_stochastic_weight_function(
         raw_func,
         name="health",
         variable_info=variable_info,
-        grids=grids,
     )
 
     params = {"shocks": {"health": np.arange(12).reshape(2, 3, 2)}}
@@ -271,7 +265,6 @@ def test_get_stochastic_weight_function_non_state_dependency():
             raw_func,
             name="health",
             variable_info=variable_info,
-            grids=None,
         )
 
 
