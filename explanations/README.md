@@ -1,7 +1,6 @@
 # Explanations of internal `lcm` concepts
 
-> [!NOTE]
-> The following explanations are designed for `lcm` developers and not users.
+> \[!NOTE\] The following explanations are designed for `lcm` developers and not users.
 
 | Module name                                           | Description                                                       |
 | ----------------------------------------------------- | ----------------------------------------------------------------- |
