@@ -28,7 +28,7 @@ class SegmentInfo(TypedDict):
 class MapCoordinatesOptions(TypedDict):
     """Options passed to  `jax.scipy.ndimage.map_coordinates`.
 
-    From the JAX documentation:
+    From the JAX documentation (as of 2024-06-16):
 
     - "order": The order of interpolation. JAX supports the following:
       - 0: Nearest-neighbor

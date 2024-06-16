@@ -85,7 +85,7 @@ def get_function_evaluator(
     funcs = {}
 
     for var in space_info.lookup_info:
-        funcs[f"__{var}_pos__"] = get_label_translator(
+        funcs[f"__{var}_pos__"] = _get_label_translator(
             in_name=input_prefix + var,
         )
 
@@ -143,7 +143,7 @@ def get_function_evaluator(
     )
 
 
-def get_label_translator(
+def _get_label_translator(
     in_name: str,
 ) -> Callable[..., Array]:
     """Create a function that translates a label into a position in a list of labels.

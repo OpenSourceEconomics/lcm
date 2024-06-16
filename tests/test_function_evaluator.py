@@ -8,9 +8,9 @@ from lcm.function_evaluator import (
     _fail_if_interpolation_axes_are_not_last,
     _get_coordinate_finder,
     _get_interpolator,
+    _get_label_translator,
     _get_lookup_function,
     get_function_evaluator,
-    get_label_translator,
 )
 from lcm.grids import linspace
 from lcm.interfaces import (
@@ -244,21 +244,21 @@ def test_function_evaluator_longer_indexer():
 
 
 def test_get_label_translator_with_args():
-    func = get_label_translator(
+    func = _get_label_translator(
         in_name="schooling",
     )
     assert func(1) == 1
 
 
 def test_get_label_translator_with_kwargs():
-    func = get_label_translator(
+    func = _get_label_translator(
         in_name="schooling",
     )
     assert func(schooling=1) == 1
 
 
 def test_get_label_translator_wrong_kwarg():
-    func = get_label_translator(
+    func = _get_label_translator(
         in_name="schooling",
     )
     with pytest.raises(
