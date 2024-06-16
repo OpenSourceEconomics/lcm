@@ -56,7 +56,7 @@ jobs:
         shell: bash -l {0}
         run: pixi run mypy
   run-explanation-notebooks:
-    name: Run explanation notebooks
+    name: Run explanation notebooks on Python 3.12
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
