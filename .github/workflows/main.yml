@@ -55,3 +55,17 @@ jobs:
       - name: Run mypy
         shell: bash -l {0}
         run: pixi run mypy
+  run-explanation-notebooks:
+    name: Run explanation notebooks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: prefix-dev/setup-pixi@v0.8.0
+        with:
+          pixi-version: v0.23.0
+          cache: true
+          cache-write: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
+          environments: test-cpu
+      - name: Run explanation notebooks
+        shell: bash -l {0}
+        run: pixi run -e test-cpu explanation-notebooks
