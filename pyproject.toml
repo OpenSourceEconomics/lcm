@@ -101,6 +101,7 @@ pdbpp = "*"
 pre-commit = "*"
 snakeviz = "*"
 memory_profiler = "*"
+pixi-kernel = ">=0.3.0,<0.4"
 
 [tool.pixi.target.linux-64.dependencies]
 jax = ">=0.4.20"
