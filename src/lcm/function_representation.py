@@ -20,7 +20,7 @@ def get_function_representation(
     interpolation_options: MapCoordinatesOptions | None = None,
     input_prefix: str = "",
 ) -> Callable[..., Array]:
-    """Create a function to look-up and interpolate a function pre-calculated on a grid.
+    """Create a function representation of pre-calculated values on a grid.
 
     An example of a pre-calculated function is a value or policy function. These are
     evaluated on the space of all sparse and dense discrete state variables as well as
@@ -59,7 +59,7 @@ def get_function_representation(
         data_name: The name of the argument via which the pre-calculated values
             will be passed into the resulting function. In the value function case,
             this could be 'vf_arr', in which case, one would partial in 'vf_arr' into
-            the evaluator.
+            the representation.
         interpolation_options: Dictionary of interpolation options that will be passed
             to jax.scipy.ndimage.map_coordinates. If None, DefaultMapCoordinatesOptions
             will be used.
