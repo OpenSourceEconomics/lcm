@@ -4,13 +4,13 @@ from functools import partial
 import jax.numpy as jnp
 import pytest
 from lcm.dispatchers import productmap
-from lcm.function_evaluator import (
+from lcm.function_representation import (
     _fail_if_interpolation_axes_are_not_last,
     _get_coordinate_finder,
     _get_interpolator,
     _get_label_translator,
     _get_lookup_function,
-    get_function_evaluator,
+    get_function_representation,
 )
 from lcm.grids import linspace
 from lcm.interfaces import (
@@ -37,7 +37,7 @@ def test_function_evaluator_with_one_continuous_variable():
     vf_arr = jnp.pi * grid + 2
 
     # create the evaluator
-    evaluator = get_function_evaluator(
+    evaluator = get_function_representation(
         space_info=space_info,
         data_name="vf_arr",
         input_prefix="next_",
@@ -63,7 +63,7 @@ def test_function_evaluator_with_one_discrete_variable():
     )
 
     # create the evaluator
-    evaluator = get_function_evaluator(
+    evaluator = get_function_representation(
         space_info=space_info,
         data_name="vf_arr",
         input_prefix="next_",
@@ -141,7 +141,7 @@ def test_function_evaluator():
     )
 
     # create the evaluator
-    evaluator = get_function_evaluator(
+    evaluator = get_function_representation(
         space_info=space_info,
         data_name="vf_arr",
     )
@@ -224,7 +224,7 @@ def test_function_evaluator_longer_indexer():
     )
 
     # create the evaluator
-    evaluator = get_function_evaluator(
+    evaluator = get_function_representation(
         space_info=space_info,
         data_name="vf_arr",
     )
@@ -333,7 +333,7 @@ def test_get_function_evaluator_illustrative():
     values = jnp.pi * grid + 2
 
     # create the evaluator
-    evaluator = get_function_evaluator(
+    evaluator = get_function_representation(
         space_info=space_info,
         data_name="values_name",
         input_prefix="prefix_",

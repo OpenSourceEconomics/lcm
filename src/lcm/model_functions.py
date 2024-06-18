@@ -5,7 +5,7 @@ from dags import concatenate_functions
 from dags.signature import with_signature
 
 from lcm.dispatchers import productmap
-from lcm.function_evaluator import get_function_evaluator
+from lcm.function_representation import get_function_representation
 from lcm.functools import (
     all_as_args,
     all_as_kwargs,
@@ -41,7 +41,7 @@ def get_utility_and_feasibility_function(
         next_state = get_next_state_function(model, target="solve")
         next_weights = get_next_weights_function(model)
 
-        scalar_value_function = get_function_evaluator(
+        scalar_value_function = get_function_representation(
             space_info=space_info,
             data_name=data_name,
             interpolation_options=interpolation_options,

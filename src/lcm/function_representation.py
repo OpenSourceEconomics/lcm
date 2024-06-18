@@ -13,7 +13,7 @@ from lcm.interfaces import ContinuousGridInfo, ContinuousGridType, SpaceInfo
 from lcm.typing import MapCoordinatesOptions
 
 
-def get_function_evaluator(
+def get_function_representation(
     space_info: SpaceInfo,
     data_name: str,
     *,
