@@ -33,9 +33,9 @@ def get_function_evaluator(
           pre-calculated values of the function.
        2. The original arguments of the function that was pre-calculated on the grid.
 
-    After partialling in all helper arguments, the resulting function hides that it is
-    not an analytical function. In particular, it can be jitted, differentiated and
-    vmapped with jax.
+    After partialling in all helper arguments, the resulting function behaves like an
+    analytical function. In particular, it can be jitted, differentiated and vmapped
+    with jax.
 
     The resulting function roughly does the following steps:
 
@@ -152,7 +152,7 @@ def _get_label_translator(
     translator in this case is thus just the identity function.
 
     Args:
-        in_name: Name of the variable that provides the label in the signature of trche
+        in_name: Name of the variable that provides the label in the signature of the
             resulting function.
 
     Returns:
