@@ -39,7 +39,7 @@ def test_function_evaluator_with_one_continuous_variable():
     # create the evaluator
     evaluator = get_function_representation(
         space_info=space_info,
-        data_name="vf_arr",
+        name_of_values_on_grid="vf_arr",
         input_prefix="next_",
     )
 
@@ -65,7 +65,7 @@ def test_function_evaluator_with_one_discrete_variable():
     # create the evaluator
     evaluator = get_function_representation(
         space_info=space_info,
-        data_name="vf_arr",
+        name_of_values_on_grid="vf_arr",
         input_prefix="next_",
     )
 
@@ -143,7 +143,7 @@ def test_function_evaluator():
     # create the evaluator
     evaluator = get_function_representation(
         space_info=space_info,
-        data_name="vf_arr",
+        name_of_values_on_grid="vf_arr",
     )
 
     # test the evaluator
@@ -226,7 +226,7 @@ def test_function_evaluator_longer_indexer():
     # create the evaluator
     evaluator = get_function_representation(
         space_info=space_info,
-        data_name="vf_arr",
+        name_of_values_on_grid="vf_arr",
     )
 
     # test the evaluator
@@ -290,7 +290,7 @@ def test_get_coordinate_finder():
 
 def test_get_interpolator():
     interpolate = _get_interpolator(
-        data_name="vf",
+        name_of_values_on_grid="vf",
         axis_names=["wealth", "working"],
         map_coordinates_options=None,
     )
@@ -335,7 +335,7 @@ def test_get_function_evaluator_illustrative():
     # create the evaluator
     evaluator = get_function_representation(
         space_info=space_info,
-        data_name="values_name",
+        name_of_values_on_grid="values_name",
         input_prefix="prefix_",
     )
 
@@ -374,7 +374,7 @@ def test_get_coordinate_finder_illustrative():
 @pytest.mark.illustrative()
 def test_get_interpolator_illustrative():
     interpolate = _get_interpolator(
-        data_name="data_name",
+        name_of_values_on_grid="test_name",
         axis_names=["a", "b"],
         map_coordinates_options=None,
     )
@@ -386,10 +386,10 @@ def test_get_interpolator_illustrative():
 
     values = prod_f(a=jnp.arange(2, dtype=float), b=jnp.arange(3, dtype=float))
 
-    assert interpolate(data_name=values, a=0.5, b=0) == 0.5
-    assert interpolate(data_name=values, a=0.5, b=1) == -0.5
-    assert interpolate(data_name=values, a=0, b=0.5) == -0.5
-    assert interpolate(data_name=values, a=0.5, b=1.5) == -1
+    assert interpolate(test_name=values, a=0.5, b=0) == 0.5
+    assert interpolate(test_name=values, a=0.5, b=1) == -0.5
+    assert interpolate(test_name=values, a=0, b=0.5) == -0.5
+    assert interpolate(test_name=values, a=0.5, b=1.5) == -1
 
 
 @pytest.mark.illustrative()

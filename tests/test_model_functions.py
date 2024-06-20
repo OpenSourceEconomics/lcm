@@ -65,7 +65,7 @@ def test_get_utility_and_feasibility_function():
     u_and_f = get_utility_and_feasibility_function(
         model=model,
         space_info=space_info,
-        data_name="vf_arr",
+        name_of_values_on_grid="vf_arr",
         interpolation_options={},
         period=model.n_periods - 1,
         is_last_period=True,

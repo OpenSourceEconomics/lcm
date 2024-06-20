@@ -131,7 +131,7 @@ def get_lcm_function(
         u_and_f = get_utility_and_feasibility_function(
             model=_mod,
             space_info=space_infos[period],
-            data_name="vf_arr",
+            name_of_values_on_grid="vf_arr",
             interpolation_options=interpolation_options,
             period=period,
             is_last_period=is_last_period,
