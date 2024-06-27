@@ -17,7 +17,7 @@ def get_function_representation(
     space_info: SpaceInfo,
     name_of_values_on_grid: str,
     *,
-    interpolation_options: MapCoordinatesOptions | None = None,
+    interpolation_options: MapCoordinatesOptions,
     input_prefix: str = "",
 ) -> Callable[..., Array]:
     """Create a function representation of pre-calculated values on a grid.
@@ -230,17 +230,10 @@ def _get_coordinate_finder(
     return find_coordinate
 
 
-DefaultMapCoordinatesOptions: MapCoordinatesOptions = {
-    "order": 1,
-    "mode": "nearest",
-    "cval": 0.0,
-}
-
-
 def _get_interpolator(
     name_of_values_on_grid: str,
     axis_names: list[str],
-    map_coordinates_options: MapCoordinatesOptions | None,
+    map_coordinates_options: MapCoordinatesOptions,
 ) -> Callable[..., Array]:
     """Create a function interpolator via named axes.
 
@@ -250,15 +243,13 @@ def _get_interpolator(
             resulting function.
         axis_names: Names of the axes in the data array.
         map_coordinates_options: Dictionary of interpolation options that will be passed
-            to jax.scipy.ndimage.map_coordinates. If None, DefaultMapCoordinatesOptions
-            will be used.
+            to jax.scipy.ndimage.map_coordinates.
 
     Returns:
         callable: A callable that interpolates a function via named axes.
 
     """
-    kwargs = DefaultMapCoordinatesOptions | (map_coordinates_options or {})
-    partialled_map_coordinates = partial(map_coordinates, **kwargs)
+    partialled_map_coordinates = partial(map_coordinates, **map_coordinates_options)
 
     arg_names = [name_of_values_on_grid, *axis_names]
 

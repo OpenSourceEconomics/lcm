@@ -19,6 +19,7 @@ from lcm.interfaces import (
     IndexerInfo,
     SpaceInfo,
 )
+from lcm.options import DefaultMapCoordinatesOptions
 
 
 def test_function_evaluator_with_one_continuous_variable():
@@ -41,6 +42,7 @@ def test_function_evaluator_with_one_continuous_variable():
         space_info=space_info,
         name_of_values_on_grid="vf_arr",
         input_prefix="next_",
+        interpolation_options=DefaultMapCoordinatesOptions,
     )
 
     # partial the function values into the evaluator
@@ -67,6 +69,7 @@ def test_function_evaluator_with_one_discrete_variable():
         space_info=space_info,
         name_of_values_on_grid="vf_arr",
         input_prefix="next_",
+        interpolation_options=DefaultMapCoordinatesOptions,
     )
 
     # partial the function values into the evaluator
@@ -144,6 +147,7 @@ def test_function_evaluator():
     evaluator = get_function_representation(
         space_info=space_info,
         name_of_values_on_grid="vf_arr",
+        interpolation_options=DefaultMapCoordinatesOptions,
     )
 
     # test the evaluator
@@ -227,6 +231,7 @@ def test_function_evaluator_longer_indexer():
     evaluator = get_function_representation(
         space_info=space_info,
         name_of_values_on_grid="vf_arr",
+        interpolation_options=DefaultMapCoordinatesOptions,
     )
 
     # test the evaluator
@@ -292,7 +297,7 @@ def test_get_interpolator():
     interpolate = _get_interpolator(
         name_of_values_on_grid="vf",
         axis_names=["wealth", "working"],
-        map_coordinates_options=None,
+        map_coordinates_options=DefaultMapCoordinatesOptions,
     )
 
     def _utility(wealth, working):
@@ -337,6 +342,7 @@ def test_get_function_evaluator_illustrative():
         space_info=space_info,
         name_of_values_on_grid="values_name",
         input_prefix="prefix_",
+        interpolation_options=DefaultMapCoordinatesOptions,
     )
 
     # partial the function values into the evaluator
@@ -376,7 +382,7 @@ def test_get_interpolator_illustrative():
     interpolate = _get_interpolator(
         name_of_values_on_grid="test_name",
         axis_names=["a", "b"],
-        map_coordinates_options=None,
+        map_coordinates_options=DefaultMapCoordinatesOptions,
     )
 
     def f(a, b):
