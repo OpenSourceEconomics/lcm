@@ -3,7 +3,7 @@ from typing import Literal, NamedTuple
 import pandas as pd
 from jax import Array
 
-from lcm.typing import Scalar
+from lcm.typing import DiscreteLabels, Scalar
 
 
 class IndexerInfo(NamedTuple):
@@ -87,18 +87,18 @@ class SpaceInfo(NamedTuple):
     """Everything needed to work with the output of a function evaluated on a space.
 
     Attributes:
-        axis_names (list): List with axis names of an array that contains function
-            values for all elements in a space.
-        lookup_info (dict): Dict that defines the possible labels of all discrete
-            variables and their order.
-        interpolation_info (dict): Dict that defines information on the grids of all
-            continuous variables.
-        indexer_infos (list): List of IndexerInfo objects.
+        axis_names: List with axis names of an array that contains function values for
+            all elements in a space.
+        lookup_info: Dict that defines the possible labels of all discrete variables and
+            their order.
+        interpolation_info: Dict that defines information on the grids of all continuous
+            variables.
+        indexer_infos: List of IndexerInfo objects.
 
     """
 
     axis_names: list[str]
-    lookup_info: dict[str, list[str]]
+    lookup_info: dict[str, DiscreteLabels]
     interpolation_info: dict[str, ContinuousGridSpec]
     indexer_infos: list[IndexerInfo]
 

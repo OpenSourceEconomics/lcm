@@ -96,21 +96,14 @@ python = "3.12"
 scipy = "<=1.13"
 pybaum = "*"
 jupyterlab = "*"
-matplotlib = "*"
+plotly = ">=5.2,<6"
 pdbpp = "*"
 pre-commit = "*"
 snakeviz = "*"
 memory_profiler = "*"
+pixi-kernel = ">=0.3.0,<0.4"
 
-[tool.pixi.target.linux-64.dependencies]
-jax = ">=0.4.20"
-jaxlib = ">=0.4.20"
-
-[tool.pixi.target.osx-64.dependencies]
-jax = ">=0.4.20"
-jaxlib = ">=0.4.20"
-
-[tool.pixi.target.osx-arm64.dependencies]
+[tool.pixi.target.unix.dependencies]
 jax = ">=0.4.20"
 jaxlib = ">=0.4.20"
 
@@ -144,10 +137,12 @@ pytest-xdist = "*"
 [tool.pixi.feature.test.tasks]
 tests = "pytest tests"
 tests-with-cov = "pytest tests --cov-report=xml --cov=./"
+explanation-notebooks = "jupyter execute explanations/*.ipynb"
 
 [tool.pixi.feature.mypy.dependencies]
 mypy = "*"
 pandas-stubs = "*"
+matplotlib = "*"  # required because of pandas
 
 [tool.pixi.feature.mypy.tasks]
 mypy = "mypy src"

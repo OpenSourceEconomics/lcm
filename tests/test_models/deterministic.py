@@ -47,6 +47,19 @@ def utility_with_filter(
     return utility(consumption, working=working, disutility_of_work=disutility_of_work)
 
 
+def utility_fully_discrete(
+    consumption,
+    working,
+    disutility_of_work,
+    # Temporary workaround for bug described in issue #30, which requires us to pass
+    # all state variables to the utility function.
+    # TODO(@timmens): Remove function once #30 is fixed (re-use "utility").
+    # https://github.com/OpenSourceEconomics/lcm/issues/30
+    consumption_index,  # noqa: ARG001
+):
+    return utility(consumption, working=working, disutility_of_work=disutility_of_work)
+
+
 # --------------------------------------------------------------------------------------
 # Auxiliary variables
 # --------------------------------------------------------------------------------------
@@ -64,6 +77,15 @@ def wage(age):
 
 def age(_period):
     return _period + 18
+
+
+# Temporary workaround until option labels are supported that do not coincide with
+# the indices of the options.
+# TODO(@timmens): Remove this once #82 is closed.
+# https://github.com/OpenSourceEconomics/lcm/issues/82
+def consumption(consumption_index):
+    _consumption_values = jnp.array([1, 2])
+    return _consumption_values[consumption_index]
 
 
 # --------------------------------------------------------------------------------------
@@ -169,15 +191,16 @@ ISKHAKOV_ET_AL_2017_FULLY_DISCRETE = {
         "state, and makes the consumption decision discrete."
     ),
     "functions": {
-        "utility": utility,
+        "utility": utility_fully_discrete,
         "next_wealth": next_wealth,
         "consumption_constraint": consumption_constraint,
         "labor_income": labor_income,
         "working": working,
+        "consumption": consumption,
     },
     "choices": {
         "retirement": {"options": [0, 1]},
-        "consumption": {"options": [1, 2]},
+        "consumption_index": {"options": [0, 1]},
     },
     "states": {
         "wealth": {

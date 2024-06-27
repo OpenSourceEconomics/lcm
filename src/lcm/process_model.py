@@ -10,7 +10,6 @@ from jax import Array
 
 import lcm.grids as grids_module
 from lcm.create_params_template import create_params_template
-from lcm.function_evaluator import get_label_translator
 from lcm.functools import all_as_args, all_as_kwargs
 from lcm.interfaces import ContinuousGridInfo, ContinuousGridSpec, GridSpec, Model
 
@@ -178,16 +177,32 @@ def _get_gridspecs(user_model, variable_info):
     """
     raw = {**user_model["states"], **user_model["choices"]}
 
+    errors = {}
     variables = {}
     for name, spec in raw.items():
         if "options" in spec:
-            variables[name] = spec["options"]
+            options = spec["options"]
+            if options != list(range(len(options))):
+                errors[name] = options
+            variables[name] = options
         else:
             grid_info = {k: v for k, v in spec.items() if k != "grid_type"}
             variables[name] = ContinuousGridSpec(
                 kind=spec["grid_type"],
                 info=ContinuousGridInfo(**grid_info),
             )
+
+    if errors:
+        example = next(iter(errors))  # access the first key of the dictionary
+        msg = (
+            "The following variables have discrete options that are not an integer "
+            f"range from 0 to n: [{', '.join(errors)}].\nPlease rewrite (for example) "
+            f"{{'{example}': {{'options': {errors[example]}}}}} to "
+            f"{{'{example}_index': {{'options': {list(range(len(errors[example])))}}}}}"
+            ".\nThen add a new function to the functions dictionary that maps the index"
+            " to the value of the variable."
+        )
+        raise ValueError(msg)
 
     order = variable_info.index.tolist()
     return {k: variables[k] for k in order}
@@ -285,7 +300,6 @@ def _get_functions(user_model, function_info, variable_info, grids, params):
                 raw_func=raw_functions[f"next_{var}"],
                 name=var,
                 variable_info=variable_info,
-                grids=grids,
             )
 
     # ==================================================================================
@@ -366,7 +380,7 @@ def _get_stochastic_next_function(raw_func, grid):
     return next_func
 
 
-def _get_stochastic_weight_function(raw_func, name, variable_info, grids):
+def _get_stochastic_weight_function(raw_func, name, variable_info):
     """Get a function that returns the transition weights of a stochastic variable.
 
     Example:
@@ -393,8 +407,6 @@ def _get_stochastic_weight_function(raw_func, name, variable_info, grids):
         raw_func (callable): The raw next function of the stochastic variable.
         name (str): The name of the stochastic variable.
         variable_info (pd.DataFrame): A table with information about model variables.
-        grids (dict): Dictionary containing all variables of the model. The keys are
-            the names of the variables. The values are the grids.
 
     Returns:
         callable: A function that returns the transition weights of the stochastic
@@ -411,26 +423,17 @@ def _get_stochastic_weight_function(raw_func, name, variable_info, grids):
                 f"'_period', but {name} depends on {arg}.",
             )
 
-    label_translators = {
-        var: get_label_translator(labels=grids[var], in_name=var)
-        for var in function_parameters
-        if var != "_period"
-    }
-    if "_period" in function_parameters:
-        label_translators["_period"] = lambda _period: _period
-
     new_kwargs = [*function_parameters, "params"]
 
     @with_signature(args=new_kwargs)
     def weight_func(*args, **kwargs):
         args = all_as_args(args, kwargs, arg_names=new_kwargs)
         params = args[-1]  # by definition of new_kargs, params is the last argument
-
-        indices = [
-            label_translators[arg_name](arg)
-            for arg_name, arg in zip(function_parameters, args, strict=False)
-        ]
-
+        # By assumption, all discrete variables that LCM handles internally are
+        # themselves indices (i.e. a range starting at 0 with a step size of 1).
+        # Therefore, the arguments themselves are the indices. For the special variable
+        # '_period' the same holds.
+        indices = args[:-1]
         return params["shocks"][name][*indices]
 
     return weight_func

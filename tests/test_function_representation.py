@@ -1,15 +1,16 @@
+import re
 from functools import partial
 
 import jax.numpy as jnp
 import pytest
 from lcm.dispatchers import productmap
-from lcm.function_evaluator import (
+from lcm.function_representation import (
     _fail_if_interpolation_axes_are_not_last,
     _get_coordinate_finder,
     _get_interpolator,
+    _get_label_translator,
     _get_lookup_function,
-    get_function_evaluator,
-    get_label_translator,
+    get_function_representation,
 )
 from lcm.grids import linspace
 from lcm.interfaces import (
@@ -18,6 +19,7 @@ from lcm.interfaces import (
     IndexerInfo,
     SpaceInfo,
 )
+from lcm.options import DefaultMapCoordinatesOptions
 
 
 def test_function_evaluator_with_one_continuous_variable():
@@ -36,10 +38,11 @@ def test_function_evaluator_with_one_continuous_variable():
     vf_arr = jnp.pi * grid + 2
 
     # create the evaluator
-    evaluator = get_function_evaluator(
+    evaluator = get_function_representation(
         space_info=space_info,
-        data_name="vf_arr",
+        name_of_values_on_grid="vf_arr",
         input_prefix="next_",
+        interpolation_options=DefaultMapCoordinatesOptions,
     )
 
     # partial the function values into the evaluator
@@ -56,24 +59,25 @@ def test_function_evaluator_with_one_discrete_variable():
 
     space_info = SpaceInfo(
         axis_names=["working"],
-        lookup_info={"working": [True, False]},
+        lookup_info={"working": [0, 1]},
         interpolation_info={},
         indexer_infos=[],
     )
 
     # create the evaluator
-    evaluator = get_function_evaluator(
+    evaluator = get_function_representation(
         space_info=space_info,
-        data_name="vf_arr",
+        name_of_values_on_grid="vf_arr",
         input_prefix="next_",
+        interpolation_options=DefaultMapCoordinatesOptions,
     )
 
     # partial the function values into the evaluator
     func = partial(evaluator, vf_arr=vf_arr)
 
     # test the evaluator
-    assert func(next_working=True) == 1
-    assert func(next_working=False) == 2
+    assert func(next_working=0) == 1
+    assert func(next_working=1) == 2
 
 
 def test_function_evaluator():
@@ -101,9 +105,9 @@ def test_function_evaluator():
 
     # create info on discrete variables
     lookup_info = {
-        "retired": [True, False],
+        "retired": [0, 1],
         "working": [0, 1],
-        "insured": ["yes", "no"],
+        "insured": [0, 1],
     }
 
     # create an indexer for the sparse discrete part
@@ -140,16 +144,17 @@ def test_function_evaluator():
     )
 
     # create the evaluator
-    evaluator = get_function_evaluator(
+    evaluator = get_function_representation(
         space_info=space_info,
-        data_name="vf_arr",
+        name_of_values_on_grid="vf_arr",
+        interpolation_options=DefaultMapCoordinatesOptions,
     )
 
     # test the evaluator
     out = evaluator(
-        retired=False,
+        retired=1,
         working=1,
-        insured="yes",
+        insured=0,
         wealth=600,
         human_capital=1.5,
         state_indexer=indexer_array,
@@ -184,9 +189,9 @@ def test_function_evaluator_longer_indexer():
 
     # create info on discrete variables
     lookup_info = {
-        "retired": ["working", "part-retired", "retired"],
+        "retired": [0, 1, 2],
         "working": [0, 1, 2],
-        "insured": ["yes", "no"],
+        "insured": [0, 1],
     }
 
     # create an indexer for the sparse discrete part
@@ -223,16 +228,17 @@ def test_function_evaluator_longer_indexer():
     )
 
     # create the evaluator
-    evaluator = get_function_evaluator(
+    evaluator = get_function_representation(
         space_info=space_info,
-        data_name="vf_arr",
+        name_of_values_on_grid="vf_arr",
+        interpolation_options=DefaultMapCoordinatesOptions,
     )
 
     # test the evaluator
     out = evaluator(
-        retired="working",
+        retired=0,
         working=1,
-        insured="yes",
+        insured=0,
         wealth=600,
         human_capital=1.5,
         state_indexer=indexer_array,
@@ -242,15 +248,29 @@ def test_function_evaluator_longer_indexer():
     assert jnp.allclose(out, 601.5)
 
 
-def test_get_label_translator():
-    grid = jnp.array([9, 10, 13])
-
-    func = get_label_translator(
-        labels=grid,
+def test_get_label_translator_with_args():
+    func = _get_label_translator(
         in_name="schooling",
     )
+    assert func(1) == 1
 
-    assert func(schooling=10) == 1
+
+def test_get_label_translator_with_kwargs():
+    func = _get_label_translator(
+        in_name="schooling",
+    )
+    assert func(schooling=1) == 1
+
+
+def test_get_label_translator_wrong_kwarg():
+    func = _get_label_translator(
+        in_name="schooling",
+    )
+    with pytest.raises(
+        TypeError,
+        match=re.escape("translate_label() got unexpected keyword argument health"),
+    ):
+        func(health=1)
 
 
 def test_get_lookup_function():
@@ -274,7 +294,11 @@ def test_get_coordinate_finder():
 
 
 def test_get_interpolator():
-    interpolate = _get_interpolator(data_name="vf", axis_names=["wealth", "working"])
+    interpolate = _get_interpolator(
+        name_of_values_on_grid="vf",
+        axis_names=["wealth", "working"],
+        map_coordinates_options=DefaultMapCoordinatesOptions,
+    )
 
     def _utility(wealth, working):
         return 2 * wealth - working
@@ -314,10 +338,11 @@ def test_get_function_evaluator_illustrative():
     values = jnp.pi * grid + 2
 
     # create the evaluator
-    evaluator = get_function_evaluator(
+    evaluator = get_function_representation(
         space_info=space_info,
-        data_name="values_name",
+        name_of_values_on_grid="values_name",
         input_prefix="prefix_",
+        interpolation_options=DefaultMapCoordinatesOptions,
     )
 
     # partial the function values into the evaluator
@@ -327,25 +352,6 @@ def test_get_function_evaluator_illustrative():
     expected = jnp.pi * 0.25 + 2
 
     assert jnp.allclose(got, expected)
-
-
-@pytest.mark.illustrative()
-def test_get_label_translator_illustrative():
-    # Numerical labels
-    # ==================================================================================
-    f = get_label_translator(
-        labels=jnp.array([1, 2, 3]),
-        in_name="a",
-    )
-    assert f(a=1) == 0
-
-    # Character labels
-    # ==================================================================================
-    g = get_label_translator(
-        labels=["a", "b", "c"],
-        in_name="x",
-    )
-    assert g(x="c") == 2
 
 
 @pytest.mark.illustrative()
@@ -373,7 +379,11 @@ def test_get_coordinate_finder_illustrative():
 
 @pytest.mark.illustrative()
 def test_get_interpolator_illustrative():
-    interpolate = _get_interpolator(data_name="data_name", axis_names=["a", "b"])
+    interpolate = _get_interpolator(
+        name_of_values_on_grid="test_name",
+        axis_names=["a", "b"],
+        map_coordinates_options=DefaultMapCoordinatesOptions,
+    )
 
     def f(a, b):
         return a - b
@@ -382,10 +392,10 @@ def test_get_interpolator_illustrative():
 
     values = prod_f(a=jnp.arange(2, dtype=float), b=jnp.arange(3, dtype=float))
 
-    assert interpolate(data_name=values, a=0.5, b=0) == 0.5
-    assert interpolate(data_name=values, a=0.5, b=1) == -0.5
-    assert interpolate(data_name=values, a=0, b=0.5) == -0.5
-    assert interpolate(data_name=values, a=0.5, b=1.5) == -1
+    assert interpolate(test_name=values, a=0.5, b=0) == 0.5
+    assert interpolate(test_name=values, a=0.5, b=1) == -0.5
+    assert interpolate(test_name=values, a=0, b=0.5) == -0.5
+    assert interpolate(test_name=values, a=0.5, b=1.5) == -1
 
 
 @pytest.mark.illustrative()
