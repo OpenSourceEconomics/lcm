@@ -14,7 +14,7 @@ from lcm.functools import all_as_args, all_as_kwargs
 from lcm.interfaces import ContinuousGridInfo, ContinuousGridSpec, GridSpec, Model
 
 
-def process_model(user_model):
+def process_model(user_model: dict) -> Model:
     """Process the user model.
 
     This entails the following steps:
