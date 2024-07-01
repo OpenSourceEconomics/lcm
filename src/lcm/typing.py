@@ -6,6 +6,9 @@ from jax import Array
 # includes zero dimensional jax arrays.
 Scalar = int | float | Array
 
+# We only allow primitive types for scalar user inputs to reduce complexity.
+ScalarUserInput = int | float
+
 DiscreteLabels = Annotated[list[int], "Int range starting from 0 with increments of 1"]
 
 
