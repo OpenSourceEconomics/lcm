@@ -11,10 +11,15 @@ from jax import Array
 import lcm.grids as grids_module
 from lcm.create_params_template import create_params_template
 from lcm.functools import all_as_args, all_as_kwargs
-from lcm.interfaces import ContinuousGridInfo, ContinuousGridSpec, GridSpec, Model
+from lcm.interfaces import (
+    ContinuousGridInfo,
+    ContinuousGridSpec,
+    GridSpec,
+    InternalModel,
+)
 
 
-def process_model(user_model: dict) -> Model:
+def process_model(user_model: dict) -> InternalModel:
     """Process the user model.
 
     This entails the following steps:
@@ -51,7 +56,7 @@ def process_model(user_model: dict) -> Model:
         params=_params,
         grids=_grids,
     )
-    return Model(
+    return InternalModel(
         grids=_grids,
         gridspecs=_gridspecs,
         variable_info=_variable_info,

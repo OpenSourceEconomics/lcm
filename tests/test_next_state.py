@@ -1,6 +1,6 @@
 import jax.numpy as jnp
 import pandas as pd
-from lcm.interfaces import Model
+from lcm.interfaces import InternalModel
 from lcm.next_state import _get_stochastic_next_func, get_next_state_function
 from lcm.process_model import process_model
 from pybaum import tree_equal
@@ -61,7 +61,7 @@ def test_get_next_state_function_with_simulate_target():
         index=["a", "b"],
     )
 
-    model = Model(
+    model = InternalModel(
         functions=functions,
         grids=grids,
         function_info=function_info,
