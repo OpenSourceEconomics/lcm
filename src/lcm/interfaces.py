@@ -103,7 +103,7 @@ class SpaceInfo(NamedTuple):
     indexer_infos: list[IndexerInfo]
 
 
-class Model(NamedTuple):
+class InternalModel(NamedTuple):
     """Internal representation of a user model.
 
     Attributes:

@@ -2,7 +2,7 @@ import jax.numpy as jnp
 import numpy as np
 import pandas as pd
 import pytest
-from lcm.interfaces import Model
+from lcm.interfaces import InternalModel
 from lcm.process_model import process_model
 from lcm.state_space import (
     create_combination_grid,
@@ -62,7 +62,7 @@ def filter_mask_inputs():
 
     # create a model instance where some attributes are set to None because they
     # are not needed for create_filter_mask
-    return Model(
+    return InternalModel(
         grids=grids,
         gridspecs=None,
         variable_info=None,
