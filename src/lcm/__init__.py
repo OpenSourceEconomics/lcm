@@ -1,4 +1,4 @@
 from lcm import mark
-from lcm.model import Grid, Model
+from lcm.user_model import Grid, Model
 
-__all__ = ["mark", "Model", "Grid"]
+__all__ = ["mark", "Grid", "Model"]

@@ -11,6 +11,8 @@ ScalarUserInput = int | float
 
 DiscreteLabels = Annotated[list[int], "Int range starting from 0 with increments of 1"]
 
+Params = dict[str, dict[str, ScalarUserInput]]
+
 
 class SegmentInfo(TypedDict):
     """Information on segments which is passed to `jax.ops.segment_max`.

@@ -6,14 +6,16 @@ from typing import Any
 import jax.numpy as jnp
 import pandas as pd
 from jax import Array
+from lcm.typing import Params, ScalarUserInput
+from lcm.user_model import Model
 
 
 def create_params_template(
     model_spec: dict[str, Any],
     variable_info: pd.DataFrame,
     grids: dict[str, Array],
-    default_params: dict[str, float] | None = None,
-) -> dict[str, dict[str, Any] | float]:
+    default_params: dict[str, ScalarUserInput] | None = None,
+) -> Params:
     """Create parameter template from a model specification.
 
     Args:
@@ -51,7 +53,7 @@ def create_params_template(
     return params_template
 
 
-def _create_function_params(model_spec: dict[str, Any]) -> dict[str, dict[str, Any]]:
+def _create_function_params(user_model: Model) -> Params:
     """Get function parameters from a model specification.
 
     Explanation: We consider the arguments of all model functions, from which we exclude
@@ -75,19 +77,19 @@ def _create_function_params(model_spec: dict[str, Any]) -> dict[str, dict[str, A
     # Collect all model variables, that includes choices, states, the period, and
     # auxiliary variables (model function names).
     variables = {
-        *model_spec["functions"],
-        *model_spec["choices"],
-        *model_spec["states"],
+        *user_model.functions,
+        *user_model.choices,
+        *user_model.states,
         "_period",
     }
 
-    if "shocks" in model_spec:
-        variables = variables | set(model_spec["shocks"])
+    if hasattr(user_model, "shocks"):
+        variables = variables | set(user_model.shocks)
 
     function_params = {}
     # For each model function, capture the arguments of the function that are not in the
     # set of model variables, and initialize them.
-    for name, func in model_spec["functions"].items():
+    for name, func in user_model.functions.items():
         arguments = set(inspect.signature(func).parameters)
         params = sorted(arguments.difference(variables))
         function_params[name] = {p: jnp.nan for p in params}
