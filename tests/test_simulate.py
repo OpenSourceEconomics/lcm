@@ -110,12 +110,13 @@ def iskhakov_et_al_2017_stripped_down_model_solution():
             "iskhakov_et_al_2017_stripped_down",
             n_periods=n_periods,
         )
-        model_config["functions"] = {
+        updated_functions = {
             # remove dependency on age, so that wage becomes a parameter
             name: func
-            for name, func in model_config["functions"].items()
+            for name, func in model_config.functions.items()
             if name not in ["age", "wage"]
         }
+        model_config = model_config.replace(functions=updated_functions)
         solve_model, _ = get_lcm_function(model_config, targets="solve")
 
         params = get_params()

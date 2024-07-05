@@ -1,18 +1,34 @@
 from collections.abc import Callable
-from dataclasses import KW_ONLY, dataclass
-from typing import NamedTuple, get_args, Any
+from dataclasses import (
+    KW_ONLY,
+    InitVar,
+    dataclass,
+    field,
+)
+from dataclasses import (
+    replace as dataclasses_replace,
+)
+from typing import Any, Literal, NamedTuple, get_args
 
-from lcm.interfaces import ContinuousGridType, GridSpec, ContinuousGridSpec, ContinuousGridInfo, DiscreteGridSpec
-from lcm.typing import DiscreteLabels, ScalarUserInput
-from typing import Literal
 import jax.numpy as jnp
+
+from lcm.interfaces import (
+    ContinuousGridInfo,
+    ContinuousGridSpec,
+    ContinuousGridType,
+    DiscreteGridSpec,
+    GridSpec,
+)
+from lcm.typing import DiscreteLabels, ScalarUserInput
 
 # ======================================================================================
 # Errors
 # ======================================================================================
 
+
 class LcmModelInitializationError(Exception):
     """Raised when there is an error in the model initialization."""
+
 
 class LcmGridInitializationError(Exception):
     """Raised when there is an error in the grid initialization."""
@@ -29,6 +45,7 @@ def _format_errors(errors: list[str]) -> str:
 # ======================================================================================
 # User interface
 # ======================================================================================
+
 
 class _ContinuousGridTypeSelector(NamedTuple):
     linspace: ContinuousGridType = "linspace"
@@ -52,34 +69,44 @@ class Model:
 
     description: str | None = None
     _: KW_ONLY
-    n_periods: int
-    functions: dict[str, Callable]
-    choices: dict[str, GridSpec]
-    states: dict[str, GridSpec]
+    n_periods: int | None = None
+    functions: dict[str, Callable] = field(default_factory=dict)
+    choices: dict[str, GridSpec] = field(default_factory=dict)
+    states: dict[str, GridSpec] = field(default_factory=dict)
+    _skip_checks: InitVar[bool] = False
 
-    def __post_init__(self) -> None:
+    def __post_init__(self, _skip_checks: bool) -> None:  # noqa: C901
         """Perform basic checks on the user model before the model processing starts."""
+        if _skip_checks:
+            return
+
         errors = []
 
         if (check := n_periods_is_positive_int(self.n_periods)).failed:
             errors.append(check.msg)
-            
+
         if (check := is_dictionary(self.functions, msg_prefix="functions")).failed:
             errors.append(check.msg)
 
         if (check := is_dictionary(self.choices, msg_prefix="choices")).failed:
             errors.append(check.msg)
-        
+
         if (check := is_dictionary(self.states, msg_prefix="states")).failed:
             errors.append(check.msg)
-            
-        if (check := each_state_or_choice_is_a_valid_lcm_grid(self.states, "state")).failed:
+
+        if (
+            check := each_state_or_choice_is_a_valid_lcm_grid(self.states, "state")
+        ).failed:
             errors.append(check.msg)
-            
-        if (check := each_state_or_choice_is_a_valid_lcm_grid(self.choices, "choice")).failed:
+
+        if (
+            check := each_state_or_choice_is_a_valid_lcm_grid(self.choices, "choice")
+        ).failed:
             errors.append(check.msg)
-            
-        if (check := states_and_choices_are_non_overlapping(self.states, self.choices)).failed:
+
+        if (
+            check := states_and_choices_are_non_overlapping(self.states, self.choices)
+        ).failed:
             errors.append(check.msg)
 
         if (check := utility_function_is_defined(self.functions)).failed:
@@ -92,6 +119,18 @@ class Model:
 
         if errors:
             raise LcmModelInitializationError(_format_errors(errors))
+
+    def replace(self, **kwargs) -> "Model":
+        """Replace the attributes of the model.
+
+        Args:
+            **kwargs: Keyword arguments to replace the attributes of the model.
+
+        Returns:
+            A new model with the replaced attributes.
+
+        """
+        return dataclasses_replace(self, **kwargs)
 
 
 class Grid:
@@ -157,7 +196,7 @@ class Grid:
 
         if (check := grid_type_is_valid(grid_type)).failed:
             errors.append(check.msg)
-            
+
         if (check := is_numerical_scalar(start, "start")).failed:
             errors.append(check.msg)
 
@@ -172,7 +211,7 @@ class Grid:
 
         if errors:
             raise LcmGridInitializationError(_format_errors(errors))
-        
+
         grid_info = ContinuousGridInfo(
             start=start,
             stop=stop,
@@ -189,6 +228,7 @@ class Grid:
 # information about the test failure.
 # ======================================================================================
 
+
 class _CheckResult(NamedTuple):
     failed: bool
     msg: str
@@ -203,7 +243,7 @@ def utility_function_is_defined(functions: dict[str, Callable]) -> _CheckResult:
 
 
 def is_dictionary(
-    obj: Any,
+    obj: Any,  # noqa: ANN401
     msg_prefix: str,
 ) -> _CheckResult:
     msg = f"{msg_prefix} must be a dictionary, but is: {type(obj)}."
@@ -221,7 +261,7 @@ def each_state_or_choice_is_a_valid_lcm_grid(
 
     invalid = []
     for key, val in states_or_choices_obj.items():
-        if not isinstance(val, (get_args(ContinuousGridType))):
+        if not isinstance(val, get_args(GridSpec)):
             invalid.append(key)
     msg = (
         f"The following {state_or_choice}s are not valid LCM grids: {invalid}. Please "
@@ -267,17 +307,17 @@ def n_periods_is_positive_int(n_periods: int) -> _CheckResult:
         failed=not isinstance(n_periods, int) or n_periods <= 0,
         msg=msg,
     )
-    
 
-def is_list_or_tuple(obj: Any) -> _CheckResult:
+
+def is_list_or_tuple(obj: Any) -> _CheckResult:  # noqa: ANN401
     msg = f"Options must be a list or tuple, but is: {type(obj)}."
-    return _CheckResult(failed=not isinstance(obj, (list, tuple)), msg=msg)
+    return _CheckResult(failed=not isinstance(obj, list | tuple), msg=msg)
 
 
 def all_elements_are_numerical_scalar(options: list[Any]) -> _CheckResult:
     # This is checked by `is_list_or_tuple`, but to collect as many errors as
     # possible we run all checks even if one fails.
-    if not isinstance(options, (list, tuple)):
+    if not isinstance(options, list | tuple):
         return _CheckResult(failed=True, msg="")
 
     msg = (
@@ -305,7 +345,7 @@ def n_grid_points_is_positive_int(n_points: int) -> _CheckResult:
     return _CheckResult(failed=not isinstance(n_points, int) or n_points <= 0, msg=msg)
 
 
-def is_numerical_scalar(obj: Any, msg_prefix: str) -> _CheckResult:
+def is_numerical_scalar(obj: Any, msg_prefix: str) -> _CheckResult:  # noqa: ANN401
     msg = f"{msg_prefix} must be a numerical scalar, but is: {type(obj)}."
     return _CheckResult(failed=not isinstance(obj, get_args(ScalarUserInput)), msg=msg)
 
@@ -316,7 +356,10 @@ def start_is_smaller_than_stop(
 ) -> _CheckResult:
     # This is checked by `is_numerical_scalar`, but to collect as many errors as
     # possible we run all checks even if one fails.
-    if not isinstance(start, get_args(ScalarUserInput)) or not isinstance(stop, get_args(ScalarUserInput)):
+    if not isinstance(start, get_args(ScalarUserInput)) or not isinstance(
+        stop,
+        get_args(ScalarUserInput),
+    ):
         return _CheckResult(failed=True, msg="")
 
     msg = f"Start must be smaller than stop, but is: start={start} and stop={stop}."

@@ -18,10 +18,11 @@ from lcm.process_model import process_model
 from lcm.simulate import simulate
 from lcm.solve_brute import solve
 from lcm.state_space import create_state_choice_space
+from lcm.user_model import Model
 
 
 def get_lcm_function(
-    model: dict,
+    model: Model,
     targets: Literal["solve", "simulate", "solve_and_simulate"] = "solve",
     *,
     debug_mode: bool = True,

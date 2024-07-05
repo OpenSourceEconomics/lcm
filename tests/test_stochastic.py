@@ -82,8 +82,8 @@ def model_and_params():
     def next_health_deterministic(health):
         return health
 
-    model_deterministic["functions"]["next_health"] = next_health_deterministic
-    model_stochastic["functions"]["next_health"] = next_health_stochastic
+    model_deterministic.functions["next_health"] = next_health_deterministic
+    model_stochastic.functions["next_health"] = next_health_stochastic
 
     params = get_params(
         beta=0.95,

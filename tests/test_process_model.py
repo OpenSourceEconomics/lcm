@@ -13,6 +13,7 @@ from lcm.process_model import (
     _get_variable_info,
     process_model,
 )
+from lcm.user_model import Grid, Model
 from numpy.testing import assert_array_equal
 from pandas.testing import assert_frame_equal
 
@@ -27,28 +28,29 @@ def user_model():
     def next_c(a, b):
         return a + b
 
-    return {
-        "functions": {
+    return Model(
+        n_periods=2,
+        functions={
             "next_c": next_c,
         },
-        "choices": {
-            "a": {"options": [0, 1]},
+        choices={
+            "a": Grid.discrete([0, 1]),
         },
-        "states": {
-            "c": {"options": [0, 1]},
+        states={
+            "c": Grid.discrete([0, 1]),
         },
-        "n_periods": 2,
-    }
+        _skip_checks=True,
+    )
 
 
 def test_get_function_info(user_model):
     got = _get_function_info(user_model)
     exp = pd.DataFrame(
         {
-            "is_stochastic_next": [False],
             "is_filter": [False],
             "is_constraint": [False],
             "is_next": [True],
+            "is_stochastic_next": [False],
         },
         index=["next_c"],
     )
@@ -65,8 +67,8 @@ def test_get_variable_info(user_model):
         {
             "is_state": [False, True],
             "is_choice": [True, False],
-            "is_discrete": [True, True],
             "is_continuous": [False, False],
+            "is_discrete": [True, True],
             "is_stochastic": [False, False],
             "is_auxiliary": [False, True],
             "is_sparse": [False, False],
@@ -83,8 +85,8 @@ def test_get_gridspecs(user_model):
         function_info=_get_function_info(user_model),
     )
     got = _get_gridspecs(user_model, variable_info)
-    exp = {"a": [0, 1], "c": [0, 1]}
-    assert got == exp
+    assert_array_equal(got["a"], jnp.array([0, 1]))
+    assert_array_equal(got["c"], jnp.array([0, 1]))
 
 
 def test_get_grids(user_model):
@@ -135,8 +137,8 @@ def test_process_model_iskhakov_et_al_2017():
     )
     assert model.gridspecs["consumption"] == consumption_specs
 
-    assert model.gridspecs["retirement"] == [0, 1]
-    assert model.gridspecs["lagged_retirement"] == [0, 1]
+    assert_array_equal(model.gridspecs["retirement"], jnp.array([0, 1]))
+    assert_array_equal(model.gridspecs["lagged_retirement"], jnp.array([0, 1]))
 
     # Grids
     func = getattr(grids_module, model.gridspecs["consumption"].kind)
@@ -198,7 +200,7 @@ def test_process_model():
     )
     assert model.gridspecs["consumption"] == consumption_specs
 
-    assert model.gridspecs["retirement"] == [0, 1]
+    assert_array_equal(model.gridspecs["retirement"], jnp.array([0, 1]))
 
     # Grids
     func = getattr(grids_module, model.gridspecs["consumption"].kind)
@@ -274,7 +276,7 @@ def test_variable_info_with_continuous_filter_has_unique_index():
     def wealth_filter(wealth):
         return wealth > 200
 
-    user_model["functions"]["wealth_filter"] = wealth_filter
+    user_model.functions["wealth_filter"] = wealth_filter
 
     function_info = _get_function_info(user_model)
     got = _get_variable_info(

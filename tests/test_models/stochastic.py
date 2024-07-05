@@ -13,6 +13,7 @@ from copy import deepcopy
 
 import jax.numpy as jnp
 import lcm
+from lcm.user_model import Grid, Model
 
 # ======================================================================================
 # Numerical parameters and constants
@@ -83,12 +84,13 @@ def consumption_constraint(consumption, wealth):
 # Model specification and parameters
 # ======================================================================================
 
-MODEL_CONFIG = {
-    "description": (
+MODEL_CONFIG = Model(
+    description=(
         "Starts from Iskhakov et al. (2017), removes filters and the lagged_retirement "
         "state, and adds discrete stochastic state variables health and partner."
     ),
-    "functions": {
+    n_periods=3,
+    functions={
         "utility": utility,
         "next_wealth": next_wealth,
         "next_health": next_health,
@@ -96,27 +98,26 @@ MODEL_CONFIG = {
         "consumption_constraint": consumption_constraint,
         "labor_income": labor_income,
     },
-    "choices": {
-        "working": {"options": [0, 1]},
-        "consumption": {
-            "grid_type": "linspace",
-            "start": 1,
-            "stop": 100,
-            "n_points": N_GRID_POINTS["consumption"],
-        },
+    choices={
+        "working": Grid.discrete([0, 1]),
+        "consumption": Grid.continuous(
+            start=1,
+            stop=100,
+            n_points=N_GRID_POINTS["consumption"],
+            grid_type=Grid.type.linspace,
+        ),
     },
-    "states": {
-        "health": {"options": [0, 1]},
-        "partner": {"options": [0, 1]},
-        "wealth": {
-            "grid_type": "linspace",
-            "start": 1,
-            "stop": 100,
-            "n_points": N_GRID_POINTS["wealth"],
-        },
+    states={
+        "health": Grid.discrete([0, 1]),
+        "partner": Grid.discrete([0, 1]),
+        "wealth": Grid.continuous(
+            start=1,
+            stop=100,
+            n_points=N_GRID_POINTS["wealth"],
+            grid_type=Grid.type.linspace,
+        ),
     },
-    "n_periods": 3,
-}
+)
 
 
 # ======================================================================================
@@ -130,8 +131,7 @@ IMPLEMENTED_MODELS = {
 
 def get_model_config(model_name: str, n_periods: int):
     model_config = deepcopy(IMPLEMENTED_MODELS[model_name])
-    model_config["n_periods"] = n_periods
-    return model_config
+    return model_config.replace(n_periods=n_periods)
 
 
 def get_params(

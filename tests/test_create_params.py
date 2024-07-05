@@ -6,21 +6,23 @@ from lcm.create_params_template import (
     _create_stochastic_transition_params,
     create_params_template,
 )
+from lcm.user_model import Model
 from numpy.testing import assert_equal
 
 
 def test_create_params_without_shocks():
-    model = {
-        "functions": {
+    model = Model(
+        functions={
             "f": lambda a, b, c: None,  # noqa: ARG005
         },
-        "choices": {
+        choices={
             "a": None,
         },
-        "states": {
+        states={
             "b": None,
         },
-    }
+        _skip_checks=True,
+    )
     got = create_params_template(
         model,
         variable_info=pd.DataFrame({"is_stochastic": [False]}),
@@ -30,17 +32,18 @@ def test_create_params_without_shocks():
 
 
 def test_create_function_params():
-    model = {
-        "functions": {
+    model = Model(
+        functions={
             "f": lambda a, b, c: None,  # noqa: ARG005
         },
-        "choices": {
+        choices={
             "a": None,
         },
-        "states": {
+        states={
             "b": None,
         },
-    }
+        _skip_checks=True,
+    )
     got = _create_function_params(model)
     assert got == {"f": {"c": np.nan}}
 
@@ -54,8 +57,14 @@ def test_create_shock_params():
         index=["a"],
     )
 
+    model = Model(
+        n_periods=3,
+        functions={"next_a": next_a},
+        _skip_checks=True,
+    )
+
     got = _create_stochastic_transition_params(
-        model_spec={"functions": {"next_a": next_a}, "n_periods": 3},
+        user_model=model,
         variable_info=variable_info,
         grids={"a": np.array([1, 2])},
     )
@@ -71,9 +80,14 @@ def test_create_shock_params_invalid_variable():
         index=["a"],
     )
 
+    model = Model(
+        functions={"next_a": next_a},
+        _skip_checks=True,
+    )
+
     with pytest.raises(ValueError, match="The following variables are stochastic, but"):
         _create_stochastic_transition_params(
-            model_spec={"functions": {"next_a": next_a}},
+            user_model=model,
             variable_info=variable_info,
             grids={"a": np.array([1, 2])},
         )
@@ -92,9 +106,14 @@ def test_create_shock_params_invalid_dependency():
         index=["a", "b"],
     )
 
+    model = Model(
+        functions={"next_a": next_a},
+        _skip_checks=True,
+    )
+
     with pytest.raises(ValueError, match="Stochastic transition functions can only"):
         _create_stochastic_transition_params(
-            model_spec={"functions": {"next_a": next_a}},
+            user_model=model,
             variable_info=variable_info,
             grids={"a": np.array([1, 2])},
         )
