@@ -69,7 +69,7 @@ class Model:
 
     description: str | None = None
     _: KW_ONLY
-    n_periods: int | None = None
+    n_periods: int
     functions: dict[str, Callable] = field(default_factory=dict)
     choices: dict[str, GridSpec] = field(default_factory=dict)
     states: dict[str, GridSpec] = field(default_factory=dict)

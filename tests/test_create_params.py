@@ -22,6 +22,7 @@ def test_create_params_without_shocks():
             "b": None,
         },
         _skip_checks=True,
+        n_periods=None,
     )
     got = create_params_template(
         model,
@@ -43,6 +44,7 @@ def test_create_function_params():
             "b": None,
         },
         _skip_checks=True,
+        n_periods=None,
     )
     got = _create_function_params(model)
     assert got == {"f": {"c": np.nan}}
@@ -83,6 +85,7 @@ def test_create_shock_params_invalid_variable():
     model = Model(
         functions={"next_a": next_a},
         _skip_checks=True,
+        n_periods=None,
     )
 
     with pytest.raises(ValueError, match="The following variables are stochastic, but"):
@@ -109,6 +112,7 @@ def test_create_shock_params_invalid_dependency():
     model = Model(
         functions={"next_a": next_a},
         _skip_checks=True,
+        n_periods=None,
     )
 
     with pytest.raises(ValueError, match="Stochastic transition functions can only"):
