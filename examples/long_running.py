@@ -1,7 +1,7 @@
 """Example specification for a consumption-savings model with health and exercise."""
 
 import jax.numpy as jnp
-from lcm.user_model import Grid, Model
+from lcm import DiscreteGrid, LinspaceGrid, Model
 
 # ======================================================================================
 # Numerical parameters and constants
@@ -76,32 +76,28 @@ MODEL_CONFIG = Model(
         "age": age,
     },
     choices={
-        "working": Grid.discrete([0, 1]),
-        "consumption": Grid.continuous(
+        "working": DiscreteGrid([0, 1]),
+        "consumption": LinspaceGrid(
             start=1,
             stop=100,
             n_points=N_GRID_POINTS["consumption"],
-            grid_type="linspace",
         ),
-        "exercise": Grid.continuous(
+        "exercise": LinspaceGrid(
             start=0,
             stop=1,
             n_points=N_GRID_POINTS["exercise"],
-            grid_type="linspace",
         ),
     },
     states={
-        "wealth": Grid.continuous(
+        "wealth": LinspaceGrid(
             start=1,
             stop=100,
             n_points=N_GRID_POINTS["wealth"],
-            grid_type="linspace",
         ),
-        "health": Grid.continuous(
+        "health": LinspaceGrid(
             start=0,
             stop=1,
             n_points=N_GRID_POINTS["health"],
-            grid_type="linspace",
         ),
     },
 )

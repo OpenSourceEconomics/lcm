@@ -3,6 +3,7 @@ import lcm.grids as grids_module
 import numpy as np
 import pandas as pd
 import pytest
+from lcm import DiscreteGrid, Model
 from lcm.interfaces import ContinuousGridInfo, ContinuousGridSpec
 from lcm.mark import StochasticInfo
 from lcm.process_model import (
@@ -13,7 +14,6 @@ from lcm.process_model import (
     _get_variable_info,
     process_model,
 )
-from lcm.user_model import Grid, Model
 from numpy.testing import assert_array_equal
 from pandas.testing import assert_frame_equal
 
@@ -34,10 +34,10 @@ def user_model():
             "next_c": next_c,
         },
         choices={
-            "a": Grid.discrete([0, 1]),
+            "a": DiscreteGrid([0, 1]),
         },
         states={
-            "c": Grid.discrete([0, 1]),
+            "c": DiscreteGrid([0, 1]),
         },
         _skip_checks=True,
     )

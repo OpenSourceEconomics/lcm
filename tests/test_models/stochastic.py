@@ -13,7 +13,7 @@ from copy import deepcopy
 
 import jax.numpy as jnp
 import lcm
-from lcm.user_model import Grid, Model
+from lcm import DiscreteGrid, LinspaceGrid, Model
 
 # ======================================================================================
 # Numerical parameters and constants
@@ -99,22 +99,20 @@ MODEL_CONFIG = Model(
         "labor_income": labor_income,
     },
     choices={
-        "working": Grid.discrete([0, 1]),
-        "consumption": Grid.continuous(
+        "working": DiscreteGrid([0, 1]),
+        "consumption": LinspaceGrid(
             start=1,
             stop=100,
             n_points=N_GRID_POINTS["consumption"],
-            grid_type=Grid.type.linspace,
         ),
     },
     states={
-        "health": Grid.discrete([0, 1]),
-        "partner": Grid.discrete([0, 1]),
-        "wealth": Grid.continuous(
+        "health": DiscreteGrid([0, 1]),
+        "partner": DiscreteGrid([0, 1]),
+        "wealth": LinspaceGrid(
             start=1,
             stop=100,
             n_points=N_GRID_POINTS["wealth"],
-            grid_type=Grid.type.linspace,
         ),
     },
 )

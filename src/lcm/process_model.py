@@ -3,6 +3,7 @@ import inspect
 from collections.abc import Callable
 from copy import deepcopy
 
+import jax.numpy as jnp
 import pandas as pd
 from dags import get_ancestors
 from dags.signature import with_signature
@@ -12,12 +13,14 @@ import lcm.grids as grids_module
 from lcm.create_params_template import create_params_template
 from lcm.functools import all_as_args, all_as_kwargs
 from lcm.interfaces import (
+    ContinuousGridInfo,
     ContinuousGridSpec,
     DiscreteGridSpec,
     GridSpec,
     InternalModel,
 )
 from lcm.typing import Params
+from lcm.user_grids import ContinuousGrid, DiscreteGrid, LinspaceGrid, LogspaceGrid
 from lcm.user_model import Model
 
 
@@ -123,7 +126,7 @@ def _get_variable_info(user_model: Model, function_info: pd.DataFrame) -> pd.Dat
     info["is_choice"] = ~info["is_state"]
 
     info["is_continuous"] = [
-        isinstance(spec, ContinuousGridSpec) for spec in variables.values()
+        isinstance(spec, ContinuousGrid) for spec in variables.values()
     ]
     info["is_discrete"] = ~info["is_continuous"]
 
@@ -220,12 +223,23 @@ def _get_gridspecs(
     variables: dict[str, GridSpec] = {}
 
     for name, spec in raw_variables.items():
-        if isinstance(spec, ContinuousGridSpec):
-            variables[name] = spec
-        elif isinstance(spec, DiscreteGridSpec):
-            if spec.tolist() != list(range(len(spec))):
-                errors[name] = spec
-            variables[name] = spec
+        if isinstance(spec, ContinuousGrid):
+            if isinstance(spec, LinspaceGrid):
+                kind = "linspace"
+            elif isinstance(spec, LogspaceGrid):
+                kind = "logspace"
+            else:
+                raise TypeError(f"Invalid grid spec for variable {name}: {spec}")
+            grid_spec = ContinuousGridSpec(
+                kind=kind,
+                info=ContinuousGridInfo(**spec.__dict__),
+            )
+            variables[name] = grid_spec
+        elif isinstance(spec, DiscreteGrid):
+            options = spec.options
+            if list(options) != list(range(len(options))):
+                errors[name] = options
+            variables[name] = jnp.array(list(options))
         else:
             raise TypeError(f"Invalid grid spec for variable {name}: {spec}")
 

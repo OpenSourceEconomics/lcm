@@ -7,8 +7,8 @@ import lcm
 import numpy as np
 import pandas as pd
 import pytest
+from lcm import DiscreteGrid, LinspaceGrid, Model
 from lcm.entry_point import get_lcm_function
-from lcm.user_model import Grid, Model
 from numpy.testing import assert_array_almost_equal as aaae
 from pandas.testing import assert_frame_equal
 
@@ -36,15 +36,14 @@ DETERMINISTIC_MODEL = Model(
     },
     n_periods=2,
     choices={
-        "consumption": Grid.discrete([0, 1]),
-        "working": Grid.discrete([0, 1]),
+        "consumption": DiscreteGrid([0, 1]),
+        "working": DiscreteGrid([0, 1]),
     },
     states={
-        "wealth": Grid.continuous(
+        "wealth": LinspaceGrid(
             start=0,
             stop=2,
             n_points=1,
-            grid_type=Grid.type.linspace,
         ),
     },
 )
@@ -57,7 +56,7 @@ def next_health(health):  # noqa: ARG001
 
 STOCHASTIC_MODEL = deepcopy(DETERMINISTIC_MODEL)
 STOCHASTIC_MODEL.functions["next_health"] = next_health
-STOCHASTIC_MODEL.states["health"] = Grid.discrete([0, 1])
+STOCHASTIC_MODEL.states["health"] = DiscreteGrid([0, 1])
 
 
 # ======================================================================================
@@ -313,9 +312,7 @@ def test_deterministic_solve(beta, n_wealth_points):
     # Update model
     # ==================================================================================
     model = deepcopy(DETERMINISTIC_MODEL)
-    model.states["wealth"] = model.states["wealth"]._replace(
-        info=model.states["wealth"].info._replace(n_points=n_wealth_points),
-    )
+    model.states["wealth"] = model.states["wealth"].replace(n_points=n_wealth_points)
 
     # Solve model using LCM
     # ==================================================================================
@@ -328,11 +325,10 @@ def test_deterministic_solve(beta, n_wealth_points):
 
     # Compute analytical solution
     # ==================================================================================
-    wealth_grid_spec_info = model.states["wealth"].info
     wealth_grid = np.linspace(
-        start=wealth_grid_spec_info.start,
-        stop=wealth_grid_spec_info.stop,
-        num=wealth_grid_spec_info.n_points,
+        start=model.states["wealth"].start,
+        stop=model.states["wealth"].stop,
+        num=model.states["wealth"].n_points,
     )
     expected = analytical_solve_deterministic(wealth_grid, params=params)
 
@@ -349,8 +345,8 @@ def test_deterministic_simulate(beta, n_wealth_points):
     # Update model
     # ==================================================================================
     model = deepcopy(DETERMINISTIC_MODEL)
-    model.states["wealth"] = model.states["wealth"]._replace(
-        info=model.states["wealth"].info._replace(n_points=n_wealth_points),
+    model.states["wealth"] = model.states["wealth"].replace(
+        n_points=n_wealth_points,
     )
 
     # Simulate model using LCM
@@ -390,8 +386,8 @@ def test_stochastic_solve(beta, n_wealth_points, health_transition):
     # Update model
     # ==================================================================================
     model = deepcopy(STOCHASTIC_MODEL)
-    model.states["wealth"] = model.states["wealth"]._replace(
-        info=model.states["wealth"].info._replace(n_points=n_wealth_points),
+    model.states["wealth"] = model.states["wealth"].replace(
+        n_points=n_wealth_points,
     )
 
     # Solve model using LCM
@@ -405,11 +401,10 @@ def test_stochastic_solve(beta, n_wealth_points, health_transition):
 
     # Compute analytical solution
     # ==================================================================================
-    wealth_grid_spec_info = model.states["wealth"].info
     _wealth_grid = np.linspace(
-        start=wealth_grid_spec_info.start,
-        stop=wealth_grid_spec_info.stop,
-        num=wealth_grid_spec_info.n_points,
+        start=model.states["wealth"].start,
+        stop=model.states["wealth"].stop,
+        num=model.states["wealth"].n_points,
     )
     _health_grid = np.array([0, 1])
 
@@ -440,8 +435,8 @@ def test_stochastic_simulate(beta, n_wealth_points, health_transition):
     # Update model
     # ==================================================================================
     model = deepcopy(STOCHASTIC_MODEL)
-    model.states["wealth"] = model.states["wealth"]._replace(
-        info=model.states["wealth"].info._replace(n_points=n_wealth_points),
+    model.states["wealth"] = model.states["wealth"].replace(
+        n_points=n_wealth_points,
     )
 
     # Simulate model using LCM

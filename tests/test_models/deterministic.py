@@ -10,7 +10,7 @@ https://doi.org/10.3982/QE643).
 from copy import deepcopy
 
 import jax.numpy as jnp
-from lcm.user_model import Grid, Model
+from lcm import DiscreteGrid, LinspaceGrid, Model
 
 # ======================================================================================
 # Numerical parameters and constants
@@ -131,22 +131,20 @@ ISKHAKOV_ET_AL_2017 = Model(
         "working": working,
     },
     choices={
-        "retirement": Grid.discrete([0, 1]),
-        "consumption": Grid.continuous(
+        "retirement": DiscreteGrid([0, 1]),
+        "consumption": LinspaceGrid(
             start=1,
             stop=400,
             n_points=N_GRID_POINTS["consumption"],
-            grid_type=Grid.type.linspace,
         ),
     },
     states={
-        "wealth": Grid.continuous(
+        "wealth": LinspaceGrid(
             start=1,
             stop=400,
             n_points=N_GRID_POINTS["wealth"],
-            grid_type=Grid.type.linspace,
         ),
-        "lagged_retirement": Grid.discrete([0, 1]),
+        "lagged_retirement": DiscreteGrid([0, 1]),
     },
 )
 
@@ -167,20 +165,18 @@ ISKHAKOV_ET_AL_2017_STRIPPED_DOWN = Model(
         "age": age,
     },
     choices={
-        "retirement": Grid.discrete([0, 1]),
-        "consumption": Grid.continuous(
+        "retirement": DiscreteGrid([0, 1]),
+        "consumption": LinspaceGrid(
             start=1,
             stop=400,
             n_points=N_GRID_POINTS["consumption"],
-            grid_type=Grid.type.linspace,
         ),
     },
     states={
-        "wealth": Grid.continuous(
+        "wealth": LinspaceGrid(
             start=1,
             stop=400,
             n_points=N_GRID_POINTS["wealth"],
-            grid_type=Grid.type.linspace,
         ),
     },
 )
@@ -201,15 +197,14 @@ ISKHAKOV_ET_AL_2017_FULLY_DISCRETE = Model(
         "consumption": consumption,
     },
     choices={
-        "retirement": Grid.discrete([0, 1]),
-        "consumption_index": Grid.discrete([0, 1]),
+        "retirement": DiscreteGrid([0, 1]),
+        "consumption_index": DiscreteGrid([0, 1]),
     },
     states={
-        "wealth": Grid.continuous(
+        "wealth": LinspaceGrid(
             start=1,
             stop=400,
             n_points=N_GRID_POINTS["wealth"],
-            grid_type=Grid.type.linspace,
         ),
     },
 )
