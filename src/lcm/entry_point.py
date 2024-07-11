@@ -18,7 +18,7 @@ from lcm.process_model import process_model
 from lcm.simulate import simulate
 from lcm.solve_brute import solve
 from lcm.state_space import create_state_choice_space
-from lcm.user_model import Model
+from lcm.user_input import Model
 
 
 def get_lcm_function(

@@ -6,7 +6,7 @@ from lcm.create_params_template import (
     _create_stochastic_transition_params,
     create_params_template,
 )
-from lcm.user_model import Model
+from lcm.user_input import Model
 from numpy.testing import assert_equal
 
 

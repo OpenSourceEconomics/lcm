@@ -7,7 +7,7 @@ import pandas as pd
 from jax import Array
 
 from lcm.typing import Params, ScalarUserInput
-from lcm.user_model import Model
+from lcm.user_input import Model
 
 
 def create_params_template(
@@ -129,7 +129,6 @@ def _create_stochastic_transition_params(
     invalid_dependencies = {}
 
     for var in stochastic_variables:
-
         # Retrieve corresponding next function and its arguments
         next_var = user_model.functions[f"next_{var}"]
         dependencies = list(inspect.signature(next_var).parameters)

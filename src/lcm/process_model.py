@@ -15,13 +15,19 @@ from lcm.functools import all_as_args, all_as_kwargs
 from lcm.interfaces import (
     ContinuousGridInfo,
     ContinuousGridSpec,
+    ContinuousGridType,
     DiscreteGridSpec,
     GridSpec,
     InternalModel,
 )
 from lcm.typing import Params
-from lcm.user_grids import ContinuousGrid, DiscreteGrid, LinspaceGrid, LogspaceGrid
-from lcm.user_model import Model
+from lcm.user_input import (
+    ContinuousGrid,
+    DiscreteGrid,
+    LinspaceGrid,
+    LogspaceGrid,
+    Model,
+)
 
 
 def process_model(user_model: Model) -> InternalModel:
@@ -225,7 +231,7 @@ def _get_gridspecs(
     for name, spec in raw_variables.items():
         if isinstance(spec, ContinuousGrid):
             if isinstance(spec, LinspaceGrid):
-                kind = "linspace"
+                kind: ContinuousGridType = "linspace"
             elif isinstance(spec, LogspaceGrid):
                 kind = "logspace"
             else:
