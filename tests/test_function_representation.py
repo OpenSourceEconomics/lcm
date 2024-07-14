@@ -3,6 +3,7 @@ from functools import partial
 
 import jax.numpy as jnp
 import pytest
+from lcm import LinspaceGrid
 from lcm.dispatchers import productmap
 from lcm.function_representation import (
     _fail_if_interpolation_axes_are_not_last,
@@ -15,7 +16,6 @@ from lcm.function_representation import (
 from lcm.grids import linspace
 from lcm.interfaces import (
     ContinuousGridInfo,
-    ContinuousGridSpec,
     IndexerInfo,
     SpaceInfo,
 )
@@ -23,18 +23,18 @@ from lcm.options import DefaultMapCoordinatesOptions
 
 
 def test_function_evaluator_with_one_continuous_variable():
-    grid_info = ContinuousGridInfo(start=-3, stop=3, n_points=7)
+    wealth_grid = LinspaceGrid(start=-3, stop=3, n_points=7)
 
     space_info = SpaceInfo(
         axis_names=["wealth"],
         lookup_info={},
         interpolation_info={
-            "wealth": ContinuousGridSpec(kind="linspace", info=grid_info),
+            "wealth": wealth_grid,
         },
         indexer_infos=[],
     )
 
-    grid = linspace(**grid_info._asdict())
+    grid = linspace(**wealth_grid.info._asdict())
     vf_arr = jnp.pi * grid + 2
 
     # create the evaluator
@@ -123,14 +123,8 @@ def test_function_evaluator():
 
     # create info on continuous grids
     interpolation_info = {
-        "wealth": ContinuousGridSpec(
-            kind="linspace",
-            info=ContinuousGridInfo(start=100, stop=1100, n_points=6),
-        ),
-        "human_capital": ContinuousGridSpec(
-            kind="linspace",
-            info=ContinuousGridInfo(start=-3, stop=3, n_points=7),
-        ),
+        "wealth": LinspaceGrid(start=100, stop=1100, n_points=6),
+        "human_capital": LinspaceGrid(start=-3, stop=3, n_points=7),
     }
 
     # create info on axis of value function array
@@ -207,14 +201,8 @@ def test_function_evaluator_longer_indexer():
 
     # create info on continuous grids
     interpolation_info = {
-        "wealth": ContinuousGridSpec(
-            kind="linspace",
-            info=ContinuousGridInfo(start=100, stop=1100, n_points=6),
-        ),
-        "human_capital": ContinuousGridSpec(
-            kind="linspace",
-            info=ContinuousGridInfo(start=-3, stop=3, n_points=7),
-        ),
+        "wealth": LinspaceGrid(start=100, stop=1100, n_points=6),
+        "human_capital": LinspaceGrid(start=-3, stop=3, n_points=7),
     }
 
     # create info on axis of value function array
@@ -322,18 +310,18 @@ def test_get_interpolator():
 
 @pytest.mark.illustrative()
 def test_get_function_evaluator_illustrative():
-    grid_info = ContinuousGridInfo(start=0, stop=1, n_points=3)
+    a_grid = LinspaceGrid(start=0, stop=1, n_points=3)
 
     space_info = SpaceInfo(
         axis_names=["a"],
         lookup_info={},
         interpolation_info={
-            "a": ContinuousGridSpec(kind="linspace", info=grid_info),
+            "a": a_grid,
         },
         indexer_infos=[],
     )
 
-    grid = linspace(**grid_info._asdict())
+    grid = linspace(**a_grid.info._asdict())
 
     values = jnp.pi * grid + 2
 

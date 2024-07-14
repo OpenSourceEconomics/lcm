@@ -9,6 +9,8 @@ Scalar = int | float | Array
 # We only allow primitive types for scalar user inputs to reduce complexity.
 ScalarUserInput = int | float
 
+ContinuousGridType = Literal["linspace", "logspace"]
+
 DiscreteLabels = Annotated[list[int], "Int range starting from 0 with increments of 1"]
 
 # Parameters in LCM are made out of three categories: (1) the default parameters

@@ -3,29 +3,18 @@ import inspect
 from collections.abc import Callable
 from copy import deepcopy
 
-import jax.numpy as jnp
 import pandas as pd
 from dags import get_ancestors
 from dags.signature import with_signature
 from jax import Array
 
-import lcm.grids as grids_module
 from lcm.create_params_template import create_params_template
 from lcm.functools import all_as_args, all_as_kwargs
-from lcm.interfaces import (
-    ContinuousGridInfo,
-    ContinuousGridSpec,
-    ContinuousGridType,
-    DiscreteGridSpec,
-    GridSpec,
-    InternalModel,
-)
+from lcm.interfaces import InternalModel
 from lcm.typing import Params
 from lcm.user_input import (
     ContinuousGrid,
-    DiscreteGrid,
-    LinspaceGrid,
-    LogspaceGrid,
+    Grid,
     Model,
 )
 
@@ -57,26 +46,26 @@ def process_model(user_model: Model) -> InternalModel:
 
     grids = _get_grids(gridspecs=gridspecs, variable_info=variable_info)
 
-    _params = create_params_template(
+    params = create_params_template(
         user_model,
         variable_info=variable_info,
         grids=grids,
     )
 
-    _functions = _get_functions(
+    functions = _get_functions(
         user_model,
         function_info=function_info,
         variable_info=variable_info,
-        params=_params,
+        params=params,
         grids=grids,
     )
     return InternalModel(
         grids=grids,
         gridspecs=gridspecs,
         variable_info=variable_info,
-        functions=_functions,
+        functions=functions,
         function_info=function_info,
-        params=_params,
+        params=params,
         shocks=user_model.shocks if hasattr(user_model, "shocks") else {},
         n_periods=user_model.n_periods,
     )
@@ -204,7 +193,7 @@ def _get_auxiliary_variables(
 def _get_gridspecs(
     user_model: Model,
     variable_info: pd.DataFrame,
-) -> dict[str, GridSpec]:
+) -> dict[str, Grid]:
     """Create a dictionary of grid specifications for each variable in the model.
 
     Args:
@@ -223,60 +212,21 @@ def _get_gridspecs(
 
     """
     raw_variables = user_model.states | user_model.choices
-
-    errors = {}
-
-    variables: dict[str, GridSpec] = {}
-
-    for name, spec in raw_variables.items():
-        if isinstance(spec, ContinuousGrid):
-            if isinstance(spec, LinspaceGrid):
-                kind: ContinuousGridType = "linspace"
-            elif isinstance(spec, LogspaceGrid):
-                kind = "logspace"
-            else:
-                raise TypeError(f"Invalid grid spec for variable {name}: {spec}")
-            grid_spec = ContinuousGridSpec(
-                kind=kind,
-                info=ContinuousGridInfo(**spec.__dict__),
-            )
-            variables[name] = grid_spec
-        elif isinstance(spec, DiscreteGrid):
-            options = spec.options
-            if list(options) != list(range(len(options))):
-                errors[name] = options
-            variables[name] = jnp.array(list(options))
-        else:
-            raise TypeError(f"Invalid grid spec for variable {name}: {spec}")
-
-    if errors:
-        example = next(iter(errors))  # access the first key of the dictionary
-        msg = (
-            "The following variables have discrete options that are not an integer "
-            f"range from 0 to n: [{', '.join(errors)}].\nPlease rewrite (for example) "
-            f"{{'{example}': {{'options': {errors[example]}}}}} to "
-            f"{{'{example}_index': {{'options': {list(range(len(errors[example])))}}}}}"
-            ".\nThen add a new function to the functions dictionary that maps the index"
-            " to the value of the variable."
-        )
-        raise ValueError(msg)
-
     order = variable_info.index.tolist()
-    return {k: variables[k] for k in order}
+    return {k: raw_variables[k] for k in order}
 
 
 def _get_grids(
-    gridspecs: dict[str, GridSpec],
+    gridspecs: dict[str, Grid],
     variable_info: pd.DataFrame,
 ) -> dict[str, Array]:
-    """Create a dictionary of grids for each variable in the model.
+    """Create a dictionary of array grids for each variable in the model.
 
     Args:
         gridspecs: Dictionary containing all variables of the model. The keys are the
             names of the variables. The values describe which values the variable can
             take. For discrete variables these are the options (jnp.array). For
-            continuous variables this is information about how to build the grids
-            (ContinuousGridSpec).
+            continuous variables this is information about how to build the grids.
         variable_info: A table with information about all variables in the model. The
             index contains the name of a model variable. The columns are booleans that
             are True if the variable has the corresponding property. The columns are:
@@ -287,16 +237,7 @@ def _get_grids(
             the names of the variables. The values are the grids.
 
     """
-    grids = {}
-    for name, grid_spec in gridspecs.items():
-        if isinstance(grid_spec, ContinuousGridSpec):
-            build_grid = getattr(grids_module, grid_spec.kind)
-            grids[name] = build_grid(**grid_spec.info._asdict())
-        elif isinstance(grid_spec, DiscreteGridSpec):
-            grids[name] = grid_spec
-        else:
-            raise TypeError(f"Invalid grid spec for variable {name}: {grid_spec}")
-
+    grids = {name: spec.to_jax() for name, spec in gridspecs.items()}
     order = variable_info.index.tolist()
     return {k: grids[k] for k in order}
 

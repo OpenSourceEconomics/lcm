@@ -1,9 +1,8 @@
-from typing import Literal, NamedTuple
+from typing import NamedTuple
 
 import pandas as pd
-from jax import Array
 
-from lcm.typing import DiscreteLabels, Scalar
+from lcm.typing import ContinuousGridType, DiscreteLabels, Scalar
 
 
 class IndexerInfo(NamedTuple):
@@ -42,15 +41,11 @@ class ContinuousGridInfo(NamedTuple):
     n_points: int
 
 
-ContinuousGridType = Literal["linspace", "logspace"]
-
-
-class ContinuousGridSpec(NamedTuple):
-    """Specification of a grid for continuous variables.
+class InterpolationInfo(NamedTuple):
+    """Interpolation info for a grid of continuous variables.
 
     Contains all information necessary to build and work with a grid of a continuous
     variable.
-
 
     Attributes:
         kind (ContinuousGridType): Name of a grid type implemented in lcm.grids.
@@ -61,10 +56,6 @@ class ContinuousGridSpec(NamedTuple):
 
     kind: ContinuousGridType
     info: ContinuousGridInfo
-
-
-DiscreteGridSpec = Array
-GridSpec = ContinuousGridSpec | DiscreteGridSpec
 
 
 class Space(NamedTuple):
@@ -99,7 +90,7 @@ class SpaceInfo(NamedTuple):
 
     axis_names: list[str]
     lookup_info: dict[str, DiscreteLabels]
-    interpolation_info: dict[str, ContinuousGridSpec]
+    interpolation_info: dict[str, InterpolationInfo]
     indexer_infos: list[IndexerInfo]
 
 

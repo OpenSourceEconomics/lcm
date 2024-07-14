@@ -3,8 +3,7 @@ import lcm.grids as grids_module
 import numpy as np
 import pandas as pd
 import pytest
-from lcm import DiscreteGrid, Model
-from lcm.interfaces import ContinuousGridInfo, ContinuousGridSpec
+from lcm import DiscreteGrid, LinspaceGrid, Model
 from lcm.mark import StochasticInfo
 from lcm.process_model import (
     _get_function_info,
@@ -85,8 +84,8 @@ def test_get_gridspecs(user_model):
         function_info=_get_function_info(user_model),
     )
     got = _get_gridspecs(user_model, variable_info)
-    assert_array_equal(got["a"], jnp.array([0, 1]))
-    assert_array_equal(got["c"], jnp.array([0, 1]))
+    assert got["a"] == DiscreteGrid([0, 1])
+    assert got["c"] == DiscreteGrid([0, 1])
 
 
 def test_get_grids(user_model):
@@ -120,25 +119,23 @@ def test_process_model_iskhakov_et_al_2017():
     ).all()
 
     # Gridspecs
-    wealth_specs = ContinuousGridSpec(
-        kind="linspace",
-        info=ContinuousGridInfo(start=1, stop=400, n_points=N_GRID_POINTS["wealth"]),
+    wealth_specs = LinspaceGrid(
+        start=1,
+        stop=400,
+        n_points=N_GRID_POINTS["wealth"],
     )
 
     assert model.gridspecs["wealth"] == wealth_specs
 
-    consumption_specs = ContinuousGridSpec(
-        kind="linspace",
-        info=ContinuousGridInfo(
-            start=1,
-            stop=400,
-            n_points=N_GRID_POINTS["consumption"],
-        ),
+    consumption_specs = LinspaceGrid(
+        start=1,
+        stop=400,
+        n_points=N_GRID_POINTS["consumption"],
     )
     assert model.gridspecs["consumption"] == consumption_specs
 
-    assert_array_equal(model.gridspecs["retirement"], jnp.array([0, 1]))
-    assert_array_equal(model.gridspecs["lagged_retirement"], jnp.array([0, 1]))
+    assert model.gridspecs["retirement"] == DiscreteGrid([0, 1])
+    assert model.gridspecs["lagged_retirement"] == DiscreteGrid([0, 1])
 
     # Grids
     func = getattr(grids_module, model.gridspecs["consumption"].kind)
@@ -183,24 +180,22 @@ def test_process_model():
     ).all()
 
     # Gridspecs
-    wealth_specs = ContinuousGridSpec(
-        kind="linspace",
-        info=ContinuousGridInfo(start=1, stop=400, n_points=N_GRID_POINTS["wealth"]),
+    wealth_specs = LinspaceGrid(
+        start=1,
+        stop=400,
+        n_points=N_GRID_POINTS["wealth"],
     )
 
     assert model.gridspecs["wealth"] == wealth_specs
 
-    consumption_specs = ContinuousGridSpec(
-        kind="linspace",
-        info=ContinuousGridInfo(
-            start=1,
-            stop=400,
-            n_points=N_GRID_POINTS["consumption"],
-        ),
+    consumption_specs = LinspaceGrid(
+        start=1,
+        stop=400,
+        n_points=N_GRID_POINTS["consumption"],
     )
     assert model.gridspecs["consumption"] == consumption_specs
 
-    assert_array_equal(model.gridspecs["retirement"], jnp.array([0, 1]))
+    assert model.gridspecs["retirement"] == DiscreteGrid([0, 1])
 
     # Grids
     func = getattr(grids_module, model.gridspecs["consumption"].kind)
