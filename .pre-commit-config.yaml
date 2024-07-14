@@ -45,12 +45,8 @@ repos:
     rev: v1.35.1
     hooks:
       - id: yamllint
-  - repo: https://github.com/asottile/blacken-docs
-    rev: 1.18.0
-    hooks:
-      - id: blacken-docs
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.5.1
+    rev: v0.5.2
     hooks:
       # Run the linter.
       - id: ruff
@@ -73,7 +69,7 @@ repos:
         additional_dependencies:
           - mdformat-gfm
           - mdformat-gfm-alerts
-          - mdformat-black
+          - mdformat-ruff
         args:
           - --wrap
           - '88'
