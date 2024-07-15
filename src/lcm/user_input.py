@@ -4,18 +4,13 @@ import dataclasses as dc
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Collection
 from dataclasses import KW_ONLY, InitVar, dataclass, field
-from typing import Self, get_args
+from typing import get_args
 
 import jax.numpy as jnp
 
-from lcm.grids import linspace, logspace
+import lcm.grids as grids_module
 from lcm.interfaces import ContinuousGridInfo
 from lcm.typing import ContinuousGridType, ScalarUserInput
-
-build_grid_mapping = {
-    "linspace": linspace,
-    "logspace": logspace,
-}
 
 
 class Grid(ABC):
@@ -99,9 +94,9 @@ class DiscreteGrid(Grid):
 
     def to_jax(self) -> jnp.ndarray:
         """Convert the grid to a Jax array."""
-        return jnp.array(list(self.options))
+        return jnp.asarray(list(self.options))
 
-    def replace(self, options: Collection[ScalarUserInput]) -> Self:
+    def replace(self, options: Collection[ScalarUserInput]) -> "DiscreteGrid":
         """Replace the grid with new values.
 
         Args:
@@ -143,26 +138,8 @@ class ContinuousGrid(Grid):
 
     def to_jax(self) -> jnp.ndarray:
         """Convert the grid to a Jax array."""
-        return build_grid_mapping[self.kind](
-            start=self.start,
-            stop=self.stop,
-            n_points=self.n_points,
-        )
-
-    def replace(self, **kwargs) -> Self:
-        """Replace the grid with new values.
-
-        Args:
-            **kwargs:
-                - start: The new start value of the grid.
-                - stop: The new stop value of the grid.
-                - n_points: The new number of points in the grid.
-
-        Returns:
-            The updated grid.
-
-        """
-        return dc.replace(self, **kwargs)
+        space_func = getattr(grids_module, self.kind)
+        return space_func(start=self.start, stop=self.stop, n_points=self.n_points)
 
 
 class LinspaceGrid(ContinuousGrid):
@@ -182,6 +159,22 @@ class LinspaceGrid(ContinuousGrid):
     kind: ContinuousGridType = "linspace"
 
 
+    def replace(self, **kwargs) -> "LinspaceGrid":
+        """Replace the grid with new values.
+
+        Args:
+            **kwargs:
+                - start: The new start value of the grid.
+                - stop: The new stop value of the grid.
+                - n_points: The new number of points in the grid.
+
+        Returns:
+            The updated grid.
+
+        """
+        return dc.replace(self, **kwargs)
+
+
 class LogspaceGrid(ContinuousGrid):
     """A logarithmic grid of continuous values.
 
@@ -197,6 +190,21 @@ class LogspaceGrid(ContinuousGrid):
     """
 
     kind: ContinuousGridType = "logspace"
+    
+    def replace(self, **kwargs) -> "LogspaceGrid":
+        """Replace the grid with new values.
+
+        Args:
+            **kwargs:
+                - start: The new start value of the grid.
+                - stop: The new stop value of the grid.
+                - n_points: The new number of points in the grid.
+
+        Returns:
+            The updated grid.
+
+        """
+        return dc.replace(self, **kwargs)
 
 
 # ======================================================================================
@@ -319,10 +327,10 @@ def _validate_discrete_grid(options: Collection[ScalarUserInput]) -> list[str]:
     if len(options) != len(set(options)):
         error_messages.append("options must contain unique values")
 
-    if list(options) != list(range(len(options))):
-        error_messages.append(
-            "options must be a list of consecutive integers starting from 0",
-        )
+    # if list(options) != list(range(len(options))):
+    #     error_messages.append(
+    #         "options must be a list of consecutive integers starting from 0",
+    #     )
 
     return error_messages
 

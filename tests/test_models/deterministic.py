@@ -189,16 +189,18 @@ ISKHAKOV_ET_AL_2017_FULLY_DISCRETE = Model(
     ),
     n_periods=3,
     functions={
-        "utility": utility_fully_discrete,
+        # "utility": utility_fully_discrete,
+        "utility": utility,
         "next_wealth": next_wealth,
         "consumption_constraint": consumption_constraint,
         "labor_income": labor_income,
         "working": working,
-        "consumption": consumption,
+        # "consumption": consumption,
     },
     choices={
         "retirement": DiscreteGrid([0, 1]),
-        "consumption_index": DiscreteGrid([0, 1]),
+        # "consumption_index": DiscreteGrid([0, 1]),
+        "consumption": DiscreteGrid([1, 2]),
     },
     states={
         "wealth": LinspaceGrid(

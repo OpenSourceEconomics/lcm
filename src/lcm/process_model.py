@@ -7,6 +7,7 @@ import pandas as pd
 from dags import get_ancestors
 from dags.signature import with_signature
 from jax import Array
+import jax.numpy as jnp
 
 from lcm.create_params_template import create_params_template
 from lcm.functools import all_as_args, all_as_kwargs
@@ -14,6 +15,7 @@ from lcm.interfaces import InternalModel
 from lcm.typing import Params
 from lcm.user_input import (
     ContinuousGrid,
+    DiscreteGrid,
     Grid,
     Model,
 )
@@ -44,31 +46,101 @@ def process_model(user_model: Model) -> InternalModel:
 
     gridspecs = _get_gridspecs(user_model, variable_info=variable_info)
 
-    grids = _get_grids(gridspecs=gridspecs, variable_info=variable_info)
+    if discrete_vars_to_update := _discrete_vars_with_non_index_options(gridspecs):
 
-    params = create_params_template(
-        user_model,
-        variable_info=variable_info,
-        grids=grids,
-    )
+        updated_user_model = _update_user_model(
+            user_model,
+            gridspecs,
+            discrete_vars_to_update,
+        )
 
-    functions = _get_functions(
-        user_model,
-        function_info=function_info,
-        variable_info=variable_info,
-        params=params,
-        grids=grids,
-    )
-    return InternalModel(
-        grids=grids,
-        gridspecs=gridspecs,
-        variable_info=variable_info,
+        out = process_model(updated_user_model)
+    
+    else:
+
+        grids = _get_grids(gridspecs=gridspecs, variable_info=variable_info)
+
+        params = create_params_template(
+            user_model,
+            variable_info=variable_info,
+            grids=grids,
+        )
+
+        functions = _get_functions(
+            user_model,
+            function_info=function_info,
+            variable_info=variable_info,
+            params=params,
+            grids=grids,
+        )
+        out = InternalModel(
+            grids=grids,
+            gridspecs=gridspecs,
+            variable_info=variable_info,
+            functions=functions,
+            function_info=function_info,
+            params=params,
+            shocks=user_model.shocks if hasattr(user_model, "shocks") else {},
+            n_periods=user_model.n_periods,
+        )
+    
+    return out
+
+
+def _discrete_vars_with_non_index_options(gridspecs: dict[str, Grid]) -> list[str]:
+    vars = []
+    for name, spec in gridspecs.items():
+        if isinstance(spec, DiscreteGrid):
+            if list(spec.options) != list(range(len(spec.options))):
+                vars.append(name)
+    return vars
+
+
+def _update_user_model(
+    user_model: Model,
+    gridspecs: dict[str, Grid],
+    discrete_vars_to_update: list[str],
+) -> Model:
+    """Update the user model to ensure that discrete variables have index options."""
+    functions = user_model.functions
+    states = user_model.states
+    choices = user_model.choices
+
+    for var in discrete_vars_to_update:
+        
+        index_grid = DiscreteGrid(options=list(range(len(gridspecs[var].options))))
+        
+        if var in states:
+            states.pop(var)
+            states[f"__{var}_index__"] = index_grid
+        else:
+            choices.pop(var)
+            choices[f"__{var}_index__"] = index_grid
+
+        functions[var] = _get_index_to_label_func(gridspecs[var].options, name=var)
+        
+    return user_model.replace(
+        states=states,
+        choices=choices,
         functions=functions,
-        function_info=function_info,
-        params=params,
-        shocks=user_model.shocks if hasattr(user_model, "shocks") else {},
-        n_periods=user_model.n_periods,
     )
+
+
+def _get_index_to_label_func(options, name):
+    
+    options_array = jnp.asarray(options)
+    
+    arg_name = f"__{name}_index__"
+
+    @with_signature(args=[arg_name])
+    def func(*args, **kwargs):
+        kwargs = all_as_kwargs(args, kwargs, arg_names=[arg_name])
+        index = kwargs[arg_name]
+        return options_array[index]
+    
+    return func
+
+
 
 
 def _get_function_info(user_model: Model) -> pd.DataFrame:
