@@ -10,13 +10,13 @@ from jax import Array
 
 from lcm.create_params_template import create_params_template
 from lcm.functools import all_as_args, all_as_kwargs
-from lcm.interfaces import InternalModel
-from lcm.typing import Params
-from lcm.user_input import (
+from lcm.grids import (
     ContinuousGrid,
     Grid,
-    Model,
 )
+from lcm.interfaces import InternalModel
+from lcm.model import Model
+from lcm.typing import Params
 
 
 def process_model(user_model: Model) -> InternalModel:

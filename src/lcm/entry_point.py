@@ -9,6 +9,7 @@ from lcm.argmax import argmax
 from lcm.discrete_problem import get_solve_discrete_problem
 from lcm.dispatchers import productmap
 from lcm.logging import get_logger
+from lcm.model import Model
 from lcm.model_functions import (
     get_utility_and_feasibility_function,
 )
@@ -18,7 +19,6 @@ from lcm.process_model import process_model
 from lcm.simulate import simulate
 from lcm.solve_brute import solve
 from lcm.state_space import create_state_choice_space
-from lcm.user_input import Model
 
 
 def get_lcm_function(

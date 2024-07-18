@@ -6,8 +6,8 @@ import jax.numpy as jnp
 import pandas as pd
 from jax import Array
 
+from lcm.model import Model
 from lcm.typing import Params, ScalarUserInput
-from lcm.user_input import Model
 
 
 def create_params_template(
