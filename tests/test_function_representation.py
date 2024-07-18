@@ -13,7 +13,7 @@ from lcm.function_representation import (
     _get_lookup_function,
     get_function_representation,
 )
-from lcm.grids import linspace
+from lcm.grid_helpers import linspace
 from lcm.interfaces import (
     ContinuousGridInfo,
     IndexerInfo,

@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 from jax.scipy.ndimage import map_coordinates
-from lcm.grids import (
+from lcm.grid_helpers import (
     get_linspace_coordinate,
     get_logspace_coordinate,
     linspace,

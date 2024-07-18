@@ -1,5 +1,5 @@
 import jax.numpy as jnp
-import lcm.grids as grids_module
+import lcm.grid_helpers as grids_module
 import numpy as np
 import pandas as pd
 import pytest

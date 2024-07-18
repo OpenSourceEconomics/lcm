@@ -8,7 +8,7 @@ from typing import Self, get_args
 
 import jax.numpy as jnp
 
-from lcm.grids import linspace, logspace
+from lcm.grid_helpers import linspace, logspace
 from lcm.interfaces import ContinuousGridInfo
 from lcm.typing import ContinuousGridType, ScalarUserInput
 
