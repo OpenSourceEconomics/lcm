@@ -7,14 +7,14 @@ import pandas as pd
 from jax import Array
 
 from lcm.model import Model
-from lcm.typing import Params, ScalarUserInput
+from lcm.typing import Params
 
 
 def create_params_template(
     user_model: Model,
     variable_info: pd.DataFrame,
     grids: dict[str, Array],
-    default_params: dict[str, ScalarUserInput] | None = None,
+    default_params: dict[str, int | float] | None = None,
 ) -> Params:
     """Create parameter template from a model specification.
 

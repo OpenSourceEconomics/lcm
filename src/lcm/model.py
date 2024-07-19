@@ -4,7 +4,8 @@ import dataclasses as dc
 from collections.abc import Callable
 from dataclasses import KW_ONLY, InitVar, dataclass, field
 
-from lcm.grids import Grid, format_errors
+from lcm.exceptions import ModelInitilizationError
+from lcm.grids import Grid
 
 
 @dataclass(frozen=True)
@@ -36,11 +37,11 @@ class Model:
 
         type_errors = _validate_model_attribute_types(self)
         if type_errors:
-            raise LcmModelInitializationError(format_errors(type_errors))
+            raise ModelInitilizationError(type_errors)
 
         logical_errors = _validate_logical_consistency_model(self)
         if logical_errors:
-            raise LcmModelInitializationError(format_errors(logical_errors))
+            raise ModelInitilizationError(logical_errors)
 
     def replace(self, **kwargs) -> "Model":
         """Replace the attributes of the model.
@@ -53,19 +54,6 @@ class Model:
 
         """
         return dc.replace(self, **kwargs)
-
-
-# ======================================================================================
-# Validate user input
-# ======================================================================================
-
-
-class LcmModelInitializationError(Exception):
-    """Raised when there is an error in the model initialization."""
-
-
-# Model
-# ======================================================================================
 
 
 def _validate_model_attribute_types(model: Model) -> list[str]:

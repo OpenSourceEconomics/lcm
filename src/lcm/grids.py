@@ -4,13 +4,13 @@ import dataclasses as dc
 from abc import ABC, abstractmethod
 from collections.abc import Collection
 from dataclasses import dataclass, field
-from typing import get_args
 
 import jax.numpy as jnp
 
+from lcm.exceptions import GridInitializationError
 from lcm.grid_helpers import linspace, logspace
 from lcm.interfaces import ContinuousGridInfo
-from lcm.typing import ContinuousGridType, ScalarUserInput
+from lcm.typing import ContinuousGridType
 
 build_grid_mapping = {
     "linspace": linspace,
@@ -36,24 +36,24 @@ class DiscreteGrid(Grid):
 
     """
 
-    options: Collection[ScalarUserInput]
+    options: Collection[int | float]
 
     def __post_init__(self) -> None:
         if not isinstance(self.options, Collection):
-            raise LcmGridInitializationError(
+            raise GridInitializationError(
                 "options must be a collection of scalar int or float values, e.g., a ",
                 "list or tuple",
             )
 
         errors = _validate_discrete_grid(self.options)
         if errors:
-            raise LcmGridInitializationError(format_errors(errors))
+            raise GridInitializationError(errors)
 
     def to_jax(self) -> jnp.ndarray:
         """Convert the grid to a Jax array."""
         return jnp.array(list(self.options))
 
-    def replace(self, options: Collection[ScalarUserInput]) -> "DiscreteGrid":
+    def replace(self, options: Collection[int | float]) -> "DiscreteGrid":
         """Replace the grid with new values.
 
         Args:
@@ -71,8 +71,8 @@ class ContinuousGrid(Grid):
     """LCM Continuous Grid base class."""
 
     kind: ContinuousGridType = field(init=False, default=None)  # type: ignore[arg-type]
-    start: ScalarUserInput
-    stop: ScalarUserInput
+    start: int | float
+    stop: int | float
     n_points: int
 
     def __post_init__(self) -> None:
@@ -82,7 +82,7 @@ class ContinuousGrid(Grid):
             n_points=self.n_points,
         )
         if errors:
-            raise LcmGridInitializationError(format_errors(errors))
+            raise GridInitializationError(errors)
 
     @property
     def info(self) -> ContinuousGridInfo:
@@ -171,31 +171,7 @@ class LogspaceGrid(ContinuousGrid):
 # ======================================================================================
 
 
-class LcmGridInitializationError(Exception):
-    """Raised when there is an error in the grid initialization."""
-
-
-def format_errors(errors: list[str]) -> str:
-    """Convert list of error messages into a single string.
-
-    If list is empty, returns the empty string.
-
-    """
-    if len(errors) == 0:
-        formatted = ""
-    elif len(errors) == 1:
-        formatted = errors[0]
-    else:
-        enumerated = "\n\n".join([f"{i}. {error}" for i, error in enumerate(errors, 1)])
-        formatted = f"The following errors occurred:\n\n{enumerated}"
-    return formatted
-
-
-# Discrete grid
-# ======================================================================================
-
-
-def _validate_discrete_grid(options: Collection[ScalarUserInput]) -> list[str]:
+def _validate_discrete_grid(options: Collection[int | float]) -> list[str]:
     """Validate the discrete grid options.
 
     Args:
@@ -210,7 +186,7 @@ def _validate_discrete_grid(options: Collection[ScalarUserInput]) -> list[str]:
     if not len(options) > 0:
         error_messages.append("options must contain at least one element")
 
-    if not all(isinstance(option, get_args(ScalarUserInput)) for option in options):
+    if not all(isinstance(option, int | float) for option in options):
         error_messages.append("options must contain only scalar int or float values")
 
     if len(options) != len(set(options)):
@@ -224,13 +200,9 @@ def _validate_discrete_grid(options: Collection[ScalarUserInput]) -> list[str]:
     return error_messages
 
 
-# Continuous grid
-# ======================================================================================
-
-
 def _validate_continuous_grid(
-    start: ScalarUserInput,
-    stop: ScalarUserInput,
+    start: float,
+    stop: float,
     n_points: int,
 ) -> list[str]:
     """Validate the continuous grid parameters.
@@ -246,10 +218,10 @@ def _validate_continuous_grid(
     """
     error_messages = []
 
-    if not (valid_start_type := isinstance(start, get_args(ScalarUserInput))):
+    if not (valid_start_type := isinstance(start, int | float)):
         error_messages.append("start must be a scalar int or float value")
 
-    if not (valid_stop_type := isinstance(stop, get_args(ScalarUserInput))):
+    if not (valid_stop_type := isinstance(stop, int | float)):
         error_messages.append("stop must be a scalar int or float value")
 
     if not isinstance(n_points, int) or n_points < 1:
