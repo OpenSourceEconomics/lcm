@@ -1,9 +1,9 @@
 import jax.numpy as jnp
-import lcm.grids as grids_module
+import lcm.grid_helpers as grids_module
 import numpy as np
 import pandas as pd
 import pytest
-from lcm.interfaces import ContinuousGridInfo, ContinuousGridSpec
+from lcm import DiscreteGrid, LinspaceGrid, Model
 from lcm.mark import StochasticInfo
 from lcm.process_model import (
     _get_function_info,
@@ -27,28 +27,29 @@ def user_model():
     def next_c(a, b):
         return a + b
 
-    return {
-        "functions": {
+    return Model(
+        n_periods=2,
+        functions={
             "next_c": next_c,
         },
-        "choices": {
-            "a": {"options": [0, 1]},
+        choices={
+            "a": DiscreteGrid([0, 1]),
         },
-        "states": {
-            "c": {"options": [0, 1]},
+        states={
+            "c": DiscreteGrid([0, 1]),
         },
-        "n_periods": 2,
-    }
+        _skip_checks=True,
+    )
 
 
 def test_get_function_info(user_model):
     got = _get_function_info(user_model)
     exp = pd.DataFrame(
         {
-            "is_stochastic_next": [False],
             "is_filter": [False],
             "is_constraint": [False],
             "is_next": [True],
+            "is_stochastic_next": [False],
         },
         index=["next_c"],
     )
@@ -65,8 +66,8 @@ def test_get_variable_info(user_model):
         {
             "is_state": [False, True],
             "is_choice": [True, False],
-            "is_discrete": [True, True],
             "is_continuous": [False, False],
+            "is_discrete": [True, True],
             "is_stochastic": [False, False],
             "is_auxiliary": [False, True],
             "is_sparse": [False, False],
@@ -83,8 +84,8 @@ def test_get_gridspecs(user_model):
         function_info=_get_function_info(user_model),
     )
     got = _get_gridspecs(user_model, variable_info)
-    exp = {"a": [0, 1], "c": [0, 1]}
-    assert got == exp
+    assert got["a"] == DiscreteGrid([0, 1])
+    assert got["c"] == DiscreteGrid([0, 1])
 
 
 def test_get_grids(user_model):
@@ -118,25 +119,23 @@ def test_process_model_iskhakov_et_al_2017():
     ).all()
 
     # Gridspecs
-    wealth_specs = ContinuousGridSpec(
-        kind="linspace",
-        info=ContinuousGridInfo(start=1, stop=400, n_points=N_GRID_POINTS["wealth"]),
+    wealth_specs = LinspaceGrid(
+        start=1,
+        stop=400,
+        n_points=N_GRID_POINTS["wealth"],
     )
 
     assert model.gridspecs["wealth"] == wealth_specs
 
-    consumption_specs = ContinuousGridSpec(
-        kind="linspace",
-        info=ContinuousGridInfo(
-            start=1,
-            stop=400,
-            n_points=N_GRID_POINTS["consumption"],
-        ),
+    consumption_specs = LinspaceGrid(
+        start=1,
+        stop=400,
+        n_points=N_GRID_POINTS["consumption"],
     )
     assert model.gridspecs["consumption"] == consumption_specs
 
-    assert model.gridspecs["retirement"] == [0, 1]
-    assert model.gridspecs["lagged_retirement"] == [0, 1]
+    assert model.gridspecs["retirement"] == DiscreteGrid([0, 1])
+    assert model.gridspecs["lagged_retirement"] == DiscreteGrid([0, 1])
 
     # Grids
     func = getattr(grids_module, model.gridspecs["consumption"].kind)
@@ -181,24 +180,22 @@ def test_process_model():
     ).all()
 
     # Gridspecs
-    wealth_specs = ContinuousGridSpec(
-        kind="linspace",
-        info=ContinuousGridInfo(start=1, stop=400, n_points=N_GRID_POINTS["wealth"]),
+    wealth_specs = LinspaceGrid(
+        start=1,
+        stop=400,
+        n_points=N_GRID_POINTS["wealth"],
     )
 
     assert model.gridspecs["wealth"] == wealth_specs
 
-    consumption_specs = ContinuousGridSpec(
-        kind="linspace",
-        info=ContinuousGridInfo(
-            start=1,
-            stop=400,
-            n_points=N_GRID_POINTS["consumption"],
-        ),
+    consumption_specs = LinspaceGrid(
+        start=1,
+        stop=400,
+        n_points=N_GRID_POINTS["consumption"],
     )
     assert model.gridspecs["consumption"] == consumption_specs
 
-    assert model.gridspecs["retirement"] == [0, 1]
+    assert model.gridspecs["retirement"] == DiscreteGrid([0, 1])
 
     # Grids
     func = getattr(grids_module, model.gridspecs["consumption"].kind)
@@ -274,7 +271,7 @@ def test_variable_info_with_continuous_filter_has_unique_index():
     def wealth_filter(wealth):
         return wealth > 200
 
-    user_model["functions"]["wealth_filter"] = wealth_filter
+    user_model.functions["wealth_filter"] = wealth_filter
 
     function_info = _get_function_info(user_model)
     got = _get_variable_info(

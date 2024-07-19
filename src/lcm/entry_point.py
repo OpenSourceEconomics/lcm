@@ -9,6 +9,7 @@ from lcm.argmax import argmax
 from lcm.discrete_problem import get_solve_discrete_problem
 from lcm.dispatchers import productmap
 from lcm.logging import get_logger
+from lcm.model import Model
 from lcm.model_functions import (
     get_utility_and_feasibility_function,
 )
@@ -21,7 +22,7 @@ from lcm.state_space import create_state_choice_space
 
 
 def get_lcm_function(
-    model: dict,
+    model: Model,
     targets: Literal["solve", "simulate", "solve_and_simulate"] = "solve",
     *,
     debug_mode: bool = True,

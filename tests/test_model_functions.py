@@ -1,6 +1,6 @@
 import jax.numpy as jnp
 import pandas as pd
-from lcm.interfaces import Model
+from lcm.interfaces import InternalModel
 from lcm.model_functions import (
     get_combined_constraint,
     get_multiply_weights,
@@ -27,7 +27,7 @@ def test_get_combined_constraint():
         {"is_constraint": [True, True, False]},
         index=["f", "g", "h"],
     )
-    model = Model(
+    model = InternalModel(
         grids=None,
         gridspecs=None,
         variable_info=None,

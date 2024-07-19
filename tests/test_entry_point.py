@@ -70,7 +70,7 @@ def test_get_lcm_function_with_simulation_target_simple(user_model):
         initial_states={
             "wealth": jnp.array([0.0, 10.0, 50.0]),
         },
-        additional_targets=["age"] if "age" in user_model["functions"] else None,
+        additional_targets=["age"] if "age" in user_model.functions else None,
     )
 
 
@@ -363,7 +363,7 @@ def test_get_lcm_function_with_period_argument_in_filter():
     def absorbing_retirement_filter(retirement, lagged_retirement, _period):
         return jnp.logical_or(retirement == 1, lagged_retirement == 0)
 
-    user_model["functions"]["absorbing_retirement_filter"] = absorbing_retirement_filter
+    user_model.functions["absorbing_retirement_filter"] = absorbing_retirement_filter
 
     solve_model, params_template = get_lcm_function(model=user_model)
     params = tree_map(lambda _: 0.2, params_template)

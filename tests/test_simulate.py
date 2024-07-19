@@ -110,12 +110,13 @@ def iskhakov_et_al_2017_stripped_down_model_solution():
             "iskhakov_et_al_2017_stripped_down",
             n_periods=n_periods,
         )
-        model_config["functions"] = {
+        updated_functions = {
             # remove dependency on age, so that wage becomes a parameter
             name: func
-            for name, func in model_config["functions"].items()
+            for name, func in model_config.functions.items()
             if name not in ["age", "wage"]
         }
+        model_config = model_config.replace(functions=updated_functions)
         solve_model, _ = get_lcm_function(model_config, targets="solve")
 
         params = get_params()
@@ -159,7 +160,6 @@ def test_simulate_using_get_lcm_function(
     assert_array_equal(res.loc[last_period_index, :]["retirement"], 1)
 
     for period in range(n_periods):
-
         # assert that higher wealth leads to higher consumption in each period
         assert (res.loc[period]["consumption"].diff()[1:] >= 0).all()
 
@@ -254,7 +254,6 @@ def test_effect_of_disutility_of_work():
     # Asserting
     # ==================================================================================
     for period in range(5):
-
         # We expect that individuals with lower disutility of work, work (weakly) more
         # and thus consume (weakly) more
         assert (

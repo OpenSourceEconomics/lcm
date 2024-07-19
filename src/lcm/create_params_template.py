@@ -1,34 +1,31 @@
 """Create a parameter template for a model specification."""
 
 import inspect
-from typing import Any
 
 import jax.numpy as jnp
 import pandas as pd
 from jax import Array
 
+from lcm.model import Model
+from lcm.typing import Params
+
 
 def create_params_template(
-    model_spec: dict[str, Any],
+    user_model: Model,
     variable_info: pd.DataFrame,
     grids: dict[str, Array],
-    default_params: dict[str, float] | None = None,
-) -> dict[str, dict[str, Any] | float]:
+    default_params: dict[str, int | float] | None = None,
+) -> Params:
     """Create parameter template from a model specification.
 
     Args:
-        model_spec (dict): A model specification provided by the user. Has keys
-            - "functions": A dictionary of functions used in the model.
-            - "choices": A dictionary of choice variables.
-            - "states": A dictionary of state variables.
-            - "n_periods": Number of periods in the model (int).
-            - "shocks": A dictionary of shock variables (optional).
-        variable_info (pd.DataFrame): A dataframe with information about the variables.
-        grids (dict): A dictionary of grids consistent with model_spec..
-        default_params (dict): A dictionary of default parameters. Default is None. If
-            None, the default {"beta": np.nan} is used. For other lifetime reward
-            objectives, additional parameters may be required, for example {"beta":
-            np.nan, "delta": np.nan} for beta-delta discounting.
+        user_model: The model as provided by the user.
+        variable_info: A dataframe with information about the variables.
+        grids: A dictionary of grids consistent with user_model.
+        default_params: A dictionary of default parameters. Default is None. If None,
+            the default {"beta": np.nan} is used. For other lifetime reward objectives,
+            additional parameters may be required, for example {"beta": np.nan, "delta":
+            np.nan} for beta-delta discounting.
 
     Returns:
         dict: A nested dictionary of model parameters.
@@ -39,19 +36,22 @@ def create_params_template(
         # For this objective the only additional parameter is the discounting rate beta.
         default_params = {"beta": jnp.nan}
 
-    params_template = default_params | _create_function_params(model_spec)
-
     if variable_info["is_stochastic"].any():
-        params_template["shocks"] = _create_stochastic_transition_params(
-            model_spec=model_spec,
+        stochastic_transitions = _create_stochastic_transition_params(
+            user_model=user_model,
             variable_info=variable_info,
             grids=grids,
         )
+        stochastic_transition_params = {"shocks": stochastic_transitions}
+    else:
+        stochastic_transition_params = {}
 
-    return params_template
+    function_params = _create_function_params(user_model)
+
+    return default_params | function_params | stochastic_transition_params
 
 
-def _create_function_params(model_spec: dict[str, Any]) -> dict[str, dict[str, Any]]:
+def _create_function_params(user_model: Model) -> Params:
     """Get function parameters from a model specification.
 
     Explanation: We consider the arguments of all model functions, from which we exclude
@@ -60,12 +60,7 @@ def _create_function_params(model_spec: dict[str, Any]) -> dict[str, dict[str, A
     user.
 
     Args:
-        model_spec (dict): A model specification provided by the user. Has keys
-            - "functions": A dictionary of functions used in the model.
-            - "choices": A dictionary of choice variables.
-            - "states": A dictionary of state variables.
-            - "n_periods": Number of periods in the model (int).
-            - "shocks": A dictionary of shock variables (optional).
+        user_model: The model as provided by the user.
 
     Returns:
         dict: A dictionary for each model function, containing a parameters required in
@@ -75,19 +70,19 @@ def _create_function_params(model_spec: dict[str, Any]) -> dict[str, dict[str, A
     # Collect all model variables, that includes choices, states, the period, and
     # auxiliary variables (model function names).
     variables = {
-        *model_spec["functions"],
-        *model_spec["choices"],
-        *model_spec["states"],
+        *user_model.functions,
+        *user_model.choices,
+        *user_model.states,
         "_period",
     }
 
-    if "shocks" in model_spec:
-        variables = variables | set(model_spec["shocks"])
+    if hasattr(user_model, "shocks"):
+        variables = variables | set(user_model.shocks)
 
-    function_params = {}
+    function_params: Params = {}
     # For each model function, capture the arguments of the function that are not in the
     # set of model variables, and initialize them.
-    for name, func in model_spec["functions"].items():
+    for name, func in user_model.functions.items():
         arguments = set(inspect.signature(func).parameters)
         params = sorted(arguments.difference(variables))
         function_params[name] = {p: jnp.nan for p in params}
@@ -96,21 +91,16 @@ def _create_function_params(model_spec: dict[str, Any]) -> dict[str, dict[str, A
 
 
 def _create_stochastic_transition_params(
-    model_spec: dict[str, Any],
+    user_model: Model,
     variable_info: pd.DataFrame,
     grids: dict[str, Array],
 ) -> dict[str, Array]:
     """Create parameters for stochastic transitions.
 
     Args:
-        model_spec (dict): A model specification provided by the user. Has keys
-            - "functions": A dictionary of functions used in the model.
-            - "choices": A dictionary of choice variables.
-            - "states": A dictionary of state variables.
-            - "n_periods": Number of periods in the model (int).
-            - "shocks": A dictionary of shock variables (optional).
-        variable_info (pd.DataFrame): A dataframe with information about the variables.
-        grids (dict): A dictionary of grids consistent with model_spec.
+        user_model: The model as provided by the user.
+        variable_info: A dataframe with information about the variables.
+        grids: A dictionary of grids consistent with user_model.
 
     Returns:
         dict: A dictionary of parameters required for stochastic transitions,
@@ -139,9 +129,8 @@ def _create_stochastic_transition_params(
     invalid_dependencies = {}
 
     for var in stochastic_variables:
-
         # Retrieve corresponding next function and its arguments
-        next_var = model_spec["functions"][f"next_{var}"]
+        next_var = user_model.functions[f"next_{var}"]
         dependencies = list(inspect.signature(next_var).parameters)
 
         # If there are invalid dependencies, store them in a dictionary and continue
@@ -151,7 +140,7 @@ def _create_stochastic_transition_params(
         else:
             # Get the dimensions of variables that influence the stochastic variable
             dimensions_of_deps = [
-                len(grids[arg]) if arg != "_period" else model_spec["n_periods"]
+                len(grids[arg]) if arg != "_period" else user_model.n_periods
                 for arg in dependencies
             ]
             # Add the dimension of the stochastic variable itself at the end

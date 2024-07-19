@@ -7,7 +7,7 @@ from dags.signature import with_signature
 from jax import Array
 from jax.scipy.ndimage import map_coordinates
 
-import lcm.grids as grids_module
+import lcm.grid_helpers as grids_module
 from lcm.functools import all_as_kwargs
 from lcm.interfaces import ContinuousGridInfo, ContinuousGridType, SpaceInfo
 from lcm.typing import MapCoordinatesOptions

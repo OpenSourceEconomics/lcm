@@ -1,20 +1,25 @@
 import functools
 import inspect
+from collections.abc import Callable
 from copy import deepcopy
 
-import jax.numpy as jnp
 import pandas as pd
 from dags import get_ancestors
 from dags.signature import with_signature
 from jax import Array
 
-import lcm.grids as grids_module
 from lcm.create_params_template import create_params_template
 from lcm.functools import all_as_args, all_as_kwargs
-from lcm.interfaces import ContinuousGridInfo, ContinuousGridSpec, GridSpec, Model
+from lcm.grids import (
+    ContinuousGrid,
+    Grid,
+)
+from lcm.interfaces import InternalModel
+from lcm.model import Model
+from lcm.typing import Params
 
 
-def process_model(user_model):
+def process_model(user_model: Model) -> InternalModel:
     """Process the user model.
 
     This entails the following steps:
@@ -24,99 +29,123 @@ def process_model(user_model):
     - Check that the model specification is valid.
 
     Args:
-        user_model (dict): The model as provided by the user.
+        user_model: The model as provided by the user.
 
     Returns:
-        lcm.interfaces.Model: The processed model.
+        The processed model.
 
     """
-    _function_info = _get_function_info(user_model)
-    _variable_info = _get_variable_info(
+    function_info = _get_function_info(user_model)
+
+    variable_info = _get_variable_info(
         user_model,
-        function_info=_function_info,
+        function_info=function_info,
     )
-    _gridspecs = _get_gridspecs(user_model, variable_info=_variable_info)
-    _grids = _get_grids(gridspecs=_gridspecs, variable_info=_variable_info)
 
-    _params = create_params_template(
+    gridspecs = _get_gridspecs(user_model, variable_info=variable_info)
+
+    grids = _get_grids(gridspecs=gridspecs, variable_info=variable_info)
+
+    params = create_params_template(
         user_model,
-        variable_info=_variable_info,
-        grids=_grids,
+        variable_info=variable_info,
+        grids=grids,
     )
 
-    _functions = _get_functions(
+    functions = _get_functions(
         user_model,
-        function_info=_function_info,
-        variable_info=_variable_info,
-        params=_params,
-        grids=_grids,
+        function_info=function_info,
+        variable_info=variable_info,
+        params=params,
+        grids=grids,
     )
-    return Model(
-        grids=_grids,
-        gridspecs=_gridspecs,
-        variable_info=_variable_info,
-        functions=_functions,
-        function_info=_function_info,
-        params=_params,
-        shocks=user_model.get("shocks", {}),
-        n_periods=user_model["n_periods"],
+    return InternalModel(
+        grids=grids,
+        gridspecs=gridspecs,
+        variable_info=variable_info,
+        functions=functions,
+        function_info=function_info,
+        params=params,
+        shocks=user_model.shocks if hasattr(user_model, "shocks") else {},
+        n_periods=user_model.n_periods,
     )
 
 
-def _get_variable_info(user_model, function_info):
+def _get_function_info(user_model: Model) -> pd.DataFrame:
+    """Derive information about functions in the model.
+
+    Args:
+        user_model: The model as provided by the user.
+
+    Returns:
+        pd.DataFrame: A table with information about all functions in the model. The
+            index contains the name of a model function. The columns are booleans that
+            are True if the function has the corresponding property. The columns are:
+            is_next, is_stochastic_next, is_filter, is_constraint.
+
+    """
+    info = pd.DataFrame(index=list(user_model.functions))
+    info["is_filter"] = info.index.str.endswith("_filter")
+    info["is_constraint"] = info.index.str.endswith("_constraint")
+    info["is_next"] = (
+        info.index.str.startswith("next_") & ~info["is_constraint"] & ~info["is_filter"]
+    )
+    info["is_stochastic_next"] = [
+        hasattr(func, "_stochastic_info") for func in user_model.functions.values()
+    ]
+    return info
+
+
+def _get_variable_info(user_model: Model, function_info: pd.DataFrame) -> pd.DataFrame:
     """Derive information about all variables in the model.
 
     Args:
-        user_model (dict): The model as provided by the user.
-        function_info (pandas.DataFrame): A table with information about all
-            functions in the model. The index contains the name of a function. The
-            columns are booleans that are True if the function has the corresponding
-            property. The columns are: is_filter, is_constraint, is_next.
+        user_model: The model as provided by the user.
+        function_info: A table with information about all functions in the model. The
+            index contains the name of a function. The columns are booleans that are
+            True if the function has the corresponding property. The columns are:
+            is_filter, is_constraint, is_next, is_stochastic_next.
 
     Returns:
-        pandas.DataFrame: A table with information about all variables in the model.
-            The index contains the name of a model variable. The columns are booleans
-            that are True if the variable has the corresponding property. The columns
-            are: is_state, is_choice, is_continuous, is_discrete, is_sparse, is_dense.
+        pd.DataFrame: A table with information about all variables in the model. The
+            index contains the name of a model variable. The columns are booleans that
+            are True if the variable has the corresponding property. The columns are:
+            is_state, is_choice, is_continuous, is_discrete, is_sparse, is_dense.
 
     """
-    _variables = {
-        **user_model["states"],
-        **user_model["choices"],
-    }
+    variables = user_model.states | user_model.choices
 
-    info = pd.DataFrame(index=list(_variables))
+    info = pd.DataFrame(index=list(variables))
 
-    info["is_state"] = info.index.isin(user_model["states"])
+    info["is_state"] = info.index.isin(user_model.states)
     info["is_choice"] = ~info["is_state"]
 
-    info["is_discrete"] = ["options" in spec for spec in _variables.values()]
-    info["is_continuous"] = ~info["is_discrete"]
+    info["is_continuous"] = [
+        isinstance(spec, ContinuousGrid) for spec in variables.values()
+    ]
+    info["is_discrete"] = ~info["is_continuous"]
 
     info["is_stochastic"] = [
         (
-            var in user_model["states"]
+            var in user_model.states
             and function_info.loc[f"next_{var}", "is_stochastic_next"]
         )
-        for var in _variables
+        for var in variables
     ]
 
-    _auxiliary_variables = _get_auxiliary_variables(
+    auxiliary_variables = _get_auxiliary_variables(
         state_variables=info.query("is_state").index.tolist(),
         function_info=function_info,
-        user_functions=user_model["functions"],
+        user_functions=user_model.functions,
     )
-    info["is_auxiliary"] = [var in _auxiliary_variables for var in _variables]
+    info["is_auxiliary"] = [var in auxiliary_variables for var in variables]
 
-    _filtered_variables = set()
-    _filter_names = function_info.query("is_filter").index.tolist()
+    filter_names = function_info.query("is_filter").index.tolist()
+    filtered_variables: set[str] = set()
+    for name in filter_names:
+        filtered_variables.update(get_ancestors(user_model.functions, name))
 
-    for name in _filter_names:
-        _filtered_variables = _filtered_variables.union(
-            get_ancestors(user_model["functions"], name),
-        )
-
-    info["is_sparse"] = [var in _filtered_variables for var in _variables]
+    info["is_sparse"] = [var in filtered_variables for var in variables]
     info["is_dense"] = ~info["is_sparse"]
 
     order = info.query("is_sparse & is_state").index.tolist()
@@ -132,19 +161,23 @@ def _get_variable_info(user_model, function_info):
     return info.loc[order]
 
 
-def _get_auxiliary_variables(state_variables, function_info, user_functions):
+def _get_auxiliary_variables(
+    state_variables: list[str],
+    function_info: pd.DataFrame,
+    user_functions: dict[str, Callable],
+) -> list[str]:
     """Get state variables that only occur in next functions.
 
     Args:
-        state_variables (list): List of state variable names.
-        function_info (pandas.DataFrame): A table with information about all
+        state_variables: List of state variable names.
+        function_info: A table with information about all
             functions in the model. The index contains the name of a function. The
             columns are booleans that are True if the function has the corresponding
             property. The columns are: is_filter, is_constraint, is_next.
-        user_functions (dict): Dictionary that maps names of functions to functions.
+        user_functions: Dictionary that maps names of functions to functions.
 
     Returns:
-        list: List of state variable names that are only used in next functions.
+        list[str]: List of state variable names that are only used in next functions.
 
     """
     non_next_functions = function_info.query("~is_next").index.tolist()
@@ -157,7 +190,10 @@ def _get_auxiliary_variables(state_variables, function_info, user_functions):
     return list(set(state_variables).difference(set(ancestors)))
 
 
-def _get_gridspecs(user_model, variable_info):
+def _get_gridspecs(
+    user_model: Model,
+    variable_info: pd.DataFrame,
+) -> dict[str, Grid]:
     """Create a dictionary of grid specifications for each variable in the model.
 
     Args:
@@ -175,51 +211,22 @@ def _get_gridspecs(user_model, variable_info):
             variables this is information about how to build the grids.
 
     """
-    raw = {**user_model["states"], **user_model["choices"]}
-
-    errors = {}
-    variables = {}
-    for name, spec in raw.items():
-        if "options" in spec:
-            options = spec["options"]
-            if options != list(range(len(options))):
-                errors[name] = options
-            variables[name] = options
-        else:
-            grid_info = {k: v for k, v in spec.items() if k != "grid_type"}
-            variables[name] = ContinuousGridSpec(
-                kind=spec["grid_type"],
-                info=ContinuousGridInfo(**grid_info),
-            )
-
-    if errors:
-        example = next(iter(errors))  # access the first key of the dictionary
-        msg = (
-            "The following variables have discrete options that are not an integer "
-            f"range from 0 to n: [{', '.join(errors)}].\nPlease rewrite (for example) "
-            f"{{'{example}': {{'options': {errors[example]}}}}} to "
-            f"{{'{example}_index': {{'options': {list(range(len(errors[example])))}}}}}"
-            ".\nThen add a new function to the functions dictionary that maps the index"
-            " to the value of the variable."
-        )
-        raise ValueError(msg)
-
+    raw_variables = user_model.states | user_model.choices
     order = variable_info.index.tolist()
-    return {k: variables[k] for k in order}
+    return {k: raw_variables[k] for k in order}
 
 
 def _get_grids(
-    gridspecs: dict[str, GridSpec],
+    gridspecs: dict[str, Grid],
     variable_info: pd.DataFrame,
 ) -> dict[str, Array]:
-    """Create a dictionary of grids for each variable in the model.
+    """Create a dictionary of array grids for each variable in the model.
 
     Args:
         gridspecs: Dictionary containing all variables of the model. The keys are the
             names of the variables. The values describe which values the variable can
             take. For discrete variables these are the options (jnp.array). For
-            continuous variables this is information about how to build the grids
-            (ContinuousGridSpec).
+            continuous variables this is information about how to build the grids.
         variable_info: A table with information about all variables in the model. The
             index contains the name of a model variable. The columns are booleans that
             are True if the variable has the corresponding property. The columns are:
@@ -230,45 +237,18 @@ def _get_grids(
             the names of the variables. The values are the grids.
 
     """
-    grids = {}
-    for name, grid_spec in gridspecs.items():
-        if isinstance(grid_spec, ContinuousGridSpec):
-            build_grid = getattr(grids_module, grid_spec.kind)
-            grids[name] = build_grid(**grid_spec.info._asdict())
-        else:
-            grids[name] = jnp.array(grid_spec)
-
+    grids = {name: spec.to_jax() for name, spec in gridspecs.items()}
     order = variable_info.index.tolist()
     return {k: grids[k] for k in order}
 
 
-def _get_function_info(user_model):
-    """Derive information about all functions in the model.
-
-    Args:
-        user_model (dict): The model as provided by the user.
-
-    Returns:
-        pandas.DataFrame: A table with information about all functions in the model.
-            The index contains the name of a model function. The columns are booleans
-            that are True if the function has the corresponding property. The columns
-            are: is_next, is_filter, is_constraint.
-
-    """
-    info = pd.DataFrame(index=list(user_model["functions"]))
-    info["is_stochastic_next"] = [
-        hasattr(func, "_stochastic_info") for func in user_model["functions"].values()
-    ]
-    info["is_filter"] = info.index.str.endswith("_filter")
-    info["is_constraint"] = info.index.str.endswith("_constraint")
-    info["is_next"] = (
-        info.index.str.startswith("next_") & ~info["is_constraint"] & ~info["is_filter"]
-    )
-
-    return info
-
-
-def _get_functions(user_model, function_info, variable_info, grids, params):
+def _get_functions(
+    user_model: Model,
+    function_info: pd.DataFrame,
+    variable_info: pd.DataFrame,
+    grids: dict[str, Array],
+    params: Params,
+) -> dict[str, Callable]:
     """Process the user provided model functions.
 
     Args:
@@ -287,9 +267,9 @@ def _get_functions(user_model, function_info, variable_info, grids, params):
             functions.
 
     """
-    raw_functions = deepcopy(user_model["functions"])
+    raw_functions = deepcopy(user_model.functions)
 
-    for var in user_model["states"]:
+    for var in user_model.states:
         if variable_info.loc[var, "is_stochastic"]:
             raw_functions[f"next_{var}"] = _get_stochastic_next_function(
                 raw_func=raw_functions[f"next_{var}"],
