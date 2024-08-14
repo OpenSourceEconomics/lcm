@@ -1,6 +1,9 @@
+import numpy as np
 import jax
+from functools import partial
 
 from lcm.dispatchers import spacemap
+import nvtx
 
 
 def solve(
@@ -51,37 +54,34 @@ def solve(
     # extract information
     n_periods = len(state_choice_spaces)
     reversed_solution = []
-    vf_arr = None
-
+    vf_arr = jax.numpy.empty((500, 500), np.float32)
     logger.info("Starting solution")
-
-    # backwards induction loop
-    for period in reversed(range(n_periods)):
-        # solve continuous problem, conditional on discrete choices
-        conditional_continuation_values = solve_continuous_problem(
-            state_choice_space=state_choice_spaces[period],
+    funcs = []
+    for period in range(n_periods-1):
+        funcs.append(partial(solve_continuous_problem, state_choice_space=state_choice_spaces[period],
             compute_ccv=compute_ccv_functions[period],
             continuous_choice_grids=continuous_choice_grids[period],
-            vf_arr=vf_arr,
-            state_indexers=state_indexers[period],
-            params=params,
-        )
-
+            state_indexers=state_indexers[period],params=params))
+    period = n_periods-1
+    with nvtx.annotate("first_iter", color="blue"):
+        solve_continuous_problem(vf_arr, state_choice_space=state_choice_spaces[period],
+                compute_ccv=compute_ccv_functions[period],
+                continuous_choice_grids=continuous_choice_grids[period],
+                state_indexers=state_indexers[period],params=params)
+    def solve_continuous_problem_loop(vf_arr, period):
+        conditional_continuation_values = jax.lax.switch(period,funcs,vf_arr)
         # solve discrete problem by calculating expected maximum over discrete choices
-        calculate_emax = emax_calculators[period]
-        vf_arr = calculate_emax(conditional_continuation_values)
-        reversed_solution.append(vf_arr)
-
-        logger.info("Period: %s", period)
-
-    return list(reversed(reversed_solution))
-
+        vf_arr = jax.lax.switch(period,emax_calculators,conditional_continuation_values)
+        return vf_arr,vf_arr
+    # backwards induction loop
+    _, result = jax.lax.scan(solve_continuous_problem_loop, vf_arr, jax.numpy.arange(n_periods-1), reverse=True, length= n_periods-1)
+    return result
 
 def solve_continuous_problem(
+    vf_arr,
     state_choice_space,
     compute_ccv,
     continuous_choice_grids,
-    vf_arr,
     state_indexers,
     params,
 ):
