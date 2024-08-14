@@ -3,7 +3,6 @@ import jax
 from functools import partial
 
 from lcm.dispatchers import spacemap
-import nvtx
 
 
 def solve(
@@ -54,20 +53,19 @@ def solve(
     # extract information
     n_periods = len(state_choice_spaces)
     reversed_solution = []
-    vf_arr = jax.numpy.empty((500, 500), np.float32)
+    vf_arr = jax.numpy.empty((100, 100), np.float32)
     logger.info("Starting solution")
     funcs = []
-    for period in range(n_periods-1):
+    for period in range(n_periods):
         funcs.append(partial(solve_continuous_problem, state_choice_space=state_choice_spaces[period],
             compute_ccv=compute_ccv_functions[period],
             continuous_choice_grids=continuous_choice_grids[period],
             state_indexers=state_indexers[period],params=params))
     period = n_periods-1
-    with nvtx.annotate("first_iter", color="blue"):
-        solve_continuous_problem(vf_arr, state_choice_space=state_choice_spaces[period],
-                compute_ccv=compute_ccv_functions[period],
-                continuous_choice_grids=continuous_choice_grids[period],
-                state_indexers=state_indexers[period],params=params)
+    solve_continuous_problem(vf_arr, state_choice_space=state_choice_spaces[period],
+            compute_ccv=compute_ccv_functions[period],
+            continuous_choice_grids=continuous_choice_grids[period],
+            state_indexers=state_indexers[period],params=params)
     def solve_continuous_problem_loop(vf_arr, period):
         conditional_continuation_values = jax.lax.switch(period,funcs,vf_arr)
         # solve discrete problem by calculating expected maximum over discrete choices
