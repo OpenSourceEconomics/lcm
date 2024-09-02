@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 
 import jax.numpy as jnp
 
-from lcm.exceptions import GridInitializationError
+from lcm.exceptions import GridInitializationError, format_messages
 from lcm.grid_helpers import linspace, logspace
 from lcm.interfaces import ContinuousGridInfo
 from lcm.typing import ContinuousGridType
@@ -45,9 +45,9 @@ class DiscreteGrid(Grid):
                 "list or tuple",
             )
 
-        errors = _validate_discrete_grid(self.options)
-        if errors:
-            raise GridInitializationError(errors)
+        if errors := _validate_discrete_grid(self.options):
+            msg = format_messages(errors)
+            raise GridInitializationError(msg)
 
     def to_jax(self) -> jnp.ndarray:
         """Convert the grid to a Jax array."""
@@ -82,7 +82,8 @@ class ContinuousGrid(Grid):
             n_points=self.n_points,
         )
         if errors:
-            raise GridInitializationError(errors)
+            msg = format_messages(errors)
+            raise GridInitializationError(msg)
 
     @property
     def info(self) -> ContinuousGridInfo:

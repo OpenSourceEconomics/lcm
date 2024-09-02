@@ -4,7 +4,7 @@ import dataclasses as dc
 from collections.abc import Callable
 from dataclasses import KW_ONLY, InitVar, dataclass, field
 
-from lcm.exceptions import ModelInitilizationError
+from lcm.exceptions import ModelInitilizationError, format_messages
 from lcm.grids import Grid
 
 
@@ -35,13 +35,13 @@ class Model:
         if _skip_checks:
             return
 
-        type_errors = _validate_model_attribute_types(self)
-        if type_errors:
-            raise ModelInitilizationError(type_errors)
+        if type_errors := _validate_attribute_types(self):
+            msg = format_messages(type_errors)
+            raise ModelInitilizationError(msg)
 
-        logical_errors = _validate_logical_consistency_model(self)
-        if logical_errors:
-            raise ModelInitilizationError(logical_errors)
+        if logical_errors := _validate_logical_consistency(self):
+            msg = format_messages(logical_errors)
+            raise ModelInitilizationError(msg)
 
     def replace(self, **kwargs) -> "Model":
         """Replace the attributes of the model.
@@ -56,7 +56,7 @@ class Model:
         return dc.replace(self, **kwargs)
 
 
-def _validate_model_attribute_types(model: Model) -> list[str]:
+def _validate_attribute_types(model: Model) -> list[str]:
     """Validate the types of the model attributes."""
     error_messages = []
 
@@ -87,7 +87,7 @@ def _validate_model_attribute_types(model: Model) -> list[str]:
     return error_messages
 
 
-def _validate_logical_consistency_model(model: Model) -> list[str]:
+def _validate_logical_consistency(model: Model) -> list[str]:
     """Validate the logical consistency of the model."""
     error_messages = []
 
