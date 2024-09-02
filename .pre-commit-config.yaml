@@ -80,7 +80,6 @@ repos:
       - id: mypy
         files: src|tests
         additional_dependencies:
-          - jaxlib>=0.4.20
           - jax>=0.4.20
           - numpy
           - packaging
