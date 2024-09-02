@@ -2,6 +2,8 @@ import jax.numpy as jnp
 import numpy as np
 import pandas as pd
 import pytest
+from numpy.testing import assert_array_almost_equal as aaae
+
 from lcm.interfaces import Model
 from lcm.process_model import process_model
 from lcm.state_space import (
@@ -11,8 +13,6 @@ from lcm.state_space import (
     create_indexers_and_segments,
     create_state_choice_space,
 )
-from numpy.testing import assert_array_almost_equal as aaae
-
 from tests.test_models.deterministic import get_model_config
 
 
@@ -28,7 +28,7 @@ def test_create_state_choice_space():
     )
 
 
-@pytest.fixture()
+@pytest.fixture
 def filter_mask_inputs():
     def age(period):
         return period + 18

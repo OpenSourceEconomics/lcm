@@ -12,6 +12,7 @@ See also the specifications in tests/test_models/deterministic.py.
 from copy import deepcopy
 
 import jax.numpy as jnp
+
 import lcm
 
 # ======================================================================================
@@ -63,12 +64,12 @@ def next_wealth(wealth, consumption, labor_income, interest_rate):
 # Stochastic state transitions
 # --------------------------------------------------------------------------------------
 @lcm.mark.stochastic
-def next_health(health, partner):  # noqa: ARG001
+def next_health(health, partner):
     pass
 
 
 @lcm.mark.stochastic
-def next_partner(_period, working, partner):  # noqa: ARG001
+def next_partner(_period, working, partner):
     pass
 
 

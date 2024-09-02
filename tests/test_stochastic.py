@@ -1,11 +1,11 @@
 import jax.numpy as jnp
-import lcm
 import pandas as pd
 import pytest
+
+import lcm
 from lcm.entry_point import (
     get_lcm_function,
 )
-
 from tests.test_models.stochastic import get_model_config, get_params
 
 # ======================================================================================
@@ -63,7 +63,7 @@ def test_get_lcm_function_with_solve_target():
 # ======================================================================================
 
 
-@pytest.fixture()
+@pytest.fixture
 def model_and_params():
     """Return a simple deterministic and stochastic model with parameters.
 
@@ -76,7 +76,7 @@ def model_and_params():
     # Overwrite health transition with simple stochastic version and deterministic one
     # ==================================================================================
     @lcm.mark.stochastic
-    def next_health_stochastic(health):  # noqa: ARG001
+    def next_health_stochastic(health):
         pass
 
     def next_health_deterministic(health):

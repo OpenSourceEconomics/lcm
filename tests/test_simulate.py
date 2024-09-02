@@ -2,6 +2,9 @@ import jax.numpy as jnp
 import pandas as pd
 import pytest
 from jax import random
+from numpy.testing import assert_array_almost_equal, assert_array_equal
+from pybaum import tree_equal
+
 from lcm.entry_point import (
     create_compute_conditional_continuation_policy,
     get_lcm_function,
@@ -24,9 +27,6 @@ from lcm.simulate import (
     simulate,
 )
 from lcm.state_space import create_state_choice_space
-from numpy.testing import assert_array_almost_equal, assert_array_equal
-from pybaum import tree_equal
-
 from tests.test_models.deterministic import (
     N_GRID_POINTS,
     get_model_config,
@@ -38,7 +38,7 @@ from tests.test_models.deterministic import (
 # ======================================================================================
 
 
-@pytest.fixture()
+@pytest.fixture
 def simulate_inputs():
     model_config = get_model_config("iskhakov_et_al_2017_stripped_down", n_periods=1)
     model = process_model(model_config)
@@ -103,7 +103,7 @@ def test_simulate_using_raw_inputs(simulate_inputs):
 # ======================================================================================
 
 
-@pytest.fixture()
+@pytest.fixture
 def iskhakov_et_al_2017_stripped_down_model_solution():
     def _model_solution(n_periods):
         model_config = get_model_config(

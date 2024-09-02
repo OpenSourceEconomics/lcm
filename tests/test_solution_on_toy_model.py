@@ -3,13 +3,14 @@
 from copy import deepcopy
 
 import jax.numpy as jnp
-import lcm
 import numpy as np
 import pandas as pd
 import pytest
-from lcm.entry_point import get_lcm_function
 from numpy.testing import assert_array_almost_equal as aaae
 from pandas.testing import assert_frame_equal
+
+import lcm
+from lcm.entry_point import get_lcm_function
 
 
 # ======================================================================================
@@ -50,7 +51,7 @@ DETERMINISTIC_MODEL = {
 
 
 @lcm.mark.stochastic
-def next_health(health):  # noqa: ARG001
+def next_health(health):
     pass
 
 
