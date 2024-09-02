@@ -4,6 +4,7 @@ import dataclasses as dc
 from abc import ABC, abstractmethod
 from collections.abc import Collection
 from dataclasses import dataclass, field
+from typing import NotRequired, TypedDict, cast
 
 import jax.numpy as jnp
 
@@ -103,6 +104,14 @@ class ContinuousGrid(Grid):
         )
 
 
+class ContinuousGridReplacements(TypedDict):
+    """Dictionary of arguments that can be replaced using the `replace` method."""
+
+    start: NotRequired[int | float]
+    stop: NotRequired[int | float]
+    n_points: NotRequired[int]
+
+
 class LinspaceGrid(ContinuousGrid):
     """A linear grid of continuous values.
 
@@ -138,7 +147,8 @@ class LinspaceGrid(ContinuousGrid):
         """
         replacements = {"start": start, "stop": stop, "n_points": n_points}
         replacements = {k: v for k, v in replacements.items() if v is not None}
-        return dc.replace(self, **replacements)
+        kwargs = cast(ContinuousGridReplacements, replacements)
+        return dc.replace(self, **kwargs)
 
 
 class LogspaceGrid(ContinuousGrid):
@@ -176,7 +186,8 @@ class LogspaceGrid(ContinuousGrid):
         """
         replacements = {"start": start, "stop": stop, "n_points": n_points}
         replacements = {k: v for k, v in replacements.items() if v is not None}
-        return dc.replace(self, **replacements)
+        kwargs = cast(ContinuousGridReplacements, replacements)
+        return dc.replace(self, **kwargs)
 
 
 # ======================================================================================

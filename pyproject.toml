@@ -97,7 +97,6 @@ scipy = "<=1.13"
 pybaum = "*"
 jupyterlab = "*"
 plotly = ">=5.2,<6"
-pdbpp = "*"
 pre-commit = "*"
 snakeviz = "*"
 memory_profiler = "*"
@@ -112,6 +111,7 @@ jaxlib = ">=0.4.20"
 
 [tool.pixi.pypi-dependencies]
 lcm = {path = ".", editable = true}
+pdbp = "*"
 
 [tool.pixi.target.win-64.pypi-dependencies]
 jax = { version = ">=0.4.20", extras = ["cpu"] }
@@ -140,7 +140,7 @@ tests-with-cov = "pytest tests --cov-report=xml --cov=./"
 explanation-notebooks = "jupyter execute explanations/*.ipynb"
 
 [tool.pixi.feature.mypy.dependencies]
-mypy = "*"
+mypy = ">=1.11.1"
 pandas-stubs = "*"
 matplotlib = "*"  # required because of pandas
 
@@ -264,5 +264,10 @@ none_representation = "null"
 # ======================================================================================
 
 [[tool.mypy.overrides]]
-module = ["dags", "dags.signature"]
+module = "tests.*"
+disallow_untyped_defs = false
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = ["dags", "dags.signature", "pybaum"]
 ignore_missing_imports = true
