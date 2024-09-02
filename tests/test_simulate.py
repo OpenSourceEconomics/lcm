@@ -28,7 +28,6 @@ from lcm.simulate import (
 )
 from lcm.state_space import create_state_choice_space
 from tests.test_models.deterministic import (
-    N_GRID_POINTS,
     get_model_config,
     get_params,
 )
@@ -66,10 +65,12 @@ def simulate_inputs():
         )
         compute_ccv_policy_functions.append(compute_ccv)
 
+    n_grid_points = model_config.choices["consumption"].n_points
+
     return {
         "state_indexers": [{}],
         "continuous_choice_grids": [
-            {"consumption": jnp.linspace(1, 100, num=N_GRID_POINTS["consumption"])},
+            {"consumption": jnp.linspace(1, 100, num=n_grid_points)},
         ],
         "compute_ccv_policy_functions": compute_ccv_policy_functions,
         "model": model,

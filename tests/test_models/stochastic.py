@@ -17,15 +17,6 @@ import lcm
 from lcm import DiscreteGrid, LinspaceGrid, Model
 
 # ======================================================================================
-# Numerical parameters and constants
-# ======================================================================================
-
-N_GRID_POINTS = {
-    "wealth": 100,
-    "consumption": 200,
-}
-
-# ======================================================================================
 # Model functions
 # ======================================================================================
 
@@ -104,7 +95,7 @@ MODEL_CONFIG = Model(
         "consumption": LinspaceGrid(
             start=1,
             stop=100,
-            n_points=N_GRID_POINTS["consumption"],
+            n_points=200,
         ),
     },
     states={
@@ -113,7 +104,7 @@ MODEL_CONFIG = Model(
         "wealth": LinspaceGrid(
             start=1,
             stop=100,
-            n_points=N_GRID_POINTS["wealth"],
+            n_points=100,
         ),
     },
 )

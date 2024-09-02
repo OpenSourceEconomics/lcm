@@ -14,17 +14,6 @@ import jax.numpy as jnp
 from lcm import DiscreteGrid, LinspaceGrid, Model
 
 # ======================================================================================
-# Numerical parameters and constants
-# ======================================================================================
-
-N_GRID_POINTS = {
-    "wealth": 100,
-    "consumption": 500,
-}
-
-RETIREMENT_AGE = 65
-
-# ======================================================================================
 # Model functions
 # ======================================================================================
 
@@ -136,14 +125,14 @@ ISKHAKOV_ET_AL_2017 = Model(
         "consumption": LinspaceGrid(
             start=1,
             stop=400,
-            n_points=N_GRID_POINTS["consumption"],
+            n_points=500,
         ),
     },
     states={
         "wealth": LinspaceGrid(
             start=1,
             stop=400,
-            n_points=N_GRID_POINTS["wealth"],
+            n_points=100,
         ),
         "lagged_retirement": DiscreteGrid([0, 1]),
     },
@@ -170,14 +159,14 @@ ISKHAKOV_ET_AL_2017_STRIPPED_DOWN = Model(
         "consumption": LinspaceGrid(
             start=1,
             stop=400,
-            n_points=N_GRID_POINTS["consumption"],
+            n_points=500,
         ),
     },
     states={
         "wealth": LinspaceGrid(
             start=1,
             stop=400,
-            n_points=N_GRID_POINTS["wealth"],
+            n_points=100,
         ),
     },
 )
@@ -205,7 +194,7 @@ ISKHAKOV_ET_AL_2017_FULLY_DISCRETE = Model(
         "wealth": LinspaceGrid(
             start=1,
             stop=400,
-            n_points=N_GRID_POINTS["wealth"],
+            n_points=100,
         ),
     },
 )

@@ -17,7 +17,6 @@ from lcm.process_model import (
     process_model,
 )
 from tests.test_models.deterministic import (
-    N_GRID_POINTS,
     get_model_config,
 )
 
@@ -100,7 +99,8 @@ def test_get_grids(user_model):
 
 
 def test_process_model_iskhakov_et_al_2017():
-    model = process_model(get_model_config("iskhakov_et_al_2017", n_periods=3))
+    model_config = get_model_config("iskhakov_et_al_2017", n_periods=3)
+    model = process_model(model_config)
 
     # Variable Info
     assert (
@@ -122,7 +122,7 @@ def test_process_model_iskhakov_et_al_2017():
     wealth_specs = LinspaceGrid(
         start=1,
         stop=400,
-        n_points=N_GRID_POINTS["wealth"],
+        n_points=model_config.states["wealth"].n_points,
     )
 
     assert model.gridspecs["wealth"] == wealth_specs
@@ -130,7 +130,7 @@ def test_process_model_iskhakov_et_al_2017():
     consumption_specs = LinspaceGrid(
         start=1,
         stop=400,
-        n_points=N_GRID_POINTS["consumption"],
+        n_points=model_config.choices["consumption"].n_points,
     )
     assert model.gridspecs["consumption"] == consumption_specs
 
@@ -164,9 +164,8 @@ def test_process_model_iskhakov_et_al_2017():
 
 
 def test_process_model():
-    model = process_model(
-        get_model_config("iskhakov_et_al_2017_stripped_down", n_periods=3),
-    )
+    model_config = get_model_config("iskhakov_et_al_2017_stripped_down", n_periods=3)
+    model = process_model(model_config)
 
     # Variable Info
     assert ~(model.variable_info["is_sparse"].to_numpy()).any()
@@ -183,7 +182,7 @@ def test_process_model():
     wealth_specs = LinspaceGrid(
         start=1,
         stop=400,
-        n_points=N_GRID_POINTS["wealth"],
+        n_points=model_config.states["wealth"].n_points,
     )
 
     assert model.gridspecs["wealth"] == wealth_specs
@@ -191,7 +190,7 @@ def test_process_model():
     consumption_specs = LinspaceGrid(
         start=1,
         stop=400,
-        n_points=N_GRID_POINTS["consumption"],
+        n_points=model_config.choices["consumption"].n_points,
     )
     assert model.gridspecs["consumption"] == consumption_specs
 
