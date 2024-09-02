@@ -1,10 +1,10 @@
 import jax.numpy as jnp
 import pandas as pd
+from pybaum import tree_equal
+
 from lcm.interfaces import InternalModel
 from lcm.next_state import _get_stochastic_next_func, get_next_state_function
 from lcm.process_model import process_model
-from pybaum import tree_equal
-
 from tests.test_models.deterministic import get_model_config
 
 # ======================================================================================

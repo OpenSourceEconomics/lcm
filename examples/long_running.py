@@ -1,6 +1,7 @@
 """Example specification for a consumption-savings model with health and exercise."""
 
 import jax.numpy as jnp
+
 from lcm import DiscreteGrid, LinspaceGrid, Model
 
 # ======================================================================================

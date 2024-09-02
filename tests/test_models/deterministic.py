@@ -10,6 +10,7 @@ https://doi.org/10.3982/QE643).
 from copy import deepcopy
 
 import jax.numpy as jnp
+
 from lcm import DiscreteGrid, LinspaceGrid, Model
 
 # ======================================================================================

@@ -3,6 +3,7 @@ from functools import partial
 
 import jax.numpy as jnp
 import pytest
+
 from lcm import LinspaceGrid
 from lcm.dispatchers import productmap
 from lcm.function_representation import (
@@ -308,7 +309,7 @@ def test_get_interpolator():
 # ======================================================================================
 
 
-@pytest.mark.illustrative()
+@pytest.mark.illustrative
 def test_get_function_evaluator_illustrative():
     a_grid = LinspaceGrid(start=0, stop=1, n_points=3)
 
@@ -342,7 +343,7 @@ def test_get_function_evaluator_illustrative():
     assert jnp.allclose(got, expected)
 
 
-@pytest.mark.illustrative()
+@pytest.mark.illustrative
 def test_get_lookup_function_illustrative():
     values = jnp.array([0, 1, 4])
     func = _get_lookup_function(array_name="xyz", axis_names=["a"])
@@ -351,7 +352,7 @@ def test_get_lookup_function_illustrative():
     assert pure_lookup_func(a=2) == 4
 
 
-@pytest.mark.illustrative()
+@pytest.mark.illustrative
 def test_get_coordinate_finder_illustrative():
     find_coordinate = _get_coordinate_finder(
         in_name="a",
@@ -365,7 +366,7 @@ def test_get_coordinate_finder_illustrative():
     assert find_coordinate(a=0.25) == 0.5
 
 
-@pytest.mark.illustrative()
+@pytest.mark.illustrative
 def test_get_interpolator_illustrative():
     interpolate = _get_interpolator(
         name_of_values_on_grid="test_name",
@@ -386,7 +387,7 @@ def test_get_interpolator_illustrative():
     assert interpolate(test_name=values, a=0.5, b=1.5) == -1
 
 
-@pytest.mark.illustrative()
+@pytest.mark.illustrative
 def test_fail_if_interpolation_axes_are_not_last_illustrative():
     # Empty intersection of axis_names and interpolation_info
     # ==================================================================================

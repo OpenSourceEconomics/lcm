@@ -1,8 +1,11 @@
 import jax.numpy as jnp
-import lcm.grid_helpers as grids_module
 import numpy as np
 import pandas as pd
 import pytest
+from numpy.testing import assert_array_equal
+from pandas.testing import assert_frame_equal
+
+import lcm.grid_helpers as grids_module
 from lcm import DiscreteGrid, LinspaceGrid, Model
 from lcm.mark import StochasticInfo
 from lcm.process_model import (
@@ -13,16 +16,13 @@ from lcm.process_model import (
     _get_variable_info,
     process_model,
 )
-from numpy.testing import assert_array_equal
-from pandas.testing import assert_frame_equal
-
 from tests.test_models.deterministic import (
     N_GRID_POINTS,
     get_model_config,
 )
 
 
-@pytest.fixture()
+@pytest.fixture
 def user_model():
     def next_c(a, b):
         return a + b
@@ -223,7 +223,7 @@ def test_process_model():
 
 
 def test_get_stochastic_weight_function():
-    def raw_func(health, wealth):  # noqa: ARG001
+    def raw_func(health, wealth):
         pass
 
     raw_func._stochastic_info = StochasticInfo()
@@ -247,7 +247,7 @@ def test_get_stochastic_weight_function():
 
 
 def test_get_stochastic_weight_function_non_state_dependency():
-    def raw_func(health, wealth):  # noqa: ARG001
+    def raw_func(health, wealth):
         pass
 
     raw_func._stochastic_info = StochasticInfo()

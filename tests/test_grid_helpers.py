@@ -1,13 +1,14 @@
 import numpy as np
 import pytest
 from jax.scipy.ndimage import map_coordinates
+from numpy.testing import assert_array_almost_equal as aaae
+
 from lcm.grid_helpers import (
     get_linspace_coordinate,
     get_logspace_coordinate,
     linspace,
     logspace,
 )
-from numpy.testing import assert_array_almost_equal as aaae
 
 
 def test_linspace():
@@ -68,7 +69,7 @@ def test_logspace_mapped_value():
     assert np.allclose(calculated, 1.5)
 
 
-@pytest.mark.illustrative()
+@pytest.mark.illustrative
 def test_map_coordinates_linear():
     """Illustrative test on how the output of get_linspace_coordinate can be used."""
     grid_info = {
@@ -93,7 +94,7 @@ def test_map_coordinates_linear():
     assert np.allclose(interpolated_value, 0.5)
 
 
-@pytest.mark.illustrative()
+@pytest.mark.illustrative
 def test_map_coordinates_logarithmic():
     """Illustrative test on how the output of get_logspace_coordinate can be used."""
     grid_info = {
@@ -118,7 +119,7 @@ def test_map_coordinates_logarithmic():
     assert np.allclose(interpolated_value, (2.0 + 2.82842712474619) / 2)
 
 
-@pytest.mark.illustrative()
+@pytest.mark.illustrative
 def test_map_coordinates_linear_outside_grid():
     """Illustrative test on what happens to values outside the grid.
 

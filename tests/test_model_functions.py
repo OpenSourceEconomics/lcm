@@ -1,5 +1,7 @@
 import jax.numpy as jnp
 import pandas as pd
+from numpy.testing import assert_array_equal
+
 from lcm.interfaces import InternalModel
 from lcm.model_functions import (
     get_combined_constraint,
@@ -8,8 +10,6 @@ from lcm.model_functions import (
 )
 from lcm.process_model import process_model
 from lcm.state_space import create_state_choice_space
-from numpy.testing import assert_array_equal
-
 from tests.test_models.deterministic import get_model_config, utility
 
 

@@ -1,10 +1,10 @@
 import jax.numpy as jnp
 import pandas as pd
-from lcm._config import TEST_DATA
-from lcm.entry_point import get_lcm_function
 from numpy.testing import assert_array_almost_equal as aaae
 from pandas.testing import assert_frame_equal
 
+from lcm._config import TEST_DATA
+from lcm.entry_point import get_lcm_function
 from tests.test_models.deterministic import get_model_config, get_params
 
 

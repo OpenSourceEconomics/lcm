@@ -1,13 +1,14 @@
 import numpy as np
 import pandas as pd
 import pytest
+from numpy.testing import assert_equal
+
 from lcm.create_params_template import (
     _create_function_params,
     _create_stochastic_transition_params,
     create_params_template,
 )
 from lcm.model import Model
-from numpy.testing import assert_equal
 
 
 def test_create_params_without_shocks():
@@ -51,7 +52,7 @@ def test_create_function_params():
 
 
 def test_create_shock_params():
-    def next_a(a, _period):  # noqa: ARG001
+    def next_a(a, _period):
         pass
 
     variable_info = pd.DataFrame(
@@ -74,7 +75,7 @@ def test_create_shock_params():
 
 
 def test_create_shock_params_invalid_variable():
-    def next_a(a):  # noqa: ARG001
+    def next_a(a):
         pass
 
     variable_info = pd.DataFrame(
@@ -97,7 +98,7 @@ def test_create_shock_params_invalid_variable():
 
 
 def test_create_shock_params_invalid_dependency():
-    def next_a(a, b, _period):  # noqa: ARG001
+    def next_a(a, b, _period):
         pass
 
     variable_info = pd.DataFrame(
