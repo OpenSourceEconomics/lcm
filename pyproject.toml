@@ -219,6 +219,11 @@ extend-ignore = [
 
     # Missing docstring in magic method
     "D105",
+
+    # Rules ignored to avoid conflict with formatter
+    # ----------------------------------------------------------------------------------
+    "COM812",
+    "ISC001",
 ]
 
 [tool.ruff.lint.per-file-ignores]

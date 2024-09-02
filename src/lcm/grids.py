@@ -119,20 +119,26 @@ class LinspaceGrid(ContinuousGrid):
 
     kind: ContinuousGridType = "linspace"
 
-    def replace(self, **kwargs) -> "LinspaceGrid":
+    def replace(
+        self,
+        start: float | None = None,
+        stop: float | None = None,
+        n_points: int | None = None,
+    ) -> "LinspaceGrid":
         """Replace the grid with new values.
 
         Args:
-            **kwargs:
-                - start: The new start value of the grid.
-                - stop: The new stop value of the grid.
-                - n_points: The new number of points in the grid.
+            start: The new start value of the grid.
+            stop: The new stop value of the grid.
+            n_points: The new number of points in the grid.
 
         Returns:
             The updated grid.
 
         """
-        return dc.replace(self, **kwargs)
+        replacements = {"start": start, "stop": stop, "n_points": n_points}
+        replacements = {k: v for k, v in replacements.items() if v is not None}
+        return dc.replace(self, **replacements)
 
 
 class LogspaceGrid(ContinuousGrid):
@@ -151,20 +157,26 @@ class LogspaceGrid(ContinuousGrid):
 
     kind: ContinuousGridType = "logspace"
 
-    def replace(self, **kwargs) -> "LogspaceGrid":
+    def replace(
+        self,
+        start: float | None = None,
+        stop: float | None = None,
+        n_points: int | None = None,
+    ) -> "LogspaceGrid":
         """Replace the grid with new values.
 
         Args:
-            **kwargs:
-                - start: The new start value of the grid.
-                - stop: The new stop value of the grid.
-                - n_points: The new number of points in the grid.
+            start: The new start value of the grid.
+            stop: The new stop value of the grid.
+            n_points: The new number of points in the grid.
 
         Returns:
             The updated grid.
 
         """
-        return dc.replace(self, **kwargs)
+        replacements = {"start": start, "stop": stop, "n_points": n_points}
+        replacements = {k: v for k, v in replacements.items() if v is not None}
+        return dc.replace(self, **replacements)
 
 
 # ======================================================================================
