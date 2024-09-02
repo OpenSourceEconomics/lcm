@@ -81,6 +81,7 @@ repos:
         files: src|tests
         additional_dependencies:
           - jax>=0.4.20
+          - jaxlib>=0.4.20
           - numpy
           - packaging
           - pandas-stubs
@@ -88,3 +89,5 @@ repos:
           - --config=pyproject.toml
 ci:
   autoupdate_schedule: monthly
+  skip:
+    - mypy  # installing jax/jaxlib is not possible on pre-commit.ci due to size limits.

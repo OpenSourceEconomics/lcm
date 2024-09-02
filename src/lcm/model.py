@@ -71,7 +71,7 @@ def _validate_attribute_types(model: Model) -> list[str]:
                 if not isinstance(k, str):
                     error_messages.append(f"{attr_name} key {k} must be a string.")
                 if not isinstance(v, Grid):
-                    error_messages.append(f"{attr_name} value {v} must be a LCM grid.")
+                    error_messages.append(f"{attr_name} value {v} must be an LCM grid.")
 
     # Validate types of functions
     # ----------------------------------------------------------------------------------
