@@ -305,7 +305,7 @@ def _get_functions(
             depends_on_params = bool(params[name])
 
             if is_filter_function:
-                if name in params:
+                if params.get(name, False):
                     raise ValueError(
                         f"filters cannot depend on model parameters, but {name} does."
                     )
