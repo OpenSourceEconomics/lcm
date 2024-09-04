@@ -140,7 +140,7 @@ tests-with-cov = "pytest tests --cov-report=xml --cov=./"
 explanation-notebooks = "jupyter execute explanations/*.ipynb"
 
 [tool.pixi.feature.mypy.dependencies]
-mypy = ">=1.11.1"
+mypy = ">=1.11.2"
 pandas-stubs = "*"
 matplotlib = "*"  # required because of pandas
 
