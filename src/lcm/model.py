@@ -80,9 +80,11 @@ def _validate_attribute_types(model: Model) -> list[str]:
     else:
         for k, v in model.functions.items():
             if not isinstance(k, str):
-                error_messages.append(f"functions key {k} must be a string.")
+                error_messages.append(f"function keys must be a strings, but is {k}.")
             if not callable(v):
-                error_messages.append(f"functions value {v} must be a callable.")
+                error_messages.append(
+                    f"function values must be a callable, but is {v}."
+                )
 
     return error_messages
 
@@ -96,7 +98,7 @@ def _validate_logical_consistency(model: Model) -> list[str]:
 
     if "utility" not in model.functions:
         error_messages.append(
-            "Utility function is not defined. LCM expects a function called 'utility'"
+            "Utility function is not defined. LCM expects a function called 'utility' "
             "in the functions dictionary.",
         )
 
