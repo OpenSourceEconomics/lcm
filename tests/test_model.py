@@ -132,13 +132,3 @@ def test_model_overlapping_states_choices():
             choices={"health": DiscreteGrid([0, 1])},
             functions={"utility": lambda: 0},
         )
-
-
-def test_model_skip_checks():
-    Model(
-        n_periods=-1,  # invalid number of periods
-        states={},
-        choices={},
-        functions={"utility": lambda: 0},
-        _skip_checks=True,
-    )

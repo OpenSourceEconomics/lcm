@@ -2,7 +2,7 @@
 
 import dataclasses as dc
 from collections.abc import Callable
-from dataclasses import KW_ONLY, InitVar, dataclass, field
+from dataclasses import KW_ONLY, dataclass, field
 
 from lcm.exceptions import ModelInitilizationError, format_messages
 from lcm.grids import Grid
@@ -29,12 +29,8 @@ class Model:
     functions: dict[str, Callable] = field(default_factory=dict)
     choices: dict[str, Grid] = field(default_factory=dict)
     states: dict[str, Grid] = field(default_factory=dict)
-    _skip_checks: InitVar[bool] = False
 
-    def __post_init__(self, _skip_checks: bool) -> None:
-        if _skip_checks:
-            return
-
+    def __post_init__(self) -> None:
         if type_errors := _validate_attribute_types(self):
             msg = format_messages(type_errors)
             raise ModelInitilizationError(msg)

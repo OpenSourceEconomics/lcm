@@ -1,3 +1,6 @@
+from dataclasses import dataclass
+from typing import Any
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -8,11 +11,25 @@ from lcm.create_params_template import (
     _create_stochastic_transition_params,
     create_params_template,
 )
-from lcm.model import Model
+
+
+@dataclass
+class ModelMock:
+    """A model mock for testing the params creation functions.
+
+    This dataclass has the same attributes as the Model dataclass, but does not perform
+    any checks, which helps us to test the params creation functions in isolation.
+
+    """
+
+    n_periods: int | None = None
+    functions: dict[str, Any] | None = None
+    choices: dict[str, Any] | None = None
+    states: dict[str, Any] | None = None
 
 
 def test_create_params_without_shocks():
-    model = Model(
+    model = ModelMock(
         functions={
             "f": lambda a, b, c: None,  # noqa: ARG005
         },
@@ -22,7 +39,6 @@ def test_create_params_without_shocks():
         states={
             "b": None,
         },
-        _skip_checks=True,
         n_periods=None,
     )
     got = create_params_template(
@@ -34,7 +50,7 @@ def test_create_params_without_shocks():
 
 
 def test_create_function_params():
-    model = Model(
+    model = ModelMock(
         functions={
             "f": lambda a, b, c: None,  # noqa: ARG005
         },
@@ -44,8 +60,6 @@ def test_create_function_params():
         states={
             "b": None,
         },
-        _skip_checks=True,
-        n_periods=None,
     )
     got = _create_function_params(model)
     assert got == {"f": {"c": np.nan}}
@@ -60,10 +74,9 @@ def test_create_shock_params():
         index=["a"],
     )
 
-    model = Model(
+    model = ModelMock(
         n_periods=3,
         functions={"next_a": next_a},
-        _skip_checks=True,
     )
 
     got = _create_stochastic_transition_params(
@@ -83,10 +96,8 @@ def test_create_shock_params_invalid_variable():
         index=["a"],
     )
 
-    model = Model(
+    model = ModelMock(
         functions={"next_a": next_a},
-        _skip_checks=True,
-        n_periods=None,
     )
 
     with pytest.raises(ValueError, match="The following variables are stochastic, but"):
@@ -110,10 +121,8 @@ def test_create_shock_params_invalid_dependency():
         index=["a", "b"],
     )
 
-    model = Model(
+    model = ModelMock(
         functions={"next_a": next_a},
-        _skip_checks=True,
-        n_periods=None,
     )
 
     with pytest.raises(ValueError, match="Stochastic transition functions can only"):

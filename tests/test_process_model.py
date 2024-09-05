@@ -1,3 +1,6 @@
+from dataclasses import dataclass
+from typing import Any
+
 import jax.numpy as jnp
 import numpy as np
 import pandas as pd
@@ -6,7 +9,7 @@ from numpy.testing import assert_array_equal
 from pandas.testing import assert_frame_equal
 
 import lcm.grid_helpers as grids_module
-from lcm import DiscreteGrid, LinspaceGrid, Model
+from lcm import DiscreteGrid, LinspaceGrid
 from lcm.mark import StochasticInfo
 from lcm.process_model import (
     _get_function_info,
@@ -21,12 +24,27 @@ from tests.test_models.deterministic import (
 )
 
 
+@dataclass
+class ModelMock:
+    """A model mock for testing the process_model function.
+
+    This dataclass has the same attributes as the Model dataclass, but does not perform
+    any checks, which helps us to test the process_model function in isolation.
+
+    """
+
+    n_periods: int
+    functions: dict[str, Any]
+    choices: dict[str, Any]
+    states: dict[str, Any]
+
+
 @pytest.fixture
 def user_model():
     def next_c(a, b):
         return a + b
 
-    return Model(
+    return ModelMock(
         n_periods=2,
         functions={
             "next_c": next_c,
@@ -37,7 +55,6 @@ def user_model():
         states={
             "c": DiscreteGrid([0, 1]),
         },
-        _skip_checks=True,
     )
 
 
