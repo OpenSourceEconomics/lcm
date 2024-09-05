@@ -54,7 +54,7 @@ def get_function_representation(
     functions are called is determined by a DAG.
 
     Args:
-        space_info: Namedtuple containing all information needed to interpret the
+        space_info: Class containing all information needed to interpret the
             pre-calculated values of a function.
         name_of_values_on_grid: The name of the argument via which the pre-calculated
             values, that have been evaluated on the state-space grid, will be passed
@@ -264,7 +264,7 @@ def _fail_if_interpolation_axes_are_not_last(space_info: SpaceInfo) -> None:
     """Fail if the interpolation axes are not the last elements in axis_names.
 
     Args:
-        space_info: Namedtuple containing all information needed to interpret the
+        space_info: Class containing all information needed to interpret the
             precalculated values of a function.
 
     Raises:

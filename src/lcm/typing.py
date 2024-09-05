@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import Any, Literal, TypedDict
 
 from jax import Array
@@ -7,6 +8,13 @@ from jax import Array
 Scalar = int | float | Array
 
 ParamsDict = dict[str, Any]
+
+
+class Shock(Enum):
+    """Type of shocks."""
+
+    EXTREME_VALUE = "extreme_value"
+    NONE = None
 
 
 class SegmentInfo(TypedDict):

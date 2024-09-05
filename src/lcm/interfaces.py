@@ -1,11 +1,15 @@
-from typing import NamedTuple
+from collections.abc import Callable
+from dataclasses import dataclass
 
 import pandas as pd
+from jax import Array
 
-from lcm.grids import ContinuousGrid, DiscreteGrid
+from lcm.grids import ContinuousGrid, DiscreteGrid, Grid
+from lcm.typing import ParamsDict, Shock
 
 
-class IndexerInfo(NamedTuple):
+@dataclass(frozen=True)
+class IndexerInfo:
     """Information needed to work with an indexer array.
 
     In particular, this contains enough information to wrap an indexer array into a
@@ -26,7 +30,8 @@ class IndexerInfo(NamedTuple):
     out_name: str
 
 
-class Space(NamedTuple):
+@dataclass(frozen=True)
+class Space:
     """Everything needed to evaluate a function on a space (e.g. state space).
 
     Attributes:
@@ -38,11 +43,12 @@ class Space(NamedTuple):
 
     """
 
-    sparse_vars: dict
-    dense_vars: dict
+    sparse_vars: dict[str, Array]
+    dense_vars: dict[str, Array]
 
 
-class SpaceInfo(NamedTuple):
+@dataclass(frozen=True)
+class SpaceInfo:
     """Everything needed to work with the output of a function evaluated on a space.
 
     Attributes:
@@ -62,7 +68,8 @@ class SpaceInfo(NamedTuple):
     indexer_infos: list[IndexerInfo]
 
 
-class InternalModel(NamedTuple):
+@dataclass(frozen=True)
+class InternalModel:
     """Internal representation of a user model.
 
     Attributes:
@@ -86,17 +93,17 @@ class InternalModel(NamedTuple):
             booleans that are True if the function has the corresponding property. The
             columns are: is_filter, is_constraint, is_next.
         params (dict): Dict of model parameters.
-        shocks (dict): TODO
-        n_periods (int): TODO
+        n_periods (int): Number of periods.
+        shocks (Shock): Type of shocks.
 
     """
 
-    grids: dict
-    gridspecs: dict
+    grids: dict[str, Array]
+    gridspecs: dict[str, Grid]
     variable_info: pd.DataFrame
-    functions: dict
+    functions: dict[str, Callable]
     function_info: pd.DataFrame
-    params: dict
-    # not really processed yet
-    shocks: dict
+    params: ParamsDict
     n_periods: int
+    # Not properly processed yet
+    shocks: Shock

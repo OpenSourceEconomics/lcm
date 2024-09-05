@@ -1,10 +1,11 @@
 """Collection of LCM marking decorators."""
 
 import functools
-from typing import NamedTuple
+from dataclasses import dataclass
 
 
-class StochasticInfo(NamedTuple):
+@dataclass(frozen=True)
+class StochasticInfo:
     """Information on the stochastic nature of user provided functions."""
 
 

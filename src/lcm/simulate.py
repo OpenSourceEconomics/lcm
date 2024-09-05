@@ -230,7 +230,7 @@ def solve_continuous_problem(
     """Solve the agent's continuous choices problem problem.
 
     Args:
-        data_scs (Space): Namedtuple with entries dense_vars and sparse_vars.
+        data_scs (Space): Class with entries dense_vars and sparse_vars.
         compute_ccv (callable): Function that returns the conditional continuation
             values for a given combination of states and discrete choices. The function
             depends on:

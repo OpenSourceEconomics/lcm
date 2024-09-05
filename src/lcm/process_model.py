@@ -16,7 +16,7 @@ from lcm.grids import (
 )
 from lcm.interfaces import InternalModel
 from lcm.model import Model
-from lcm.typing import ParamsDict
+from lcm.typing import ParamsDict, Shock
 
 
 def process_model(user_model: Model) -> InternalModel:
@@ -66,7 +66,7 @@ def process_model(user_model: Model) -> InternalModel:
         functions=functions,
         function_info=function_info,
         params=params,
-        shocks=user_model.shocks if hasattr(user_model, "shocks") else {},
+        shocks=Shock.NONE,  # currently no additive utility shocks are supported
         n_periods=user_model.n_periods,
     )
 
