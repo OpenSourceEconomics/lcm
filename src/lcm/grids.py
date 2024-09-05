@@ -39,7 +39,8 @@ class DiscreteGrid(Grid):
                 "list or tuple",
             )
 
-        if errors := _validate_discrete_grid(self.options):
+        errors = _validate_discrete_grid(self.options)
+        if errors:
             msg = format_messages(errors)
             raise GridInitializationError(msg)
 
@@ -177,10 +178,12 @@ def _validate_continuous_grid(
     """
     error_messages = []
 
-    if not (valid_start_type := isinstance(start, int | float)):
+    valid_start_type = isinstance(start, int | float)
+    if not valid_start_type:
         error_messages.append("start must be a scalar int or float value")
 
-    if not (valid_stop_type := isinstance(stop, int | float)):
+    valid_stop_type = isinstance(stop, int | float)
+    if not valid_stop_type:
         error_messages.append("stop must be a scalar int or float value")
 
     if not isinstance(n_points, int) or n_points < 1:

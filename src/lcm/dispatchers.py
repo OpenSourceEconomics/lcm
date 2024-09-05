@@ -48,17 +48,20 @@ def spacemap(
     """
     # Check inputs and prepare function
     # ==================================================================================
-    if overlap := set(dense_vars).intersection(sparse_vars):
+    overlap = set(dense_vars).intersection(sparse_vars)
+    if overlap:
         raise ValueError(
             f"Dense and sparse variables must be disjoint. Overlap: {overlap}",
         )
 
-    if duplicates := {v for v in dense_vars if dense_vars.count(v) > 1}:
+    duplicates = {v for v in dense_vars if dense_vars.count(v) > 1}
+    if duplicates:
         raise ValueError(
             f"Same argument provided more than once in dense variables: {duplicates}",
         )
 
-    if duplicates := {v for v in sparse_vars if sparse_vars.count(v) > 1}:
+    duplicates = {v for v in sparse_vars if sparse_vars.count(v) > 1}
+    if duplicates:
         raise ValueError(
             f"Same argument provided more than once in sparse variables: {duplicates}",
         )
@@ -116,7 +119,8 @@ def vmap_1d(
         described above but there might be additional dimensions.
 
     """
-    if duplicates := {v for v in variables if variables.count(v) > 1}:
+    duplicates = {v for v in variables if variables.count(v) > 1}
+    if duplicates:
         raise ValueError(
             f"Same argument provided more than once in variables: {duplicates}",
         )
@@ -179,7 +183,8 @@ def productmap(func: F, variables: list[str]) -> F:
     """
     func = allow_args(func)  # jax.vmap cannot deal with keyword-only arguments
 
-    if duplicates := {v for v in variables if variables.count(v) > 1}:
+    duplicates = {v for v in variables if variables.count(v) > 1}
+    if duplicates:
         raise ValueError(
             f"Same argument provided more than once in variables: {duplicates}",
         )

@@ -31,11 +31,15 @@ class Model:
     states: dict[str, Grid] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
-        if type_errors := _validate_attribute_types(self):
+        type_errors = _validate_attribute_types(self)
+
+        if type_errors:
             msg = format_messages(type_errors)
             raise ModelInitilizationError(msg)
 
-        if logical_errors := _validate_logical_consistency(self):
+        logical_errors = _validate_logical_consistency(self)
+
+        if logical_errors:
             msg = format_messages(logical_errors)
             raise ModelInitilizationError(msg)
 
@@ -98,16 +102,18 @@ def _validate_logical_consistency(model: Model) -> list[str]:
             "in the functions dictionary.",
         )
 
-    if states_without_next_func := [
+    states_without_next_func = [
         state for state in model.states if f"next_{state}" not in model.functions
-    ]:
+    ]
+    if states_without_next_func:
         error_messages.append(
             "Each state must have a corresponding next state function. For the "
             "following states, no next state function was found: "
             f"{states_without_next_func}.",
         )
 
-    if states_and_choices_overlap := set(model.states) & set(model.choices):
+    states_and_choices_overlap = set(model.states) & set(model.choices)
+    if states_and_choices_overlap:
         error_messages.append(
             "States and choices cannot have overlapping names. The following names "
             f"are used in both states and choices: {states_and_choices_overlap}.",

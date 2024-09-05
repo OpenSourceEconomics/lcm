@@ -113,7 +113,8 @@ def _create_stochastic_transition_params(
     # ==================================================================================
     discrete_state_vars = set(variable_info.query("is_state & is_discrete").index)
 
-    if invalid := set(stochastic_variables) - discrete_state_vars:
+    invalid = set(stochastic_variables) - discrete_state_vars
+    if invalid:
         raise ValueError(
             f"The following variables are stochastic, but are not discrete state "
             f"variables: {invalid}. This is currently not supported.",
@@ -135,7 +136,8 @@ def _create_stochastic_transition_params(
 
         # If there are invalid dependencies, store them in a dictionary and continue
         # with the next variable to collect as many invalid arguments as possible.
-        if invalid := set(dependencies) - valid_vars:
+        invalid = set(dependencies) - valid_vars
+        if invalid:
             invalid_dependencies[var] = invalid
         else:
             # Get the dimensions of variables that influence the stochastic variable
