@@ -8,8 +8,7 @@ import pytest
 from numpy.testing import assert_array_equal
 from pandas.testing import assert_frame_equal
 
-import lcm.grid_helpers as grids_module
-from lcm import DiscreteGrid, LinspaceGrid
+from lcm import DiscreteGrid, LinspaceGrid, grid_helpers
 from lcm.mark import StochasticInfo
 from lcm.process_model import (
     _get_function_info,
@@ -155,13 +154,13 @@ def test_process_model_iskhakov_et_al_2017():
     assert model.gridspecs["lagged_retirement"] == DiscreteGrid([0, 1])
 
     # Grids
-    func = getattr(grids_module, model.gridspecs["consumption"].kind)
-    asserted = func(**model.gridspecs["consumption"].info._asdict())
-    assert (asserted == model.grids["consumption"]).all()
+    expected = grid_helpers.linspace(
+        **model_config.choices["consumption"].info._asdict()
+    )
+    assert_array_equal(model.grids["consumption"], expected)
 
-    func = getattr(grids_module, model.gridspecs["wealth"].kind)
-    asserted = func(**model.gridspecs["wealth"].info._asdict())
-    assert (asserted == model.grids["wealth"]).all()
+    expected = grid_helpers.linspace(**model_config.states["wealth"].info._asdict())
+    assert_array_equal(model.grids["wealth"], expected)
 
     assert (model.grids["retirement"] == jnp.array([0, 1])).all()
     assert (model.grids["lagged_retirement"] == jnp.array([0, 1])).all()
@@ -214,13 +213,13 @@ def test_process_model():
     assert model.gridspecs["retirement"] == DiscreteGrid([0, 1])
 
     # Grids
-    func = getattr(grids_module, model.gridspecs["consumption"].kind)
-    asserted = func(**model.gridspecs["consumption"].info._asdict())
-    assert (asserted == model.grids["consumption"]).all()
+    expected = grid_helpers.linspace(
+        **model_config.choices["consumption"].info._asdict()
+    )
+    assert_array_equal(model.grids["consumption"], expected)
 
-    func = getattr(grids_module, model.gridspecs["wealth"].kind)
-    asserted = func(**model.gridspecs["wealth"].info._asdict())
-    assert (asserted == model.grids["wealth"]).all()
+    expected = grid_helpers.linspace(**model_config.states["wealth"].info._asdict())
+    assert_array_equal(model.grids["wealth"], expected)
 
     assert (model.grids["retirement"] == jnp.array([0, 1])).all()
 

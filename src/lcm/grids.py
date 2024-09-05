@@ -2,19 +2,15 @@
 
 from abc import ABC, abstractmethod
 from collections.abc import Collection
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 import jax.numpy as jnp
+from jax import Array
 
+from lcm import grid_helpers
 from lcm.exceptions import GridInitializationError, format_messages
-from lcm.grid_helpers import linspace, logspace
 from lcm.interfaces import ContinuousGridInfo
-from lcm.typing import ContinuousGridType
-
-build_grid_mapping = {
-    "linspace": linspace,
-    "logspace": logspace,
-}
+from lcm.typing import Scalar
 
 
 class Grid(ABC):
@@ -48,16 +44,15 @@ class DiscreteGrid(Grid):
             msg = format_messages(errors)
             raise GridInitializationError(msg)
 
-    def to_jax(self) -> jnp.ndarray:
+    def to_jax(self) -> Array:
         """Convert the grid to a Jax array."""
         return jnp.array(list(self.options))
 
 
-@dataclass(frozen=True)
-class ContinuousGrid(Grid):
+@dataclass(frozen=True, kw_only=True)
+class ContinuousGrid(Grid, ABC):
     """LCM Continuous Grid base class."""
 
-    kind: ContinuousGridType = field(init=False, default=None)  # type: ignore[arg-type]
     start: int | float
     stop: int | float
     n_points: int
@@ -81,13 +76,13 @@ class ContinuousGrid(Grid):
             n_points=self.n_points,
         )
 
-    def to_jax(self) -> jnp.ndarray:
+    @abstractmethod
+    def to_jax(self) -> Array:
         """Convert the grid to a Jax array."""
-        return build_grid_mapping[self.kind](
-            start=self.start,
-            stop=self.stop,
-            n_points=self.n_points,
-        )
+
+    @abstractmethod
+    def get_coordinate(self, value: Scalar) -> Scalar:
+        """Get the generalized coordinate of a value in the grid."""
 
 
 class LinspaceGrid(ContinuousGrid):
@@ -104,7 +99,15 @@ class LinspaceGrid(ContinuousGrid):
 
     """
 
-    kind: ContinuousGridType = "linspace"
+    def to_jax(self) -> Array:
+        """Convert the grid to a Jax array."""
+        return grid_helpers.linspace(self.start, self.stop, self.n_points)
+
+    def get_coordinate(self, value: Scalar) -> Scalar:
+        """Get the generalized coordinate of a value in the grid."""
+        return grid_helpers.get_linspace_coordinate(
+            value, self.start, self.stop, self.n_points
+        )
 
 
 class LogspaceGrid(ContinuousGrid):
@@ -121,7 +124,15 @@ class LogspaceGrid(ContinuousGrid):
 
     """
 
-    kind: ContinuousGridType = "logspace"
+    def to_jax(self) -> Array:
+        """Convert the grid to a Jax array."""
+        return grid_helpers.logspace(self.start, self.stop, self.n_points)
+
+    def get_coordinate(self, value: Scalar) -> Scalar:
+        """Get the generalized coordinate of a value in the grid."""
+        return grid_helpers.get_logspace_coordinate(
+            value, self.start, self.stop, self.n_points
+        )
 
 
 # ======================================================================================

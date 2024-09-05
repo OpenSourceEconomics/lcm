@@ -100,7 +100,6 @@ plotly = ">=5.2,<6"
 pre-commit = "*"
 snakeviz = "*"
 memory_profiler = "*"
-pixi-kernel = ">=0.3.0,<0.4"
 
 [tool.pixi.target.unix.dependencies]
 jax = ">=0.4.20"

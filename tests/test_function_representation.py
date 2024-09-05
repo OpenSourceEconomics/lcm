@@ -16,7 +16,6 @@ from lcm.function_representation import (
 )
 from lcm.grid_helpers import linspace
 from lcm.interfaces import (
-    ContinuousGridInfo,
     IndexerInfo,
     SpaceInfo,
 )
@@ -274,8 +273,7 @@ def test_get_lookup_function():
 def test_get_coordinate_finder():
     find_coordinate = _get_coordinate_finder(
         in_name="wealth",
-        grid_type="linspace",
-        grid_info=ContinuousGridInfo(start=0, stop=10, n_points=21),
+        grid=LinspaceGrid(start=0, stop=10, n_points=21),
     )
 
     calculated = find_coordinate(wealth=5.75)
@@ -356,8 +354,7 @@ def test_get_lookup_function_illustrative():
 def test_get_coordinate_finder_illustrative():
     find_coordinate = _get_coordinate_finder(
         in_name="a",
-        grid_type="linspace",
-        grid_info=ContinuousGridInfo(start=0, stop=1, n_points=3),
+        grid=LinspaceGrid(start=0, stop=1, n_points=3),
     )
 
     assert find_coordinate(a=0) == 0
