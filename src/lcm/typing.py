@@ -1,4 +1,4 @@
-from typing import Annotated, Literal, TypedDict
+from typing import Annotated, Any, Literal, TypedDict
 
 from jax import Array
 
@@ -10,14 +10,7 @@ ContinuousGridType = Literal["linspace", "logspace"]
 
 DiscreteLabels = Annotated[list[int], "Int range starting from 0 with increments of 1"]
 
-# Parameters in LCM are made out of three categories: (1) the default parameters
-# required for the model class. They appear as dict[str, int | float]. (2) the
-# parameters corresponding to the user model functions. They appear as
-# dict[str, dict[str, int | float]], where for each user function the parameters
-# for this function are stored in a dict. (3) the parameters corresponding to the
-# the stochastic transitions. They appear as dict[str, dict[str, Array]],
-# where for each stochastic state variable the transition matrix is stored as an Array.
-Params = dict[str, int | float | dict[str, int | float] | dict[str, Array]]
+ParamsDict = dict[str, Any]
 
 
 class SegmentInfo(TypedDict):

@@ -16,7 +16,7 @@ from lcm.grids import (
 )
 from lcm.interfaces import InternalModel
 from lcm.model import Model
-from lcm.typing import Params
+from lcm.typing import ParamsDict
 
 
 def process_model(user_model: Model) -> InternalModel:
@@ -247,7 +247,7 @@ def _get_functions(
     function_info: pd.DataFrame,
     variable_info: pd.DataFrame,
     grids: dict[str, Array],
-    params: Params,
+    params: ParamsDict,
 ) -> dict[str, Callable]:
     """Process the user provided model functions.
 
@@ -327,7 +327,7 @@ def _get_functions(
 
 
 def _replace_func_parameters_by_params(
-    func: Callable, params: Params, name: str
+    func: Callable, params: ParamsDict, name: str
 ) -> Callable:
     old_signature = list(inspect.signature(func).parameters)
     new_kwargs = [

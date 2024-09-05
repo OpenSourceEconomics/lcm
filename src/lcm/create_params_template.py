@@ -7,7 +7,7 @@ import pandas as pd
 from jax import Array
 
 from lcm.model import Model
-from lcm.typing import Params
+from lcm.typing import ParamsDict
 
 
 def create_params_template(
@@ -15,7 +15,7 @@ def create_params_template(
     variable_info: pd.DataFrame,
     grids: dict[str, Array],
     default_params: dict[str, int | float] | None = None,
-) -> Params:
+) -> ParamsDict:
     """Create parameter template from a model specification.
 
     Args:
@@ -28,7 +28,7 @@ def create_params_template(
             np.nan} for beta-delta discounting.
 
     Returns:
-        dict: A nested dictionary of model parameters.
+        ParamsDict: A nested dictionary of model parameters.
 
     """
     if default_params is None:
@@ -51,7 +51,7 @@ def create_params_template(
     return default_params | function_params | stochastic_transition_params
 
 
-def _create_function_params(user_model: Model) -> Params:
+def _create_function_params(user_model: Model) -> dict[str, dict[str, float]]:
     """Get function parameters from a model specification.
 
     Explanation: We consider the arguments of all model functions, from which we exclude
@@ -79,7 +79,7 @@ def _create_function_params(user_model: Model) -> Params:
     if hasattr(user_model, "shocks"):
         variables = variables | set(user_model.shocks)
 
-    function_params: Params = {}
+    function_params = {}
     # For each model function, capture the arguments of the function that are not in the
     # set of model variables, and initialize them.
     for name, func in user_model.functions.items():
