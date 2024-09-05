@@ -1,6 +1,7 @@
 """Test analytical solution and simulation with only discrete choices."""
 
 from copy import deepcopy
+from dataclasses import replace
 
 import jax.numpy as jnp
 import numpy as np
@@ -312,8 +313,9 @@ def analytical_simulate_stochastic(initial_wealth, initial_health, health_1, par
 def test_deterministic_solve(beta, n_wealth_points):
     # Update model
     # ==================================================================================
-    model = deepcopy(DETERMINISTIC_MODEL)
-    model.states["wealth"] = model.states["wealth"].replace(n_points=n_wealth_points)
+    new_states = DETERMINISTIC_MODEL.states
+    new_states["wealth"] = replace(new_states["wealth"], n_points=n_wealth_points)
+    model = DETERMINISTIC_MODEL.replace(states=new_states)
 
     # Solve model using LCM
     # ==================================================================================
@@ -345,10 +347,9 @@ def test_deterministic_solve(beta, n_wealth_points):
 def test_deterministic_simulate(beta, n_wealth_points):
     # Update model
     # ==================================================================================
-    model = deepcopy(DETERMINISTIC_MODEL)
-    model.states["wealth"] = model.states["wealth"].replace(
-        n_points=n_wealth_points,
-    )
+    new_states = DETERMINISTIC_MODEL.states
+    new_states["wealth"] = replace(new_states["wealth"], n_points=n_wealth_points)
+    model = DETERMINISTIC_MODEL.replace(states=new_states)
 
     # Simulate model using LCM
     # ==================================================================================
@@ -382,14 +383,11 @@ HEALTH_TRANSITION = [
 @pytest.mark.parametrize("n_wealth_points", [100, 1_000])
 @pytest.mark.parametrize("health_transition", HEALTH_TRANSITION)
 def test_stochastic_solve(beta, n_wealth_points, health_transition):
-    beta = 0.9
-    n_wealth_points = 100
     # Update model
     # ==================================================================================
-    model = deepcopy(STOCHASTIC_MODEL)
-    model.states["wealth"] = model.states["wealth"].replace(
-        n_points=n_wealth_points,
-    )
+    new_states = STOCHASTIC_MODEL.states
+    new_states["wealth"] = replace(new_states["wealth"], n_points=n_wealth_points)
+    model = STOCHASTIC_MODEL.replace(states=new_states)
 
     # Solve model using LCM
     # ==================================================================================
@@ -435,10 +433,9 @@ def test_stochastic_solve(beta, n_wealth_points, health_transition):
 def test_stochastic_simulate(beta, n_wealth_points, health_transition):
     # Update model
     # ==================================================================================
-    model = deepcopy(STOCHASTIC_MODEL)
-    model.states["wealth"] = model.states["wealth"].replace(
-        n_points=n_wealth_points,
-    )
+    new_states = STOCHASTIC_MODEL.states
+    new_states["wealth"] = replace(new_states["wealth"], n_points=n_wealth_points)
+    model = STOCHASTIC_MODEL.replace(states=new_states)
 
     # Simulate model using LCM
     # ==================================================================================

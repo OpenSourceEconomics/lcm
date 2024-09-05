@@ -1,10 +1,8 @@
 """Collection of classes that are used by the user to define the model and grids."""
 
-import dataclasses as dc
 from abc import ABC, abstractmethod
 from collections.abc import Collection
 from dataclasses import dataclass, field
-from typing import NotRequired, TypedDict, cast
 
 import jax.numpy as jnp
 
@@ -54,18 +52,6 @@ class DiscreteGrid(Grid):
         """Convert the grid to a Jax array."""
         return jnp.array(list(self.options))
 
-    def replace(self, options: Collection[int | float]) -> "DiscreteGrid":
-        """Replace the grid with new values.
-
-        Args:
-            options: The new options in the grid.
-
-        Returns:
-            The updated grid.
-
-        """
-        return dc.replace(self, options=options)
-
 
 @dataclass(frozen=True)
 class ContinuousGrid(Grid):
@@ -104,14 +90,6 @@ class ContinuousGrid(Grid):
         )
 
 
-class ContinuousGridReplacements(TypedDict):
-    """Dictionary of arguments that can be replaced using the `replace` method."""
-
-    start: NotRequired[int | float]
-    stop: NotRequired[int | float]
-    n_points: NotRequired[int]
-
-
 class LinspaceGrid(ContinuousGrid):
     """A linear grid of continuous values.
 
@@ -127,28 +105,6 @@ class LinspaceGrid(ContinuousGrid):
     """
 
     kind: ContinuousGridType = "linspace"
-
-    def replace(
-        self,
-        start: float | None = None,
-        stop: float | None = None,
-        n_points: int | None = None,
-    ) -> "LinspaceGrid":
-        """Replace the grid with new values.
-
-        Args:
-            start: The new start value of the grid.
-            stop: The new stop value of the grid.
-            n_points: The new number of points in the grid.
-
-        Returns:
-            The updated grid.
-
-        """
-        replacements = {"start": start, "stop": stop, "n_points": n_points}
-        replacements = {k: v for k, v in replacements.items() if v is not None}
-        kwargs = cast(ContinuousGridReplacements, replacements)
-        return dc.replace(self, **kwargs)
 
 
 class LogspaceGrid(ContinuousGrid):
@@ -166,28 +122,6 @@ class LogspaceGrid(ContinuousGrid):
     """
 
     kind: ContinuousGridType = "logspace"
-
-    def replace(
-        self,
-        start: float | None = None,
-        stop: float | None = None,
-        n_points: int | None = None,
-    ) -> "LogspaceGrid":
-        """Replace the grid with new values.
-
-        Args:
-            start: The new start value of the grid.
-            stop: The new stop value of the grid.
-            n_points: The new number of points in the grid.
-
-        Returns:
-            The updated grid.
-
-        """
-        replacements = {"start": start, "stop": stop, "n_points": n_points}
-        replacements = {k: v for k, v in replacements.items() if v is not None}
-        kwargs = cast(ContinuousGridReplacements, replacements)
-        return dc.replace(self, **kwargs)
 
 
 # ======================================================================================
