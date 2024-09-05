@@ -9,7 +9,6 @@ from jax import Array
 
 from lcm import grid_helpers
 from lcm.exceptions import GridInitializationError, format_messages
-from lcm.interfaces import ContinuousGridInfo
 from lcm.typing import Scalar
 
 
@@ -66,15 +65,6 @@ class ContinuousGrid(Grid, ABC):
         if errors:
             msg = format_messages(errors)
             raise GridInitializationError(msg)
-
-    @property
-    def info(self) -> ContinuousGridInfo:
-        """Get the grid info."""
-        return ContinuousGridInfo(
-            start=self.start,
-            stop=self.stop,
-            n_points=self.n_points,
-        )
 
     @abstractmethod
     def to_jax(self) -> Array:

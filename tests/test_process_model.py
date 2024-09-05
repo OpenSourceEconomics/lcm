@@ -135,31 +135,29 @@ def test_process_model_iskhakov_et_al_2017():
     ).all()
 
     # Gridspecs
-    wealth_specs = LinspaceGrid(
+    wealth_grid = LinspaceGrid(
         start=1,
         stop=400,
         n_points=model_config.states["wealth"].n_points,
     )
 
-    assert model.gridspecs["wealth"] == wealth_specs
+    assert model.gridspecs["wealth"] == wealth_grid
 
-    consumption_specs = LinspaceGrid(
+    consumption_grid = LinspaceGrid(
         start=1,
         stop=400,
         n_points=model_config.choices["consumption"].n_points,
     )
-    assert model.gridspecs["consumption"] == consumption_specs
+    assert model.gridspecs["consumption"] == consumption_grid
 
     assert model.gridspecs["retirement"] == DiscreteGrid([0, 1])
     assert model.gridspecs["lagged_retirement"] == DiscreteGrid([0, 1])
 
     # Grids
-    expected = grid_helpers.linspace(
-        **model_config.choices["consumption"].info._asdict()
-    )
+    expected = grid_helpers.linspace(**model_config.choices["consumption"].__dict__)
     assert_array_equal(model.grids["consumption"], expected)
 
-    expected = grid_helpers.linspace(**model_config.states["wealth"].info._asdict())
+    expected = grid_helpers.linspace(**model_config.states["wealth"].__dict__)
     assert_array_equal(model.grids["wealth"], expected)
 
     assert (model.grids["retirement"] == jnp.array([0, 1])).all()
@@ -213,12 +211,10 @@ def test_process_model():
     assert model.gridspecs["retirement"] == DiscreteGrid([0, 1])
 
     # Grids
-    expected = grid_helpers.linspace(
-        **model_config.choices["consumption"].info._asdict()
-    )
+    expected = grid_helpers.linspace(**model_config.choices["consumption"].__dict__)
     assert_array_equal(model.grids["consumption"], expected)
 
-    expected = grid_helpers.linspace(**model_config.states["wealth"].info._asdict())
+    expected = grid_helpers.linspace(**model_config.states["wealth"].__dict__)
     assert_array_equal(model.grids["wealth"], expected)
 
     assert (model.grids["retirement"] == jnp.array([0, 1])).all()

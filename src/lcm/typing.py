@@ -1,14 +1,10 @@
-from typing import Annotated, Any, Literal, TypedDict
+from typing import Any, Literal, TypedDict
 
 from jax import Array
 
 # Many JAX functions are designed to work with scalar numerical values. This also
 # includes zero dimensional jax arrays.
 Scalar = int | float | Array
-
-ContinuousGridType = Literal["linspace", "logspace"]
-
-DiscreteLabels = Annotated[list[int], "Int range starting from 0 with increments of 1"]
 
 ParamsDict = dict[str, Any]
 

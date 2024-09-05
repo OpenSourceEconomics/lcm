@@ -2,7 +2,7 @@ from typing import NamedTuple
 
 import pandas as pd
 
-from lcm.typing import ContinuousGridType, DiscreteLabels, Scalar
+from lcm.grids import ContinuousGrid, DiscreteGrid
 
 
 class IndexerInfo(NamedTuple):
@@ -24,38 +24,6 @@ class IndexerInfo(NamedTuple):
     axis_names: list[str]
     name: str
     out_name: str
-
-
-class ContinuousGridInfo(NamedTuple):
-    """Information on how to build a grid for a continuous variable.
-
-    Attributes:
-        start (Scalar): Start of the grid.
-        stop (Scalar): End of the grid.
-        n_points (int): Number of points in the grid.
-
-    """
-
-    start: Scalar
-    stop: Scalar
-    n_points: int
-
-
-class InterpolationInfo(NamedTuple):
-    """Interpolation info for a grid of continuous variables.
-
-    Contains all information necessary to build and work with a grid of a continuous
-    variable.
-
-    Attributes:
-        kind (ContinuousGridType): Name of a grid type implemented in lcm.grids.
-        info (ContinuousGridInfo): Information on how to build the grid. E.g., start,
-            stop, and n_points.
-
-    """
-
-    kind: ContinuousGridType
-    info: ContinuousGridInfo
 
 
 class Space(NamedTuple):
@@ -89,8 +57,8 @@ class SpaceInfo(NamedTuple):
     """
 
     axis_names: list[str]
-    lookup_info: dict[str, DiscreteLabels]
-    interpolation_info: dict[str, InterpolationInfo]
+    lookup_info: dict[str, DiscreteGrid]
+    interpolation_info: dict[str, ContinuousGrid]
     indexer_infos: list[IndexerInfo]
 
 

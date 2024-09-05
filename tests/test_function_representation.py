@@ -14,7 +14,6 @@ from lcm.function_representation import (
     _get_lookup_function,
     get_function_representation,
 )
-from lcm.grid_helpers import linspace
 from lcm.interfaces import (
     IndexerInfo,
     SpaceInfo,
@@ -34,8 +33,7 @@ def test_function_evaluator_with_one_continuous_variable():
         indexer_infos=[],
     )
 
-    grid = linspace(**wealth_grid.info._asdict())
-    vf_arr = jnp.pi * grid + 2
+    vf_arr = jnp.pi * wealth_grid.to_jax() + 2
 
     # create the evaluator
     evaluator = get_function_representation(
@@ -320,9 +318,7 @@ def test_get_function_evaluator_illustrative():
         indexer_infos=[],
     )
 
-    grid = linspace(**a_grid.info._asdict())
-
-    values = jnp.pi * grid + 2
+    values = jnp.pi * a_grid.to_jax() + 2
 
     # create the evaluator
     evaluator = get_function_representation(
