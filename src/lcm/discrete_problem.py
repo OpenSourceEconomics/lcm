@@ -26,12 +26,12 @@ import pandas as pd
 from jax import Array
 from jax.ops import segment_max
 
-from lcm.typing import ParamsDict, SegmentInfo, Shock
+from lcm.typing import ParamsDict, SegmentInfo, ShockType
 
 
 def get_solve_discrete_problem(
     *,
-    random_utility_shock_type: Shock,
+    random_utility_shock_type: ShockType,
     variable_info: pd.DataFrame,
     is_last_period: bool,
     choice_segments: SegmentInfo | None,
@@ -61,9 +61,9 @@ def get_solve_discrete_problem(
 
     choice_axes = _determine_dense_discrete_choice_axes(variable_info)
 
-    if random_utility_shock_type == Shock.NONE:
+    if random_utility_shock_type == ShockType.NONE:
         func = _solve_discrete_problem_no_shocks
-    elif random_utility_shock_type == Shock.EXTREME_VALUE:
+    elif random_utility_shock_type == ShockType.EXTREME_VALUE:
         raise NotImplementedError("Extreme value shocks are not yet implemented.")
     else:
         raise ValueError(f"Invalid shock_type: {random_utility_shock_type}.")

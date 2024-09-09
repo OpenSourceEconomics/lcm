@@ -14,12 +14,12 @@ from lcm.interfaces import Space
 
 def simulate(
     params,
+    initial_states,
     state_indexers,
     continuous_choice_grids,
     compute_ccv_policy_functions,
     model,
     next_state,
-    initial_states,
     logger,
     solve_model=None,
     vf_arr_list=None,
@@ -30,6 +30,8 @@ def simulate(
 
     Args:
         params (dict): Dict of model parameters.
+        initial_states (list): List of initial states to start from. Typically from the
+            observed dataset.
         state_indexers (list): List of dicts of length n_periods. Each dict contains one
             or several state indexers.
         continuous_choice_grids (list): List of dicts of length n_periods. Each dict
@@ -41,8 +43,6 @@ def simulate(
             state and choice variables. For stochastic variables, it returns a random
             draw from the distribution of the next state.
         model (Model): Model instance.
-        initial_states (list): List of initial states to start from. Typically from the
-            observed dataset.
         logger (logging.Logger): Logger that logs to stdout.
         solve_model (callable): Function that solves the model. Is only required if
             vf_arr_list is not provided.

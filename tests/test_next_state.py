@@ -68,7 +68,7 @@ def test_get_next_state_function_with_simulate_target():
         gridspecs=None,
         variable_info=None,
         params=None,
-        shocks=None,
+        random_utility_shocks=None,
         n_periods=1,
     )
 

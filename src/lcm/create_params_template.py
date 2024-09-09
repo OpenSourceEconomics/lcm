@@ -14,7 +14,7 @@ def create_params_template(
     user_model: Model,
     variable_info: pd.DataFrame,
     grids: dict[str, Array],
-    default_params: dict[str, int | float] | None = None,
+    default_params: dict[str, float] | None = None,
 ) -> ParamsDict:
     """Create parameter template from a model specification.
 
@@ -28,7 +28,7 @@ def create_params_template(
             np.nan} for beta-delta discounting.
 
     Returns:
-        ParamsDict: A nested dictionary of model parameters.
+        A nested dictionary of model parameters.
 
     """
     if default_params is None:
@@ -63,8 +63,8 @@ def _create_function_params(user_model: Model) -> dict[str, dict[str, float]]:
         user_model: The model as provided by the user.
 
     Returns:
-        dict: A dictionary for each model function, containing a parameters required in
-            the model functions, initialized with jnp.nan.
+        A dictionary for each model function, containing a parameters required in the
+            model functions, initialized with jnp.nan.
 
     """
     # Collect all model variables, that includes choices, states, the period, and
@@ -103,8 +103,8 @@ def _create_stochastic_transition_params(
         grids: A dictionary of grids consistent with user_model.
 
     Returns:
-        dict: A dictionary of parameters required for stochastic transitions,
-            initialized with jnp.nan matrices of the correct dimensions.
+        A dictionary of parameters required for stochastic transitions, initialized with
+            jnp.nan matrices of the correct dimensions.
 
     """
     stochastic_variables = variable_info.query("is_stochastic").index.tolist()

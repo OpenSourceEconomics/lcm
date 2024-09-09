@@ -10,7 +10,7 @@ Scalar = int | float | Array
 ParamsDict = dict[str, Any]
 
 
-class Shock(Enum):
+class ShockType(Enum):
     """Type of shocks."""
 
     EXTREME_VALUE = "extreme_value"

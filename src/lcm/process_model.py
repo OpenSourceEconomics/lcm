@@ -16,7 +16,7 @@ from lcm.grids import (
 )
 from lcm.interfaces import InternalModel
 from lcm.model import Model
-from lcm.typing import ParamsDict, Shock
+from lcm.typing import ParamsDict, ShockType
 
 
 def process_model(user_model: Model) -> InternalModel:
@@ -66,7 +66,8 @@ def process_model(user_model: Model) -> InternalModel:
         functions=functions,
         function_info=function_info,
         params=params,
-        shocks=Shock.NONE,  # currently no additive utility shocks are supported
+        # currently no additive utility shocks are supported
+        random_utility_shocks=ShockType.NONE,
         n_periods=user_model.n_periods,
     )
 
