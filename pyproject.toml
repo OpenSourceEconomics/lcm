@@ -96,7 +96,7 @@ python = "3.12"
 scipy = "<=1.13"
 pybaum = "*"
 jupyterlab = "*"
-plotly = ">=5.2,<6"
+plotly = ">=5.24,<6"
 pre-commit = "*"
 snakeviz = "*"
 memory_profiler = "*"
@@ -268,5 +268,5 @@ disallow_untyped_defs = false
 ignore_errors = true
 
 [[tool.mypy.overrides]]
-module = ["dags", "dags.signature", "pybaum"]
+module = ["dags", "dags.signature", "pybaum", "pdbp"]
 ignore_missing_imports = true
