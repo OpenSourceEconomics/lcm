@@ -6558,9 +6558,9 @@ packages:
   timestamp: 1719463874284
 - kind: pypi
   name: lcm
-  version: 0.1.dev207+g1bae2e3.d20240909
+  version: 0.1.dev211+gfac3512.d20240910
   path: .
-  sha256: 7688580a908d67ddb53cdcf2fd7cd2d87aed29d0c002b7b996c93bafa10e7f4a
+  sha256: 6edd1a35b1f9290af306d0c565136780350aadfa640574da2453323dd387eab4
   requires_dist:
   - dags
   - numpy

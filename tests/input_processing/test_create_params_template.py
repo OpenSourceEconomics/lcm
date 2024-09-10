@@ -6,7 +6,7 @@ import pandas as pd
 import pytest
 from numpy.testing import assert_equal
 
-from lcm.create_params_template import (
+from lcm.input_processing.create_params_template import (
     _create_function_params,
     _create_stochastic_transition_params,
     create_params_template,

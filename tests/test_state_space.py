@@ -4,8 +4,8 @@ import pandas as pd
 import pytest
 from numpy.testing import assert_array_almost_equal as aaae
 
+from lcm.input_processing import process_model
 from lcm.interfaces import InternalModel
-from lcm.process_model import process_model
 from lcm.state_space import (
     create_combination_grid,
     create_filter_mask,

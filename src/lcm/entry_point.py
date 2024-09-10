@@ -9,6 +9,7 @@ import jax.numpy as jnp
 from lcm.argmax import argmax
 from lcm.discrete_problem import get_solve_discrete_problem
 from lcm.dispatchers import productmap
+from lcm.input_processing import process_model
 from lcm.logging import get_logger
 from lcm.model import Model
 from lcm.model_functions import (
@@ -16,7 +17,6 @@ from lcm.model_functions import (
 )
 from lcm.next_state import get_next_state_function
 from lcm.options import DefaultMapCoordinatesOptions
-from lcm.process_model import process_model
 from lcm.simulate import simulate
 from lcm.solve_brute import solve
 from lcm.state_space import create_state_choice_space

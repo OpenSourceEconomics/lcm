@@ -9,10 +9,10 @@ from lcm.entry_point import (
     create_compute_conditional_continuation_policy,
     get_lcm_function,
 )
+from lcm.input_processing import process_model
 from lcm.logging import get_logger
 from lcm.model_functions import get_utility_and_feasibility_function
 from lcm.next_state import _get_next_state_function_simulation
-from lcm.process_model import process_model
 from lcm.simulate import (
     _as_data_frame,
     _compute_targets,

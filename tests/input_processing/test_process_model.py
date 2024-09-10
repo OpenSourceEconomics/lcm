@@ -9,8 +9,7 @@ from numpy.testing import assert_array_equal
 from pandas.testing import assert_frame_equal
 
 from lcm import DiscreteGrid, LinspaceGrid, grid_helpers
-from lcm.mark import StochasticInfo
-from lcm.process_model import (
+from lcm.input_processing.process_model import (
     _get_function_info,
     _get_grids,
     _get_gridspecs,
@@ -18,6 +17,7 @@ from lcm.process_model import (
     _get_variable_info,
     process_model,
 )
+from lcm.mark import StochasticInfo
 from tests.test_models.deterministic import (
     get_model_config,
 )

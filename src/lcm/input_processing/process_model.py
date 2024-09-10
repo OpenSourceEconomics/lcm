@@ -8,12 +8,12 @@ from dags import get_ancestors
 from dags.signature import with_signature
 from jax import Array
 
-from lcm.create_params_template import create_params_template
 from lcm.functools import all_as_args, all_as_kwargs
 from lcm.grids import (
     ContinuousGrid,
     Grid,
 )
+from lcm.input_processing.create_params_template import create_params_template
 from lcm.interfaces import InternalModel
 from lcm.model import Model
 from lcm.typing import ParamsDict, ShockType

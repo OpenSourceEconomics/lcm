@@ -7,8 +7,8 @@ from lcm.entry_point import (
     create_compute_conditional_continuation_value,
     get_lcm_function,
 )
+from lcm.input_processing import process_model
 from lcm.model_functions import get_utility_and_feasibility_function
-from lcm.process_model import process_model
 from lcm.state_space import create_state_choice_space
 from tests.test_models.deterministic import get_model_config
 from tests.test_models.deterministic import utility as iskhakov_et_al_2017_utility
