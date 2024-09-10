@@ -157,7 +157,6 @@ def get_lcm_function(
             variable_info=_mod.variable_info,
             is_last_period=is_last_period,
             choice_segments=choice_segments[period],
-            params=_mod.params,
         )
         emax_calculators.append(calculator)
 

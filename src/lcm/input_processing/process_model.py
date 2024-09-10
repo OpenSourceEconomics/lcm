@@ -36,15 +36,9 @@ def process_model(user_model: Model) -> InternalModel:
 
     """
     function_info = _get_function_info(user_model)
-
-    variable_info = _get_variable_info(
-        user_model,
-        function_info=function_info,
-    )
-
-    gridspecs = _get_gridspecs(user_model, variable_info=variable_info)
-
-    grids = _get_grids(gridspecs=gridspecs, variable_info=variable_info)
+    variable_info = _get_variable_info(user_model)
+    gridspecs = _get_gridspecs(user_model)
+    grids = _get_grids(user_model)
 
     params = create_params_template(
         user_model,
@@ -97,15 +91,11 @@ def _get_function_info(user_model: Model) -> pd.DataFrame:
     return info
 
 
-def _get_variable_info(user_model: Model, function_info: pd.DataFrame) -> pd.DataFrame:
+def _get_variable_info(user_model: Model) -> pd.DataFrame:
     """Derive information about all variables in the model.
 
     Args:
         user_model: The model as provided by the user.
-        function_info: A table with information about all functions in the model. The
-            index contains the name of a function. The columns are booleans that are
-            True if the function has the corresponding property. The columns are:
-            is_filter, is_constraint, is_next, is_stochastic_next.
 
     Returns:
         pd.DataFrame: A table with information about all variables in the model. The
@@ -114,6 +104,8 @@ def _get_variable_info(user_model: Model, function_info: pd.DataFrame) -> pd.Dat
             is_state, is_choice, is_continuous, is_discrete, is_sparse, is_dense.
 
     """
+    function_info = _get_function_info(user_model)
+
     variables = user_model.states | user_model.choices
 
     info = pd.DataFrame(index=list(variables))
@@ -193,17 +185,11 @@ def _get_auxiliary_variables(
 
 def _get_gridspecs(
     user_model: Model,
-    variable_info: pd.DataFrame,
 ) -> dict[str, Grid]:
     """Create a dictionary of grid specifications for each variable in the model.
 
     Args:
         user_model (dict): The model as provided by the user.
-        variable_info (pandas.DataFrame): A table with information about all
-            variables in the model. The index contains the name of a model variable.
-            The columns are booleans that are True if the variable has the
-            corresponding property. The columns are: is_state, is_choice, is_continuous,
-            is_discrete, is_sparse, is_dense.
 
     Returns:
         dict: Dictionary containing all variables of the model. The keys are
@@ -212,32 +198,29 @@ def _get_gridspecs(
             variables this is information about how to build the grids.
 
     """
+    variable_info = _get_variable_info(user_model)
+
     raw_variables = user_model.states | user_model.choices
     order = variable_info.index.tolist()
     return {k: raw_variables[k] for k in order}
 
 
 def _get_grids(
-    gridspecs: dict[str, Grid],
-    variable_info: pd.DataFrame,
+    user_model: Model,
 ) -> dict[str, Array]:
     """Create a dictionary of array grids for each variable in the model.
 
     Args:
-        gridspecs: Dictionary containing all variables of the model. The keys are the
-            names of the variables. The values describe which values the variable can
-            take. For discrete variables these are the options (jnp.array). For
-            continuous variables this is information about how to build the grids.
-        variable_info: A table with information about all variables in the model. The
-            index contains the name of a model variable. The columns are booleans that
-            are True if the variable has the corresponding property. The columns are:
-            is_state, is_choice, is_continuous, is_discrete, is_sparse, is_dense.
+        user_model: The model as provided by the user.
 
     Returns:
         dict: Dictionary containing all variables of the model. The keys are
             the names of the variables. The values are the grids.
 
     """
+    variable_info = _get_variable_info(user_model)
+    gridspecs = _get_gridspecs(user_model)
+
     grids = {name: spec.to_jax() for name, spec in gridspecs.items()}
     order = variable_info.index.tolist()
     return {k: grids[k] for k in order}

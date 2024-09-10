@@ -72,11 +72,7 @@ def test_get_function_info(user_model):
 
 
 def test_get_variable_info(user_model):
-    function_info = _get_function_info(user_model)
-    got = _get_variable_info(
-        user_model,
-        function_info,
-    )
+    got = _get_variable_info(user_model)
     exp = pd.DataFrame(
         {
             "is_state": [False, True],
@@ -94,22 +90,13 @@ def test_get_variable_info(user_model):
 
 
 def test_get_gridspecs(user_model):
-    variable_info = _get_variable_info(
-        user_model,
-        function_info=_get_function_info(user_model),
-    )
-    got = _get_gridspecs(user_model, variable_info)
+    got = _get_gridspecs(user_model)
     assert got["a"] == DiscreteGrid([0, 1])
     assert got["c"] == DiscreteGrid([0, 1])
 
 
 def test_get_grids(user_model):
-    variable_info = _get_variable_info(
-        user_model,
-        function_info=_get_function_info(user_model),
-    )
-    gridspecs = _get_gridspecs(user_model, variable_info)
-    got = _get_grids(gridspecs, variable_info)
+    got = _get_grids(user_model)
     assert_array_equal(got["a"], jnp.array([0, 1]))
     assert_array_equal(got["c"], jnp.array([0, 1]))
 
@@ -284,9 +271,5 @@ def test_variable_info_with_continuous_filter_has_unique_index():
 
     user_model.functions["wealth_filter"] = wealth_filter
 
-    function_info = _get_function_info(user_model)
-    got = _get_variable_info(
-        user_model,
-        function_info,
-    )
+    got = _get_variable_info(user_model)
     assert got.index.is_unique

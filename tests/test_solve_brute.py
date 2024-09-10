@@ -95,7 +95,7 @@ def test_solve_brute():
     # create emax aggregators and choice segments
     # ==================================================================================
 
-    def calculate_emax(values):
+    def calculate_emax(values, params):  # noqa: ARG001
         """Take max over axis that corresponds to working."""
         return values.max(axis=1)
 

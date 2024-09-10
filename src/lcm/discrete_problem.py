@@ -35,7 +35,6 @@ def get_solve_discrete_problem(
     variable_info: pd.DataFrame,
     is_last_period: bool,
     choice_segments: SegmentInfo | None,
-    params: ParamsDict,
 ) -> Callable[[Array], Array]:
     """Get function that computes the expected max. of conditional continuation values.
 
@@ -72,7 +71,6 @@ def get_solve_discrete_problem(
         func,
         choice_axes=choice_axes,
         choice_segments=choice_segments,
-        params=params,
     )
 
 

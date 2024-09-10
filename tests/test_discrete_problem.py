@@ -54,10 +54,9 @@ def test_aggregation_without_shocks(cc_values, segment_info, collapse, n_extra_a
         variable_info=var_info,
         is_last_period=False,
         choice_segments=segment_info,
-        params={},
     )
 
-    calculated = solve_discrete_problem(cc_values)
+    calculated = solve_discrete_problem(cc_values, params=None)
 
     expected = jnp.array([8, 9.5])
 
@@ -159,7 +158,6 @@ def test_get_solve_discrete_problem_illustrative():
         variable_info=variable_info,
         is_last_period=False,
         choice_segments=None,
-        params=None,
     )
 
     cc_values = jnp.array(
@@ -170,7 +168,7 @@ def test_get_solve_discrete_problem_illustrative():
         ],
     )
 
-    got = solve_discrete_problem(cc_values)
+    got = solve_discrete_problem(cc_values, params=None)
     aaae(got, jnp.array([1, 3, 5]))
 
 

@@ -69,7 +69,7 @@ def solve(
 
         # solve discrete problem by calculating expected maximum over discrete choices
         calculate_emax = emax_calculators[period]
-        vf_arr = calculate_emax(conditional_continuation_values)
+        vf_arr = calculate_emax(conditional_continuation_values, params=params)
         reversed_solution.append(vf_arr)
 
         logger.info("Period: %s", period)
