@@ -16,8 +16,8 @@ from lcm.input_processing.util import (
     get_variable_info,
 )
 from lcm.interfaces import InternalModel
-from lcm.model import Model
 from lcm.typing import ParamsDict, ShockType
+from lcm.user_model import Model
 
 
 def process_model(model: Model) -> InternalModel:

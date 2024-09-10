@@ -4,8 +4,8 @@ import pandas as pd
 from dags import get_ancestors
 
 from lcm.grids import ContinuousGrid, Grid
-from lcm.model import Model
 from lcm.typing import Array
+from lcm.user_model import Model
 
 
 def get_function_info(model: Model) -> pd.DataFrame:

@@ -2,7 +2,7 @@ import pytest
 
 from lcm.exceptions import ModelInitilizationError
 from lcm.grids import DiscreteGrid
-from lcm.model import Model
+from lcm.user_model import Model
 
 
 def test_model_invalid_states():

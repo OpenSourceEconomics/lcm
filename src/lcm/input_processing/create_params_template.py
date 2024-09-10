@@ -7,8 +7,8 @@ import pandas as pd
 from jax import Array
 
 from lcm.input_processing.util import get_grids, get_variable_info
-from lcm.model import Model
 from lcm.typing import ParamsDict
+from lcm.user_model import Model
 
 
 def create_params_template(

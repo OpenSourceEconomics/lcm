@@ -11,7 +11,6 @@ from lcm.discrete_problem import get_solve_discrete_problem
 from lcm.dispatchers import productmap
 from lcm.input_processing import process_model
 from lcm.logging import get_logger
-from lcm.model import Model
 from lcm.model_functions import (
     get_utility_and_feasibility_function,
 )
@@ -21,6 +20,7 @@ from lcm.simulate import simulate
 from lcm.solve_brute import solve
 from lcm.state_space import create_state_choice_space
 from lcm.typing import ParamsDict
+from lcm.user_model import Model
 
 
 def get_lcm_function(
