@@ -6,6 +6,7 @@ import pandas as pd
 import pytest
 from numpy.testing import assert_equal
 
+from lcm.grids import DiscreteGrid
 from lcm.input_processing.create_params_template import (
     _create_function_params,
     _create_stochastic_transition_params,
@@ -32,21 +33,18 @@ def test_create_params_without_shocks():
     model = ModelMock(
         functions={
             "f": lambda a, b, c: None,  # noqa: ARG005
+            "next_b": lambda b: b,
         },
         choices={
-            "a": None,
+            "a": DiscreteGrid([0, 1]),
         },
         states={
-            "b": None,
+            "b": DiscreteGrid([0, 1]),
         },
         n_periods=None,
     )
-    got = create_params_template(
-        model,
-        variable_info=pd.DataFrame({"is_stochastic": [False]}),
-        grids=None,
-    )
-    assert got == {"beta": np.nan, "f": {"c": np.nan}}
+    got = create_params_template(model)
+    assert got == {"beta": np.nan, "f": {"c": np.nan}, "next_b": {}}
 
 
 def test_create_function_params():

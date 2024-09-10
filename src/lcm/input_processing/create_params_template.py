@@ -6,22 +6,19 @@ import jax.numpy as jnp
 import pandas as pd
 from jax import Array
 
+from lcm.input_processing.util import get_grids, get_variable_info
 from lcm.model import Model
 from lcm.typing import ParamsDict
 
 
 def create_params_template(
     user_model: Model,
-    variable_info: pd.DataFrame,
-    grids: dict[str, Array],
-    default_params: dict[str, float] | None = None,
+    default_params: dict[str, float] = {"beta": jnp.nan},  # noqa: B006
 ) -> ParamsDict:
     """Create parameter template from a model specification.
 
     Args:
         user_model: The model as provided by the user.
-        variable_info: A dataframe with information about the variables.
-        grids: A dictionary of grids consistent with user_model.
         default_params: A dictionary of default parameters. Default is None. If None,
             the default {"beta": np.nan} is used. For other lifetime reward objectives,
             additional parameters may be required, for example {"beta": np.nan, "delta":
@@ -31,10 +28,8 @@ def create_params_template(
         A nested dictionary of model parameters.
 
     """
-    if default_params is None:
-        # The default lifetime reward objective in LCM is expected discounted utility.
-        # For this objective the only additional parameter is the discounting rate beta.
-        default_params = {"beta": jnp.nan}
+    variable_info = get_variable_info(user_model)
+    grids = get_grids(user_model)
 
     if variable_info["is_stochastic"].any():
         stochastic_transitions = _create_stochastic_transition_params(

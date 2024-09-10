@@ -4,16 +4,17 @@ from collections.abc import Callable
 from copy import deepcopy
 
 import pandas as pd
-from dags import get_ancestors
 from dags.signature import with_signature
 from jax import Array
 
 from lcm.functools import all_as_args, all_as_kwargs
-from lcm.grids import (
-    ContinuousGrid,
-    Grid,
-)
 from lcm.input_processing.create_params_template import create_params_template
+from lcm.input_processing.util import (
+    get_function_info,
+    get_grids,
+    get_gridspecs,
+    get_variable_info,
+)
 from lcm.interfaces import InternalModel
 from lcm.model import Model
 from lcm.typing import ParamsDict, ShockType
@@ -35,28 +36,14 @@ def process_model(user_model: Model) -> InternalModel:
         The processed model.
 
     """
-    function_info = _get_function_info(user_model)
-    variable_info = _get_variable_info(user_model)
-    gridspecs = _get_gridspecs(user_model)
-    grids = _get_grids(user_model)
-
-    params = create_params_template(
-        user_model,
-        variable_info=variable_info,
-        grids=grids,
-    )
-
-    functions = _get_functions(
-        user_model,
-        params=params,
-    )
+    params = create_params_template(user_model)
 
     return InternalModel(
-        grids=grids,
-        gridspecs=gridspecs,
-        variable_info=variable_info,
-        functions=functions,
-        function_info=function_info,
+        grids=get_grids(user_model),
+        gridspecs=get_gridspecs(user_model),
+        variable_info=get_variable_info(user_model),
+        functions=_get_internal_functions(user_model, params=params),
+        function_info=get_function_info(user_model),
         params=params,
         # currently no additive utility shocks are supported
         random_utility_shocks=ShockType.NONE,
@@ -64,167 +51,7 @@ def process_model(user_model: Model) -> InternalModel:
     )
 
 
-def _get_function_info(user_model: Model) -> pd.DataFrame:
-    """Derive information about functions in the model.
-
-    Args:
-        user_model: The model as provided by the user.
-
-    Returns:
-        pd.DataFrame: A table with information about all functions in the model. The
-            index contains the name of a model function. The columns are booleans that
-            are True if the function has the corresponding property. The columns are:
-            is_next, is_stochastic_next, is_filter, is_constraint.
-
-    """
-    info = pd.DataFrame(index=list(user_model.functions))
-    info["is_filter"] = info.index.str.endswith("_filter")
-    info["is_constraint"] = info.index.str.endswith("_constraint")
-    info["is_next"] = (
-        info.index.str.startswith("next_") & ~info["is_constraint"] & ~info["is_filter"]
-    )
-    info["is_stochastic_next"] = [
-        hasattr(func, "_stochastic_info") for func in user_model.functions.values()
-    ]
-    return info
-
-
-def _get_variable_info(user_model: Model) -> pd.DataFrame:
-    """Derive information about all variables in the model.
-
-    Args:
-        user_model: The model as provided by the user.
-
-    Returns:
-        pd.DataFrame: A table with information about all variables in the model. The
-            index contains the name of a model variable. The columns are booleans that
-            are True if the variable has the corresponding property. The columns are:
-            is_state, is_choice, is_continuous, is_discrete, is_sparse, is_dense.
-
-    """
-    function_info = _get_function_info(user_model)
-
-    variables = user_model.states | user_model.choices
-
-    info = pd.DataFrame(index=list(variables))
-
-    info["is_state"] = info.index.isin(user_model.states)
-    info["is_choice"] = ~info["is_state"]
-
-    info["is_continuous"] = [
-        isinstance(spec, ContinuousGrid) for spec in variables.values()
-    ]
-    info["is_discrete"] = ~info["is_continuous"]
-
-    info["is_stochastic"] = [
-        (
-            var in user_model.states
-            and function_info.loc[f"next_{var}", "is_stochastic_next"]
-        )
-        for var in variables
-    ]
-
-    auxiliary_variables = _get_auxiliary_variables(
-        state_variables=info.query("is_state").index.tolist(),
-        function_info=function_info,
-        user_functions=user_model.functions,
-    )
-    info["is_auxiliary"] = [var in auxiliary_variables for var in variables]
-
-    filter_names = function_info.query("is_filter").index.tolist()
-    filtered_variables: set[str] = set()
-    for name in filter_names:
-        filtered_variables.update(get_ancestors(user_model.functions, name))
-
-    info["is_sparse"] = [var in filtered_variables for var in variables]
-    info["is_dense"] = ~info["is_sparse"]
-
-    order = info.query("is_sparse & is_state").index.tolist()
-    order += info.query("is_sparse & is_choice").index.tolist()
-    order += info.query("is_dense & is_discrete & is_state").index.tolist()
-    order += info.query("is_dense & is_discrete & is_choice").index.tolist()
-    order += info.query("is_dense & is_continuous & is_state").index.tolist()
-    order += info.query("is_dense & is_continuous & is_choice").index.tolist()
-
-    if set(order) != set(info.index):
-        raise ValueError("Order and index do not match.")
-
-    return info.loc[order]
-
-
-def _get_auxiliary_variables(
-    state_variables: list[str],
-    function_info: pd.DataFrame,
-    user_functions: dict[str, Callable],
-) -> list[str]:
-    """Get state variables that only occur in next functions.
-
-    Args:
-        state_variables: List of state variable names.
-        function_info: A table with information about all
-            functions in the model. The index contains the name of a function. The
-            columns are booleans that are True if the function has the corresponding
-            property. The columns are: is_filter, is_constraint, is_next.
-        user_functions: Dictionary that maps names of functions to functions.
-
-    Returns:
-        list[str]: List of state variable names that are only used in next functions.
-
-    """
-    non_next_functions = function_info.query("~is_next").index.tolist()
-    user_functions = {name: user_functions[name] for name in non_next_functions}
-    ancestors = get_ancestors(
-        user_functions,
-        targets=list(user_functions),
-        include_targets=True,
-    )
-    return list(set(state_variables).difference(set(ancestors)))
-
-
-def _get_gridspecs(
-    user_model: Model,
-) -> dict[str, Grid]:
-    """Create a dictionary of grid specifications for each variable in the model.
-
-    Args:
-        user_model (dict): The model as provided by the user.
-
-    Returns:
-        dict: Dictionary containing all variables of the model. The keys are
-            the names of the variables. The values describe which values the variable
-            can take. For discrete variables these are the options. For continuous
-            variables this is information about how to build the grids.
-
-    """
-    variable_info = _get_variable_info(user_model)
-
-    raw_variables = user_model.states | user_model.choices
-    order = variable_info.index.tolist()
-    return {k: raw_variables[k] for k in order}
-
-
-def _get_grids(
-    user_model: Model,
-) -> dict[str, Array]:
-    """Create a dictionary of array grids for each variable in the model.
-
-    Args:
-        user_model: The model as provided by the user.
-
-    Returns:
-        dict: Dictionary containing all variables of the model. The keys are
-            the names of the variables. The values are the grids.
-
-    """
-    variable_info = _get_variable_info(user_model)
-    gridspecs = _get_gridspecs(user_model)
-
-    grids = {name: spec.to_jax() for name, spec in gridspecs.items()}
-    order = variable_info.index.tolist()
-    return {k: grids[k] for k in order}
-
-
-def _get_functions(
+def _get_internal_functions(
     user_model: Model,
     params: ParamsDict,
 ) -> dict[str, Callable]:
@@ -242,9 +69,9 @@ def _get_functions(
             functions.
 
     """
-    variable_info = _get_variable_info(user_model)
-    grids = _get_grids(user_model)
-    function_info = _get_function_info(user_model)
+    variable_info = get_variable_info(user_model)
+    grids = get_grids(user_model)
+    function_info = get_function_info(user_model)
 
     raw_functions = deepcopy(user_model.functions)
 

@@ -10,11 +10,11 @@ from pandas.testing import assert_frame_equal
 
 from lcm import DiscreteGrid, LinspaceGrid, grid_helpers
 from lcm.input_processing.process_model import (
-    _get_function_info,
-    _get_grids,
-    _get_gridspecs,
     _get_stochastic_weight_function,
-    _get_variable_info,
+    get_function_info,
+    get_grids,
+    get_gridspecs,
+    get_variable_info,
     process_model,
 )
 from lcm.mark import StochasticInfo
@@ -58,7 +58,7 @@ def user_model():
 
 
 def test_get_function_info(user_model):
-    got = _get_function_info(user_model)
+    got = get_function_info(user_model)
     exp = pd.DataFrame(
         {
             "is_filter": [False],
@@ -72,7 +72,7 @@ def test_get_function_info(user_model):
 
 
 def test_get_variable_info(user_model):
-    got = _get_variable_info(user_model)
+    got = get_variable_info(user_model)
     exp = pd.DataFrame(
         {
             "is_state": [False, True],
@@ -90,13 +90,13 @@ def test_get_variable_info(user_model):
 
 
 def test_get_gridspecs(user_model):
-    got = _get_gridspecs(user_model)
+    got = get_gridspecs(user_model)
     assert got["a"] == DiscreteGrid([0, 1])
     assert got["c"] == DiscreteGrid([0, 1])
 
 
 def test_get_grids(user_model):
-    got = _get_grids(user_model)
+    got = get_grids(user_model)
     assert_array_equal(got["a"], jnp.array([0, 1]))
     assert_array_equal(got["c"], jnp.array([0, 1]))
 
@@ -271,5 +271,5 @@ def test_variable_info_with_continuous_filter_has_unique_index():
 
     user_model.functions["wealth_filter"] = wealth_filter
 
-    got = _get_variable_info(user_model)
+    got = get_variable_info(user_model)
     assert got.index.is_unique

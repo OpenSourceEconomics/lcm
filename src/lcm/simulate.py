@@ -9,7 +9,7 @@ from jax import vmap
 
 from lcm.argmax import argmax, segment_argmax
 from lcm.dispatchers import spacemap, vmap_1d
-from lcm.interfaces import Space
+from lcm.interfaces import InternalModel, Space
 
 
 def simulate(
@@ -18,7 +18,7 @@ def simulate(
     state_indexers,
     continuous_choice_grids,
     compute_ccv_policy_functions,
-    model,
+    model: InternalModel,
     next_state,
     logger,
     solve_model=None,
@@ -462,14 +462,14 @@ vmapped_unravel_index = vmap(jnp.unravel_index, in_axes=(0, None))
 
 def create_data_scs(
     states,
-    model,
+    model: InternalModel,
     period,
 ):
     """Create data state choice space.
 
     Args:
         states (dict): Dict with initial states.
-        model (Model): Model instance.
+        model: Model instance.
         period (int): Period.
 
     Returns:
