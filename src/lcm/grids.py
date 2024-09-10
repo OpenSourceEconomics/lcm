@@ -1,111 +1,197 @@
-"""Functions to generate and work with different kinds of grids.
+"""Collection of classes that are used by the user to define the model and grids."""
 
-Grid generation functions must have the following signature:
-
-    Signature (start: Scalar, stop: Scalar, n_points: int) -> jax.Array
-
-They take start and end points and create a grid of points between them.
-
-
-Interpolation info functions must have the following signature:
-
-    Signature (
-        value: Scalar,
-        start: Scalar,
-        stop: Scalar,
-        n_points: int
-    ) -> Scalar
-
-They take the information required to generate a grid, and return an index corresponding
-to the value, which is a point in the space but not necessarily a grid point.
-
-Some of the arguments will not be used by all functions but the aligned interface makes
-it easy to call functions interchangeably.
-
-"""
+from abc import ABC, abstractmethod
+from collections.abc import Collection
+from dataclasses import dataclass
 
 import jax.numpy as jnp
 from jax import Array
 
+from lcm import grid_helpers
+from lcm.exceptions import GridInitializationError, format_messages
 from lcm.typing import Scalar
 
 
-def linspace(start: Scalar, stop: Scalar, n_points: int) -> Array:
-    """Wrapper around jnp.linspace.
+class Grid(ABC):
+    """LCM Grid base class."""
 
-    Returns a linearly spaced grid between start and stop with n_points, including both
-    endpoints.
-
-    """
-    return jnp.linspace(start, stop, n_points)
+    @abstractmethod
+    def to_jax(self) -> jnp.ndarray:
+        """Convert the grid to a Jax array."""
 
 
-def get_linspace_coordinate(
-    value: Scalar,
-    start: Scalar,
-    stop: Scalar,
-    n_points: int,
-) -> Scalar:
-    """Map a value into the input needed for jax.scipy.ndimage.map_coordinates."""
-    step_length = (stop - start) / (n_points - 1)
-    return (value - start) / step_length
+@dataclass(frozen=True)
+class DiscreteGrid(Grid):
+    """A grid of discrete values.
 
-
-def logspace(start: Scalar, stop: Scalar, n_points: int) -> Array:
-    """Wrapper around jnp.logspace.
-
-    Returns a logarithmically spaced grid between start and stop with n_points,
-    including both endpoints.
-
-    From the JAX documentation:
-
-        In linear space, the sequence starts at base ** start (base to the power of
-        start) and ends with base ** stop [...].
+    Attributes:
+        options: The options in the grid. Must be an iterable of scalar int or float
+            values.
 
     """
-    start_linear = jnp.log(start)
-    stop_linear = jnp.log(stop)
-    return jnp.logspace(start_linear, stop_linear, n_points, base=jnp.e)
+
+    options: Collection[int | float]
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.options, Collection):
+            raise GridInitializationError(
+                "options must be a collection of scalar int or float values, e.g., a ",
+                "list or tuple",
+            )
+
+        errors = _validate_discrete_grid(self.options)
+        if errors:
+            msg = format_messages(errors)
+            raise GridInitializationError(msg)
+
+    def to_jax(self) -> Array:
+        """Convert the grid to a Jax array."""
+        return jnp.array(list(self.options))
 
 
-def get_logspace_coordinate(
-    value: Scalar,
-    start: Scalar,
-    stop: Scalar,
+@dataclass(frozen=True, kw_only=True)
+class ContinuousGrid(Grid, ABC):
+    """LCM Continuous Grid base class."""
+
+    start: int | float
+    stop: int | float
+    n_points: int
+
+    def __post_init__(self) -> None:
+        errors = _validate_continuous_grid(
+            start=self.start,
+            stop=self.stop,
+            n_points=self.n_points,
+        )
+        if errors:
+            msg = format_messages(errors)
+            raise GridInitializationError(msg)
+
+    @abstractmethod
+    def to_jax(self) -> Array:
+        """Convert the grid to a Jax array."""
+
+    @abstractmethod
+    def get_coordinate(self, value: Scalar) -> Scalar:
+        """Get the generalized coordinate of a value in the grid."""
+
+
+class LinspaceGrid(ContinuousGrid):
+    """A linear grid of continuous values.
+
+    Example:
+    --------
+    Let `start = 1`, `stop = 100`, and `n_points = 3`. The grid is `[1, 50.5, 100]`.
+
+    Attributes:
+        start: The start value of the grid. Must be a scalar int or float value.
+        stop: The stop value of the grid. Must be a scalar int or float value.
+        n_points: The number of points in the grid. Must be an int greater than 0.
+
+    """
+
+    def to_jax(self) -> Array:
+        """Convert the grid to a Jax array."""
+        return grid_helpers.linspace(self.start, self.stop, self.n_points)
+
+    def get_coordinate(self, value: Scalar) -> Scalar:
+        """Get the generalized coordinate of a value in the grid."""
+        return grid_helpers.get_linspace_coordinate(
+            value, self.start, self.stop, self.n_points
+        )
+
+
+class LogspaceGrid(ContinuousGrid):
+    """A logarithmic grid of continuous values.
+
+    Example:
+    --------
+    Let `start = 1`, `stop = 100`, and `n_points = 3`. The grid is `[1, 10, 100]`.
+
+    Attributes:
+        start: The start value of the grid. Must be a scalar int or float value.
+        stop: The stop value of the grid. Must be a scalar int or float value.
+        n_points: The number of points in the grid. Must be an int greater than 0.
+
+    """
+
+    def to_jax(self) -> Array:
+        """Convert the grid to a Jax array."""
+        return grid_helpers.logspace(self.start, self.stop, self.n_points)
+
+    def get_coordinate(self, value: Scalar) -> Scalar:
+        """Get the generalized coordinate of a value in the grid."""
+        return grid_helpers.get_logspace_coordinate(
+            value, self.start, self.stop, self.n_points
+        )
+
+
+# ======================================================================================
+# Validate user input
+# ======================================================================================
+
+
+def _validate_discrete_grid(options: Collection[int | float]) -> list[str]:
+    """Validate the discrete grid options.
+
+    Args:
+        options: The user options to validate.
+
+    Returns:
+        list[str]: A list of error messages.
+
+    """
+    error_messages = []
+
+    if not len(options) > 0:
+        error_messages.append("options must contain at least one element")
+
+    if not all(isinstance(option, int | float) for option in options):
+        error_messages.append("options must contain only scalar int or float values")
+
+    if len(options) != len(set(options)):
+        error_messages.append("options must contain unique values")
+
+    if list(options) != list(range(len(options))):
+        error_messages.append(
+            "options must be a list of consecutive integers starting from 0",
+        )
+
+    return error_messages
+
+
+def _validate_continuous_grid(
+    start: float,
+    stop: float,
     n_points: int,
-) -> Scalar:
-    """Map a value into the input needed for jax.scipy.ndimage.map_coordinates."""
-    # Transform start, stop, and value to linear scale
-    start_linear = jnp.log(start)
-    stop_linear = jnp.log(stop)
-    value_linear = jnp.log(value)
+) -> list[str]:
+    """Validate the continuous grid parameters.
 
-    # Calculate coordinate in linear space
-    coordinate_in_linear_space = get_linspace_coordinate(
-        value_linear,
-        start_linear,
-        stop_linear,
-        n_points,
-    )
+    Args:
+        start: The start value of the grid.
+        stop: The stop value of the grid.
+        n_points: The number of points in the grid.
 
-    # Calculate rank of lower and upper point in logarithmic space
-    rank_lower_gridpoint = jnp.floor(coordinate_in_linear_space)
-    rank_upper_gridpoint = rank_lower_gridpoint + 1
+    Returns:
+        list[str]: A list of error messages.
 
-    # Calculate lower and upper point in logarithmic space
-    step_length_linear = (stop_linear - start_linear) / (n_points - 1)
-    lower_gridpoint = jnp.exp(start_linear + step_length_linear * rank_lower_gridpoint)
-    upper_gridpoint = jnp.exp(start_linear + step_length_linear * rank_upper_gridpoint)
+    """
+    error_messages = []
 
-    # Calculate the decimal part of coordinate
-    logarithmic_step_size_at_coordinate = upper_gridpoint - lower_gridpoint
-    distance_from_lower_gridpoint = value - lower_gridpoint
+    valid_start_type = isinstance(start, int | float)
+    if not valid_start_type:
+        error_messages.append("start must be a scalar int or float value")
 
-    # If the distance from the lower gridpoint is zero, the coordinate corresponds to
-    # the rank of the lower gridpoint. The other extreme is when the distance is equal
-    # to the logarithmic step size at the coordinate, in which case the coordinate
-    # corresponds to the rank of the upper gridpoint. For values in between, the
-    # coordinate lies on a linear scale between the ranks of the lower and upper
-    # gridpoints.
-    decimal_part = distance_from_lower_gridpoint / logarithmic_step_size_at_coordinate
-    return rank_lower_gridpoint + decimal_part
+    valid_stop_type = isinstance(stop, int | float)
+    if not valid_stop_type:
+        error_messages.append("stop must be a scalar int or float value")
+
+    if not isinstance(n_points, int) or n_points < 1:
+        error_messages.append(
+            f"n_points must be an int greater than 0 but is {n_points}",
+        )
+
+    if valid_start_type and valid_stop_type and start >= stop:
+        error_messages.append("start must be less than stop")
+
+    return error_messages

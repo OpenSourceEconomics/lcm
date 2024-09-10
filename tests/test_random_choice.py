@@ -1,5 +1,6 @@
 import jax
 import jax.numpy as jnp
+
 from lcm.random_choice import random_choice
 
 

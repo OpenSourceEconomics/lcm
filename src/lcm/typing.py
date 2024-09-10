@@ -1,4 +1,5 @@
-from typing import Annotated, Literal, TypedDict
+from enum import Enum
+from typing import Any, Literal, TypedDict
 
 from jax import Array
 
@@ -6,7 +7,14 @@ from jax import Array
 # includes zero dimensional jax arrays.
 Scalar = int | float | Array
 
-DiscreteLabels = Annotated[list[int], "Int range starting from 0 with increments of 1"]
+ParamsDict = dict[str, Any]
+
+
+class ShockType(Enum):
+    """Type of shocks."""
+
+    EXTREME_VALUE = "extreme_value"
+    NONE = None
 
 
 class SegmentInfo(TypedDict):

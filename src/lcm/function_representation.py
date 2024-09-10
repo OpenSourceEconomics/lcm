@@ -7,9 +7,9 @@ from dags.signature import with_signature
 from jax import Array
 from jax.scipy.ndimage import map_coordinates
 
-import lcm.grids as grids_module
 from lcm.functools import all_as_kwargs
-from lcm.interfaces import ContinuousGridInfo, ContinuousGridType, SpaceInfo
+from lcm.grids import ContinuousGrid
+from lcm.interfaces import SpaceInfo
 from lcm.typing import MapCoordinatesOptions
 
 
@@ -54,7 +54,7 @@ def get_function_representation(
     functions are called is determined by a DAG.
 
     Args:
-        space_info: Namedtuple containing all information needed to interpret the
+        space_info: Class containing all information needed to interpret the
             pre-calculated values of a function.
         name_of_values_on_grid: The name of the argument via which the pre-calculated
             values, that have been evaluated on the state-space grid, will be passed
@@ -120,8 +120,7 @@ def get_function_representation(
         for var, grid_spec in space_info.interpolation_info.items():
             funcs[f"__{var}_coord__"] = _get_coordinate_finder(
                 in_name=input_prefix + var,
-                grid_type=grid_spec.kind,
-                grid_info=grid_spec.info,
+                grid=grid_spec,  # type: ignore[arg-type]
             )
 
         # ==============================================================================
@@ -199,8 +198,7 @@ def _get_lookup_function(
 
 def _get_coordinate_finder(
     in_name: str,
-    grid_type: ContinuousGridType,
-    grid_info: ContinuousGridInfo,
+    grid: ContinuousGrid,
 ) -> Callable[..., Array]:
     """Create a function that translates a value into coordinates on a grid.
 
@@ -210,22 +208,19 @@ def _get_coordinate_finder(
     Args:
         in_name: Name via which the value to be translated into coordinates will be
             passed into the resulting function.
-        grid_type: Type of the grid, e.g. "linspace" or "logspace". The type of grid
-            must be implemented in lcm.grids.
-        grid_info: Information on how to build the grid, e.g. start, stop, and n_points.
+        grid: The continuous grid on which the value is to be translated into
+            coordinates.
 
     Returns:
         callable: A callable with keyword-only argument [in_name] that translates a
             value into coordinates on a grid.
 
     """
-    raw_func = getattr(grids_module, f"get_{grid_type}_coordinate")
-    partialled_func = partial(raw_func, **grid_info._asdict())
 
     @with_signature(args=[in_name])
     def find_coordinate(*args, **kwargs):
         kwargs = all_as_kwargs(args, kwargs, arg_names=[in_name])
-        return partialled_func(kwargs[in_name])
+        return grid.get_coordinate(kwargs[in_name])
 
     return find_coordinate
 
@@ -269,7 +264,7 @@ def _fail_if_interpolation_axes_are_not_last(space_info: SpaceInfo) -> None:
     """Fail if the interpolation axes are not the last elements in axis_names.
 
     Args:
-        space_info: Namedtuple containing all information needed to interpret the
+        space_info: Class containing all information needed to interpret the
             precalculated values of a function.
 
     Raises:

@@ -1,11 +1,12 @@
 import jax.numpy as jnp
 import numpy as np
 from jax.scipy.ndimage import map_coordinates
+from numpy.testing import assert_array_almost_equal as aaae
+
 from lcm.entry_point import create_compute_conditional_continuation_value
 from lcm.interfaces import Space
 from lcm.logging import get_logger
 from lcm.solve_brute import solve, solve_continuous_problem
-from numpy.testing import assert_array_almost_equal as aaae
 
 
 def test_solve_brute():
@@ -94,7 +95,7 @@ def test_solve_brute():
     # create emax aggregators and choice segments
     # ==================================================================================
 
-    def calculate_emax(values):
+    def calculate_emax(values, params):  # noqa: ARG001
         """Take max over axis that corresponds to working."""
         return values.max(axis=1)
 

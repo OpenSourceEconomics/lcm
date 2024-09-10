@@ -2,13 +2,14 @@ import itertools
 
 import jax.numpy as jnp
 import pytest
+from numpy.testing import assert_array_almost_equal as aaae
+
 from lcm.dispatchers import (
     productmap,
     spacemap,
     vmap_1d,
 )
 from lcm.functools import allow_args
-from numpy.testing import assert_array_almost_equal as aaae
 
 
 def f(a, /, *, b, c):
@@ -40,7 +41,7 @@ def g(a, /, b, *, c, d):
 # ======================================================================================
 
 
-@pytest.fixture()
+@pytest.fixture
 def setup_productmap_f():
     return {
         "a": jnp.linspace(-5, 5, 10),
@@ -49,7 +50,7 @@ def setup_productmap_f():
     }
 
 
-@pytest.fixture()
+@pytest.fixture
 def expected_productmap_f():
     grids = {
         "a": jnp.linspace(-5, 5, 10),
@@ -61,7 +62,7 @@ def expected_productmap_f():
     return allow_args(f)(*helper).reshape(10, 7, 5)
 
 
-@pytest.fixture()
+@pytest.fixture
 def setup_productmap_g():
     return {
         "a": jnp.linspace(-5, 5, 10),
@@ -71,7 +72,7 @@ def setup_productmap_g():
     }
 
 
-@pytest.fixture()
+@pytest.fixture
 def expected_productmap_g():
     grids = {
         "a": jnp.linspace(-5, 5, 10),
@@ -185,7 +186,7 @@ def test_productmap_with_some_argument_mapped_twice():
 # ======================================================================================
 
 
-@pytest.fixture()
+@pytest.fixture
 def setup_spacemap():
     value_grid = {
         "a": jnp.array([1.0, 2, 3]),
@@ -206,7 +207,7 @@ def setup_spacemap():
     return value_grid, combination_grid
 
 
-@pytest.fixture()
+@pytest.fixture
 def expected_spacemap():
     value_grid = {
         "a": jnp.array([1.0, 2, 3]),

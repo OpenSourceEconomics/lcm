@@ -2,17 +2,7 @@
 
 import jax.numpy as jnp
 
-# ======================================================================================
-# Numerical parameters and constants
-# ======================================================================================
-N_GRID_POINTS = {
-    "wealth": 100,
-    "health": 100,
-    "consumption": 100,
-    "exercise": 200,
-}
-
-RETIREMENT_AGE = 65
+from lcm import DiscreteGrid, LinspaceGrid, Model
 
 # ======================================================================================
 # Model functions
@@ -62,9 +52,12 @@ def consumption_constraint(consumption, wealth, labor_income):
 # ======================================================================================
 # Model specification and parameters
 # ======================================================================================
+RETIREMENT_AGE = 65
 
-MODEL_CONFIG = {
-    "functions": {
+
+MODEL_CONFIG = Model(
+    n_periods=RETIREMENT_AGE - 18,
+    functions={
         "utility": utility,
         "next_wealth": next_wealth,
         "next_health": next_health,
@@ -73,37 +66,32 @@ MODEL_CONFIG = {
         "wage": wage,
         "age": age,
     },
-    "choices": {
-        "working": {"options": [0, 1]},
-        "consumption": {
-            "grid_type": "linspace",
-            "start": 1,
-            "stop": 100,
-            "n_points": N_GRID_POINTS["consumption"],
-        },
-        "exercise": {
-            "grid_type": "linspace",
-            "start": 0,
-            "stop": 1,
-            "n_points": N_GRID_POINTS["exercise"],
-        },
+    choices={
+        "working": DiscreteGrid([0, 1]),
+        "consumption": LinspaceGrid(
+            start=1,
+            stop=100,
+            n_points=100,
+        ),
+        "exercise": LinspaceGrid(
+            start=0,
+            stop=1,
+            n_points=200,
+        ),
     },
-    "states": {
-        "wealth": {
-            "grid_type": "linspace",
-            "start": 1,
-            "stop": 100,
-            "n_points": N_GRID_POINTS["wealth"],
-        },
-        "health": {
-            "grid_type": "linspace",
-            "start": 0,
-            "stop": 1,
-            "n_points": N_GRID_POINTS["health"],
-        },
+    states={
+        "wealth": LinspaceGrid(
+            start=1,
+            stop=100,
+            n_points=100,
+        ),
+        "health": LinspaceGrid(
+            start=0,
+            stop=1,
+            n_points=100,
+        ),
     },
-    "n_periods": RETIREMENT_AGE - 18,
-}
+)
 
 PARAMS = {
     "beta": 0.95,

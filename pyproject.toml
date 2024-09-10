@@ -96,12 +96,10 @@ python = "3.12"
 scipy = "<=1.13"
 pybaum = "*"
 jupyterlab = "*"
-plotly = ">=5.2,<6"
-pdbpp = "*"
+plotly = ">=5.24,<6"
 pre-commit = "*"
 snakeviz = "*"
 memory_profiler = "*"
-pixi-kernel = ">=0.3.0,<0.4"
 
 [tool.pixi.target.unix.dependencies]
 jax = ">=0.4.20"
@@ -112,6 +110,7 @@ jaxlib = ">=0.4.20"
 
 [tool.pixi.pypi-dependencies]
 lcm = {path = ".", editable = true}
+pdbp = "*"
 
 [tool.pixi.target.win-64.pypi-dependencies]
 jax = { version = ">=0.4.20", extras = ["cpu"] }
@@ -140,7 +139,7 @@ tests-with-cov = "pytest tests --cov-report=xml --cov=./"
 explanation-notebooks = "jupyter execute explanations/*.ipynb"
 
 [tool.pixi.feature.mypy.dependencies]
-mypy = "*"
+mypy = ">=1.11.2"
 pandas-stubs = "*"
 matplotlib = "*"  # required because of pandas
 
@@ -164,6 +163,7 @@ test-gpu = {features = ["test", "cuda"], solve-group = "cuda"}
 [tool.ruff]
 target-version = "py312"
 fix = true
+exclude = ["src/lcm/sandbox"]
 
 [tool.ruff.lint]
 select = ["ALL"]
@@ -215,31 +215,26 @@ extend-ignore = [
 
     # long messages outside the exception class
     "TRY003",
+
+    # Missing docstring in magic method
+    "D105",
+
+    # Rules ignored to avoid conflict with formatter
+    # ----------------------------------------------------------------------------------
+    "COM812",
+    "ISC001",
 ]
 
 [tool.ruff.lint.per-file-ignores]
 "docs/source/conf.py" = ["E501", "ERA001", "DTZ005"]
-"tests/test_*.py" = ["PLR2004"]
+"tests/*" = ["PLR2004"]
 "examples/*" = ["INP001"]
 "explanations/*" = ["INP001", "B018", "T201", "E402", "PD008"]
 "scripts/*" = ["INP001", "D101", "RET503"]
+"**/*.ipynb" = ["FBT003", "E402"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
-
-# ======================================================================================
-# NBQA configuration
-# ======================================================================================
-
-[tool.nbqa.config]
-black = "pyproject.toml"
-
-[tool.nbqa.mutate]
-black = 1
-
-[tool.nbqa.exclude]
-ruff = "src/lcm/sandbox"
-black = "src/lcm/sandbox"
 
 # ======================================================================================
 # Pytest configuration
@@ -268,5 +263,10 @@ none_representation = "null"
 # ======================================================================================
 
 [[tool.mypy.overrides]]
-module = ["dags", "dags.signature"]
+module = "tests.*"
+disallow_untyped_defs = false
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = ["dags", "dags.signature", "pybaum", "pdbp"]
 ignore_missing_imports = true

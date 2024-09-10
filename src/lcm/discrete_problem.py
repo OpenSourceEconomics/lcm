@@ -19,7 +19,6 @@ How we (want to) solve the problem:
 
 from collections.abc import Callable
 from functools import partial
-from typing import Any, Literal
 
 import jax
 import jax.numpy as jnp
@@ -27,30 +26,28 @@ import pandas as pd
 from jax import Array
 from jax.ops import segment_max
 
-from lcm.typing import SegmentInfo
+from lcm.typing import ParamsDict, SegmentInfo, ShockType
 
 
 def get_solve_discrete_problem(
     *,
-    random_utility_shock_type: Literal["extreme_value"] | None,
+    random_utility_shock_type: ShockType,
     variable_info: pd.DataFrame,
     is_last_period: bool,
     choice_segments: SegmentInfo | None,
-    params: dict[str, Any],
 ) -> Callable[[Array], Array]:
     """Get function that computes the expected max. of conditional continuation values.
 
     The maximum is taken over the discrete and sparse choice variables in each state.
 
     Args:
-        random_utility_shock_type (Literal["extreme_value"] | None): Type of choice
-            shock. Currently only None is supported. Work for "extreme_value" is in
-            progress.
-        variable_info (pd.DataFrame): DataFrame with information about the variables.
-        is_last_period (bool): Whether the function is created for the last period.
-        choice_segments (SegmentInfo): Contains segment information of sparse choices.
-            If None, there are no sparse choices.
-        params (dict): Dictionary with model parameters.
+        random_utility_shock_type: Type of choice shock. Currently only Shock.NONE is
+            supported. Work for "extreme_value" is in progress.
+        variable_info: DataFrame with information about the variables.
+        is_last_period: Whether the function is created for the last period.
+        choice_segments: Contains segment information of sparse choices. If None, there
+            are no sparse choices.
+        params: Dictionary with model parameters.
 
     Returns:
         callable: Function that calculates the expected maximum of the conditional
@@ -63,9 +60,9 @@ def get_solve_discrete_problem(
 
     choice_axes = _determine_dense_discrete_choice_axes(variable_info)
 
-    if random_utility_shock_type is None:
+    if random_utility_shock_type == ShockType.NONE:
         func = _solve_discrete_problem_no_shocks
-    elif random_utility_shock_type == "extreme_value":
+    elif random_utility_shock_type == ShockType.EXTREME_VALUE:
         raise NotImplementedError("Extreme value shocks are not yet implemented.")
     else:
         raise ValueError(f"Invalid shock_type: {random_utility_shock_type}.")
@@ -74,7 +71,6 @@ def get_solve_discrete_problem(
         func,
         choice_axes=choice_axes,
         choice_segments=choice_segments,
-        params=params,
     )
 
 
@@ -87,7 +83,7 @@ def _solve_discrete_problem_no_shocks(
     cc_values: Array,
     choice_axes: tuple[int, ...] | None,
     choice_segments: SegmentInfo | None,
-    params: dict[str, Any],  # noqa: ARG001
+    params: ParamsDict,  # noqa: ARG001
 ) -> Array:
     """Reduce conditional continuation values over discrete choices.
 

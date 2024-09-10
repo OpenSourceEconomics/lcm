@@ -11,10 +11,11 @@ from dags import concatenate_functions
 from dags.signature import with_signature
 
 from lcm.functools import all_as_args
+from lcm.interfaces import InternalModel
 from lcm.random_choice import random_choice
 
 
-def get_next_state_function(model, target):
+def get_next_state_function(model: InternalModel, target):
     if target == "solve":
         out = _get_next_state_function_solution(model)
     elif target == "simulate":
@@ -30,11 +31,11 @@ def get_next_state_function(model, target):
 # ======================================================================================
 
 
-def _get_next_state_function_solution(model):
+def _get_next_state_function_solution(model: InternalModel):
     """Get function that computes the next states for the solution.
 
     Args:
-        model (Model): Model instance.
+        model: Model instance.
 
     Returns:
         callable: Function that computes the next states. Depends on states and choices
@@ -56,11 +57,11 @@ def _get_next_state_function_solution(model):
 # ======================================================================================
 
 
-def _get_next_state_function_simulation(model):
+def _get_next_state_function_simulation(model: InternalModel):
     """Get function that computes the next states for the simulation.
 
     Args:
-        model (Model): Model instance.
+        model: Model instance.
 
     Returns:
         callable: Function that computes the next states. Depends on states and choices
