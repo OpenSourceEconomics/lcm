@@ -48,11 +48,9 @@ def process_model(user_model: Model) -> InternalModel:
 
     functions = _get_functions(
         user_model,
-        function_info=function_info,
-        variable_info=variable_info,
         params=params,
-        grids=grids,
     )
+
     return InternalModel(
         grids=grids,
         gridspecs=gridspecs,
@@ -228,20 +226,13 @@ def _get_grids(
 
 def _get_functions(
     user_model: Model,
-    function_info: pd.DataFrame,
-    variable_info: pd.DataFrame,
-    grids: dict[str, Array],
     params: ParamsDict,
 ) -> dict[str, Callable]:
     """Process the user provided model functions.
 
     Args:
-        user_model (dict): The model as provided by the user.
-        function_info (pd.DataFrame): A table with information about model functions.
-        variable_info (pd.DataFrame): A table with information about model variables.
-        grids (dict): Dictionary containing all variables of the model. The keys are
-            the names of the variables. The values are the grids.
-        params (dict): The parameters of the model.
+        user_model: The model as provided by the user.
+        params: The parameters of the model.
 
     Returns:
         dict: Dictionary containing all functions of the model. The keys are
@@ -251,6 +242,10 @@ def _get_functions(
             functions.
 
     """
+    variable_info = _get_variable_info(user_model)
+    grids = _get_grids(user_model)
+    function_info = _get_function_info(user_model)
+
     raw_functions = deepcopy(user_model.functions)
 
     for var in user_model.states:
