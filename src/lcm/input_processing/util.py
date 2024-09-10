@@ -8,11 +8,11 @@ from lcm.model import Model
 from lcm.typing import Array
 
 
-def get_function_info(user_model: Model) -> pd.DataFrame:
+def get_function_info(model: Model) -> pd.DataFrame:
     """Derive information about functions in the model.
 
     Args:
-        user_model: The model as provided by the user.
+        model: The model as provided by the user.
 
     Returns:
         pd.DataFrame: A table with information about all functions in the model. The
@@ -21,23 +21,23 @@ def get_function_info(user_model: Model) -> pd.DataFrame:
             is_next, is_stochastic_next, is_filter, is_constraint.
 
     """
-    info = pd.DataFrame(index=list(user_model.functions))
+    info = pd.DataFrame(index=list(model.functions))
     info["is_filter"] = info.index.str.endswith("_filter")
     info["is_constraint"] = info.index.str.endswith("_constraint")
     info["is_next"] = (
         info.index.str.startswith("next_") & ~info["is_constraint"] & ~info["is_filter"]
     )
     info["is_stochastic_next"] = [
-        hasattr(func, "_stochastic_info") for func in user_model.functions.values()
+        hasattr(func, "_stochastic_info") for func in model.functions.values()
     ]
     return info
 
 
-def get_variable_info(user_model: Model) -> pd.DataFrame:
+def get_variable_info(model: Model) -> pd.DataFrame:
     """Derive information about all variables in the model.
 
     Args:
-        user_model: The model as provided by the user.
+        model: The model as provided by the user.
 
     Returns:
         pd.DataFrame: A table with information about all variables in the model. The
@@ -46,13 +46,13 @@ def get_variable_info(user_model: Model) -> pd.DataFrame:
             is_state, is_choice, is_continuous, is_discrete, is_sparse, is_dense.
 
     """
-    function_info = get_function_info(user_model)
+    function_info = get_function_info(model)
 
-    variables = user_model.states | user_model.choices
+    variables = model.states | model.choices
 
     info = pd.DataFrame(index=list(variables))
 
-    info["is_state"] = info.index.isin(user_model.states)
+    info["is_state"] = info.index.isin(model.states)
     info["is_choice"] = ~info["is_state"]
 
     info["is_continuous"] = [
@@ -61,24 +61,21 @@ def get_variable_info(user_model: Model) -> pd.DataFrame:
     info["is_discrete"] = ~info["is_continuous"]
 
     info["is_stochastic"] = [
-        (
-            var in user_model.states
-            and function_info.loc[f"next_{var}", "is_stochastic_next"]
-        )
+        (var in model.states and function_info.loc[f"next_{var}", "is_stochastic_next"])
         for var in variables
     ]
 
     auxiliary_variables = _get_auxiliary_variables(
         state_variables=info.query("is_state").index.tolist(),
         function_info=function_info,
-        user_functions=user_model.functions,
+        user_functions=model.functions,
     )
     info["is_auxiliary"] = [var in auxiliary_variables for var in variables]
 
     filter_names = function_info.query("is_filter").index.tolist()
     filtered_variables: set[str] = set()
     for name in filter_names:
-        filtered_variables.update(get_ancestors(user_model.functions, name))
+        filtered_variables.update(get_ancestors(model.functions, name))
 
     info["is_sparse"] = [var in filtered_variables for var in variables]
     info["is_dense"] = ~info["is_sparse"]
@@ -126,12 +123,12 @@ def _get_auxiliary_variables(
 
 
 def get_gridspecs(
-    user_model: Model,
+    model: Model,
 ) -> dict[str, Grid]:
     """Create a dictionary of grid specifications for each variable in the model.
 
     Args:
-        user_model (dict): The model as provided by the user.
+        model (dict): The model as provided by the user.
 
     Returns:
         dict: Dictionary containing all variables of the model. The keys are
@@ -140,28 +137,28 @@ def get_gridspecs(
             variables this is information about how to build the grids.
 
     """
-    variable_info = get_variable_info(user_model)
+    variable_info = get_variable_info(model)
 
-    raw_variables = user_model.states | user_model.choices
+    raw_variables = model.states | model.choices
     order = variable_info.index.tolist()
     return {k: raw_variables[k] for k in order}
 
 
 def get_grids(
-    user_model: Model,
+    model: Model,
 ) -> dict[str, Array]:
     """Create a dictionary of array grids for each variable in the model.
 
     Args:
-        user_model: The model as provided by the user.
+        model: The model as provided by the user.
 
     Returns:
         dict: Dictionary containing all variables of the model. The keys are
             the names of the variables. The values are the grids.
 
     """
-    variable_info = get_variable_info(user_model)
-    gridspecs = get_gridspecs(user_model)
+    variable_info = get_variable_info(model)
+    gridspecs = get_gridspecs(model)
 
     grids = {name: spec.to_jax() for name, spec in gridspecs.items()}
     order = variable_info.index.tolist()

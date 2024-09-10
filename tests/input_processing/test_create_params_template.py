@@ -78,7 +78,7 @@ def test_create_shock_params():
     )
 
     got = _create_stochastic_transition_params(
-        user_model=model,
+        model=model,
         variable_info=variable_info,
         grids={"a": np.array([1, 2])},
     )
@@ -100,7 +100,7 @@ def test_create_shock_params_invalid_variable():
 
     with pytest.raises(ValueError, match="The following variables are stochastic, but"):
         _create_stochastic_transition_params(
-            user_model=model,
+            model=model,
             variable_info=variable_info,
             grids={"a": np.array([1, 2])},
         )
@@ -125,7 +125,7 @@ def test_create_shock_params_invalid_dependency():
 
     with pytest.raises(ValueError, match="Stochastic transition functions can only"):
         _create_stochastic_transition_params(
-            user_model=model,
+            model=model,
             variable_info=variable_info,
             grids={"a": np.array([1, 2])},
         )

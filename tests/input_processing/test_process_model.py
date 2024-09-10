@@ -39,7 +39,7 @@ class ModelMock:
 
 
 @pytest.fixture
-def user_model():
+def model():
     def next_c(a, b):
         return a + b
 
@@ -57,8 +57,8 @@ def user_model():
     )
 
 
-def test_get_function_info(user_model):
-    got = get_function_info(user_model)
+def test_get_function_info(model):
+    got = get_function_info(model)
     exp = pd.DataFrame(
         {
             "is_filter": [False],
@@ -71,8 +71,8 @@ def test_get_function_info(user_model):
     assert_frame_equal(got, exp)
 
 
-def test_get_variable_info(user_model):
-    got = get_variable_info(user_model)
+def test_get_variable_info(model):
+    got = get_variable_info(model)
     exp = pd.DataFrame(
         {
             "is_state": [False, True],
@@ -89,14 +89,14 @@ def test_get_variable_info(user_model):
     assert_frame_equal(got.loc[exp.index], exp)  # we don't care about the id order here
 
 
-def test_get_gridspecs(user_model):
-    got = get_gridspecs(user_model)
+def test_get_gridspecs(model):
+    got = get_gridspecs(model)
     assert got["a"] == DiscreteGrid([0, 1])
     assert got["c"] == DiscreteGrid([0, 1])
 
 
-def test_get_grids(user_model):
-    got = get_grids(user_model)
+def test_get_grids(model):
+    got = get_grids(model)
     assert_array_equal(got["a"], jnp.array([0, 1]))
     assert_array_equal(got["c"], jnp.array([0, 1]))
 
@@ -264,12 +264,12 @@ def test_get_stochastic_weight_function_non_state_dependency():
 
 
 def test_variable_info_with_continuous_filter_has_unique_index():
-    user_model = get_model_config("iskhakov_et_al_2017", n_periods=3)
+    model = get_model_config("iskhakov_et_al_2017", n_periods=3)
 
     def wealth_filter(wealth):
         return wealth > 200
 
-    user_model.functions["wealth_filter"] = wealth_filter
+    model.functions["wealth_filter"] = wealth_filter
 
-    got = get_variable_info(user_model)
+    got = get_variable_info(model)
     assert got.index.is_unique

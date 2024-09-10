@@ -20,7 +20,7 @@ from lcm.model import Model
 from lcm.typing import ParamsDict, ShockType
 
 
-def process_model(user_model: Model) -> InternalModel:
+def process_model(model: Model) -> InternalModel:
     """Process the user model.
 
     This entails the following steps:
@@ -30,35 +30,35 @@ def process_model(user_model: Model) -> InternalModel:
     - Check that the model specification is valid.
 
     Args:
-        user_model: The model as provided by the user.
+        model: The model as provided by the user.
 
     Returns:
         The processed model.
 
     """
-    params = create_params_template(user_model)
+    params = create_params_template(model)
 
     return InternalModel(
-        grids=get_grids(user_model),
-        gridspecs=get_gridspecs(user_model),
-        variable_info=get_variable_info(user_model),
-        functions=_get_internal_functions(user_model, params=params),
-        function_info=get_function_info(user_model),
+        grids=get_grids(model),
+        gridspecs=get_gridspecs(model),
+        variable_info=get_variable_info(model),
+        functions=_get_internal_functions(model, params=params),
+        function_info=get_function_info(model),
         params=params,
         # currently no additive utility shocks are supported
         random_utility_shocks=ShockType.NONE,
-        n_periods=user_model.n_periods,
+        n_periods=model.n_periods,
     )
 
 
 def _get_internal_functions(
-    user_model: Model,
+    model: Model,
     params: ParamsDict,
 ) -> dict[str, Callable]:
     """Process the user provided model functions.
 
     Args:
-        user_model: The model as provided by the user.
+        model: The model as provided by the user.
         params: The parameters of the model.
 
     Returns:
@@ -69,13 +69,13 @@ def _get_internal_functions(
             functions.
 
     """
-    variable_info = get_variable_info(user_model)
-    grids = get_grids(user_model)
-    function_info = get_function_info(user_model)
+    variable_info = get_variable_info(model)
+    grids = get_grids(model)
+    function_info = get_function_info(model)
 
-    raw_functions = deepcopy(user_model.functions)
+    raw_functions = deepcopy(model.functions)
 
-    for var in user_model.states:
+    for var in model.states:
         if variable_info.loc[var, "is_stochastic"]:
             raw_functions[f"next_{var}"] = _get_stochastic_next_function(
                 raw_func=raw_functions[f"next_{var}"],
