@@ -5,11 +5,11 @@ import jax.numpy as jnp
 from dags import concatenate_functions
 from dags.signature import with_signature
 from jax import Array
-from jax.scipy.ndimage import map_coordinates
 
 from lcm.functools import all_as_kwargs
 from lcm.grids import ContinuousGrid
 from lcm.interfaces import SpaceInfo
+from lcm.ndimage import map_coordinates
 from lcm.typing import MapCoordinatesOptions
 
 

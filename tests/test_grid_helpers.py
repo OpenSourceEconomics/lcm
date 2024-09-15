@@ -1,6 +1,5 @@
 import numpy as np
 import pytest
-from jax.scipy.ndimage import map_coordinates
 from numpy.testing import assert_array_almost_equal as aaae
 
 from lcm.grid_helpers import (
@@ -9,6 +8,7 @@ from lcm.grid_helpers import (
     linspace,
     logspace,
 )
+from lcm.ndimage import map_coordinates
 
 
 def test_linspace():
