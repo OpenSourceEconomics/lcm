@@ -2,8 +2,10 @@ import jax.numpy as jnp
 import numpy as np
 import pandas as pd
 import pytest
-from lcm.interfaces import Model
-from lcm.process_model import process_model
+from numpy.testing import assert_array_almost_equal as aaae
+
+from lcm.input_processing import process_model
+from lcm.interfaces import InternalModel
 from lcm.state_space import (
     create_combination_grid,
     create_filter_mask,
@@ -11,8 +13,6 @@ from lcm.state_space import (
     create_indexers_and_segments,
     create_state_choice_space,
 )
-from numpy.testing import assert_array_almost_equal as aaae
-
 from tests.test_models.deterministic import get_model_config
 
 
@@ -28,7 +28,7 @@ def test_create_state_choice_space():
     )
 
 
-@pytest.fixture()
+@pytest.fixture
 def filter_mask_inputs():
     def age(period):
         return period + 18
@@ -62,13 +62,13 @@ def filter_mask_inputs():
 
     # create a model instance where some attributes are set to None because they
     # are not needed for create_filter_mask
-    return Model(
+    return InternalModel(
         grids=grids,
         gridspecs=None,
         variable_info=None,
         functions=functions,
         function_info=function_info,
-        shocks=None,
+        random_utility_shocks=None,
         n_periods=100,
         params={},
     )

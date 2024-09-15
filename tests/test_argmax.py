@@ -1,7 +1,8 @@
 import jax.numpy as jnp
 from jax import jit
-from lcm.argmax import _flatten_last_n_axes, _move_axes_to_back, argmax, segment_argmax
 from numpy.testing import assert_array_equal
+
+from lcm.argmax import _flatten_last_n_axes, _move_axes_to_back, argmax, segment_argmax
 
 # Test jitted functions
 # ======================================================================================

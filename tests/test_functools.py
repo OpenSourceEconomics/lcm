@@ -4,6 +4,8 @@ import re
 import jax.numpy as jnp
 import pytest
 from jax import vmap
+from numpy.testing import assert_array_almost_equal as aaae
+
 from lcm.functools import (
     all_as_args,
     all_as_kwargs,
@@ -12,7 +14,6 @@ from lcm.functools import (
     convert_kwargs_to_args,
     get_union_of_arguments,
 )
-from numpy.testing import assert_array_almost_equal as aaae
 
 # ======================================================================================
 # get_union_of_arguments
@@ -20,10 +21,10 @@ from numpy.testing import assert_array_almost_equal as aaae
 
 
 def test_get_union_of_arguments():
-    def f(a, b):  # noqa: ARG001
+    def f(a, b):
         pass
 
-    def g(b, c):  # noqa: ARG001
+    def g(b, c):
         pass
 
     got = get_union_of_arguments([f, g])
@@ -160,7 +161,7 @@ def test_allow_only_kwargs_too_few_args():
 
 
 def test_allow_only_kwargs_signature_change():
-    def f(a, /, b, *, c):  # noqa: ARG001
+    def f(a, /, b, *, c):
         pass
 
     decorated = allow_only_kwargs(f)
@@ -239,7 +240,7 @@ def test_allow_args_with_vmap():
 
 
 def test_allow_args_signature_change():
-    def f(a, /, b, *, c):  # noqa: ARG001
+    def f(a, /, b, *, c):
         pass
 
     decorated = allow_args(f)

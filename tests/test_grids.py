@@ -1,152 +1,96 @@
 import numpy as np
 import pytest
-from jax.scipy.ndimage import map_coordinates
+
+from lcm.exceptions import GridInitializationError
 from lcm.grids import (
-    get_linspace_coordinate,
-    get_logspace_coordinate,
-    linspace,
-    logspace,
+    DiscreteGrid,
+    LinspaceGrid,
+    LogspaceGrid,
+    _validate_continuous_grid,
+    _validate_discrete_grid,
 )
-from numpy.testing import assert_array_almost_equal as aaae
 
 
-def test_linspace():
-    calculated = linspace(start=1, stop=2, n_points=6)
-    expected = np.array([1, 1.2, 1.4, 1.6, 1.8, 2])
-    aaae(calculated, expected)
+def test_validate_discrete_grid_empty():
+    assert _validate_discrete_grid([]) == ["options must contain at least one element"]
 
 
-def test_linspace_mapped_value():
-    """For reference of the grid values, see expected grid in `test_linspace`."""
-    # Get position corresponding to a value in the grid
-    calculated = get_linspace_coordinate(
-        value=1.2,
-        start=1,
-        stop=2,
-        n_points=6,
-    )
-    assert np.allclose(calculated, 1.0)
-
-    # Get position corresponding to a value that is between two grid points
-    # ----------------------------------------------------------------------------------
-    # Here, the value is 1.3, that is in the middle of 1.2 and 1.4, which have the
-    # positions 1 and 2, respectively. Therefore, we want the position to be 1.5.
-    calculated = get_linspace_coordinate(
-        value=1.3,
-        start=1,
-        stop=2,
-        n_points=6,
-    )
-    assert np.allclose(calculated, 1.5)
-
-    # Get position corresponding to a value that is outside the grid
-    calculated = get_linspace_coordinate(
-        value=0.6,
-        start=1,
-        stop=2,
-        n_points=6,
-    )
-    assert np.allclose(calculated, -2.0)
+def test_validate_discrete_grid_non_scalar_input():
+    assert _validate_discrete_grid([1, "a"]) == [
+        "options must contain only scalar int or float values",
+        "options must be a list of consecutive integers starting from 0",
+    ]
 
 
-def test_logspace():
-    calculated = logspace(start=1, stop=100, n_points=7)
-    expected = np.array(
-        [1.0, 2.15443469, 4.64158883, 10.0, 21.5443469, 46.41588834, 100.0],
-    )
-    aaae(calculated, expected)
+def test_validate_discrete_grid_non_unique():
+    assert _validate_discrete_grid([1, 2, 2]) == [
+        "options must contain unique values",
+        "options must be a list of consecutive integers starting from 0",
+    ]
 
 
-def test_logspace_mapped_value():
-    """For reference of the grid values, see expected grid in `test_logspace`."""
-    calculated = get_logspace_coordinate(
-        value=(2.15443469 + 4.64158883) / 2,
-        start=1,
-        stop=100,
-        n_points=7,
-    )
-    assert np.allclose(calculated, 1.5)
+def test_validate_discrete_grid_non_consecutive():
+    assert _validate_discrete_grid([1, 3, 2]) == [
+        "options must be a list of consecutive integers starting from 0"
+    ]
 
 
-@pytest.mark.illustrative()
-def test_map_coordinates_linear():
-    """Illustrative test on how the output of get_linspace_coordinate can be used."""
-    grid_info = {
-        "start": 0,
-        "stop": 1,
-        "n_points": 3,
-    }
-
-    grid = linspace(**grid_info)  # [0, 0.5, 1]
-
-    values = 2 * grid  # [0, 1.0, 2.0]
-
-    # We choose a coordinate that is exactly in the middle between the first and second
-    # entry of the grid.
-    coordinate = get_linspace_coordinate(
-        value=0.25,
-        **grid_info,
-    )
-
-    # Perform the linear interpolation
-    interpolated_value = map_coordinates(values, [coordinate], order=1, mode="nearest")
-    assert np.allclose(interpolated_value, 0.5)
+def test_validate_continuous_grid_invalid_start():
+    assert _validate_continuous_grid("a", 1, 10) == [
+        "start must be a scalar int or float value"
+    ]
 
 
-@pytest.mark.illustrative()
-def test_map_coordinates_logarithmic():
-    """Illustrative test on how the output of get_logspace_coordinate can be used."""
-    grid_info = {
-        "start": 1,
-        "stop": 2,
-        "n_points": 3,
-    }
-
-    grid = logspace(**grid_info)  # [1.0, 1.414213562373095, 2.0]
-
-    values = 2 * grid  # [2.0, 2.82842712474619, 4.0]
-
-    # We choose a coordinate that is exactly in the middle between the first and second
-    # entry of the grid.
-    coordinate = get_logspace_coordinate(
-        value=(1.0 + 1.414213562373095) / 2,
-        **grid_info,
-    )
-
-    # Perform the linear interpolation
-    interpolated_value = map_coordinates(values, [coordinate], order=1, mode="nearest")
-    assert np.allclose(interpolated_value, (2.0 + 2.82842712474619) / 2)
+def test_validate_continuous_grid_invalid_stop():
+    assert _validate_continuous_grid(1, "a", 10) == [
+        "stop must be a scalar int or float value"
+    ]
 
 
-@pytest.mark.illustrative()
-def test_map_coordinates_linear_outside_grid():
-    """Illustrative test on what happens to values outside the grid.
+def test_validate_continuous_grid_invalid_n_points():
+    assert _validate_continuous_grid(1, 2, "a") == [
+        "n_points must be an int greater than 0 but is a"
+    ]
 
-    If mode="nearest", the value corresponding to the closest coordinate that still lies
-    within the grid is returned.
 
-    """
-    grid_info = {
-        "start": 0,
-        "stop": 1,
-        "n_points": 2,
-    }
+def test_validate_continuous_grid_negative_n_points():
+    assert _validate_continuous_grid(1, 2, -1) == [
+        "n_points must be an int greater than 0 but is -1"
+    ]
 
-    grid = linspace(**grid_info)  # [0, 1]
 
-    values = 2 * grid  # [0, 2.0]
+def test_validate_continuous_grid_start_greater_than_stop():
+    assert _validate_continuous_grid(2, 1, 10) == ["start must be less than stop"]
 
-    # We choose a coordinate that is exactly in the middle between the first and second
-    # entry of the grid.
-    coordinate = get_linspace_coordinate(
-        value=-1,
-        **grid_info,
-    )
 
-    assert coordinate == -1.0
+def test_linspace_grid_creation():
+    grid = LinspaceGrid(start=1, stop=5, n_points=5)
+    assert np.allclose(grid.to_jax(), np.linspace(1, 5, 5))
 
-    # Perform the linear interpolation
-    interpolated_value = map_coordinates(values, [coordinate], order=1, mode="nearest")
 
-    # Because mode="nearest", the value at the first grid point is returned
-    assert np.allclose(interpolated_value, 0.0)
+def test_logspace_grid_creation():
+    grid = LogspaceGrid(start=1, stop=10, n_points=3)
+    assert np.allclose(grid.to_jax(), np.logspace(np.log10(1), np.log10(10), 3))
+
+
+def test_discrete_grid_creation():
+    grid = DiscreteGrid(options=[0, 1, 2])
+    assert np.allclose(grid.to_jax(), np.arange(3))
+
+
+def test_linspace_grid_invalid_start():
+    with pytest.raises(GridInitializationError, match="start must be less than stop"):
+        LinspaceGrid(start=1, stop=0, n_points=10)
+
+
+def test_logspace_grid_invalid_start():
+    with pytest.raises(GridInitializationError, match="start must be less than stop"):
+        LogspaceGrid(start=1, stop=0, n_points=10)
+
+
+def test_discrete_grid_invalid_options():
+    with pytest.raises(
+        GridInitializationError,
+        match="options must contain only scalar int or float values",
+    ):
+        DiscreteGrid(options=[1, "a"])

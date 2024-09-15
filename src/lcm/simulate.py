@@ -9,17 +9,17 @@ from jax import vmap
 
 from lcm.argmax import argmax, segment_argmax
 from lcm.dispatchers import spacemap, vmap_1d
-from lcm.interfaces import Space
+from lcm.interfaces import InternalModel, Space
 
 
 def simulate(
     params,
+    initial_states,
     state_indexers,
     continuous_choice_grids,
     compute_ccv_policy_functions,
-    model,
+    model: InternalModel,
     next_state,
-    initial_states,
     logger,
     solve_model=None,
     vf_arr_list=None,
@@ -30,6 +30,8 @@ def simulate(
 
     Args:
         params (dict): Dict of model parameters.
+        initial_states (list): List of initial states to start from. Typically from the
+            observed dataset.
         state_indexers (list): List of dicts of length n_periods. Each dict contains one
             or several state indexers.
         continuous_choice_grids (list): List of dicts of length n_periods. Each dict
@@ -41,8 +43,6 @@ def simulate(
             state and choice variables. For stochastic variables, it returns a random
             draw from the distribution of the next state.
         model (Model): Model instance.
-        initial_states (list): List of initial states to start from. Typically from the
-            observed dataset.
         logger (logging.Logger): Logger that logs to stdout.
         solve_model (callable): Function that solves the model. Is only required if
             vf_arr_list is not provided.
@@ -230,7 +230,7 @@ def solve_continuous_problem(
     """Solve the agent's continuous choices problem problem.
 
     Args:
-        data_scs (Space): Namedtuple with entries dense_vars and sparse_vars.
+        data_scs (Space): Class with entries dense_vars and sparse_vars.
         compute_ccv (callable): Function that returns the conditional continuation
             values for a given combination of states and discrete choices. The function
             depends on:
@@ -462,14 +462,14 @@ vmapped_unravel_index = vmap(jnp.unravel_index, in_axes=(0, None))
 
 def create_data_scs(
     states,
-    model,
+    model: InternalModel,
     period,
 ):
     """Create data state choice space.
 
     Args:
         states (dict): Dict with initial states.
-        model (Model): Model instance.
+        model: Model instance.
         period (int): Period.
 
     Returns:
