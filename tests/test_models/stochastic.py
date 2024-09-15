@@ -12,17 +12,9 @@ See also the specifications in tests/test_models/deterministic.py.
 from copy import deepcopy
 
 import jax.numpy as jnp
+
 import lcm
 from lcm import DiscreteGrid, LinspaceGrid, Model
-
-# ======================================================================================
-# Numerical parameters and constants
-# ======================================================================================
-
-N_GRID_POINTS = {
-    "wealth": 100,
-    "consumption": 200,
-}
 
 # ======================================================================================
 # Model functions
@@ -64,12 +56,12 @@ def next_wealth(wealth, consumption, labor_income, interest_rate):
 # Stochastic state transitions
 # --------------------------------------------------------------------------------------
 @lcm.mark.stochastic
-def next_health(health, partner):  # noqa: ARG001
+def next_health(health, partner):
     pass
 
 
 @lcm.mark.stochastic
-def next_partner(_period, working, partner):  # noqa: ARG001
+def next_partner(_period, working, partner):
     pass
 
 
@@ -103,7 +95,7 @@ MODEL_CONFIG = Model(
         "consumption": LinspaceGrid(
             start=1,
             stop=100,
-            n_points=N_GRID_POINTS["consumption"],
+            n_points=200,
         ),
     },
     states={
@@ -112,7 +104,7 @@ MODEL_CONFIG = Model(
         "wealth": LinspaceGrid(
             start=1,
             stop=100,
-            n_points=N_GRID_POINTS["wealth"],
+            n_points=100,
         ),
     },
 )

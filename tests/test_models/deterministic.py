@@ -10,18 +10,8 @@ https://doi.org/10.3982/QE643).
 from copy import deepcopy
 
 import jax.numpy as jnp
+
 from lcm import DiscreteGrid, LinspaceGrid, Model
-
-# ======================================================================================
-# Numerical parameters and constants
-# ======================================================================================
-
-N_GRID_POINTS = {
-    "wealth": 100,
-    "consumption": 500,
-}
-
-RETIREMENT_AGE = 65
 
 # ======================================================================================
 # Model functions
@@ -44,19 +34,6 @@ def utility_with_filter(
     # TODO(@timmens): Remove function once #30 is fixed (re-use "utility").
     # https://github.com/OpenSourceEconomics/lcm/issues/30
     lagged_retirement,  # noqa: ARG001
-):
-    return utility(consumption, working=working, disutility_of_work=disutility_of_work)
-
-
-def utility_fully_discrete(
-    consumption,
-    working,
-    disutility_of_work,
-    # Temporary workaround for bug described in issue #30, which requires us to pass
-    # all state variables to the utility function.
-    # TODO(@timmens): Remove function once #30 is fixed (re-use "utility").
-    # https://github.com/OpenSourceEconomics/lcm/issues/30
-    consumption_index,  # noqa: ARG001
 ):
     return utility(consumption, working=working, disutility_of_work=disutility_of_work)
 
@@ -135,14 +112,14 @@ ISKHAKOV_ET_AL_2017 = Model(
         "consumption": LinspaceGrid(
             start=1,
             stop=400,
-            n_points=N_GRID_POINTS["consumption"],
+            n_points=500,
         ),
     },
     states={
         "wealth": LinspaceGrid(
             start=1,
             stop=400,
-            n_points=N_GRID_POINTS["wealth"],
+            n_points=100,
         ),
         "lagged_retirement": DiscreteGrid([0, 1]),
     },
@@ -169,14 +146,14 @@ ISKHAKOV_ET_AL_2017_STRIPPED_DOWN = Model(
         "consumption": LinspaceGrid(
             start=1,
             stop=400,
-            n_points=N_GRID_POINTS["consumption"],
+            n_points=500,
         ),
     },
     states={
         "wealth": LinspaceGrid(
             start=1,
             stop=400,
-            n_points=N_GRID_POINTS["wealth"],
+            n_points=100,
         ),
     },
 )
@@ -189,24 +166,21 @@ ISKHAKOV_ET_AL_2017_FULLY_DISCRETE = Model(
     ),
     n_periods=3,
     functions={
-        # "utility": utility_fully_discrete,
         "utility": utility,
         "next_wealth": next_wealth,
         "consumption_constraint": consumption_constraint,
         "labor_income": labor_income,
         "working": working,
-        # "consumption": consumption,
     },
     choices={
         "retirement": DiscreteGrid([0, 1]),
-        # "consumption_index": DiscreteGrid([0, 1]),
         "consumption": DiscreteGrid([1, 2]),
     },
     states={
         "wealth": LinspaceGrid(
             start=1,
             stop=400,
-            n_points=N_GRID_POINTS["wealth"],
+            n_points=100,
         ),
     },
 )

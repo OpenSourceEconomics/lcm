@@ -1,33 +1,49 @@
+from dataclasses import dataclass
+from typing import Any
+
 import jax.numpy as jnp
-import lcm.grids as grids_module
 import numpy as np
 import pandas as pd
 import pytest
-from lcm import DiscreteGrid, LinspaceGrid, Model
-from lcm.mark import StochasticInfo
-from lcm.process_model import (
-    _get_function_info,
-    _get_grids,
-    _get_gridspecs,
-    _get_stochastic_weight_function,
-    _get_variable_info,
-    process_model,
-)
 from numpy.testing import assert_array_equal
 from pandas.testing import assert_frame_equal
 
+from lcm import DiscreteGrid, LinspaceGrid, grid_helpers
+from lcm.input_processing.process_model import (
+    _get_stochastic_weight_function,
+    get_function_info,
+    get_grids,
+    get_gridspecs,
+    get_variable_info,
+    process_model,
+)
+from lcm.mark import StochasticInfo
 from tests.test_models.deterministic import (
-    N_GRID_POINTS,
     get_model_config,
 )
 
 
-@pytest.fixture()
-def user_model():
+@dataclass
+class ModelMock:
+    """A model mock for testing the process_model function.
+
+    This dataclass has the same attributes as the Model dataclass, but does not perform
+    any checks, which helps us to test the process_model function in isolation.
+
+    """
+
+    n_periods: int
+    functions: dict[str, Any]
+    choices: dict[str, Any]
+    states: dict[str, Any]
+
+
+@pytest.fixture
+def model():
     def next_c(a, b):
         return a + b
 
-    return Model(
+    return ModelMock(
         n_periods=2,
         functions={
             "next_c": next_c,
@@ -38,12 +54,11 @@ def user_model():
         states={
             "c": DiscreteGrid([0, 1]),
         },
-        _skip_checks=True,
     )
 
 
-def test_get_function_info(user_model):
-    got = _get_function_info(user_model)
+def test_get_function_info(model):
+    got = get_function_info(model)
     exp = pd.DataFrame(
         {
             "is_filter": [False],
@@ -56,12 +71,8 @@ def test_get_function_info(user_model):
     assert_frame_equal(got, exp)
 
 
-def test_get_variable_info(user_model):
-    function_info = _get_function_info(user_model)
-    got = _get_variable_info(
-        user_model,
-        function_info,
-    )
+def test_get_variable_info(model):
+    got = get_variable_info(model)
     exp = pd.DataFrame(
         {
             "is_state": [False, True],
@@ -78,29 +89,21 @@ def test_get_variable_info(user_model):
     assert_frame_equal(got.loc[exp.index], exp)  # we don't care about the id order here
 
 
-def test_get_gridspecs(user_model):
-    variable_info = _get_variable_info(
-        user_model,
-        function_info=_get_function_info(user_model),
-    )
-    got = _get_gridspecs(user_model, variable_info)
+def test_get_gridspecs(model):
+    got = get_gridspecs(model)
     assert got["a"] == DiscreteGrid([0, 1])
     assert got["c"] == DiscreteGrid([0, 1])
 
 
-def test_get_grids(user_model):
-    variable_info = _get_variable_info(
-        user_model,
-        function_info=_get_function_info(user_model),
-    )
-    gridspecs = _get_gridspecs(user_model, variable_info)
-    got = _get_grids(gridspecs, variable_info)
+def test_get_grids(model):
+    got = get_grids(model)
     assert_array_equal(got["a"], jnp.array([0, 1]))
     assert_array_equal(got["c"], jnp.array([0, 1]))
 
 
 def test_process_model_iskhakov_et_al_2017():
-    model = process_model(get_model_config("iskhakov_et_al_2017", n_periods=3))
+    model_config = get_model_config("iskhakov_et_al_2017", n_periods=3)
+    model = process_model(model_config)
 
     # Variable Info
     assert (
@@ -119,32 +122,30 @@ def test_process_model_iskhakov_et_al_2017():
     ).all()
 
     # Gridspecs
-    wealth_specs = LinspaceGrid(
+    wealth_grid = LinspaceGrid(
         start=1,
         stop=400,
-        n_points=N_GRID_POINTS["wealth"],
+        n_points=model_config.states["wealth"].n_points,
     )
 
-    assert model.gridspecs["wealth"] == wealth_specs
+    assert model.gridspecs["wealth"] == wealth_grid
 
-    consumption_specs = LinspaceGrid(
+    consumption_grid = LinspaceGrid(
         start=1,
         stop=400,
-        n_points=N_GRID_POINTS["consumption"],
+        n_points=model_config.choices["consumption"].n_points,
     )
-    assert model.gridspecs["consumption"] == consumption_specs
+    assert model.gridspecs["consumption"] == consumption_grid
 
     assert model.gridspecs["retirement"] == DiscreteGrid([0, 1])
     assert model.gridspecs["lagged_retirement"] == DiscreteGrid([0, 1])
 
     # Grids
-    func = getattr(grids_module, model.gridspecs["consumption"].kind)
-    asserted = func(**model.gridspecs["consumption"].info._asdict())
-    assert (asserted == model.grids["consumption"]).all()
+    expected = grid_helpers.linspace(**model_config.choices["consumption"].__dict__)
+    assert_array_equal(model.grids["consumption"], expected)
 
-    func = getattr(grids_module, model.gridspecs["wealth"].kind)
-    asserted = func(**model.gridspecs["wealth"].info._asdict())
-    assert (asserted == model.grids["wealth"]).all()
+    expected = grid_helpers.linspace(**model_config.states["wealth"].__dict__)
+    assert_array_equal(model.grids["wealth"], expected)
 
     assert (model.grids["retirement"] == jnp.array([0, 1])).all()
     assert (model.grids["lagged_retirement"] == jnp.array([0, 1])).all()
@@ -164,9 +165,8 @@ def test_process_model_iskhakov_et_al_2017():
 
 
 def test_process_model():
-    model = process_model(
-        get_model_config("iskhakov_et_al_2017_stripped_down", n_periods=3),
-    )
+    model_config = get_model_config("iskhakov_et_al_2017_stripped_down", n_periods=3)
+    model = process_model(model_config)
 
     # Variable Info
     assert ~(model.variable_info["is_sparse"].to_numpy()).any()
@@ -183,7 +183,7 @@ def test_process_model():
     wealth_specs = LinspaceGrid(
         start=1,
         stop=400,
-        n_points=N_GRID_POINTS["wealth"],
+        n_points=model_config.states["wealth"].n_points,
     )
 
     assert model.gridspecs["wealth"] == wealth_specs
@@ -191,20 +191,18 @@ def test_process_model():
     consumption_specs = LinspaceGrid(
         start=1,
         stop=400,
-        n_points=N_GRID_POINTS["consumption"],
+        n_points=model_config.choices["consumption"].n_points,
     )
     assert model.gridspecs["consumption"] == consumption_specs
 
     assert model.gridspecs["retirement"] == DiscreteGrid([0, 1])
 
     # Grids
-    func = getattr(grids_module, model.gridspecs["consumption"].kind)
-    asserted = func(**model.gridspecs["consumption"].info._asdict())
-    assert (asserted == model.grids["consumption"]).all()
+    expected = grid_helpers.linspace(**model_config.choices["consumption"].__dict__)
+    assert_array_equal(model.grids["consumption"], expected)
 
-    func = getattr(grids_module, model.gridspecs["wealth"].kind)
-    asserted = func(**model.gridspecs["wealth"].info._asdict())
-    assert (asserted == model.grids["wealth"]).all()
+    expected = grid_helpers.linspace(**model_config.states["wealth"].__dict__)
+    assert_array_equal(model.grids["wealth"], expected)
 
     assert (model.grids["retirement"] == jnp.array([0, 1])).all()
 
@@ -223,7 +221,7 @@ def test_process_model():
 
 
 def test_get_stochastic_weight_function():
-    def raw_func(health, wealth):  # noqa: ARG001
+    def raw_func(health, wealth):
         pass
 
     raw_func._stochastic_info = StochasticInfo()
@@ -247,7 +245,7 @@ def test_get_stochastic_weight_function():
 
 
 def test_get_stochastic_weight_function_non_state_dependency():
-    def raw_func(health, wealth):  # noqa: ARG001
+    def raw_func(health, wealth):
         pass
 
     raw_func._stochastic_info = StochasticInfo()
@@ -266,16 +264,12 @@ def test_get_stochastic_weight_function_non_state_dependency():
 
 
 def test_variable_info_with_continuous_filter_has_unique_index():
-    user_model = get_model_config("iskhakov_et_al_2017", n_periods=3)
+    model = get_model_config("iskhakov_et_al_2017", n_periods=3)
 
     def wealth_filter(wealth):
         return wealth > 200
 
-    user_model.functions["wealth_filter"] = wealth_filter
+    model.functions["wealth_filter"] = wealth_filter
 
-    function_info = _get_function_info(user_model)
-    got = _get_variable_info(
-        user_model,
-        function_info,
-    )
+    got = get_variable_info(model)
     assert got.index.is_unique

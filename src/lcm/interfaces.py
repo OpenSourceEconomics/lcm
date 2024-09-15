@@ -1,11 +1,15 @@
-from typing import NamedTuple
+from collections.abc import Callable
+from dataclasses import dataclass
 
 import pandas as pd
+from jax import Array
 
-from lcm.typing import ContinuousGridType, DiscreteLabels, Scalar
+from lcm.grids import ContinuousGrid, DiscreteGrid, Grid
+from lcm.typing import ParamsDict, ShockType
 
 
-class IndexerInfo(NamedTuple):
+@dataclass(frozen=True)
+class IndexerInfo:
     """Information needed to work with an indexer array.
 
     In particular, this contains enough information to wrap an indexer array into a
@@ -26,39 +30,8 @@ class IndexerInfo(NamedTuple):
     out_name: str
 
 
-class ContinuousGridInfo(NamedTuple):
-    """Information on how to build a grid for a continuous variable.
-
-    Attributes:
-        start (Scalar): Start of the grid.
-        stop (Scalar): End of the grid.
-        n_points (int): Number of points in the grid.
-
-    """
-
-    start: Scalar
-    stop: Scalar
-    n_points: int
-
-
-class InterpolationInfo(NamedTuple):
-    """Interpolation info for a grid of continuous variables.
-
-    Contains all information necessary to build and work with a grid of a continuous
-    variable.
-
-    Attributes:
-        kind (ContinuousGridType): Name of a grid type implemented in lcm.grids.
-        info (ContinuousGridInfo): Information on how to build the grid. E.g., start,
-            stop, and n_points.
-
-    """
-
-    kind: ContinuousGridType
-    info: ContinuousGridInfo
-
-
-class Space(NamedTuple):
+@dataclass(frozen=True)
+class Space:
     """Everything needed to evaluate a function on a space (e.g. state space).
 
     Attributes:
@@ -70,11 +43,12 @@ class Space(NamedTuple):
 
     """
 
-    sparse_vars: dict
-    dense_vars: dict
+    sparse_vars: dict[str, Array]
+    dense_vars: dict[str, Array]
 
 
-class SpaceInfo(NamedTuple):
+@dataclass(frozen=True)
+class SpaceInfo:
     """Everything needed to work with the output of a function evaluated on a space.
 
     Attributes:
@@ -89,46 +63,47 @@ class SpaceInfo(NamedTuple):
     """
 
     axis_names: list[str]
-    lookup_info: dict[str, DiscreteLabels]
-    interpolation_info: dict[str, InterpolationInfo]
+    lookup_info: dict[str, DiscreteGrid]
+    interpolation_info: dict[str, ContinuousGrid]
     indexer_infos: list[IndexerInfo]
 
 
-class InternalModel(NamedTuple):
+@dataclass(frozen=True)
+class InternalModel:
     """Internal representation of a user model.
 
     Attributes:
-        grids (dict): Dictionary that maps names of model variables to grids of feasible
-            values for that variable.
-        gridspecs (dict): Dictionary that maps names of model variables to
-            specifications from which grids of feasible values can be built.
-        variable_info (pd.DataFrame): A table with information about all variables in
-            the model. The index contains the name of a model variable. The columns are
-            booleans that are True if the variable has the corresponding property. The
-            columns are: is_state, is_choice, is_continuous, is_discrete, is_sparse,
-            is_dense.
-        functions (dict): Dictionary that maps names of functions to functions. The
-            functions differ from the user functions in that they all except the
-            filter functions take ``params`` as keyword argument. If the original
-            function depended on model parameters, those are automatically extracted
-            from ``params`` and passed to the original function. Otherwise, the
-            ``params`` argument is simply ignored.
-        function_info (pd.DataFrame): A table with information about all functions in
-            the model. The index contains the name of a function. The columns are
-            booleans that are True if the function has the corresponding property. The
-            columns are: is_filter, is_constraint, is_next.
-        params (dict): Dict of model parameters.
-        shocks (dict): TODO
-        n_periods (int): TODO
+        grids: Dictionary that maps names of model variables to grids of feasible values
+            for that variable.
+        gridspecs: Dictionary that maps names of model variables to specifications from
+            which grids of feasible values can be built.
+        variable_info: A table with information about all variables in the model. The
+            index contains the name of a model variable. The columns are booleans that
+            are True if the variable has the corresponding property. The columns are:
+            is_state, is_choice, is_continuous, is_discrete, is_sparse, columns are:
+            is_state, is_choice, is_continuous, is_discrete, is_sparse, is_dense.
+        functions: Dictionary that maps names of functions to functions. The functions
+            differ from the user functions in that they all except the filter functions
+            take ``params`` as keyword argument. If the original function depended on
+            model parameters, those are automatically extracted from ``params`` and
+            passed to the original function. Otherwise, the ``params`` argument is
+            simply ignored.
+        function_info: A table with information about all functions in the model. The
+            index contains the name of a function. The columns are booleans that are
+            True if the function has the corresponding property. The columns are:
+            is_filter, is_constraint, is_next.
+        params: Dict of model parameters.
+        n_periods: Number of periods.
+        random_utility_shocks: Type of random utility shocks.
 
     """
 
-    grids: dict
-    gridspecs: dict
+    grids: dict[str, Array]
+    gridspecs: dict[str, Grid]
     variable_info: pd.DataFrame
-    functions: dict
+    functions: dict[str, Callable]
     function_info: pd.DataFrame
-    params: dict
-    # not really processed yet
-    shocks: dict
+    params: ParamsDict
     n_periods: int
+    # Not properly processed yet
+    random_utility_shocks: ShockType

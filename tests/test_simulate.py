@@ -2,14 +2,17 @@ import jax.numpy as jnp
 import pandas as pd
 import pytest
 from jax import random
+from numpy.testing import assert_array_almost_equal, assert_array_equal
+from pybaum import tree_equal
+
 from lcm.entry_point import (
     create_compute_conditional_continuation_policy,
     get_lcm_function,
 )
+from lcm.input_processing import process_model
 from lcm.logging import get_logger
 from lcm.model_functions import get_utility_and_feasibility_function
 from lcm.next_state import _get_next_state_function_simulation
-from lcm.process_model import process_model
 from lcm.simulate import (
     _as_data_frame,
     _compute_targets,
@@ -24,11 +27,7 @@ from lcm.simulate import (
     simulate,
 )
 from lcm.state_space import create_state_choice_space
-from numpy.testing import assert_array_almost_equal, assert_array_equal
-from pybaum import tree_equal
-
 from tests.test_models.deterministic import (
-    N_GRID_POINTS,
     get_model_config,
     get_params,
 )
@@ -38,7 +37,7 @@ from tests.test_models.deterministic import (
 # ======================================================================================
 
 
-@pytest.fixture()
+@pytest.fixture
 def simulate_inputs():
     model_config = get_model_config("iskhakov_et_al_2017_stripped_down", n_periods=1)
     model = process_model(model_config)
@@ -66,10 +65,12 @@ def simulate_inputs():
         )
         compute_ccv_policy_functions.append(compute_ccv)
 
+    n_grid_points = model_config.choices["consumption"].n_points
+
     return {
         "state_indexers": [{}],
         "continuous_choice_grids": [
-            {"consumption": jnp.linspace(1, 100, num=N_GRID_POINTS["consumption"])},
+            {"consumption": jnp.linspace(1, 100, num=n_grid_points)},
         ],
         "compute_ccv_policy_functions": compute_ccv_policy_functions,
         "model": model,
@@ -103,7 +104,7 @@ def test_simulate_using_raw_inputs(simulate_inputs):
 # ======================================================================================
 
 
-@pytest.fixture()
+@pytest.fixture
 def iskhakov_et_al_2017_stripped_down_model_solution():
     def _model_solution(n_periods):
         model_config = get_model_config(

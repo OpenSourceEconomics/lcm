@@ -1,15 +1,15 @@
 import jax.numpy as jnp
 import pandas as pd
+from numpy.testing import assert_array_equal
+
+from lcm.input_processing import process_model
 from lcm.interfaces import InternalModel
 from lcm.model_functions import (
     get_combined_constraint,
     get_multiply_weights,
     get_utility_and_feasibility_function,
 )
-from lcm.process_model import process_model
 from lcm.state_space import create_state_choice_space
-from numpy.testing import assert_array_equal
-
 from tests.test_models.deterministic import get_model_config, utility
 
 
@@ -34,7 +34,7 @@ def test_get_combined_constraint():
         functions={"f": f, "g": g, "h": h},
         function_info=function_info,
         params=None,
-        shocks=None,
+        random_utility_shocks=None,
         n_periods=None,
     )
     combined_constraint = get_combined_constraint(model)

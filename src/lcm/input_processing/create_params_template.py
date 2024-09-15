@@ -6,39 +6,34 @@ import jax.numpy as jnp
 import pandas as pd
 from jax import Array
 
-from lcm.typing import Params, ScalarUserInput
-from lcm.user_input import Model
+from lcm.input_processing.util import get_grids, get_variable_info
+from lcm.typing import ParamsDict
+from lcm.user_model import Model
 
 
 def create_params_template(
-    user_model: Model,
-    variable_info: pd.DataFrame,
-    grids: dict[str, Array],
-    default_params: dict[str, ScalarUserInput] | None = None,
-) -> Params:
+    model: Model,
+    default_params: dict[str, float] = {"beta": jnp.nan},  # noqa: B006
+) -> ParamsDict:
     """Create parameter template from a model specification.
 
     Args:
-        user_model: The model as provided by the user.
-        variable_info: A dataframe with information about the variables.
-        grids: A dictionary of grids consistent with user_model.
+        model: The model as provided by the user.
         default_params: A dictionary of default parameters. Default is None. If None,
             the default {"beta": np.nan} is used. For other lifetime reward objectives,
             additional parameters may be required, for example {"beta": np.nan, "delta":
             np.nan} for beta-delta discounting.
 
     Returns:
-        dict: A nested dictionary of model parameters.
+        A nested dictionary of model parameters.
 
     """
-    if default_params is None:
-        # The default lifetime reward objective in LCM is expected discounted utility.
-        # For this objective the only additional parameter is the discounting rate beta.
-        default_params = {"beta": jnp.nan}
+    variable_info = get_variable_info(model)
+    grids = get_grids(model)
 
     if variable_info["is_stochastic"].any():
         stochastic_transitions = _create_stochastic_transition_params(
-            user_model=user_model,
+            model=model,
             variable_info=variable_info,
             grids=grids,
         )
@@ -46,12 +41,12 @@ def create_params_template(
     else:
         stochastic_transition_params = {}
 
-    function_params = _create_function_params(user_model)
+    function_params = _create_function_params(model)
 
     return default_params | function_params | stochastic_transition_params
 
 
-def _create_function_params(user_model: Model) -> Params:
+def _create_function_params(model: Model) -> dict[str, dict[str, float]]:
     """Get function parameters from a model specification.
 
     Explanation: We consider the arguments of all model functions, from which we exclude
@@ -60,29 +55,29 @@ def _create_function_params(user_model: Model) -> Params:
     user.
 
     Args:
-        user_model: The model as provided by the user.
+        model: The model as provided by the user.
 
     Returns:
-        dict: A dictionary for each model function, containing a parameters required in
-            the model functions, initialized with jnp.nan.
+        A dictionary for each model function, containing a parameters required in the
+            model functions, initialized with jnp.nan.
 
     """
     # Collect all model variables, that includes choices, states, the period, and
     # auxiliary variables (model function names).
     variables = {
-        *user_model.functions,
-        *user_model.choices,
-        *user_model.states,
+        *model.functions,
+        *model.choices,
+        *model.states,
         "_period",
     }
 
-    if hasattr(user_model, "shocks"):
-        variables = variables | set(user_model.shocks)
+    if hasattr(model, "shocks"):
+        variables = variables | set(model.shocks)
 
-    function_params: Params = {}
+    function_params = {}
     # For each model function, capture the arguments of the function that are not in the
     # set of model variables, and initialize them.
-    for name, func in user_model.functions.items():
+    for name, func in model.functions.items():
         arguments = set(inspect.signature(func).parameters)
         params = sorted(arguments.difference(variables))
         function_params[name] = {p: jnp.nan for p in params}
@@ -91,20 +86,20 @@ def _create_function_params(user_model: Model) -> Params:
 
 
 def _create_stochastic_transition_params(
-    user_model: Model,
+    model: Model,
     variable_info: pd.DataFrame,
     grids: dict[str, Array],
 ) -> dict[str, Array]:
     """Create parameters for stochastic transitions.
 
     Args:
-        user_model: The model as provided by the user.
+        model: The model as provided by the user.
         variable_info: A dataframe with information about the variables.
-        grids: A dictionary of grids consistent with user_model.
+        grids: A dictionary of grids consistent with model.
 
     Returns:
-        dict: A dictionary of parameters required for stochastic transitions,
-            initialized with jnp.nan matrices of the correct dimensions.
+        A dictionary of parameters required for stochastic transitions, initialized with
+            jnp.nan matrices of the correct dimensions.
 
     """
     stochastic_variables = variable_info.query("is_stochastic").index.tolist()
@@ -113,7 +108,8 @@ def _create_stochastic_transition_params(
     # ==================================================================================
     discrete_state_vars = set(variable_info.query("is_state & is_discrete").index)
 
-    if invalid := set(stochastic_variables) - discrete_state_vars:
+    invalid = set(stochastic_variables) - discrete_state_vars
+    if invalid:
         raise ValueError(
             f"The following variables are stochastic, but are not discrete state "
             f"variables: {invalid}. This is currently not supported.",
@@ -130,17 +126,18 @@ def _create_stochastic_transition_params(
 
     for var in stochastic_variables:
         # Retrieve corresponding next function and its arguments
-        next_var = user_model.functions[f"next_{var}"]
+        next_var = model.functions[f"next_{var}"]
         dependencies = list(inspect.signature(next_var).parameters)
 
         # If there are invalid dependencies, store them in a dictionary and continue
         # with the next variable to collect as many invalid arguments as possible.
-        if invalid := set(dependencies) - valid_vars:
+        invalid = set(dependencies) - valid_vars
+        if invalid:
             invalid_dependencies[var] = invalid
         else:
             # Get the dimensions of variables that influence the stochastic variable
             dimensions_of_deps = [
-                len(grids[arg]) if arg != "_period" else user_model.n_periods
+                len(grids[arg]) if arg != "_period" else model.n_periods
                 for arg in dependencies
             ]
             # Add the dimension of the stochastic variable itself at the end

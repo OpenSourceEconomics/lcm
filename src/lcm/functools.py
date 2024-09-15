@@ -41,12 +41,14 @@ def allow_only_kwargs(func: F) -> F:
                 ),
             )
 
-        if extra := set(kwargs).difference(parameters):
+        extra = set(kwargs).difference(parameters)
+        if extra:
             raise ValueError(
                 f"Expected arguments: {list(parameters)}, got extra: {extra}",
             )
 
-        if missing := set(parameters).difference(kwargs):
+        missing = set(parameters).difference(kwargs)
+        if missing:
             raise ValueError(
                 f"Expected arguments: {list(parameters)}, missing: {missing}",
             )

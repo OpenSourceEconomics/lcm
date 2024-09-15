@@ -8,10 +8,12 @@ import numpy as np
 from dags import concatenate_functions
 
 from lcm.dispatchers import productmap, spacemap
-from lcm.interfaces import IndexerInfo, Space, SpaceInfo
+from lcm.interfaces import IndexerInfo, InternalModel, Space, SpaceInfo
 
 
-def create_state_choice_space(model, period, *, is_last_period, jit_filter):
+def create_state_choice_space(
+    model: InternalModel, period, *, is_last_period, jit_filter
+):
     """Create a state choice space for the model.
 
     A state_choice_space is a compressed representation of all feasible states and the
@@ -126,15 +128,15 @@ def create_state_choice_space(model, period, *, is_last_period, jit_filter):
 
     space_info = SpaceInfo(
         axis_names=axis_names,
-        lookup_info=lookup_info,
-        interpolation_info=interpolation_info,
+        lookup_info=lookup_info,  # type: ignore[arg-type]
+        interpolation_info=interpolation_info,  # type: ignore[arg-type]
         indexer_infos=indexer_infos,
     )
 
     return state_choice_space, space_info, state_indexers, choice_segments
 
 
-def create_filter_mask(model, subset, fixed_inputs=None, *, jit_filter):
+def create_filter_mask(model: InternalModel, subset, fixed_inputs=None, *, jit_filter):
     """Create mask for combinations of grid values that is True if all filters are True.
 
     Args:

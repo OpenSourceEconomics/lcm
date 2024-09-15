@@ -1,4 +1,5 @@
-from typing import Annotated, Literal, TypedDict
+from enum import Enum
+from typing import Any, Literal, TypedDict
 
 from jax import Array
 
@@ -6,21 +7,14 @@ from jax import Array
 # includes zero dimensional jax arrays.
 Scalar = int | float | Array
 
-# We only allow primitive types for scalar user inputs to reduce complexity.
-ScalarUserInput = int | float
+ParamsDict = dict[str, Any]
 
-ContinuousGridType = Literal["linspace", "logspace"]
 
-DiscreteLabels = Annotated[list[int], "Int range starting from 0 with increments of 1"]
+class ShockType(Enum):
+    """Type of shocks."""
 
-# Parameters in LCM are made out of three categories: (1) the default parameters
-# required for the model class. They appear as dict[str, ScalarUserInput]. (2) the
-# parameters corresponding to the user model functions. They appear as
-# dict[str, dict[str, ScalarUserInput]], where for each user function the parameters
-# for this function are stored in a dict. (3) the parameters corresponding to the
-# the stochastic transitions. They appear as dict[str, dict[str, Array]],
-# where for each stochastic state variable the transition matrix is stored as an Array.
-Params = dict[str, ScalarUserInput | dict[str, ScalarUserInput] | dict[str, Array]]
+    EXTREME_VALUE = "extreme_value"
+    NONE = None
 
 
 class SegmentInfo(TypedDict):

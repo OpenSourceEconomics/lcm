@@ -11,11 +11,12 @@ from lcm.functools import (
     all_as_kwargs,
     get_union_of_arguments,
 )
+from lcm.interfaces import InternalModel
 from lcm.next_state import get_next_state_function
 
 
 def get_utility_and_feasibility_function(
-    model,
+    model: InternalModel,
     space_info,
     name_of_values_on_grid,
     interpolation_options,
@@ -66,7 +67,7 @@ def get_utility_and_feasibility_function(
     # ==================================================================================
 
     arg_names = {"vf_arr"} | get_union_of_arguments(relevant_functions) - {"_period"}
-    arg_names = [arg for arg in arg_names if "next_" not in arg]
+    arg_names = [arg for arg in arg_names if "next_" not in arg]  # type: ignore[assignment]
 
     if is_last_period:
 
@@ -153,11 +154,11 @@ def get_multiply_weights(stochastic_variables):
     return productmap(_outer, variables=arg_names)
 
 
-def get_combined_constraint(model):
+def get_combined_constraint(model: InternalModel):
     """Create a function that combines all constraint functions into a single one.
 
     Args:
-        model (Model): The model object.
+        model: The internal model object.
 
     Returns:
         callable
@@ -179,7 +180,7 @@ def get_combined_constraint(model):
     return combined_constraint
 
 
-def get_current_u_and_f(model):
+def get_current_u_and_f(model: InternalModel):
     functions = {"feasibility": get_combined_constraint(model), **model.functions}
 
     return concatenate_functions(
@@ -189,7 +190,7 @@ def get_current_u_and_f(model):
     )
 
 
-def get_next_weights_function(model):
+def get_next_weights_function(model: InternalModel):
     targets = [
         f"weight_{name}"
         for name in model.function_info.query("is_stochastic_next").index.tolist()

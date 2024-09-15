@@ -1,19 +1,8 @@
 """Example specification for a consumption-savings model with health and exercise."""
 
 import jax.numpy as jnp
+
 from lcm import DiscreteGrid, LinspaceGrid, Model
-
-# ======================================================================================
-# Numerical parameters and constants
-# ======================================================================================
-N_GRID_POINTS = {
-    "wealth": 100,
-    "health": 100,
-    "consumption": 100,
-    "exercise": 200,
-}
-
-RETIREMENT_AGE = 65
 
 # ======================================================================================
 # Model functions
@@ -63,6 +52,8 @@ def consumption_constraint(consumption, wealth, labor_income):
 # ======================================================================================
 # Model specification and parameters
 # ======================================================================================
+RETIREMENT_AGE = 65
+
 
 MODEL_CONFIG = Model(
     n_periods=RETIREMENT_AGE - 18,
@@ -80,24 +71,24 @@ MODEL_CONFIG = Model(
         "consumption": LinspaceGrid(
             start=1,
             stop=100,
-            n_points=N_GRID_POINTS["consumption"],
+            n_points=100,
         ),
         "exercise": LinspaceGrid(
             start=0,
             stop=1,
-            n_points=N_GRID_POINTS["exercise"],
+            n_points=200,
         ),
     },
     states={
         "wealth": LinspaceGrid(
             start=1,
             stop=100,
-            n_points=N_GRID_POINTS["wealth"],
+            n_points=100,
         ),
         "health": LinspaceGrid(
             start=0,
             stop=1,
-            n_points=N_GRID_POINTS["health"],
+            n_points=100,
         ),
     },
 )
