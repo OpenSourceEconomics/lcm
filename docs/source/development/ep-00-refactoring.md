@@ -16,3 +16,10 @@
 | Resolution |                                                                  |
 +------------+------------------------------------------------------------------+
 ```
+
+
+## Abstract
+
+This LEP proposes a refactoring of LCM's entry point using newly developed model block
+classes. This will move LCM closer to a framework in which users have greater control
+over all model aspects, e.g., the model solution and simulation.
