@@ -15,7 +15,7 @@
 import functools
 import itertools
 import operator
-from collections.abc import Callable, Sequence
+from collections.abc import Sequence
 
 import jax.numpy as jnp
 from jax import lax
@@ -32,33 +32,8 @@ def _nonempty_sum(arrs: Sequence[Array]) -> Array:
     return functools.reduce(operator.add, arrs)
 
 
-def _mirror_index_fixer(index: Array, size: int) -> Array:
-    s = size - 1  # Half-wavelength of triangular wave
-    # Scaled, integer-valued version of the triangular wave |x - round(x)|
-    return jnp.abs((index + s) % (2 * s) - s)
-
-
-def _reflect_index_fixer(index: Array, size: int) -> Array:
-    return jnp.floor_divide(_mirror_index_fixer(2 * index + 1, 2 * size + 1) - 1, 2)
-
-
-_INDEX_FIXERS: dict[str, Callable[[Array, int], Array]] = {
-    "constant": lambda index, size: index,
-    "nearest": lambda index, size: jnp.clip(index, 0, size - 1),
-    "wrap": lambda index, size: index % size,
-    "mirror": _mirror_index_fixer,
-    "reflect": _reflect_index_fixer,
-}
-
-
 def _round_half_away_from_zero(a: Array) -> Array:
     return a if jnp.issubdtype(a.dtype, jnp.integer) else lax.round(a)
-
-
-def _nearest_indices_and_weights(coordinate: Array) -> list[tuple[Array, ArrayLike]]:
-    index = _round_half_away_from_zero(coordinate).astype(jnp.int32)
-    weight = coordinate.dtype.type(1)
-    return [(index, weight)]
 
 
 def _linear_indices_and_weights(
@@ -71,12 +46,10 @@ def _linear_indices_and_weights(
     return [(index, lower_weight), (index + 1, upper_weight)]
 
 
-@functools.partial(api.jit, static_argnums=(2, 3, 4))
+@functools.partial(api.jit, static_argnums=(2,))
 def _map_coordinates(
     input: ArrayLike,
     coordinates: Sequence[ArrayLike],
-    order: int = 1,
-    mode: str = "nearest",
     cval: ArrayLike = 0.0,
 ) -> Array:
     input_arr = jnp.asarray(input)
@@ -117,13 +90,6 @@ def _map_coordinates(
     if jnp.issubdtype(input_arr.dtype, jnp.integer):
         result = _round_half_away_from_zero(result)
     return result.astype(input_arr.dtype)
-
-
-"""
-    Only nearest neighbor (``order=0``), linear interpolation (``order=1``) and
-    modes ``'constant'``, ``'nearest'``, ``'wrap'`` ``'mirror'`` and ``'reflect'`` are currently supported.
-
-    """
 
 
 def map_coordinates(
