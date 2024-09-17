@@ -80,8 +80,7 @@ def next_wealth(wealth, consumption, labor_income, interest_rate):
 
 
 # For discrete state variables, we need to assure that the next state also belongs to
-# the grid, which is why we need to round the result of the continuous state transition
-# function.
+# the grid. We therefore round the result of the continuous state transition function.
 def next_wealth_discrete(wealth, consumption, labor_income, interest_rate):
     next_wealth_cont = next_wealth(wealth, consumption, labor_income, interest_rate)
     return jnp.rint(next_wealth_cont).astype(jnp.int32)

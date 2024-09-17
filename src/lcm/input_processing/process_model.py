@@ -8,12 +8,10 @@ from dags.signature import with_signature
 from jax import Array
 
 from lcm.functools import all_as_args, all_as_kwargs
-from lcm.grids import DiscreteGrid
-from lcm.input_processing.converter import (
-    Converter,
-    get_label_to_index_func,
-)
 from lcm.input_processing.create_params_template import create_params_template
+from lcm.input_processing.discrete_state_conversion import (
+    convert_discrete_options_to_indices,
+)
 from lcm.input_processing.util import (
     get_function_info,
     get_grids,
@@ -41,7 +39,7 @@ def process_model(model: Model) -> InternalModel:
         The processed model.
 
     """
-    new_model, converter = _convert_discrete_options_to_indices(model)
+    new_model, converter = convert_discrete_options_to_indices(model)
 
     params = create_params_template(new_model)
 
@@ -247,146 +245,3 @@ def _get_stochastic_weight_function(
         return params["shocks"][name][*indices]
 
     return weight_func
-
-
-def _convert_discrete_options_to_indices(
-    model: Model,
-) -> tuple[Model, Converter]:
-    """Update the user model to ensure that discrete variables have index options.
-
-    For each discrete variable with non-index options, we:
-
-        1. Remove the variable from the states or choices dictionary
-        2. Replace it with a new state or choice with index options (__{var}_index__)
-        3. Add a function that maps the index options to the original options
-        4. Add updated next functions (if the variable was a state variable)
-
-    Args:
-        model: The model as provided by the user.
-
-    Returns:
-        - The model with all discrete variables having index options.
-        - A converter that can be used to convert between the internal and external
-          representation of the model.
-
-    """
-    gridspecs = get_gridspecs(model)
-
-    non_index_discrete_vars = _get_discrete_vars_with_non_index_options(model)
-
-    if not non_index_discrete_vars:
-        # fast path
-        return model, Converter()
-
-    functions = model.functions.copy()
-    states = model.states.copy()
-    choices = model.choices.copy()
-
-    # Update next functions (needs to be done before updating the grids, otherwise the
-    # already updated state variables are being used)
-    # ----------------------------------------------------------------------------------
-    non_index_states = [s for s in states if s in non_index_discrete_vars]
-
-    for state in states:
-        next_func = functions[f"next_{state}"]
-
-        must_be_updated = _func_depends_on(next_func, depends_on=non_index_states)
-        if must_be_updated:
-            functions.pop(f"next_{state}")
-            functions[f"next___{state}_index__"] = _get_next_func_of_index_var(
-                next_func=next_func,
-                variables=non_index_states,
-            )
-
-    # Update grids
-    # ----------------------------------------------------------------------------------
-    for var in non_index_discrete_vars:
-        grid: DiscreteGrid = gridspecs[var]  # type: ignore[assignment]
-        index_grid = DiscreteGrid(options=list(range(len(grid.options))))
-
-        if var in states:
-            states.pop(var)
-            states[f"__{var}_index__"] = index_grid
-        else:
-            choices.pop(var)
-            choices[f"__{var}_index__"] = index_grid
-
-    # Add index to label functions
-    # ----------------------------------------------------------------------------------
-    index_to_label_funcs = {
-        var: _get_index_to_label_func(gridspecs[var].to_jax(), name=var)
-        for var in non_index_discrete_vars
-    }
-    functions = functions | index_to_label_funcs
-
-    # Construct label to index functions for states
-    # ----------------------------------------------------------------------------------
-    converted_states = [s for s in non_index_discrete_vars if s in model.states]
-
-    label_to_index_funcs = {
-        var: get_label_to_index_func(gridspecs[var].to_jax(), name=var)
-        for var in converted_states
-    }
-    converter = Converter(
-        converted_states=converted_states,
-        index_to_label={
-            k: v for k, v in index_to_label_funcs.items() if k in model.states
-        },
-        label_to_index=label_to_index_funcs,
-    )
-
-    new_model = model.replace(
-        states=states,
-        choices=choices,
-        functions=functions,
-    )
-    return new_model, converter
-
-
-def _func_depends_on(func: Callable, depends_on: list[str]) -> bool:
-    arg_names = list(inspect.signature(func).parameters)
-    return any(arg in depends_on for arg in arg_names)
-
-
-def _get_next_func_of_index_var(next_func: Callable, variables: list[str]) -> Callable:
-    arg_names = list(inspect.signature(next_func).parameters)
-
-    relevant_vars = [var for var in variables if var in arg_names]
-
-    if not relevant_vars:
-        return next_func
-
-    for var in relevant_vars:
-        arg_names[arg_names.index(var)] = f"__{var}_index__"
-
-    @with_signature(args=arg_names)
-    def next_func_of_index_var(*args, **kwargs):
-        kwargs = all_as_kwargs(args, kwargs, arg_names=arg_names)
-        for var in relevant_vars:
-            kwargs[var] = kwargs.pop(f"__{var}_index__")
-        return next_func(**kwargs)
-
-    return next_func_of_index_var
-
-
-def _get_discrete_vars_with_non_index_options(model: Model) -> list[str]:
-    gridspecs = get_gridspecs(model)
-    discrete_vars = []
-    for name, spec in gridspecs.items():
-        if isinstance(spec, DiscreteGrid) and list(spec.options) != list(
-            range(len(spec.options))
-        ):
-            discrete_vars.append(name)
-    return discrete_vars
-
-
-def _get_index_to_label_func(labels_array, name):
-    arg_name = f"__{name}_index__"
-
-    @with_signature(args=[arg_name])
-    def func(*args, **kwargs):
-        kwargs = all_as_kwargs(args, kwargs, arg_names=[arg_name])
-        index = kwargs[arg_name]
-        return labels_array[index]
-
-    return func
