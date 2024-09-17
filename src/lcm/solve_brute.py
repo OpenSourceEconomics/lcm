@@ -10,6 +10,7 @@ def solve(
     continuous_choice_grids,
     compute_ccv_functions,
     emax_calculators,
+    converter,
     logger,
 ):
     """Solve a model by brute force.
@@ -48,6 +49,8 @@ def solve(
         list: List with one value function array per period.
 
     """
+    params = converter.params_to_internal(params)
+
     # extract information
     n_periods = len(state_choice_spaces)
     reversed_solution = []

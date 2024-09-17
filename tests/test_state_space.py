@@ -68,9 +68,10 @@ def filter_mask_inputs():
         variable_info=None,
         functions=functions,
         function_info=function_info,
+        params=None,
+        converter=None,
         random_utility_shocks=None,
         n_periods=100,
-        params={},
     )
 
 

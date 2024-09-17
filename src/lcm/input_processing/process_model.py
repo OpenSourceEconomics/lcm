@@ -9,6 +9,7 @@ from jax import Array
 
 from lcm.functools import all_as_args, all_as_kwargs
 from lcm.grids import DiscreteGrid
+from lcm.input_processing.converter import Converter, get_label_to_index_func
 from lcm.input_processing.create_params_template import create_params_template
 from lcm.input_processing.util import (
     get_function_info,
@@ -37,20 +38,21 @@ def process_model(model: Model) -> InternalModel:
         The processed model.
 
     """
-    model = _convert_discrete_options_to_indices(model)
+    new_model, converter = _convert_discrete_options_to_indices(model)
 
-    params = create_params_template(model)
+    params = create_params_template(new_model)
 
     return InternalModel(
-        grids=get_grids(model),
-        gridspecs=get_gridspecs(model),
-        variable_info=get_variable_info(model),
-        functions=_get_internal_functions(model, params=params),
-        function_info=get_function_info(model),
+        grids=get_grids(new_model),
+        gridspecs=get_gridspecs(new_model),
+        variable_info=get_variable_info(new_model),
+        functions=_get_internal_functions(new_model, params=params),
+        function_info=get_function_info(new_model),
         params=params,
+        converter=converter,
         # currently no additive utility shocks are supported
         random_utility_shocks=ShockType.NONE,
-        n_periods=model.n_periods,
+        n_periods=new_model.n_periods,
     )
 
 
@@ -244,7 +246,7 @@ def _get_stochastic_weight_function(
     return weight_func
 
 
-def _convert_discrete_options_to_indices(model: Model) -> Model:
+def _convert_discrete_options_to_indices(model: Model) -> tuple[Model, Converter]:
     """Update the user model to ensure that discrete variables have index options.
 
     For each discrete variable with non-index options, we:
@@ -258,7 +260,9 @@ def _convert_discrete_options_to_indices(model: Model) -> Model:
         model: The model as provided by the user.
 
     Returns:
-        The model with all discrete variables having index options.
+        - The model with all discrete variables having index options.
+        - A converter that can be used to convert between the internal and external
+          representation of the model.
 
     """
     gridspecs = get_gridspecs(model)
@@ -266,7 +270,8 @@ def _convert_discrete_options_to_indices(model: Model) -> Model:
     non_index_discrete_vars = _get_discrete_vars_with_non_index_options(model)
 
     if not non_index_discrete_vars:
-        return model
+        # fast path
+        return model, Converter()
 
     functions = model.functions.copy()
     states = model.states.copy()
@@ -301,15 +306,36 @@ def _convert_discrete_options_to_indices(model: Model) -> Model:
             choices.pop(var)
             choices[f"__{var}_index__"] = index_grid
 
-        # Add index to label function
-        # ------------------------------------------------------------------------------
-        functions[var] = _get_index_to_label_func(gridspecs[var].to_jax(), name=var)
+    # Add index to label functions
+    # ----------------------------------------------------------------------------------
+    index_to_label_funcs = {
+        var: _get_index_to_label_func(gridspecs[var].to_jax(), name=var)
+        for var in non_index_discrete_vars
+    }
+    functions = functions | index_to_label_funcs
 
-    return model.replace(
+    # Construct label to index functions for states
+    # ----------------------------------------------------------------------------------
+    converted_states = [s for s in non_index_discrete_vars if s in model.states]
+
+    label_to_index_funcs = {
+        var: get_label_to_index_func(gridspecs[var].to_jax(), name=var)
+        for var in converted_states
+    }
+    converter = Converter(
+        converted_states=converted_states,
+        index_to_label={
+            k: v for k, v in index_to_label_funcs.items() if k in model.states
+        },
+        label_to_index=label_to_index_funcs,
+    )
+
+    new_model = model.replace(
         states=states,
         choices=choices,
         functions=functions,
     )
+    return new_model, converter
 
 
 def _func_depends_on(func: Callable, depends_on: list[str]) -> bool:

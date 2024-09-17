@@ -9,6 +9,7 @@ from jax import vmap
 
 from lcm.argmax import argmax, segment_argmax
 from lcm.dispatchers import spacemap, vmap_1d
+from lcm.input_processing import Converter
 from lcm.interfaces import InternalModel, Space
 
 
@@ -20,6 +21,7 @@ def simulate(
     compute_ccv_policy_functions,
     model: InternalModel,
     next_state,
+    converter: Converter,
     logger,
     solve_model=None,
     vf_arr_list=None,
@@ -65,6 +67,8 @@ def simulate(
             )
         vf_arr_list = solve_model(params)
 
+    params = converter.params_to_internal(params)
+
     logger.info("Starting simulation")
 
     # Update the vf_arr_list
@@ -89,7 +93,7 @@ def simulate(
     sparse_choice_variables = model.variable_info.query("is_choice & is_sparse").index
 
     # The following variables are updated during the forward simulation
-    states = initial_states
+    states = converter.states_to_internal(initial_states)
     key = jax.random.PRNGKey(seed=seed)
 
     # Forward simulation

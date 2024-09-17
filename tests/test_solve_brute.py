@@ -4,6 +4,7 @@ from jax.scipy.ndimage import map_coordinates
 from numpy.testing import assert_array_almost_equal as aaae
 
 from lcm.entry_point import create_compute_conditional_continuation_value
+from lcm.input_processing import Converter
 from lcm.interfaces import Space
 from lcm.logging import get_logger
 from lcm.solve_brute import solve, solve_continuous_problem
@@ -112,6 +113,7 @@ def test_solve_brute():
         continuous_choice_grids=continuous_choice_grids,
         compute_ccv_functions=utility_and_feasibility_functions,
         emax_calculators=emax_calculators,
+        converter=Converter(),
         logger=get_logger(debug_mode=False),
     )
 

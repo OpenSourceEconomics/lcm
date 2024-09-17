@@ -5,6 +5,7 @@ import pandas as pd
 from jax import Array
 
 from lcm.grids import ContinuousGrid, DiscreteGrid, Grid
+from lcm.input_processing import Converter
 from lcm.typing import ParamsDict, ShockType
 
 
@@ -93,6 +94,8 @@ class InternalModel:
             True if the function has the corresponding property. The columns are:
             is_filter, is_constraint, is_next.
         params: Dict of model parameters.
+        converter: Converter object. Helps with converting between internal and
+            external representations of model variables.
         n_periods: Number of periods.
         random_utility_shocks: Type of random utility shocks.
 
@@ -104,6 +107,7 @@ class InternalModel:
     functions: dict[str, Callable]
     function_info: pd.DataFrame
     params: ParamsDict
+    converter: Converter
     n_periods: int
     # Not properly processed yet
     random_utility_shocks: ShockType

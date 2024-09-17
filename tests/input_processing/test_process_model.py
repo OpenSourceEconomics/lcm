@@ -296,7 +296,7 @@ def test_convert_discrete_options_to_indices(model):
     # add replace method to model mock
     model.replace = lambda **kwargs: ModelMock(**kwargs, n_periods=model.n_periods)
 
-    got = _convert_discrete_options_to_indices(model)
+    got, _ = _convert_discrete_options_to_indices(model)
 
     assert "c" not in got.states
     assert "__c_index__" in got.states
