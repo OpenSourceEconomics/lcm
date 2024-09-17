@@ -247,6 +247,13 @@ def _get_stochastic_weight_function(
 def _convert_discrete_options_to_indices(model: Model) -> Model:
     """Update the user model to ensure that discrete variables have index options.
 
+    For each discrete variable with non-index options, we:
+
+        1. Remove the variable from the states or choices dictionary
+        2. Replace it with a new state or choice with index options (__{var}_index__)
+        3. Add a function that maps the index options to the original options
+        4. Add updated next functions (if the variable was a state variable)
+
     Args:
         model: The model as provided by the user.
 
@@ -265,10 +272,27 @@ def _convert_discrete_options_to_indices(model: Model) -> Model:
     states = model.states.copy()
     choices = model.choices.copy()
 
+    # Update next functions (needs to be done before updating the grids, otherwise the
+    # already updated state variables are being used)
+    # ----------------------------------------------------------------------------------
+    non_index_states = [s for s in states if s in non_index_discrete_vars]
+
+    for state in states:
+        next_func = model.functions[f"next_{state}"]
+
+        must_be_updated = _func_depends_on(next_func, depends_on=non_index_states)
+        if must_be_updated:
+            model.functions.pop(f"next_{state}")
+            functions[f"next___{state}_index__"] = _get_next_func_of_index_var(
+                next_func=next_func,
+                variables=non_index_states,
+            )
+
+    # Update grids
+    # ----------------------------------------------------------------------------------
     for var in non_index_discrete_vars:
-        grid = gridspecs[var]
-        if isinstance(grid, DiscreteGrid):
-            index_grid = DiscreteGrid(options=list(range(len(grid.options))))
+        grid: DiscreteGrid = gridspecs[var]  # type: ignore[assignment]
+        index_grid = DiscreteGrid(options=list(range(len(grid.options))))
 
         if var in states:
             states.pop(var)
@@ -277,6 +301,8 @@ def _convert_discrete_options_to_indices(model: Model) -> Model:
             choices.pop(var)
             choices[f"__{var}_index__"] = index_grid
 
+        # Add index to label function
+        # ------------------------------------------------------------------------------
         functions[var] = _get_index_to_label_func(gridspecs[var].to_jax(), name=var)
 
     return model.replace(
@@ -284,6 +310,32 @@ def _convert_discrete_options_to_indices(model: Model) -> Model:
         choices=choices,
         functions=functions,
     )
+
+
+def _func_depends_on(func: Callable, depends_on: list[str]) -> bool:
+    arg_names = list(inspect.signature(func).parameters)
+    return any(arg in depends_on for arg in arg_names)
+
+
+def _get_next_func_of_index_var(next_func: Callable, variables: list[str]) -> Callable:
+    arg_names = list(inspect.signature(next_func).parameters)
+
+    relevant_vars = [var for var in variables if var in arg_names]
+
+    if not relevant_vars:
+        return next_func
+
+    for var in relevant_vars:
+        arg_names[arg_names.index(var)] = f"__{var}_index__"
+
+    @with_signature(args=arg_names)
+    def next_func_of_index_var(*args, **kwargs):
+        kwargs = all_as_kwargs(args, kwargs, arg_names=arg_names)
+        for var in relevant_vars:
+            kwargs[var] = kwargs.pop(f"__{var}_index__")
+        return next_func(**kwargs)
+
+    return next_func_of_index_var
 
 
 def _get_discrete_vars_with_non_index_options(model: Model) -> list[str]:

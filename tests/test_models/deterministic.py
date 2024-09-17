@@ -57,15 +57,6 @@ def age(_period):
     return _period + 18
 
 
-# Temporary workaround until option labels are supported that do not coincide with
-# the indices of the options.
-# TODO(@timmens): Remove this once #82 is closed.
-# https://github.com/OpenSourceEconomics/lcm/issues/82
-def consumption(consumption_index):
-    _consumption_values = jnp.array([1, 2])
-    return _consumption_values[consumption_index]
-
-
 # --------------------------------------------------------------------------------------
 # State transitions
 # --------------------------------------------------------------------------------------
@@ -162,7 +153,7 @@ ISKHAKOV_ET_AL_2017_STRIPPED_DOWN = Model(
 ISKHAKOV_ET_AL_2017_FULLY_DISCRETE = Model(
     description=(
         "Starts from Iskhakov et al. (2017), removes filters and the lagged_retirement "
-        "state, and makes the consumption decision discrete."
+        "state, and makes the consumption decision and the wealth state discrete."
     ),
     n_periods=3,
     functions={
@@ -177,11 +168,7 @@ ISKHAKOV_ET_AL_2017_FULLY_DISCRETE = Model(
         "consumption": DiscreteGrid([1, 2]),
     },
     states={
-        "wealth": LinspaceGrid(
-            start=1,
-            stop=400,
-            n_points=100,
-        ),
+        "wealth": DiscreteGrid(list(range(1, 401))),
     },
 )
 

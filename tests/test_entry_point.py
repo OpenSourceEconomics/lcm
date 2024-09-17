@@ -236,7 +236,7 @@ def test_create_compute_conditional_continuation_value_with_discrete_model():
     val = compute_ccv(
         __consumption_index__=jnp.array([0, 1]),
         retirement=1,
-        wealth=2,
+        __wealth_index__=2,
         params=params,
         vf_arr=None,
     )
@@ -340,7 +340,7 @@ def test_create_compute_conditional_continuation_policy_with_discrete_model():
     policy, val = compute_ccv_policy(
         __consumption_index__=jnp.array([0, 1]),
         retirement=1,
-        wealth=2,
+        __wealth_index__=2,
         params=params,
         vf_arr=None,
     )

@@ -11,8 +11,10 @@ from pandas.testing import assert_frame_equal
 from lcm import DiscreteGrid, LinspaceGrid, grid_helpers
 from lcm.input_processing.process_model import (
     _convert_discrete_options_to_indices,
+    _func_depends_on,
     _get_discrete_vars_with_non_index_options,
     _get_index_to_label_func,
+    _get_next_func_of_index_var,
     _get_stochastic_weight_function,
     get_function_info,
     get_grids,
@@ -302,3 +304,20 @@ def test_convert_discrete_options_to_indices(model):
     assert_array_equal(got.states["__c_index__"], DiscreteGrid([0, 1]))
     assert got.functions["c"](0) == 1
     assert got.functions["c"](1) == 10
+
+
+def test_func_depends_on():
+    def foo(a, b):
+        pass
+
+    assert _func_depends_on(foo, depends_on=["a", "b"])
+    assert not _func_depends_on(foo, depends_on=["c"])
+
+
+def test_get_next_func_of_index_var():
+    def next_a(a):
+        return a
+
+    got = _get_next_func_of_index_var(next_a, variables=["a"])
+    assert got(__a_index__=0) == 0
+    assert got(2) == 2
