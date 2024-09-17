@@ -10,6 +10,9 @@ from pandas.testing import assert_frame_equal
 
 from lcm import DiscreteGrid, LinspaceGrid, grid_helpers
 from lcm.input_processing.process_model import (
+    _convert_discrete_options_to_indices,
+    _get_discrete_vars_with_non_index_options,
+    _get_index_to_label_func,
     _get_stochastic_weight_function,
     get_function_info,
     get_grids,
@@ -52,7 +55,7 @@ def model():
             "a": DiscreteGrid([0, 1]),
         },
         states={
-            "c": DiscreteGrid([0, 1]),
+            "c": DiscreteGrid([1, 10]),
         },
     )
 
@@ -92,13 +95,13 @@ def test_get_variable_info(model):
 def test_get_gridspecs(model):
     got = get_gridspecs(model)
     assert got["a"] == DiscreteGrid([0, 1])
-    assert got["c"] == DiscreteGrid([0, 1])
+    assert got["c"] == DiscreteGrid([1, 10])
 
 
 def test_get_grids(model):
     got = get_grids(model)
     assert_array_equal(got["a"], jnp.array([0, 1]))
-    assert_array_equal(got["c"], jnp.array([0, 1]))
+    assert_array_equal(got["c"], jnp.array([1, 10]))
 
 
 def test_process_model_iskhakov_et_al_2017():
@@ -273,3 +276,29 @@ def test_variable_info_with_continuous_filter_has_unique_index():
 
     got = get_variable_info(model)
     assert got.index.is_unique
+
+
+def test_get_index_to_label_func():
+    labels = jnp.array([1, 10])
+    got = _get_index_to_label_func(labels_array=labels, name="foo")
+    assert got(__foo_index__=0) == 1
+    assert got(1) == 10
+
+
+def test_get_discrete_vars_with_non_index_options(model):
+    got = _get_discrete_vars_with_non_index_options(model)
+    assert got == ["c"]
+
+
+def test_convert_discrete_options_to_indices(model):
+    # add replace method to model mock
+    model.replace = lambda **kwargs: ModelMock(**kwargs, n_periods=model.n_periods)
+
+    got = _convert_discrete_options_to_indices(model)
+
+    assert "c" not in got.states
+    assert "__c_index__" in got.states
+    assert "c" in got.functions
+    assert_array_equal(got.states["__c_index__"], DiscreteGrid([0, 1]))
+    assert got.functions["c"](0) == 1
+    assert got.functions["c"](1) == 10
