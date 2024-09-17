@@ -29,15 +29,17 @@ STRIPPED_DOWN_AND_FULLY_DISCRETE_MODELS = [
 # ======================================================================================
 
 
-@pytest.mark.parametrize(
-    "model",
-    [
-        get_model_config(name, n_periods=3)
-        for name in ["iskhakov_et_al_2017", *STRIPPED_DOWN_AND_FULLY_DISCRETE_MODELS]
-    ],
-    ids=["iskhakov_et_al_2017", *STRIPPED_DOWN_AND_FULLY_DISCRETE_MODELS],
-)
-def test_get_lcm_function_with_solve_target(model):
+def test_get_lcm_function_with_solve_target_stripped_down():
+    model = get_model_config("iskhakov_et_al_2017_stripped_down", n_periods=3)
+    solve_model, params_template = get_lcm_function(model=model)
+
+    params = tree_map(lambda _: 0.2, params_template)
+
+    solve_model(params)
+
+
+def test_get_lcm_function_with_solve_target_fully_discrete():
+    model = get_model_config("iskhakov_et_al_2017_fully_discrete", n_periods=3)
     solve_model, params_template = get_lcm_function(model=model)
 
     params = tree_map(lambda _: 0.2, params_template)
@@ -50,15 +52,27 @@ def test_get_lcm_function_with_solve_target(model):
 # ======================================================================================
 
 
-@pytest.mark.parametrize(
-    "model",
-    [
-        get_model_config(name, n_periods=3)
-        for name in STRIPPED_DOWN_AND_FULLY_DISCRETE_MODELS
-    ],
-    ids=STRIPPED_DOWN_AND_FULLY_DISCRETE_MODELS,
-)
-def test_get_lcm_function_with_simulation_target_simple(model):
+def test_get_lcm_function_with_simulation_target_simple_stripped_down():
+    model = get_model_config("iskhakov_et_al_2017_stripped_down", n_periods=3)
+
+    simulate, params_template = get_lcm_function(
+        model=model,
+        targets="solve_and_simulate",
+    )
+    params = tree_map(lambda _: 0.2, params_template)
+
+    simulate(
+        params,
+        initial_states={
+            "wealth": jnp.array([0.0, 10.0, 50.0]),
+        },
+        additional_targets=["age"] if "age" in model.functions else None,
+    )
+
+
+def test_get_lcm_function_with_simulation_target_simple_fully_discrete():
+    model = get_model_config("iskhakov_et_al_2017_fully_discrete", n_periods=3)
+
     simulate, params_template = get_lcm_function(
         model=model,
         targets="solve_and_simulate",

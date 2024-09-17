@@ -64,6 +64,11 @@ def next_wealth(wealth, consumption, labor_income, interest_rate):
     return (1 + interest_rate) * (wealth - consumption) + labor_income
 
 
+def next_wealth_discrete(wealth, consumption, labor_income, interest_rate):
+    next_wealth_cont = next_wealth(wealth, consumption, labor_income, interest_rate)
+    return jnp.rint(next_wealth_cont).astype(jnp.int32)
+
+
 # --------------------------------------------------------------------------------------
 # Constraints
 # --------------------------------------------------------------------------------------
@@ -158,7 +163,7 @@ ISKHAKOV_ET_AL_2017_FULLY_DISCRETE = Model(
     n_periods=3,
     functions={
         "utility": utility,
-        "next_wealth": next_wealth,
+        "next_wealth": next_wealth_discrete,
         "consumption_constraint": consumption_constraint,
         "labor_income": labor_income,
         "working": working,

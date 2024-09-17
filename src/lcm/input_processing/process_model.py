@@ -278,11 +278,11 @@ def _convert_discrete_options_to_indices(model: Model) -> Model:
     non_index_states = [s for s in states if s in non_index_discrete_vars]
 
     for state in states:
-        next_func = model.functions[f"next_{state}"]
+        next_func = functions[f"next_{state}"]
 
         must_be_updated = _func_depends_on(next_func, depends_on=non_index_states)
         if must_be_updated:
-            model.functions.pop(f"next_{state}")
+            functions.pop(f"next_{state}")
             functions[f"next___{state}_index__"] = _get_next_func_of_index_var(
                 next_func=next_func,
                 variables=non_index_states,
