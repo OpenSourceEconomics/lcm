@@ -43,6 +43,8 @@ def solve(
         emax_calculators (list): List of functions that take continuation
             values for combinations of states and discrete choices and calculate the
             expected maximum over all discrete choices of a given state.
+        converter (Converter): Converter for states and parameters between external and
+            internal representation.
         logger (logging.Logger): Logger that logs to stdout.
 
     Returns:

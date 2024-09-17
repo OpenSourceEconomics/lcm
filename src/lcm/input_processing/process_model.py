@@ -9,7 +9,10 @@ from jax import Array
 
 from lcm.functools import all_as_args, all_as_kwargs
 from lcm.grids import DiscreteGrid
-from lcm.input_processing.converter import Converter, get_label_to_index_func
+from lcm.input_processing.converter import (
+    Converter,
+    get_label_to_index_func,
+)
 from lcm.input_processing.create_params_template import create_params_template
 from lcm.input_processing.util import (
     get_function_info,
@@ -246,7 +249,9 @@ def _get_stochastic_weight_function(
     return weight_func
 
 
-def _convert_discrete_options_to_indices(model: Model) -> tuple[Model, Converter]:
+def _convert_discrete_options_to_indices(
+    model: Model,
+) -> tuple[Model, Converter]:
     """Update the user model to ensure that discrete variables have index options.
 
     For each discrete variable with non-index options, we:

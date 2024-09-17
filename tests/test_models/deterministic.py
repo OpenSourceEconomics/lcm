@@ -8,6 +8,7 @@ https://doi.org/10.3982/QE643).
 """
 
 from copy import deepcopy
+from dataclasses import dataclass
 
 import jax.numpy as jnp
 
@@ -16,6 +17,20 @@ from lcm import DiscreteGrid, LinspaceGrid, Model
 # ======================================================================================
 # Model functions
 # ======================================================================================
+
+
+# --------------------------------------------------------------------------------------
+# Labels
+# --------------------------------------------------------------------------------------
+# Dataclasses can be used to represent labeled versions of discrete grids. For this, you
+# need to define a dataclass with one field per label with the same value as used in the
+# grid definition. They are especially useful to make case distinctions more readable.
+# One example can be found in the absorbing_retirement_filter function below.
+# --------------------------------------------------------------------------------------
+@dataclass
+class RetirementStatus:
+    working: int = 0
+    retired: int = 1
 
 
 # --------------------------------------------------------------------------------------
@@ -35,7 +50,7 @@ def utility_with_filter(
     # https://github.com/OpenSourceEconomics/lcm/issues/30
     lagged_retirement,  # noqa: ARG001
 ):
-    return utility(consumption, working=working, disutility_of_work=disutility_of_work)
+    return utility(consumption, working, disutility_of_work)
 
 
 # --------------------------------------------------------------------------------------
@@ -64,6 +79,9 @@ def next_wealth(wealth, consumption, labor_income, interest_rate):
     return (1 + interest_rate) * (wealth - consumption) + labor_income
 
 
+# For discrete state variables, we need to assure that the next state also belongs to
+# the grid, which is why we need to round the result of the continuous state transition
+# function.
 def next_wealth_discrete(wealth, consumption, labor_income, interest_rate):
     next_wealth_cont = next_wealth(wealth, consumption, labor_income, interest_rate)
     return jnp.rint(next_wealth_cont).astype(jnp.int32)
@@ -80,7 +98,10 @@ def consumption_constraint(consumption, wealth):
 # Filters
 # --------------------------------------------------------------------------------------
 def absorbing_retirement_filter(retirement, lagged_retirement):
-    return jnp.logical_or(retirement == 1, lagged_retirement == 0)
+    return jnp.logical_or(
+        retirement == RetirementStatus.retired,
+        lagged_retirement == RetirementStatus.working,
+    )
 
 
 # ======================================================================================

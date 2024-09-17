@@ -227,7 +227,7 @@ extend-ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "docs/source/conf.py" = ["E501", "ERA001", "DTZ005"]
-"tests/*" = ["PLR2004"]
+"tests/*" = ["PLR2004", "D101"]
 "examples/*" = ["INP001"]
 "explanations/*" = ["INP001", "B018", "T201", "E402", "PD008"]
 "scripts/*" = ["INP001", "D101", "RET503"]
