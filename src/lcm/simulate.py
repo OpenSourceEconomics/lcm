@@ -9,7 +9,7 @@ from jax import vmap
 
 from lcm.argmax import argmax, segment_argmax
 from lcm.dispatchers import spacemap, vmap_1d
-from lcm.input_processing import Converter
+from lcm.input_processing import DiscreteStateConverter
 from lcm.interfaces import InternalModel, Space
 
 
@@ -21,7 +21,7 @@ def simulate(
     compute_ccv_policy_functions,
     model: InternalModel,
     next_state,
-    converter: Converter,
+    converter: DiscreteStateConverter,
     logger,
     solve_model=None,
     vf_arr_list=None,
@@ -45,8 +45,8 @@ def simulate(
             state and choice variables. For stochastic variables, it returns a random
             draw from the distribution of the next state.
         model (Model): Model instance.
-        converter (Converter): Converter for states and parameters between external and
-            internal representation.
+        converter (DiscreteStateConverter): Converter for states and parameters between
+            external and internal representation.
         logger (logging.Logger): Logger that logs to stdout.
         solve_model (callable): Function that solves the model. Is only required if
             vf_arr_list is not provided.
@@ -67,9 +67,11 @@ def simulate(
             raise ValueError(
                 "You need to provide either vf_arr_list or solve_model.",
             )
+        # We do not need to convert the params here, because the solve_model function
+        # will do it.
         vf_arr_list = solve_model(params)
 
-    params = converter.params_to_internal(params)
+    internal_params = converter.params_to_internal(params)
 
     logger.info("Starting simulation")
 
@@ -138,7 +140,7 @@ def simulate(
             continuous_choice_grids=continuous_choice_grids[period],
             vf_arr=vf_arr_list[period],
             state_indexers=state_indexers[period],
-            params=params,
+            params=internal_params,
         )
 
         # Get optimal discrete choice given the optimal conditional continuous choices
@@ -201,7 +203,7 @@ def simulate(
             **states,
             **choices,
             _period=jnp.repeat(period, n_initial_states),
-            params=params,
+            params=internal_params,
             keys=sim_keys,
         )
 
@@ -218,7 +220,7 @@ def simulate(
             processed,
             targets=additional_targets,
             model_functions=model.functions,
-            params=params,
+            params=internal_params,
         )
         processed = {**processed, **calculated_targets}
 

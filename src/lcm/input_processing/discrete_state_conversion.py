@@ -15,7 +15,7 @@ from lcm.user_model import Model
 
 
 @dataclass
-class Converter:
+class DiscreteStateConverter:
     """Converts between representations of discrete states and their parameters.
 
     While LCM supports general discrete grids, internally, these are converted to
@@ -92,7 +92,7 @@ class Converter:
 
 def convert_discrete_options_to_indices(
     model: Model,
-) -> tuple[Model, Converter]:
+) -> tuple[Model, DiscreteStateConverter]:
     """Update the user model to ensure that discrete variables have index options.
 
     For each discrete variable with non-index options, we:
@@ -117,7 +117,7 @@ def convert_discrete_options_to_indices(
 
     # fast path
     if not non_index_discrete_vars:
-        return model, Converter()
+        return model, DiscreteStateConverter()
 
     functions = model.functions.copy()
     states = model.states.copy()
@@ -165,7 +165,7 @@ def convert_discrete_options_to_indices(
         k: v for k, v in index_to_label_funcs.items() if k in model.states
     }
 
-    converter = Converter(
+    converter = DiscreteStateConverter(
         converted_states=converted_states,
         index_to_label=index_to_label_funcs_for_states,
         label_to_index=label_to_index_funcs_for_states,

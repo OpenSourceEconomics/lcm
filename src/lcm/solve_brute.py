@@ -43,15 +43,15 @@ def solve(
         emax_calculators (list): List of functions that take continuation
             values for combinations of states and discrete choices and calculate the
             expected maximum over all discrete choices of a given state.
-        converter (Converter): Converter for states and parameters between external and
-            internal representation.
+        converter (DiscreteStateConverter): Converter for states and parameters between
+            external and internal representation.
         logger (logging.Logger): Logger that logs to stdout.
 
     Returns:
         list: List with one value function array per period.
 
     """
-    params = converter.params_to_internal(params)
+    internal_params = converter.params_to_internal(params)
 
     # extract information
     n_periods = len(state_choice_spaces)
@@ -69,12 +69,12 @@ def solve(
             continuous_choice_grids=continuous_choice_grids[period],
             vf_arr=vf_arr,
             state_indexers=state_indexers[period],
-            params=params,
+            params=internal_params,
         )
 
         # solve discrete problem by calculating expected maximum over discrete choices
         calculate_emax = emax_calculators[period]
-        vf_arr = calculate_emax(conditional_continuation_values, params=params)
+        vf_arr = calculate_emax(conditional_continuation_values, params=internal_params)
         reversed_solution.append(vf_arr)
 
         logger.info("Period: %s", period)

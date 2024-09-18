@@ -39,21 +39,21 @@ def process_model(model: Model) -> InternalModel:
         The processed model.
 
     """
-    new_model, converter = convert_discrete_options_to_indices(model)
+    tmp_model, converter = convert_discrete_options_to_indices(model)
 
-    params = create_params_template(new_model)
+    params = create_params_template(tmp_model)
 
     return InternalModel(
-        grids=get_grids(new_model),
-        gridspecs=get_gridspecs(new_model),
-        variable_info=get_variable_info(new_model),
-        functions=_get_internal_functions(new_model, params=params),
-        function_info=get_function_info(new_model),
+        grids=get_grids(tmp_model),
+        gridspecs=get_gridspecs(tmp_model),
+        variable_info=get_variable_info(tmp_model),
+        functions=_get_internal_functions(tmp_model, params=params),
+        function_info=get_function_info(tmp_model),
         params=params,
         converter=converter,
         # currently no additive utility shocks are supported
         random_utility_shocks=ShockType.NONE,
-        n_periods=new_model.n_periods,
+        n_periods=tmp_model.n_periods,
     )
 
 
