@@ -1,3 +1,5 @@
+from dataclasses import make_dataclass
+
 import numpy as np
 import pytest
 
@@ -6,25 +8,52 @@ from lcm.grids import (
     DiscreteGrid,
     LinspaceGrid,
     LogspaceGrid,
+    _get_fields,
     _validate_continuous_grid,
     _validate_discrete_grid,
 )
 
 
 def test_validate_discrete_grid_empty():
-    assert _validate_discrete_grid([]) == ["options must contain at least one element"]
+    options = make_dataclass("Options", [])
+    assert _validate_discrete_grid(options) == [
+        "options must contain at least one element"
+    ]
 
 
 def test_validate_discrete_grid_non_scalar_input():
-    assert _validate_discrete_grid([1, "a"]) == [
+    options = make_dataclass("Options", [("a", int, 1), ("b", str, "wrong_type")])
+    assert _validate_discrete_grid(options) == [
         "options must contain only scalar int or float values",
     ]
 
 
 def test_validate_discrete_grid_non_unique():
-    assert _validate_discrete_grid([1, 2, 2]) == [
+    options = make_dataclass("Options", [("a", int, 1), ("b", int, 2), ("c", int, 2)])
+    assert _validate_discrete_grid(options) == [
         "options must contain unique values",
     ]
+
+
+def test_get_fields_with_defaults():
+    options = make_dataclass("Options", [("a", int, 1), ("b", int, 2), ("c", int, 3)])
+    assert _get_fields(options) == [1, 2, 3]
+
+
+def test_get_fields_instance():
+    options = make_dataclass("Options", [("a", int), ("b", int)])
+    assert _get_fields(options(a=1, b=2)) == [1, 2]
+
+
+def test_get_fields_empty():
+    options = make_dataclass("Options", [])
+    assert _get_fields(options) == []
+
+
+def test_get_fields_no_defaults():
+    options = make_dataclass("Options", [("a", int), ("b", int)])
+    with pytest.raises(GridInitializationError, match="To use a DiscreteGrid"):
+        _get_fields(options)
 
 
 def test_validate_continuous_grid_invalid_start():
@@ -66,7 +95,8 @@ def test_logspace_grid_creation():
 
 
 def test_discrete_grid_creation():
-    grid = DiscreteGrid(options=[0, 1, 2])
+    options = make_dataclass("Options", [("a", int, 0), ("b", int, 1), ("c", int, 2)])
+    grid = DiscreteGrid(options)
     assert np.allclose(grid.to_jax(), np.arange(3))
 
 
@@ -81,8 +111,9 @@ def test_logspace_grid_invalid_start():
 
 
 def test_discrete_grid_invalid_options():
+    options = make_dataclass("Options", [("a", int, 1), ("b", str, "wrong_type")])
     with pytest.raises(
         GridInitializationError,
         match="options must contain only scalar int or float values",
     ):
-        DiscreteGrid(options=[1, "a"])
+        DiscreteGrid(options)

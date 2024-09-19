@@ -1,8 +1,8 @@
 """Collection of classes that are used by the user to define the model and grids."""
 
 from abc import ABC, abstractmethod
-from collections.abc import Collection
-from dataclasses import dataclass
+from dataclasses import dataclass, fields, is_dataclass
+from typing import Any
 
 import jax.numpy as jnp
 from jax import Array
@@ -30,13 +30,13 @@ class DiscreteGrid(Grid):
 
     """
 
-    options: Collection[int | float]
+    options: type
 
     def __post_init__(self) -> None:
-        if not isinstance(self.options, Collection):
+        if not is_dataclass(self.options):
             raise GridInitializationError(
-                "options must be a collection of scalar int or float values, e.g., a ",
-                "list or tuple",
+                "options must be a dataclass with scalar int or float fields, but is "
+                f"{self.options}."
             )
 
         errors = _validate_discrete_grid(self.options)
@@ -46,7 +46,33 @@ class DiscreteGrid(Grid):
 
     def to_jax(self) -> Array:
         """Convert the grid to a Jax array."""
-        return jnp.array(list(self.options))
+        return jnp.array(_get_fields(self.options))
+
+
+def _get_fields(dc: type) -> list[Any]:
+    """Get the fields of a dataclass.
+
+    Args:
+        dc: The dataclass to get the fields of.
+
+    Returns:
+        list[Any]: The fields of the dataclass.
+
+    Raises:
+        GridInitializationError: If the fields of the dataclass do not have default
+            values, or the instantiated dataclass does not have all fields. None values
+            are treated as if they do not exist.
+
+    """
+    _fields = {field.name: getattr(dc, field.name, None) for field in fields(dc)}
+    fields_without_defaults = [name for name, value in _fields.items() if value is None]
+    if fields_without_defaults:
+        raise GridInitializationError(
+            f"To use a DiscreteGrid, all fields of the options dataclass must have "
+            f"default values. The following fields do not have default values: "
+            f"{fields_without_defaults}."
+        )
+    return list(_fields.values())
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -131,25 +157,27 @@ class LogspaceGrid(ContinuousGrid):
 # ======================================================================================
 
 
-def _validate_discrete_grid(options: Collection[int | float]) -> list[str]:
+def _validate_discrete_grid(options: type) -> list[str]:
     """Validate the discrete grid options.
 
     Args:
-        options: The user options to validate.
+        options: The user options to validate in form of a dataclass.
 
     Returns:
         list[str]: A list of error messages.
 
     """
+    values = _get_fields(options)
+
     error_messages = []
 
-    if not len(options) > 0:
+    if not len(values) > 0:
         error_messages.append("options must contain at least one element")
 
-    if not all(isinstance(option, int | float) for option in options):
+    if not all(isinstance(value, int | float) for value in values):
         error_messages.append("options must contain only scalar int or float values")
 
-    if len(options) != len(set(options)):
+    if len(values) != len(set(values)):
         error_messages.append("options must contain unique values")
 
     return error_messages
