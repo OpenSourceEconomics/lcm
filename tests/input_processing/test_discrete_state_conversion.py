@@ -7,6 +7,7 @@ from numpy.testing import assert_array_equal
 
 from lcm import DiscreteGrid
 from lcm.input_processing.discrete_state_conversion import (
+    DiscreteStateConverter,
     _get_code_to_index_func,
     _get_discrete_vars_with_non_index_codes,
     _get_index_to_code_func,
@@ -47,6 +48,55 @@ def model(category_class_factory):
             "c": DiscreteGrid(category_class_factory([1, 0])),
         },
     )
+
+
+@pytest.fixture
+def discrete_state_converter_kwargs():
+    return {
+        "converted_states": ["c"],
+        "index_to_code": {"c": _get_index_to_code_func(jnp.array([1, 0]), name="c")},
+        "code_to_index": {"c": _get_code_to_index_func(jnp.array([1, 0]), name="c")},
+    }
+
+
+def test_discrete_state_converter_internal_to_params(discrete_state_converter_kwargs):
+    expected = {
+        "next_c": 1,
+    }
+    internal_params = {
+        "next___c_index__": 1,
+    }
+    converter = DiscreteStateConverter(**discrete_state_converter_kwargs)
+    assert converter.internal_to_params(internal_params) == expected
+
+
+def test_discrete_state_converter_params_to_internal(discrete_state_converter_kwargs):
+    expected = {
+        "next___c_index__": 1,
+    }
+    params = {
+        "next_c": 1,
+    }
+    converter = DiscreteStateConverter(**discrete_state_converter_kwargs)
+    assert converter.params_to_internal(params) == expected
+
+
+def test_discrete_state_converter_internal_to_states(discrete_state_converter_kwargs):
+    expected = jnp.array([1, 0])
+    internal_states = {
+        "__c_index__": jnp.array([0, 1]),
+    }
+    converter = DiscreteStateConverter(**discrete_state_converter_kwargs)
+    assert_array_equal(converter.internal_to_states(internal_states)["c"], expected)
+
+
+def test_discrete_state_converter_states_to_internal(discrete_state_converter_kwargs):
+    expected = jnp.array([0, 1])
+    states = {
+        "c": jnp.array([1, 0]),
+    }
+    converter = DiscreteStateConverter(**discrete_state_converter_kwargs)
+    assert_array_equal(converter.states_to_internal(states)["__c_index__"], expected)
 
 
 def test_get_index_to_label_func():

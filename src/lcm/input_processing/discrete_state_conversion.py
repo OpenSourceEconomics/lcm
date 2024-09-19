@@ -24,16 +24,16 @@ class DiscreteStateConverter:
 
     Attributes:
         converted_states: The names of the states that have been converted.
-        index_to_label: A dictionary of functions mapping from the internal index to the
-            label for each converted state.
-        label_to_index: A dictionary of functions mapping from the label to the internal
+        index_to_code: A dictionary of functions mapping from the internal index to the
+            code for each converted state.
+        code_to_index: A dictionary of functions mapping from the code to the internal
             index for each converted state.
 
     """
 
     converted_states: list[str] = field(default_factory=list)
-    index_to_label: dict[str, Callable[[Array], Array]] = field(default_factory=dict)
-    label_to_index: dict[str, Callable[[Array], Array]] = field(default_factory=dict)
+    index_to_code: dict[str, Callable[[Array], Array]] = field(default_factory=dict)
+    code_to_index: dict[str, Callable[[Array], Array]] = field(default_factory=dict)
 
     def internal_to_params(self, params: ParamsDict) -> ParamsDict:
         """Convert parameters from internal to external representation.
@@ -66,13 +66,13 @@ class DiscreteStateConverter:
 
         If a state has been converted, the name of its corresponding index function must
         be changed from `___{var}_index__` to `{var}`, and the values of the state must
-        be converted from indices to labels.
+        be converted from indices to codes.
 
         """
         out = states.copy()
         for var in self.converted_states:
             out.pop(f"__{var}_index__")
-            out[var] = self.index_to_label[var](states[f"__{var}_index__"])
+            out[var] = self.index_to_code[var](states[f"__{var}_index__"])
         return out
 
     def states_to_internal(self, states: dict[str, Array]) -> dict[str, Array]:
@@ -80,13 +80,13 @@ class DiscreteStateConverter:
 
         If a state has been converted, the name of its corresponding index function must
         be changed from `{var}` to `___{var}_index__`, and the values of the state must
-        be converted from labels to indices.
+        be converted from codes to indices.
 
         """
         out = states.copy()
         for var in self.converted_states:
             out.pop(var)
-            out[f"__{var}_index__"] = self.label_to_index[var](states[var])
+            out[f"__{var}_index__"] = self.code_to_index[var](states[var])
         return out
 
 
@@ -147,32 +147,32 @@ def convert_discrete_codes_to_indices(
     for var in non_index_states:
         functions[f"next___{var}_index__"] = functions.pop(f"next_{var}")
 
-    # Add index to label functions
+    # Add index to code functions
     # ----------------------------------------------------------------------------------
-    index_to_label_funcs = {
+    index_to_code_funcs = {
         var: _get_index_to_code_func(gridspecs[var].to_jax(), name=var)
         for var in non_index_discrete_vars
     }
-    functions = functions | index_to_label_funcs
+    functions = functions | index_to_code_funcs
 
-    # Construct label to index functions for states
+    # Construct code to index functions for states
     # ----------------------------------------------------------------------------------
     converted_states = [s for s in non_index_discrete_vars if s in model.states]
 
-    label_to_index_funcs_for_states = {
+    code_to_index_funcs_for_states = {
         var: _get_code_to_index_func(gridspecs[var].to_jax(), name=var)
         for var in converted_states
     }
 
-    # Subset index to label functions to only include states for converter
-    index_to_label_funcs_for_states = {
-        k: v for k, v in index_to_label_funcs.items() if k in model.states
+    # Subset index to code functions to only include states for converter
+    index_to_code_funcs_for_states = {
+        k: v for k, v in index_to_code_funcs.items() if k in model.states
     }
 
     converter = DiscreteStateConverter(
         converted_states=converted_states,
-        index_to_label=index_to_label_funcs_for_states,
-        label_to_index=label_to_index_funcs_for_states,
+        index_to_code=index_to_code_funcs_for_states,
+        code_to_index=code_to_index_funcs_for_states,
     )
 
     new_model = model.replace(
@@ -223,7 +223,7 @@ def _get_index_to_code_func(codes_array: Array, name: str) -> Callable[[Array], 
 
 
 def _get_code_to_index_func(codes_array: Array, name: str) -> Callable[[Array], Array]:
-    """Get function mapping from label to index.
+    """Get function mapping from code to index.
 
     Args:
         codes_array: An array of codes.
@@ -236,9 +236,9 @@ def _get_code_to_index_func(codes_array: Array, name: str) -> Callable[[Array], 
     """
 
     @with_signature(args=[name])
-    def label_to_index(*args, **kwargs):
+    def code_to_index(*args, **kwargs):
         kwargs = all_as_kwargs(args, kwargs, arg_names=[name])
         data = kwargs[name]
         return jnp.argmax(data[:, None] == codes_array[None, :], axis=1)
 
-    return label_to_index
+    return code_to_index
