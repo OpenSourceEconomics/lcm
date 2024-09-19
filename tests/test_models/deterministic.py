@@ -8,7 +8,7 @@ https://doi.org/10.3982/QE643).
 """
 
 from copy import deepcopy
-from dataclasses import dataclass
+from dataclasses import dataclass, make_dataclass
 
 import jax.numpy as jnp
 
@@ -20,12 +20,7 @@ from lcm import DiscreteGrid, LinspaceGrid, Model
 
 
 # --------------------------------------------------------------------------------------
-# Labels
-# --------------------------------------------------------------------------------------
-# Dataclasses can be used to represent labeled versions of discrete grids. For this, you
-# need to define a dataclass with one field per label with the same value as used in the
-# grid definition. They are especially useful to make case distinctions more readable.
-# One example can be found in the absorbing_retirement_filter function below.
+# Categorical variables
 # --------------------------------------------------------------------------------------
 @dataclass
 class RetirementStatus:
@@ -124,7 +119,7 @@ ISKHAKOV_ET_AL_2017 = Model(
         "working": working,
     },
     choices={
-        "retirement": DiscreteGrid([0, 1]),
+        "retirement": DiscreteGrid(RetirementStatus),
         "consumption": LinspaceGrid(
             start=1,
             stop=400,
@@ -137,7 +132,7 @@ ISKHAKOV_ET_AL_2017 = Model(
             stop=400,
             n_points=100,
         ),
-        "lagged_retirement": DiscreteGrid([0, 1]),
+        "lagged_retirement": DiscreteGrid(RetirementStatus),
     },
 )
 
@@ -158,7 +153,7 @@ ISKHAKOV_ET_AL_2017_STRIPPED_DOWN = Model(
         "age": age,
     },
     choices={
-        "retirement": DiscreteGrid([0, 1]),
+        "retirement": DiscreteGrid(RetirementStatus),
         "consumption": LinspaceGrid(
             start=1,
             stop=400,
@@ -172,6 +167,17 @@ ISKHAKOV_ET_AL_2017_STRIPPED_DOWN = Model(
             n_points=100,
         ),
     },
+)
+
+
+@dataclass
+class DiscreteConsumptionStatus:
+    low: int = 1
+    high: int = 2
+
+
+DiscreteWealthStatus = make_dataclass(
+    "DiscreteWealthStatus", [(f"level_{w}", int, w) for w in range(1, 401)]
 )
 
 
@@ -189,11 +195,11 @@ ISKHAKOV_ET_AL_2017_FULLY_DISCRETE = Model(
         "working": working,
     },
     choices={
-        "retirement": DiscreteGrid([0, 1]),
-        "consumption": DiscreteGrid([1, 2]),
+        "retirement": DiscreteGrid(RetirementStatus),
+        "consumption": DiscreteGrid(DiscreteConsumptionStatus),
     },
     states={
-        "wealth": DiscreteGrid(list(range(1, 401))),
+        "wealth": DiscreteGrid(DiscreteWealthStatus),
     },
 )
 

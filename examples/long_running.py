@@ -1,5 +1,7 @@
 """Example specification for a consumption-savings model with health and exercise."""
 
+from dataclasses import dataclass
+
 import jax.numpy as jnp
 
 from lcm import DiscreteGrid, LinspaceGrid, Model
@@ -7,6 +9,15 @@ from lcm import DiscreteGrid, LinspaceGrid, Model
 # ======================================================================================
 # Model functions
 # ======================================================================================
+
+
+# --------------------------------------------------------------------------------------
+# Categorical variables
+# --------------------------------------------------------------------------------------
+@dataclass
+class WorkingState:
+    retired: int = 0
+    working: int = 1
 
 
 # --------------------------------------------------------------------------------------
@@ -67,7 +78,7 @@ MODEL_CONFIG = Model(
         "age": age,
     },
     choices={
-        "working": DiscreteGrid([0, 1]),
+        "working": DiscreteGrid(WorkingState),
         "consumption": LinspaceGrid(
             start=1,
             stop=100,

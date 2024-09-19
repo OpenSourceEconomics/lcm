@@ -16,63 +16,65 @@ class Grid(ABC):
     """LCM Grid base class."""
 
     @abstractmethod
-    def to_jax(self) -> jnp.ndarray:
+    def to_jax(self) -> Array:
         """Convert the grid to a Jax array."""
 
 
-@dataclass(frozen=True)
 class DiscreteGrid(Grid):
-    """A grid of discrete values.
+    """A class representing a discrete grid.
+
+    Args:
+        category_class (type): The category class representing the grid categories. Must
+            be a dataclass with fields that have unique scalar int or float values.
 
     Attributes:
-        options: The options in the grid. Must be an iterable of scalar int or float
-            values.
+        categories: The list of category names.
+        codes: The list of category codes.
+
+    Raises:
+        GridInitializationError: If the `category_class` is not a dataclass with scalar
+            int or float fields.
 
     """
 
-    options: type
+    def __init__(self, category_class: type) -> None:
+        """Initialize the DiscreteGrid.
 
-    def __post_init__(self) -> None:
-        if not is_dataclass(self.options):
+        Args:
+            category_class (type): The category class representing the grid categories.
+                Must be a dataclass with fields that have unique scalar int or float
+                values.
+
+        """
+        if not is_dataclass(category_class):
             raise GridInitializationError(
-                "options must be a dataclass with scalar int or float fields, but is "
-                f"{self.options}."
+                "category_class must be a dataclass with scalar int or float fields, "
+                f"but is {category_class}."
             )
 
-        errors = _validate_discrete_grid(self.options)
+        names_and_values = _get_field_names_and_values(category_class)
+
+        errors = _validate_discrete_grid(names_and_values)
         if errors:
             msg = format_messages(errors)
             raise GridInitializationError(msg)
 
+        self.__categories = list(names_and_values.keys())
+        self.__codes = list(names_and_values.values())
+
+    @property
+    def categories(self) -> list[str]:
+        """Get the list of category names."""
+        return self.__categories
+
+    @property
+    def codes(self) -> list[int | float]:
+        """Get the list of category codes."""
+        return self.__codes
+
     def to_jax(self) -> Array:
         """Convert the grid to a Jax array."""
-        return jnp.array(_get_fields(self.options))
-
-
-def _get_fields(dc: type) -> list[Any]:
-    """Get the fields of a dataclass.
-
-    Args:
-        dc: The dataclass to get the fields of.
-
-    Returns:
-        list[Any]: The fields of the dataclass.
-
-    Raises:
-        GridInitializationError: If the fields of the dataclass do not have default
-            values, or the instantiated dataclass does not have all fields. None values
-            are treated as if they do not exist.
-
-    """
-    _fields = {field.name: getattr(dc, field.name, None) for field in fields(dc)}
-    fields_without_defaults = [name for name, value in _fields.items() if value is None]
-    if fields_without_defaults:
-        raise GridInitializationError(
-            f"To use a DiscreteGrid, all fields of the options dataclass must have "
-            f"default values. The following fields do not have default values: "
-            f"{fields_without_defaults}."
-        )
-    return list(_fields.values())
+        return jnp.array(self.codes)
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -157,30 +159,60 @@ class LogspaceGrid(ContinuousGrid):
 # ======================================================================================
 
 
-def _validate_discrete_grid(options: type) -> list[str]:
-    """Validate the discrete grid options.
+def _validate_discrete_grid(names_and_values: dict[str, Any]) -> list[str]:
+    """Validate the field names and values of the category_class passed to DiscreteGrid.
 
     Args:
-        options: The user options to validate in form of a dataclass.
+        names_and_values: A dictionary with the field names as keys and the field
+            values as values.
 
     Returns:
         list[str]: A list of error messages.
 
     """
-    values = _get_fields(options)
-
     error_messages = []
 
-    if not len(values) > 0:
-        error_messages.append("options must contain at least one element")
+    if not len(names_and_values) > 0:
+        error_messages.append(
+            "category_class passed to DiscreteGrid must have at least one field"
+        )
 
-    if not all(isinstance(value, int | float) for value in values):
-        error_messages.append("options must contain only scalar int or float values")
+    names_with_non_numerical_values = [
+        name
+        for name, value in names_and_values.items()
+        if not isinstance(value, int | float)
+    ]
+    if names_with_non_numerical_values:
+        error_messages.append(
+            "Field values of the category_class passed to DiscreteGrid can only be "
+            "scalar int or float values. The values to the following fields are not: "
+            f"{names_with_non_numerical_values}"
+        )
 
-    if len(values) != len(set(values)):
-        error_messages.append("options must contain unique values")
+    values = list(names_and_values.values())
+    duplicated_values = [v for v in values if values.count(v) > 1]
+    if duplicated_values:
+        error_messages.append(
+            "Field values of the category_class passed to DiscreteGrid must be unique. "
+            "The following values are duplicated: "
+            f"{set(duplicated_values)}"
+        )
 
     return error_messages
+
+
+def _get_field_names_and_values(dc: type) -> dict[str, Any]:
+    """Get the fields of a dataclass.
+
+    Args:
+        dc: The dataclass to get the fields of.
+
+    Returns:
+        A dictionary with the field names as keys and the field values as values. If
+        no value is provided for a field, the value is set to None.
+
+    """
+    return {field.name: getattr(dc, field.name, None) for field in fields(dc)}
 
 
 def _validate_continuous_grid(

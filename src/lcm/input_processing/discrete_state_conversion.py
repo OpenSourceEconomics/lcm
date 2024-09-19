@@ -1,5 +1,5 @@
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, make_dataclass
 
 import jax.numpy as jnp
 from dags.signature import with_signature
@@ -35,7 +35,7 @@ class DiscreteStateConverter:
     index_to_label: dict[str, Callable[[Array], Array]] = field(default_factory=dict)
     label_to_index: dict[str, Callable[[Array], Array]] = field(default_factory=dict)
 
-    def params_from_internal(self, params: ParamsDict) -> ParamsDict:
+    def internal_to_params(self, params: ParamsDict) -> ParamsDict:
         """Convert parameters from internal to external representation.
 
         If a state has been converted, the name of its corresponding next function must
@@ -61,7 +61,7 @@ class DiscreteStateConverter:
             out[f"next___{var}_index__"] = params[f"next_{var}"]
         return out
 
-    def states_from_internal(self, states: dict[str, Array]) -> dict[str, Array]:
+    def internal_to_states(self, states: dict[str, Array]) -> dict[str, Array]:
         """Convert states from internal to external representation.
 
         If a state has been converted, the name of its corresponding index function must
@@ -90,30 +90,30 @@ class DiscreteStateConverter:
         return out
 
 
-def convert_discrete_options_to_indices(
+def convert_discrete_codes_to_indices(
     model: Model,
 ) -> tuple[Model, DiscreteStateConverter]:
-    """Update the user model to ensure that discrete variables have index options.
+    """Update the user model to ensure that discrete variables have index codes.
 
-    For each discrete variable with non-index options, we:
+    For each discrete variable with non-index codes, we:
 
         1. Remove the variable from the states or choices dictionary
-        2. Replace it with a new state or choice with index options (__{var}_index__)
+        2. Replace it with a new state or choice with index codes (__{var}_index__)
         3. Add updated next functions (if the variable was a state variable)
-        4. Add a function that maps the index options to the original options
+        4. Add a function that maps the index codes to the original codes
 
     Args:
         model: The model as provided by the user.
 
     Returns:
-        - The model with all discrete variables having index options.
+        - The model with all discrete variables having index codes.
         - A converter that can be used to convert between the internal and external
           representation of the model.
 
     """
     gridspecs = get_gridspecs(model)
 
-    non_index_discrete_vars = _get_discrete_vars_with_non_index_options(model)
+    non_index_discrete_vars = _get_discrete_vars_with_non_index_codes(model)
 
     # fast path
     if not non_index_discrete_vars:
@@ -127,7 +127,11 @@ def convert_discrete_options_to_indices(
     # ----------------------------------------------------------------------------------
     for var in non_index_discrete_vars:
         grid: DiscreteGrid = gridspecs[var]  # type: ignore[assignment]
-        index_grid = DiscreteGrid(options=list(range(len(grid.options))))
+        index_category_class = make_dataclass(
+            grid.__str__(),
+            [(f"__{name}_index__", int, i) for i, name in enumerate(grid.categories)],
+        )
+        index_grid = DiscreteGrid(index_category_class)
 
         if var in model.states:
             states.pop(var)
@@ -146,7 +150,7 @@ def convert_discrete_options_to_indices(
     # Add index to label functions
     # ----------------------------------------------------------------------------------
     index_to_label_funcs = {
-        var: _get_index_to_label_func(gridspecs[var].to_jax(), name=var)
+        var: _get_index_to_code_func(gridspecs[var].to_jax(), name=var)
         for var in non_index_discrete_vars
     }
     functions = functions | index_to_label_funcs
@@ -156,7 +160,7 @@ def convert_discrete_options_to_indices(
     converted_states = [s for s in non_index_discrete_vars if s in model.states]
 
     label_to_index_funcs_for_states = {
-        var: _get_label_to_index_func(gridspecs[var].to_jax(), name=var)
+        var: _get_code_to_index_func(gridspecs[var].to_jax(), name=var)
         for var in converted_states
     }
 
@@ -179,34 +183,32 @@ def convert_discrete_options_to_indices(
     return new_model, converter
 
 
-def _get_discrete_vars_with_non_index_options(model: Model) -> list[str]:
-    """Get discrete variables with non-index options.
+def _get_discrete_vars_with_non_index_codes(model: Model) -> list[str]:
+    """Get discrete variables with non-index codes.
 
-    Collect all discrete variables with options that do not correspond to indices.
+    Collect all discrete variables with codes that do not correspond to indices.
 
     """
     gridspecs = get_gridspecs(model)
     discrete_vars = []
     for name, spec in gridspecs.items():
-        if isinstance(spec, DiscreteGrid) and list(spec.options) != list(
-            range(len(spec.options))
+        if isinstance(spec, DiscreteGrid) and list(spec.codes) != list(
+            range(len(spec.codes))
         ):
             discrete_vars.append(name)
     return discrete_vars
 
 
-def _get_index_to_label_func(
-    labels_array: Array, name: str
-) -> Callable[[Array], Array]:
-    """Get function mapping from index to label.
+def _get_index_to_code_func(codes_array: Array, name: str) -> Callable[[Array], Array]:
+    """Get function mapping from index to code.
 
     Args:
-        labels_array: An array of labels.
+        codes_array: An array of codes.
         name: The name of resulting function argument.
 
     Returns:
-        A function mapping an array with indices corresponding to labels_array to the
-        corresponding labels.
+        A function mapping an array with indices corresponding to codes_array to the
+        corresponding codes.
 
     """
     arg_name = f"__{name}_index__"
@@ -215,22 +217,20 @@ def _get_index_to_label_func(
     def func(*args, **kwargs):
         kwargs = all_as_kwargs(args, kwargs, arg_names=[arg_name])
         index = kwargs[arg_name]
-        return labels_array[index]
+        return codes_array[index]
 
     return func
 
 
-def _get_label_to_index_func(
-    labels_array: Array, name: str
-) -> Callable[[Array], Array]:
+def _get_code_to_index_func(codes_array: Array, name: str) -> Callable[[Array], Array]:
     """Get function mapping from label to index.
 
     Args:
-        labels_array: An array of labels.
+        codes_array: An array of codes.
         name: The name of resulting function argument.
 
     Returns:
-        A function mapping an array with values in labels_array to their corresponding
+        A function mapping an array with values in codes_array to their corresponding
         indices.
 
     """
@@ -239,6 +239,6 @@ def _get_label_to_index_func(
     def label_to_index(*args, **kwargs):
         kwargs = all_as_kwargs(args, kwargs, arg_names=[name])
         data = kwargs[name]
-        return jnp.argmax(data[:, None] == labels_array[None, :], axis=1)
+        return jnp.argmax(data[:, None] == codes_array[None, :], axis=1)
 
     return label_to_index

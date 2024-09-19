@@ -10,7 +10,7 @@ from jax import Array
 from lcm.functools import all_as_args, all_as_kwargs
 from lcm.input_processing.create_params_template import create_params_template
 from lcm.input_processing.discrete_state_conversion import (
-    convert_discrete_options_to_indices,
+    convert_discrete_codes_to_indices,
 )
 from lcm.input_processing.util import (
     get_function_info,
@@ -39,7 +39,7 @@ def process_model(model: Model) -> InternalModel:
         The processed model.
 
     """
-    tmp_model, converter = convert_discrete_options_to_indices(model)
+    tmp_model, converter = convert_discrete_codes_to_indices(model)
 
     params = create_params_template(tmp_model)
 
