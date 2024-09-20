@@ -25,13 +25,13 @@ class ConsumptionChoice:
 
 
 @dataclass
-class WorkingState:
+class WorkingStatus:
     retired: int = 0
     working: int = 1
 
 
 @dataclass
-class HealthState:
+class HealthStatus:
     bad: int = 0
     good: int = 1
 
@@ -57,7 +57,7 @@ DETERMINISTIC_MODEL = Model(
     n_periods=2,
     choices={
         "consumption": DiscreteGrid(ConsumptionChoice),
-        "working": DiscreteGrid(WorkingState),
+        "working": DiscreteGrid(WorkingStatus),
     },
     states={
         "wealth": LinspaceGrid(
@@ -76,7 +76,7 @@ def next_health(health):
 
 STOCHASTIC_MODEL = deepcopy(DETERMINISTIC_MODEL)
 STOCHASTIC_MODEL.functions["next_health"] = next_health
-STOCHASTIC_MODEL.states["health"] = DiscreteGrid(HealthState)
+STOCHASTIC_MODEL.states["health"] = DiscreteGrid(HealthStatus)
 
 
 # ======================================================================================

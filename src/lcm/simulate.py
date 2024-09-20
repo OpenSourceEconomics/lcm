@@ -9,7 +9,7 @@ from jax import vmap
 
 from lcm.argmax import argmax, segment_argmax
 from lcm.dispatchers import spacemap, vmap_1d
-from lcm.input_processing import DiscreteStateConverter
+from lcm.input_processing import DiscreteGridConverter
 from lcm.interfaces import InternalModel, Space
 
 
@@ -21,7 +21,7 @@ def simulate(
     compute_ccv_policy_functions,
     model: InternalModel,
     next_state,
-    converter: DiscreteStateConverter,
+    discrete_grid_converter: DiscreteGridConverter,
     logger,
     solve_model=None,
     vf_arr_list=None,
@@ -45,8 +45,8 @@ def simulate(
             state and choice variables. For stochastic variables, it returns a random
             draw from the distribution of the next state.
         model (Model): Model instance.
-        converter (DiscreteStateConverter): Converter for states and parameters between
-            external and internal representation.
+        discrete_grid_converter (DiscreteGridConverter): Converter for discrete
+            variables and parameters between external and internal representation.
         logger (logging.Logger): Logger that logs to stdout.
         solve_model (callable): Function that solves the model. Is only required if
             vf_arr_list is not provided.
@@ -71,7 +71,7 @@ def simulate(
         # will do it.
         vf_arr_list = solve_model(params)
 
-    internal_params = converter.params_to_internal(params)
+    internal_params = discrete_grid_converter.params_to_internal(params)
 
     logger.info("Starting simulation")
 
@@ -97,7 +97,7 @@ def simulate(
     sparse_choice_variables = model.variable_info.query("is_choice & is_sparse").index
 
     # The following variables are updated during the forward simulation
-    states = converter.states_to_internal(initial_states)
+    states = discrete_grid_converter.states_to_internal(initial_states)
     key = jax.random.PRNGKey(seed=seed)
 
     # Forward simulation

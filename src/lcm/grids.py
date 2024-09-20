@@ -46,29 +46,20 @@ class DiscreteGrid(Grid):
                 values.
 
         """
-        if not is_dataclass(category_class):
-            raise GridInitializationError(
-                "category_class must be a dataclass with scalar int or float fields, "
-                f"but is {category_class}."
-            )
+        _validate_discrete_grid(category_class)
 
         names_and_values = _get_field_names_and_values(category_class)
 
-        errors = _validate_discrete_grid(names_and_values)
-        if errors:
-            msg = format_messages(errors)
-            raise GridInitializationError(msg)
-
-        self.__categories = list(names_and_values.keys())
-        self.__codes = list(names_and_values.values())
+        self.__categories = tuple(names_and_values.keys())
+        self.__codes = tuple(names_and_values.values())
 
     @property
-    def categories(self) -> list[str]:
+    def categories(self) -> tuple[str, ...]:
         """Get the list of category names."""
         return self.__categories
 
     @property
-    def codes(self) -> list[int | float]:
+    def codes(self) -> tuple[int | float, ...]:
         """Get the list of category codes."""
         return self.__codes
 
@@ -159,20 +150,29 @@ class LogspaceGrid(ContinuousGrid):
 # ======================================================================================
 
 
-def _validate_discrete_grid(names_and_values: dict[str, Any]) -> list[str]:
+def _validate_discrete_grid(category_class: type) -> None:
     """Validate the field names and values of the category_class passed to DiscreteGrid.
 
     Args:
-        names_and_values: A dictionary with the field names as keys and the field
-            values as values.
+        category_class: The category class representing the grid categories. Must
+            be a dataclass with fields that have unique scalar int or float values.
 
-    Returns:
-        list[str]: A list of error messages.
+    Raises:
+        GridInitializationError: If the `category_class` is not a dataclass with scalar
+            int or float fields.
 
     """
+    if not is_dataclass(category_class):
+        raise GridInitializationError(
+            "category_class must be a dataclass with scalar int or float fields, "
+            f"but is {category_class}."
+        )
+
+    names_and_values = _get_field_names_and_values(category_class)
+
     error_messages = []
 
-    if not len(names_and_values) > 0:
+    if not names_and_values:
         error_messages.append(
             "category_class passed to DiscreteGrid must have at least one field"
         )
@@ -198,7 +198,9 @@ def _validate_discrete_grid(names_and_values: dict[str, Any]) -> list[str]:
             f"{set(duplicated_values)}"
         )
 
-    return error_messages
+    if error_messages:
+        msg = format_messages(error_messages)
+        raise GridInitializationError(msg)
 
 
 def _get_field_names_and_values(dc: type) -> dict[str, Any]:

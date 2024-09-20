@@ -14,24 +14,24 @@ from lcm.typing import ParamsDict
 from lcm.user_model import Model
 
 
-@dataclass
-class DiscreteStateConverter:
-    """Converts between representations of discrete states and their parameters.
+@dataclass(frozen=True)
+class DiscreteGridConverter:
+    """Converts between representations of discrete variables and their parameters.
 
     While LCM supports general discrete grids, internally, these are converted to
     indices. This class provides functionality for converting between the internal
     representation and the external representation.
 
     Attributes:
-        converted_states: The names of the states that have been converted.
         index_to_code: A dictionary of functions mapping from the internal index to the
-            code for each converted state.
+            code for each converted state. Keys correspond to the names of converted
+            discrete variables.
         code_to_index: A dictionary of functions mapping from the code to the internal
-            index for each converted state.
+            index for each converted state. Keys correspond to the names of converted
+            discrete variables.
 
     """
 
-    converted_states: list[str] = field(default_factory=list)
     index_to_code: dict[str, Callable[[Array], Array]] = field(default_factory=dict)
     code_to_index: dict[str, Callable[[Array], Array]] = field(default_factory=dict)
 
@@ -43,7 +43,7 @@ class DiscreteStateConverter:
 
         """
         out = params.copy()
-        for var in self.converted_states:
+        for var in self.index_to_code:
             out.pop(f"next___{var}_index__")
             out[f"next_{var}"] = params[f"next___{var}_index__"]
         return out
@@ -56,7 +56,7 @@ class DiscreteStateConverter:
 
         """
         out = params.copy()
-        for var in self.converted_states:
+        for var in self.index_to_code:
             out.pop(f"next_{var}")
             out[f"next___{var}_index__"] = params[f"next_{var}"]
         return out
@@ -70,9 +70,9 @@ class DiscreteStateConverter:
 
         """
         out = states.copy()
-        for var in self.converted_states:
+        for var, index_to_code in self.index_to_code.items():
             out.pop(f"__{var}_index__")
-            out[var] = self.index_to_code[var](states[f"__{var}_index__"])
+            out[var] = index_to_code(states[f"__{var}_index__"])
         return out
 
     def states_to_internal(self, states: dict[str, Array]) -> dict[str, Array]:
@@ -84,23 +84,39 @@ class DiscreteStateConverter:
 
         """
         out = states.copy()
-        for var in self.converted_states:
+        for var, code_to_index in self.code_to_index.items():
             out.pop(var)
-            out[f"__{var}_index__"] = self.code_to_index[var](states[var])
+            out[f"__{var}_index__"] = code_to_index(states[var])
+        return out
+
+    def internal_to_choices(self, choices: dict[str, Array]) -> dict[str, Array]:
+        """Convert choices from internal to external representation."""
+        out = choices.copy()
+        for var, index_to_code in self.index_to_code.items():
+            out.pop(f"__{var}_index__")
+            out[var] = index_to_code(choices[f"__{var}_index__"])
+        return out
+
+    def choices_to_internal(self, choices: dict[str, Array]) -> dict[str, Array]:
+        """Convert choices from external to internal representation."""
+        out = choices.copy()
+        for var, code_to_index in self.code_to_index.items():
+            out.pop(var)
+            out[f"__{var}_index__"] = code_to_index(choices[var])
         return out
 
 
-def convert_discrete_codes_to_indices(
+def convert_arbitrary_codes_to_array_indices(
     model: Model,
-) -> tuple[Model, DiscreteStateConverter]:
+) -> tuple[Model, DiscreteGridConverter]:
     """Update the user model to ensure that discrete variables have index codes.
 
     For each discrete variable with non-index codes, we:
 
         1. Remove the variable from the states or choices dictionary
-        2. Replace it with a new state or choice with index codes (__{var}_index__)
+        2. Replace it with a new state or choice with array index codes
         3. Add updated next functions (if the variable was a state variable)
-        4. Add a function that maps the index codes to the original codes
+        4. Add a function that maps the array index codes to the original codes
 
     Args:
         model: The model as provided by the user.
@@ -117,7 +133,7 @@ def convert_discrete_codes_to_indices(
 
     # fast path
     if not non_index_discrete_vars:
-        return model, DiscreteStateConverter()
+        return model, DiscreteGridConverter()
 
     functions = model.functions.copy()
     states = model.states.copy()
@@ -155,24 +171,16 @@ def convert_discrete_codes_to_indices(
     }
     functions = functions | index_to_code_funcs
 
-    # Construct code to index functions for states
+    # Create code to index functions for converter
     # ----------------------------------------------------------------------------------
-    converted_states = [s for s in non_index_discrete_vars if s in model.states]
-
-    code_to_index_funcs_for_states = {
+    code_to_index_funcs = {
         var: _get_code_to_index_func(gridspecs[var].to_jax(), name=var)
-        for var in converted_states
+        for var in non_index_discrete_vars
     }
 
-    # Subset index to code functions to only include states for converter
-    index_to_code_funcs_for_states = {
-        k: v for k, v in index_to_code_funcs.items() if k in model.states
-    }
-
-    converter = DiscreteStateConverter(
-        converted_states=converted_states,
-        index_to_code=index_to_code_funcs_for_states,
-        code_to_index=code_to_index_funcs_for_states,
+    discrete_grid_converter = DiscreteGridConverter(
+        index_to_code=index_to_code_funcs,
+        code_to_index=code_to_index_funcs,
     )
 
     new_model = model.replace(
@@ -180,7 +188,7 @@ def convert_discrete_codes_to_indices(
         choices=choices,
         functions=functions,
     )
-    return new_model, converter
+    return new_model, discrete_grid_converter
 
 
 def _get_discrete_vars_with_non_index_codes(model: Model) -> list[str]:

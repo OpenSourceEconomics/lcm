@@ -6,12 +6,12 @@ import pytest
 from numpy.testing import assert_array_equal
 
 from lcm import DiscreteGrid
-from lcm.input_processing.discrete_state_conversion import (
-    DiscreteStateConverter,
+from lcm.input_processing.discrete_grid_conversion import (
+    DiscreteGridConverter,
     _get_code_to_index_func,
     _get_discrete_vars_with_non_index_codes,
     _get_index_to_code_func,
-    convert_discrete_codes_to_indices,
+    convert_arbitrary_codes_to_array_indices,
 )
 
 
@@ -66,7 +66,7 @@ def test_discrete_state_converter_internal_to_params(discrete_state_converter_kw
     internal_params = {
         "next___c_index__": 1,
     }
-    converter = DiscreteStateConverter(**discrete_state_converter_kwargs)
+    converter = DiscreteGridConverter(**discrete_state_converter_kwargs)
     assert converter.internal_to_params(internal_params) == expected
 
 
@@ -77,7 +77,7 @@ def test_discrete_state_converter_params_to_internal(discrete_state_converter_kw
     params = {
         "next_c": 1,
     }
-    converter = DiscreteStateConverter(**discrete_state_converter_kwargs)
+    converter = DiscreteGridConverter(**discrete_state_converter_kwargs)
     assert converter.params_to_internal(params) == expected
 
 
@@ -86,7 +86,7 @@ def test_discrete_state_converter_internal_to_states(discrete_state_converter_kw
     internal_states = {
         "__c_index__": jnp.array([0, 1]),
     }
-    converter = DiscreteStateConverter(**discrete_state_converter_kwargs)
+    converter = DiscreteGridConverter(**discrete_state_converter_kwargs)
     assert_array_equal(converter.internal_to_states(internal_states)["c"], expected)
 
 
@@ -95,7 +95,7 @@ def test_discrete_state_converter_states_to_internal(discrete_state_converter_kw
     states = {
         "c": jnp.array([1, 0]),
     }
-    converter = DiscreteStateConverter(**discrete_state_converter_kwargs)
+    converter = DiscreteGridConverter(**discrete_state_converter_kwargs)
     assert_array_equal(converter.states_to_internal(states)["__c_index__"], expected)
 
 
@@ -121,7 +121,7 @@ def test_convert_discrete_codes_to_indices(model):
     # add replace method to model mock
     model.replace = lambda **kwargs: ModelMock(**kwargs, n_periods=model.n_periods)
 
-    got, _ = convert_discrete_codes_to_indices(model)
+    got, _ = convert_arbitrary_codes_to_array_indices(model)
 
     assert "c" not in got.states
     assert "__c_index__" in got.states

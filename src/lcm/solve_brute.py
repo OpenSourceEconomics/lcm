@@ -10,7 +10,7 @@ def solve(
     continuous_choice_grids,
     compute_ccv_functions,
     emax_calculators,
-    converter,
+    discrete_grid_converter,
     logger,
 ):
     """Solve a model by brute force.
@@ -43,15 +43,15 @@ def solve(
         emax_calculators (list): List of functions that take continuation
             values for combinations of states and discrete choices and calculate the
             expected maximum over all discrete choices of a given state.
-        converter (DiscreteStateConverter): Converter for states and parameters between
-            external and internal representation.
+        discrete_grid_converter (DiscreteGridConverter): Converter for discrete
+            variables and parameters between external and internal representation.
         logger (logging.Logger): Logger that logs to stdout.
 
     Returns:
         list: List with one value function array per period.
 
     """
-    internal_params = converter.params_to_internal(params)
+    internal_params = discrete_grid_converter.params_to_internal(params)
 
     # extract information
     n_periods = len(state_choice_spaces)

@@ -34,7 +34,7 @@ def test_get_combined_constraint():
         functions={"f": f, "g": g, "h": h},
         function_info=function_info,
         params=None,
-        converter=None,
+        discrete_grid_converter=None,
         random_utility_shocks=None,
         n_periods=None,
     )

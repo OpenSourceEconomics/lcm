@@ -38,7 +38,7 @@ class PartnerStatus:
 
 
 @dataclass
-class WorkingState:
+class WorkingStatus:
     retired: int = 0
     working: int = 1
 
@@ -113,7 +113,7 @@ MODEL_CONFIG = Model(
         "labor_income": labor_income,
     },
     choices={
-        "working": DiscreteGrid(WorkingState),
+        "working": DiscreteGrid(WorkingStatus),
         "consumption": LinspaceGrid(
             start=1,
             stop=100,

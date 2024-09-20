@@ -170,7 +170,7 @@ def get_lcm_function(
         continuous_choice_grids=continuous_choice_grids,
         compute_ccv_functions=compute_ccv_functions,
         emax_calculators=emax_calculators,
-        converter=_mod.converter,
+        discrete_grid_converter=_mod.discrete_grid_converter,
         logger=logger,
     )
 
@@ -184,7 +184,7 @@ def get_lcm_function(
         compute_ccv_policy_functions=compute_ccv_policy_functions,
         model=_mod,
         next_state=jax.jit(_next_state_simulate),
-        converter=_mod.converter,
+        discrete_grid_converter=_mod.discrete_grid_converter,
         logger=logger,
     )
 
@@ -195,7 +195,7 @@ def get_lcm_function(
     elif targets == "solve_and_simulate":
         _target = partial(simulate_model, solve_model=solve_model)
 
-    user_params = _mod.converter.internal_to_params(_mod.params)
+    user_params = _mod.discrete_grid_converter.internal_to_params(_mod.params)
     return cast(Callable, _target), user_params
 
 

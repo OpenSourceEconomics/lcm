@@ -15,7 +15,7 @@ from lcm import DiscreteGrid, LinspaceGrid, Model
 # Categorical variables
 # --------------------------------------------------------------------------------------
 @dataclass
-class WorkingState:
+class WorkingStatus:
     retired: int = 0
     working: int = 1
 
@@ -78,7 +78,7 @@ MODEL_CONFIG = Model(
         "age": age,
     },
     choices={
-        "working": DiscreteGrid(WorkingState),
+        "working": DiscreteGrid(WorkingStatus),
         "consumption": LinspaceGrid(
             start=1,
             stop=100,
