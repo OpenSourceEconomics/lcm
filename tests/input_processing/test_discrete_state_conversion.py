@@ -80,22 +80,30 @@ def test_discrete_state_converter_params_to_internal(discrete_state_converter_kw
     assert converter.params_to_internal(params) == expected
 
 
-def test_discrete_state_converter_internal_to_states(discrete_state_converter_kwargs):
+def test_discrete_state_converter_internal_to_discrete_vars(
+    discrete_state_converter_kwargs,
+):
     expected = jnp.array([1, 0])
     internal_states = {
         "__c_index__": jnp.array([0, 1]),
     }
     converter = DiscreteGridConverter(**discrete_state_converter_kwargs)
-    assert_array_equal(converter.internal_to_states(internal_states)["c"], expected)
+    assert_array_equal(
+        converter.internal_to_discrete_vars(internal_states)["c"], expected
+    )
 
 
-def test_discrete_state_converter_states_to_internal(discrete_state_converter_kwargs):
+def test_discrete_state_converter_discrete_vars_to_internal(
+    discrete_state_converter_kwargs,
+):
     expected = jnp.array([0, 1])
     states = {
         "c": jnp.array([1, 0]),
     }
     converter = DiscreteGridConverter(**discrete_state_converter_kwargs)
-    assert_array_equal(converter.states_to_internal(states)["__c_index__"], expected)
+    assert_array_equal(
+        converter.discrete_vars_to_internal(states)["__c_index__"], expected
+    )
 
 
 def test_discrete_state_converter_raises_error_if_keys_dont_match():

@@ -97,7 +97,7 @@ def simulate(
     sparse_choice_variables = model.variable_info.query("is_choice & is_sparse").index
 
     # The following variables are updated during the forward simulation
-    states = discrete_grid_converter.states_to_internal(initial_states)
+    states = discrete_grid_converter.discrete_vars_to_internal(initial_states)
     key = jax.random.PRNGKey(seed=seed)
 
     # Forward simulation
@@ -213,7 +213,7 @@ def simulate(
 
         logger.info("Period: %s", period)
 
-    processed = _process_simulated_data(_simulation_results)
+    processed = _process_simulated_data(_simulation_results, discrete_grid_converter)
 
     if additional_targets is not None:
         calculated_targets = _compute_targets(
@@ -339,7 +339,7 @@ def _compute_targets(processed_results, targets, model_functions, params):
     return target_func(params=params, **kwargs)
 
 
-def _process_simulated_data(results):
+def _process_simulated_data(results, discrete_grid_converter):
     """Process and flatten the simulation results.
 
     This function produces a dict of arrays for each var with dimension (n_periods *
@@ -352,6 +352,7 @@ def _process_simulated_data(results):
         results (list): List of dicts with simulation results. Each dict contains the
             value, choices, and states for one period. Choices and states are stored in
             a nested dictionary.
+        discrete_grid_converter (DiscreteGridConverter): Converter for discrete grids.
 
     Returns:
         dict: Dict with processed simulation results. The keys are the variable names
@@ -370,7 +371,8 @@ def _process_simulated_data(results):
     }
     out = {key: jnp.concatenate(values) for key, values in dict_of_lists.items()}
     out["_period"] = jnp.repeat(jnp.arange(n_periods), n_initial_states)
-    return out
+
+    return discrete_grid_converter.internal_to_discrete_vars(out)
 
 
 # ======================================================================================

@@ -78,7 +78,7 @@ def next_wealth(wealth, consumption, labor_income, interest_rate):
 # the grid. We therefore round the result of the continuous state transition function.
 def next_wealth_discrete(wealth, consumption, labor_income, interest_rate):
     next_wealth_cont = next_wealth(wealth, consumption, labor_income, interest_rate)
-    return jnp.rint(next_wealth_cont).astype(jnp.int32)
+    return jnp.clip(jnp.rint(next_wealth_cont).astype(jnp.int32), 1, 400)
 
 
 # --------------------------------------------------------------------------------------

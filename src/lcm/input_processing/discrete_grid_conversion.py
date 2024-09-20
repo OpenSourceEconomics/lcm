@@ -1,5 +1,7 @@
+import functools
 from collections.abc import Callable
 from dataclasses import dataclass, field, make_dataclass
+from typing import TypeVar, cast
 
 import jax.numpy as jnp
 from dags.signature import with_signature
@@ -70,49 +72,36 @@ class DiscreteGridConverter:
                 out[f"next___{var}_index__"] = out.pop(old_name)
         return out
 
-    def internal_to_states(self, states: dict[str, Array]) -> dict[str, Array]:
+    def internal_to_discrete_vars(
+        self, variables: dict[str, Array]
+    ) -> dict[str, Array]:
         """Convert states from internal to external representation.
 
-        If a state has been converted, the name of its corresponding index function must
-        be changed from `___{var}_index__` to `{var}`, and the values of the state must
-        be converted from indices to codes.
+        If a variable has been converted, the name of its corresponding index function
+        must be changed from `___{var}_index__` to `{var}`, and the values of the
+        variable must be converted from indices to codes.
 
         """
-        out = states.copy()
+        out = variables.copy()
         for var, index_to_code in self.index_to_code.items():
             old_name = f"__{var}_index__"
-            if old_name in states:
+            if old_name in variables:
                 out[var] = index_to_code(out.pop(old_name))
         return out
 
-    def states_to_internal(self, states: dict[str, Array]) -> dict[str, Array]:
+    def discrete_vars_to_internal(
+        self, variables: dict[str, Array]
+    ) -> dict[str, Array]:
         """Convert states from external to internal representation.
 
-        If a state has been converted, the name of its corresponding index function must
-        be changed from `{var}` to `___{var}_index__`, and the values of the state must
-        be converted from codes to indices.
+        If a variable has been converted, the name of its corresponding index function
+        must be changed from `{var}` to `___{var}_index__`, and the values of the
+        variable must be converted from codes to indices.
 
         """
-        out = states.copy()
+        out = variables.copy()
         for var, code_to_index in self.code_to_index.items():
-            if var in states:
-                out[f"__{var}_index__"] = code_to_index(out.pop(var))
-        return out
-
-    def internal_to_choices(self, choices: dict[str, Array]) -> dict[str, Array]:
-        """Convert choices from internal to external representation."""
-        out = choices.copy()
-        for var, index_to_code in self.index_to_code.items():
-            old_name = f"__{var}_index__"
-            if old_name in choices:
-                out[var] = index_to_code(out.pop(old_name))
-        return out
-
-    def choices_to_internal(self, choices: dict[str, Array]) -> dict[str, Array]:
-        """Convert choices from external to internal representation."""
-        out = choices.copy()
-        for var, code_to_index in self.code_to_index.items():
-            if var in choices:
+            if var in variables:
                 out[f"__{var}_index__"] = code_to_index(out.pop(var))
         return out
 
@@ -172,7 +161,11 @@ def convert_arbitrary_codes_to_array_indices(
     non_index_states = [s for s in model.states if s in non_index_discrete_vars]
 
     for var in non_index_states:
-        functions[f"next___{var}_index__"] = functions.pop(f"next_{var}")
+        functions[f"next___{var}_index__"] = _get_next_index_func(
+            functions.pop(f"next_{var}"),
+            codes_array=gridspecs[var].to_jax(),
+            name=var,
+        )
 
     # Add index to code functions
     # ----------------------------------------------------------------------------------
@@ -218,6 +211,31 @@ def _get_discrete_vars_with_non_index_codes(model: Model) -> list[str]:
     return discrete_vars
 
 
+F = TypeVar("F", bound=Callable[[tuple[Array, ...]], Array])
+
+
+def _get_next_index_func(next_func: F, codes_array: Array, name: str) -> F:
+    """Get next function for index state variable.
+
+    Args:
+        next_func: The next function for the state variable.
+        codes_array: An array of codes.
+        name: The name of the state variable.
+
+    Returns:
+        A next function corresponding to the index version of the state variable.
+
+    """
+    code_to_index = _get_code_to_index_func(codes_array, name)
+
+    @functools.wraps(next_func)
+    def next_index_func(*args, **kwargs) -> Array:
+        next_state = next_func(*args, **kwargs)
+        return code_to_index(next_state)
+
+    return cast(F, next_index_func)
+
+
 def _get_index_to_code_func(codes_array: Array, name: str) -> Callable[[Array], Array]:
     """Get function mapping from index to code.
 
@@ -253,11 +271,14 @@ def _get_code_to_index_func(codes_array: Array, name: str) -> Callable[[Array], 
         indices.
 
     """
+    sorted_indices = jnp.argsort(codes_array)
+    sorted_codes = codes_array[sorted_indices]
 
     @with_signature(args=[name])
     def code_to_index(*args, **kwargs):
         kwargs = all_as_kwargs(args, kwargs, arg_names=[name])
         data = kwargs[name]
-        return jnp.argmax(data[:, None] == codes_array[None, :], axis=1)
+        indices_in_sorted = jnp.searchsorted(sorted_codes, data)
+        return sorted_indices[indices_in_sorted]
 
     return code_to_index
