@@ -201,6 +201,9 @@ def _validate_discrete_grid(category_class: type) -> None:
     if error_messages:
         msg = format_messages(error_messages)
         raise GridInitializationError(msg)
+    if error_messages:
+        msg = format_messages(error_messages)
+        raise GridInitializationError(msg)
 
 
 def _get_field_names_and_values(dc: type) -> dict[str, Any]:
