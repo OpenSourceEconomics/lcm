@@ -1,3 +1,4 @@
+import re
 from dataclasses import make_dataclass
 
 import numpy as np
@@ -15,44 +16,40 @@ from lcm.grids import (
 
 
 def test_validate_discrete_grid_empty():
-    names_and_values = {}
-    expected = ["category_class passed to DiscreteGrid must have at least one field"]
-    assert _validate_discrete_grid(names_and_values) == expected
+    category_class = make_dataclass("Category", [])
+    error_msg = "category_class passed to DiscreteGrid must have at least one field"
+    with pytest.raises(GridInitializationError, match=error_msg):
+        _validate_discrete_grid(category_class)
 
 
 def test_validate_discrete_grid_non_scalar_input():
-    names_and_values = {"a": 1, "b": "wrong_type"}
-    expected = [
-        (
-            "Field values of the category_class passed to DiscreteGrid can only be "
-            "scalar int or float values. The values to the following fields are not: "
-            "['b']"
-        )
-    ]
-    assert _validate_discrete_grid(names_and_values) == expected
+    category_class = make_dataclass("Category", [("a", int, 1), ("b", str, "s")])
+    error_msg = (
+        "Field values of the category_class passed to DiscreteGrid can only be "
+        "scalar int or float values. The values to the following fields are not: ['b']"
+    )
+    with pytest.raises(GridInitializationError, match=re.escape(error_msg)):
+        _validate_discrete_grid(category_class)
 
 
 def test_validate_discrete_grid_none_input():
-    names_and_values = {"a": None, "b": 1}
-    expected = [
-        (
-            "Field values of the category_class passed to DiscreteGrid can only be "
-            "scalar int or float values. The values to the following fields are not: "
-            "['a']"
-        )
-    ]
-    assert _validate_discrete_grid(names_and_values) == expected
+    category_class = make_dataclass("Category", [("a", int), ("b", int, 1)])
+    error_msg = (
+        "Field values of the category_class passed to DiscreteGrid can only be "
+        "scalar int or float values. The values to the following fields are not: ['a']"
+    )
+    with pytest.raises(GridInitializationError, match=re.escape(error_msg)):
+        _validate_discrete_grid(category_class)
 
 
 def test_validate_discrete_grid_non_unique():
-    names_and_values = {"a": 1, "b": 2, "c": 2}
-    expected = [
-        (
-            "Field values of the category_class passed to DiscreteGrid must be unique. "
-            "The following values are duplicated: {2}"
-        )
-    ]
-    assert _validate_discrete_grid(names_and_values) == expected
+    category_class = make_dataclass("Category", [("a", int, 1), ("b", int, 1)])
+    error_msg = (
+        "Field values of the category_class passed to DiscreteGrid must be unique. "
+        "The following values are duplicated: {1}"
+    )
+    with pytest.raises(GridInitializationError, match=error_msg):
+        _validate_discrete_grid(category_class)
 
 
 def test_get_fields_with_defaults():
@@ -76,31 +73,33 @@ def test_get_fields_empty():
 
 
 def test_validate_continuous_grid_invalid_start():
-    assert _validate_continuous_grid("a", 1, 10) == [
-        "start must be a scalar int or float value"
-    ]
+    error_msg = "start must be a scalar int or float value"
+    with pytest.raises(GridInitializationError, match=error_msg):
+        _validate_continuous_grid("a", 1, 10)
 
 
 def test_validate_continuous_grid_invalid_stop():
-    assert _validate_continuous_grid(1, "a", 10) == [
-        "stop must be a scalar int or float value"
-    ]
+    error_msg = "stop must be a scalar int or float value"
+    with pytest.raises(GridInitializationError, match=error_msg):
+        _validate_continuous_grid(1, "a", 10)
 
 
 def test_validate_continuous_grid_invalid_n_points():
-    assert _validate_continuous_grid(1, 2, "a") == [
-        "n_points must be an int greater than 0 but is a"
-    ]
+    error_msg = "n_points must be an int greater than 0 but is a"
+    with pytest.raises(GridInitializationError, match=error_msg):
+        _validate_continuous_grid(1, 2, "a")
 
 
 def test_validate_continuous_grid_negative_n_points():
-    assert _validate_continuous_grid(1, 2, -1) == [
-        "n_points must be an int greater than 0 but is -1"
-    ]
+    error_msg = "n_points must be an int greater than 0 but is -1"
+    with pytest.raises(GridInitializationError, match=error_msg):
+        _validate_continuous_grid(1, 2, -1)
 
 
 def test_validate_continuous_grid_start_greater_than_stop():
-    assert _validate_continuous_grid(2, 1, 10) == ["start must be less than stop"]
+    error_msg = "start must be less than stop"
+    with pytest.raises(GridInitializationError, match=error_msg):
+        _validate_continuous_grid(2, 1, 10)
 
 
 def test_linspace_grid_creation():

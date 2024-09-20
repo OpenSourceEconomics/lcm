@@ -53,7 +53,6 @@ def model(category_class_factory):
 @pytest.fixture
 def discrete_state_converter_kwargs():
     return {
-        "converted_states": ["c"],
         "index_to_code": {"c": _get_index_to_code_func(jnp.array([1, 0]), name="c")},
         "code_to_index": {"c": _get_code_to_index_func(jnp.array([1, 0]), name="c")},
     }
@@ -99,6 +98,16 @@ def test_discrete_state_converter_states_to_internal(discrete_state_converter_kw
     assert_array_equal(converter.states_to_internal(states)["__c_index__"], expected)
 
 
+def test_discrete_state_converter_raises_error_if_keys_dont_match():
+    index_to_code = {"a": 0}
+    code_to_index = {"b": 0}
+    with pytest.raises(
+        ValueError,
+        match="The keys of index_to_code and code_to_index must be the same.",
+    ):
+        DiscreteGridConverter(index_to_code=index_to_code, code_to_index=code_to_index)
+
+
 def test_get_index_to_label_func():
     codes_array = jnp.array([1, 0])
     got = _get_index_to_code_func(codes_array, name="foo")
@@ -126,7 +135,7 @@ def test_convert_discrete_codes_to_indices(model):
     assert "c" not in got.states
     assert "__c_index__" in got.states
     assert "c" in got.functions
-    assert got.states["__c_index__"].categories == ["__cat0_index__", "__cat1_index__"]
-    assert got.states["__c_index__"].codes == [0, 1]
+    assert got.states["__c_index__"].categories == ("__cat0_index__", "__cat1_index__")
+    assert got.states["__c_index__"].codes == (0, 1)
     assert got.functions["c"](0) == 1
     assert got.functions["c"](1) == 0

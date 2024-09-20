@@ -77,14 +77,11 @@ class ContinuousGrid(Grid, ABC):
     n_points: int
 
     def __post_init__(self) -> None:
-        errors = _validate_continuous_grid(
+        _validate_continuous_grid(
             start=self.start,
             stop=self.stop,
             n_points=self.n_points,
         )
-        if errors:
-            msg = format_messages(errors)
-            raise GridInitializationError(msg)
 
     @abstractmethod
     def to_jax(self) -> Array:
@@ -224,7 +221,7 @@ def _validate_continuous_grid(
     start: float,
     stop: float,
     n_points: int,
-) -> list[str]:
+) -> None:
     """Validate the continuous grid parameters.
 
     Args:
@@ -232,8 +229,8 @@ def _validate_continuous_grid(
         stop: The stop value of the grid.
         n_points: The number of points in the grid.
 
-    Returns:
-        list[str]: A list of error messages.
+    Raises:
+        GridInitializationError: If the grid parameters are invalid.
 
     """
     error_messages = []
@@ -254,4 +251,6 @@ def _validate_continuous_grid(
     if valid_start_type and valid_stop_type and start >= stop:
         error_messages.append("start must be less than stop")
 
-    return error_messages
+    if error_messages:
+        msg = format_messages(error_messages)
+        raise GridInitializationError(msg)

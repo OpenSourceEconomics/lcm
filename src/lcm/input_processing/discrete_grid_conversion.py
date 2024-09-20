@@ -14,13 +14,14 @@ from lcm.typing import ParamsDict
 from lcm.user_model import Model
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, kw_only=True)
 class DiscreteGridConverter:
-    """Converts between representations of discrete variables and their parameters.
+    """Converts between representations of discrete variables and associated parameters.
 
     While LCM supports general discrete grids, internally, these are converted to
-    indices. This class provides functionality for converting between the internal
-    representation and the external representation.
+    array indices. This class provides functionality for converting between the internal
+    representation and the external representation of states, choices, and associated
+    parameters.
 
     Attributes:
         index_to_code: A dictionary of functions mapping from the internal index to the
@@ -35,6 +36,12 @@ class DiscreteGridConverter:
     index_to_code: dict[str, Callable[[Array], Array]] = field(default_factory=dict)
     code_to_index: dict[str, Callable[[Array], Array]] = field(default_factory=dict)
 
+    def __post_init__(self) -> None:
+        if set(self.index_to_code.keys()) != set(self.code_to_index.keys()):
+            raise ValueError(
+                "The keys of index_to_code and code_to_index must be the same."
+            )
+
     def internal_to_params(self, params: ParamsDict) -> ParamsDict:
         """Convert parameters from internal to external representation.
 
@@ -44,8 +51,9 @@ class DiscreteGridConverter:
         """
         out = params.copy()
         for var in self.index_to_code:
-            out.pop(f"next___{var}_index__")
-            out[f"next_{var}"] = params[f"next___{var}_index__"]
+            old_name = f"next___{var}_index__"
+            if old_name in out:
+                out[f"next_{var}"] = out.pop(old_name)
         return out
 
     def params_to_internal(self, params: ParamsDict) -> ParamsDict:
@@ -57,8 +65,9 @@ class DiscreteGridConverter:
         """
         out = params.copy()
         for var in self.index_to_code:
-            out.pop(f"next_{var}")
-            out[f"next___{var}_index__"] = params[f"next_{var}"]
+            old_name = f"next_{var}"
+            if old_name in out:
+                out[f"next___{var}_index__"] = out.pop(old_name)
         return out
 
     def internal_to_states(self, states: dict[str, Array]) -> dict[str, Array]:
@@ -71,8 +80,9 @@ class DiscreteGridConverter:
         """
         out = states.copy()
         for var, index_to_code in self.index_to_code.items():
-            out.pop(f"__{var}_index__")
-            out[var] = index_to_code(states[f"__{var}_index__"])
+            old_name = f"__{var}_index__"
+            if old_name in states:
+                out[var] = index_to_code(out.pop(old_name))
         return out
 
     def states_to_internal(self, states: dict[str, Array]) -> dict[str, Array]:
@@ -85,24 +95,25 @@ class DiscreteGridConverter:
         """
         out = states.copy()
         for var, code_to_index in self.code_to_index.items():
-            out.pop(var)
-            out[f"__{var}_index__"] = code_to_index(states[var])
+            if var in states:
+                out[f"__{var}_index__"] = code_to_index(out.pop(var))
         return out
 
     def internal_to_choices(self, choices: dict[str, Array]) -> dict[str, Array]:
         """Convert choices from internal to external representation."""
         out = choices.copy()
         for var, index_to_code in self.index_to_code.items():
-            out.pop(f"__{var}_index__")
-            out[var] = index_to_code(choices[f"__{var}_index__"])
+            old_name = f"__{var}_index__"
+            if old_name in choices:
+                out[var] = index_to_code(out.pop(old_name))
         return out
 
     def choices_to_internal(self, choices: dict[str, Array]) -> dict[str, Array]:
         """Convert choices from external to internal representation."""
         out = choices.copy()
         for var, code_to_index in self.code_to_index.items():
-            out.pop(var)
-            out[f"__{var}_index__"] = code_to_index(choices[var])
+            if var in choices:
+                out[f"__{var}_index__"] = code_to_index(out.pop(var))
         return out
 
 

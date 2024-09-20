@@ -92,12 +92,12 @@ def test_get_variable_info(model):
 def test_get_gridspecs(model):
     got = get_gridspecs(model)
     assert isinstance(got["a"], DiscreteGrid)
-    assert got["a"].categories == ["cat0", "cat1"]
-    assert got["a"].codes == [0, 1]
+    assert got["a"].categories == ("cat0", "cat1")
+    assert got["a"].codes == (0, 1)
 
     assert isinstance(got["c"], DiscreteGrid)
-    assert got["c"].categories == ["cat0", "cat1"]
-    assert got["c"].codes == [1, 10]
+    assert got["c"].categories == ("cat0", "cat1")
+    assert got["c"].codes == (1, 10)
 
 
 def test_get_grids(model):
@@ -143,12 +143,12 @@ def test_process_model_iskhakov_et_al_2017():
     assert model.gridspecs["consumption"] == consumption_grid
 
     assert isinstance(model.gridspecs["retirement"], DiscreteGrid)
-    assert model.gridspecs["retirement"].categories == ["working", "retired"]
-    assert model.gridspecs["retirement"].codes == [0, 1]
+    assert model.gridspecs["retirement"].categories == ("working", "retired")
+    assert model.gridspecs["retirement"].codes == (0, 1)
 
     assert isinstance(model.gridspecs["lagged_retirement"], DiscreteGrid)
-    assert model.gridspecs["lagged_retirement"].categories == ["working", "retired"]
-    assert model.gridspecs["lagged_retirement"].codes == [0, 1]
+    assert model.gridspecs["lagged_retirement"].categories == ("working", "retired")
+    assert model.gridspecs["lagged_retirement"].codes == (0, 1)
 
     # Grids
     expected = grid_helpers.linspace(**model_config.choices["consumption"].__dict__)
@@ -206,8 +206,8 @@ def test_process_model():
     assert model.gridspecs["consumption"] == consumption_specs
 
     assert isinstance(model.gridspecs["retirement"], DiscreteGrid)
-    assert model.gridspecs["retirement"].categories == ["working", "retired"]
-    assert model.gridspecs["retirement"].codes == [0, 1]
+    assert model.gridspecs["retirement"].categories == ("working", "retired")
+    assert model.gridspecs["retirement"].codes == (0, 1)
 
     # Grids
     expected = grid_helpers.linspace(**model_config.choices["consumption"].__dict__)
