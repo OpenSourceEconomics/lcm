@@ -71,7 +71,7 @@ def simulate(
         # will do it.
         vf_arr_list = solve_model(params)
 
-    internal_params = discrete_grid_converter.params_to_internal(params)
+    internal_params = discrete_grid_converter.params_to_internal_params(params)
 
     logger.info("Starting simulation")
 
@@ -97,7 +97,7 @@ def simulate(
     sparse_choice_variables = model.variable_info.query("is_choice & is_sparse").index
 
     # The following variables are updated during the forward simulation
-    states = discrete_grid_converter.discrete_vars_to_internal(initial_states)
+    states = discrete_grid_converter.vars_to_internal_vars(initial_states)
     key = jax.random.PRNGKey(seed=seed)
 
     # Forward simulation
@@ -372,7 +372,7 @@ def _process_simulated_data(results, discrete_grid_converter):
     out = {key: jnp.concatenate(values) for key, values in dict_of_lists.items()}
     out["_period"] = jnp.repeat(jnp.arange(n_periods), n_initial_states)
 
-    return discrete_grid_converter.internal_to_discrete_vars(out)
+    return discrete_grid_converter.internal_vars_to_vars(out)
 
 
 # ======================================================================================

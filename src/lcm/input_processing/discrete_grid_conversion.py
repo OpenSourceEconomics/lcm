@@ -44,66 +44,62 @@ class DiscreteGridConverter:
                 "The keys of index_to_code and code_to_index must be the same."
             )
 
-    def internal_to_params(self, params: ParamsDict) -> ParamsDict:
+    def internal_params_to_params(self, internal: ParamsDict) -> ParamsDict:
         """Convert parameters from internal to external representation.
 
         If a state has been converted, the name of its corresponding next function must
         be changed from `next___{var}_index__` to `next_{var}`.
 
         """
-        out = params.copy()
+        params = internal.copy()
         for var in self.index_to_code:
             old_name = f"next___{var}_index__"
-            if old_name in out:
-                out[f"next_{var}"] = out.pop(old_name)
-        return out
+            if old_name in params:
+                params[f"next_{var}"] = params.pop(old_name)
+        return params
 
-    def params_to_internal(self, params: ParamsDict) -> ParamsDict:
+    def params_to_internal_params(self, params: ParamsDict) -> ParamsDict:
         """Convert parameters from external to internal representation.
 
         If a state has been converted, the name of its corresponding next function must
         be changed from `next_{var}` to `next___{var}_index__`.
 
         """
-        out = params.copy()
+        internal = params.copy()
         for var in self.index_to_code:
             old_name = f"next_{var}"
-            if old_name in out:
-                out[f"next___{var}_index__"] = out.pop(old_name)
-        return out
+            if old_name in internal:
+                internal[f"next___{var}_index__"] = internal.pop(old_name)
+        return internal
 
-    def internal_to_discrete_vars(
-        self, variables: dict[str, Array]
-    ) -> dict[str, Array]:
-        """Convert states from internal to external representation.
+    def internal_vars_to_vars(self, internal: dict[str, Array]) -> dict[str, Array]:
+        """Convert discrete variables from internal to external representation.
 
         If a variable has been converted, the name of its corresponding index function
         must be changed from `___{var}_index__` to `{var}`, and the values of the
         variable must be converted from indices to codes.
 
         """
-        out = variables.copy()
+        variables = internal.copy()
         for var, index_to_code in self.index_to_code.items():
             old_name = f"__{var}_index__"
-            if old_name in variables:
-                out[var] = index_to_code(out.pop(old_name))
-        return out
+            if old_name in internal:
+                variables[var] = index_to_code(variables.pop(old_name))
+        return variables
 
-    def discrete_vars_to_internal(
-        self, variables: dict[str, Array]
-    ) -> dict[str, Array]:
-        """Convert states from external to internal representation.
+    def vars_to_internal_vars(self, variables: dict[str, Array]) -> dict[str, Array]:
+        """Convert discrete variables from external to internal representation.
 
         If a variable has been converted, the name of its corresponding index function
         must be changed from `{var}` to `___{var}_index__`, and the values of the
         variable must be converted from codes to indices.
 
         """
-        out = variables.copy()
+        internal = variables.copy()
         for var, code_to_index in self.code_to_index.items():
             if var in variables:
-                out[f"__{var}_index__"] = code_to_index(out.pop(var))
-        return out
+                internal[f"__{var}_index__"] = code_to_index(internal.pop(var))
+        return internal
 
 
 def convert_arbitrary_codes_to_array_indices(

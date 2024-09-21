@@ -195,7 +195,7 @@ def get_lcm_function(
     elif targets == "solve_and_simulate":
         _target = partial(simulate_model, solve_model=solve_model)
 
-    user_params = _mod.discrete_grid_converter.internal_to_params(_mod.params)
+    user_params = _mod.discrete_grid_converter.internal_params_to_params(_mod.params)
     return cast(Callable, _target), user_params
 
 

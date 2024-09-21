@@ -51,7 +51,7 @@ def solve(
         list: List with one value function array per period.
 
     """
-    internal_params = discrete_grid_converter.params_to_internal(params)
+    internal_params = discrete_grid_converter.params_to_internal_params(params)
 
     # extract information
     n_periods = len(state_choice_spaces)

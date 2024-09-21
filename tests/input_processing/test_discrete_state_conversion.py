@@ -67,7 +67,7 @@ def test_discrete_state_converter_internal_to_params(discrete_state_converter_kw
         "next___c_index__": 1,
     }
     converter = DiscreteGridConverter(**discrete_state_converter_kwargs)
-    assert converter.internal_to_params(internal_params) == expected
+    assert converter.internal_params_to_params(internal_params) == expected
 
 
 def test_discrete_state_converter_params_to_internal(discrete_state_converter_kwargs):
@@ -78,7 +78,7 @@ def test_discrete_state_converter_params_to_internal(discrete_state_converter_kw
         "next_c": 1,
     }
     converter = DiscreteGridConverter(**discrete_state_converter_kwargs)
-    assert converter.params_to_internal(params) == expected
+    assert converter.params_to_internal_params(params) == expected
 
 
 def test_discrete_state_converter_internal_to_discrete_vars(
@@ -89,9 +89,7 @@ def test_discrete_state_converter_internal_to_discrete_vars(
         "__c_index__": jnp.array([0, 1]),
     }
     converter = DiscreteGridConverter(**discrete_state_converter_kwargs)
-    assert_array_equal(
-        converter.internal_to_discrete_vars(internal_states)["c"], expected
-    )
+    assert_array_equal(converter.internal_vars_to_vars(internal_states)["c"], expected)
 
 
 def test_discrete_state_converter_discrete_vars_to_internal(
@@ -102,9 +100,7 @@ def test_discrete_state_converter_discrete_vars_to_internal(
         "c": jnp.array([1, 0]),
     }
     converter = DiscreteGridConverter(**discrete_state_converter_kwargs)
-    assert_array_equal(
-        converter.discrete_vars_to_internal(states)["__c_index__"], expected
-    )
+    assert_array_equal(converter.vars_to_internal_vars(states)["__c_index__"], expected)
 
 
 def test_discrete_state_converter_raises_error_if_keys_dont_match():
