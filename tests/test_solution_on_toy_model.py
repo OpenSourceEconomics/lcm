@@ -1,7 +1,7 @@
 """Test analytical solution and simulation with only discrete choices."""
 
 from copy import deepcopy
-from dataclasses import replace
+from dataclasses import dataclass, replace
 
 import jax.numpy as jnp
 import numpy as np
@@ -18,6 +18,24 @@ from lcm.entry_point import get_lcm_function
 # ======================================================================================
 # Model specification
 # ======================================================================================
+@dataclass
+class ConsumptionChoice:
+    low: int = 0
+    high: int = 1
+
+
+@dataclass
+class WorkingStatus:
+    retired: int = 0
+    working: int = 1
+
+
+@dataclass
+class HealthStatus:
+    bad: int = 0
+    good: int = 1
+
+
 def utility(consumption, working, wealth, health):  # noqa: ARG001
     return jnp.log(1 + health * consumption) - 0.5 * working
 
@@ -38,8 +56,8 @@ DETERMINISTIC_MODEL = Model(
     },
     n_periods=2,
     choices={
-        "consumption": DiscreteGrid([0, 1]),
-        "working": DiscreteGrid([0, 1]),
+        "consumption": DiscreteGrid(ConsumptionChoice),
+        "working": DiscreteGrid(WorkingStatus),
     },
     states={
         "wealth": LinspaceGrid(
@@ -58,7 +76,7 @@ def next_health(health):
 
 STOCHASTIC_MODEL = deepcopy(DETERMINISTIC_MODEL)
 STOCHASTIC_MODEL.functions["next_health"] = next_health
-STOCHASTIC_MODEL.states["health"] = DiscreteGrid([0, 1])
+STOCHASTIC_MODEL.states["health"] = DiscreteGrid(HealthStatus)
 
 
 # ======================================================================================

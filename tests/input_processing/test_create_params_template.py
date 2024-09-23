@@ -29,17 +29,17 @@ class ModelMock:
     states: dict[str, Any] | None = None
 
 
-def test_create_params_without_shocks():
+def test_create_params_without_shocks(binary_category_class):
     model = ModelMock(
         functions={
             "f": lambda a, b, c: None,  # noqa: ARG005
             "next_b": lambda b: b,
         },
         choices={
-            "a": DiscreteGrid([0, 1]),
+            "a": DiscreteGrid(binary_category_class),
         },
         states={
-            "b": DiscreteGrid([0, 1]),
+            "b": DiscreteGrid(binary_category_class),
         },
         n_periods=None,
     )

@@ -10,6 +10,7 @@ See also the specifications in tests/test_models/deterministic.py.
 """
 
 from copy import deepcopy
+from dataclasses import dataclass
 
 import jax.numpy as jnp
 
@@ -19,6 +20,27 @@ from lcm import DiscreteGrid, LinspaceGrid, Model
 # ======================================================================================
 # Model functions
 # ======================================================================================
+
+
+# --------------------------------------------------------------------------------------
+# Categorical variables
+# --------------------------------------------------------------------------------------
+@dataclass
+class HealthStatus:
+    bad: int = 0
+    good: int = 1
+
+
+@dataclass
+class PartnerStatus:
+    single: int = 0
+    partnered: int = 1
+
+
+@dataclass
+class WorkingStatus:
+    retired: int = 0
+    working: int = 1
 
 
 # --------------------------------------------------------------------------------------
@@ -91,7 +113,7 @@ MODEL_CONFIG = Model(
         "labor_income": labor_income,
     },
     choices={
-        "working": DiscreteGrid([0, 1]),
+        "working": DiscreteGrid(WorkingStatus),
         "consumption": LinspaceGrid(
             start=1,
             stop=100,
@@ -99,8 +121,8 @@ MODEL_CONFIG = Model(
         ),
     },
     states={
-        "health": DiscreteGrid([0, 1]),
-        "partner": DiscreteGrid([0, 1]),
+        "health": DiscreteGrid(HealthStatus),
+        "partner": DiscreteGrid(PartnerStatus),
         "wealth": LinspaceGrid(
             start=1,
             stop=100,

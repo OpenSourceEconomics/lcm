@@ -39,7 +39,7 @@ class ModelMock:
 
 
 @pytest.fixture
-def model():
+def model(category_class_factory):
     def next_c(a, b):
         return a + b
 
@@ -49,10 +49,10 @@ def model():
             "next_c": next_c,
         },
         choices={
-            "a": DiscreteGrid([0, 1]),
+            "a": DiscreteGrid(category_class_factory([0, 1])),
         },
         states={
-            "c": DiscreteGrid([0, 1]),
+            "c": DiscreteGrid(category_class_factory([1, 10])),
         },
     )
 
@@ -91,14 +91,19 @@ def test_get_variable_info(model):
 
 def test_get_gridspecs(model):
     got = get_gridspecs(model)
-    assert got["a"] == DiscreteGrid([0, 1])
-    assert got["c"] == DiscreteGrid([0, 1])
+    assert isinstance(got["a"], DiscreteGrid)
+    assert got["a"].categories == ("cat0", "cat1")
+    assert got["a"].codes == (0, 1)
+
+    assert isinstance(got["c"], DiscreteGrid)
+    assert got["c"].categories == ("cat0", "cat1")
+    assert got["c"].codes == (1, 10)
 
 
 def test_get_grids(model):
     got = get_grids(model)
     assert_array_equal(got["a"], jnp.array([0, 1]))
-    assert_array_equal(got["c"], jnp.array([0, 1]))
+    assert_array_equal(got["c"], jnp.array([1, 10]))
 
 
 def test_process_model_iskhakov_et_al_2017():
@@ -137,8 +142,13 @@ def test_process_model_iskhakov_et_al_2017():
     )
     assert model.gridspecs["consumption"] == consumption_grid
 
-    assert model.gridspecs["retirement"] == DiscreteGrid([0, 1])
-    assert model.gridspecs["lagged_retirement"] == DiscreteGrid([0, 1])
+    assert isinstance(model.gridspecs["retirement"], DiscreteGrid)
+    assert model.gridspecs["retirement"].categories == ("working", "retired")
+    assert model.gridspecs["retirement"].codes == (0, 1)
+
+    assert isinstance(model.gridspecs["lagged_retirement"], DiscreteGrid)
+    assert model.gridspecs["lagged_retirement"].categories == ("working", "retired")
+    assert model.gridspecs["lagged_retirement"].codes == (0, 1)
 
     # Grids
     expected = grid_helpers.linspace(**model_config.choices["consumption"].__dict__)
@@ -195,7 +205,9 @@ def test_process_model():
     )
     assert model.gridspecs["consumption"] == consumption_specs
 
-    assert model.gridspecs["retirement"] == DiscreteGrid([0, 1])
+    assert isinstance(model.gridspecs["retirement"], DiscreteGrid)
+    assert model.gridspecs["retirement"].categories == ("working", "retired")
+    assert model.gridspecs["retirement"].codes == (0, 1)
 
     # Grids
     expected = grid_helpers.linspace(**model_config.choices["consumption"].__dict__)

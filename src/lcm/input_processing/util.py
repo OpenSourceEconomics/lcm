@@ -133,7 +133,7 @@ def get_gridspecs(
     Returns:
         dict: Dictionary containing all variables of the model. The keys are
             the names of the variables. The values describe which values the variable
-            can take. For discrete variables these are the options. For continuous
+            can take. For discrete variables these are the codes. For continuous
             variables this is information about how to build the grids.
 
     """

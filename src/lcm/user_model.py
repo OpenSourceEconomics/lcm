@@ -31,17 +31,8 @@ class Model:
     states: dict[str, Grid] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
-        type_errors = _validate_attribute_types(self)
-
-        if type_errors:
-            msg = format_messages(type_errors)
-            raise ModelInitilizationError(msg)
-
-        logical_errors = _validate_logical_consistency(self)
-
-        if logical_errors:
-            msg = format_messages(logical_errors)
-            raise ModelInitilizationError(msg)
+        _validate_attribute_types(self)
+        _validate_logical_consistency(self)
 
     def replace(self, **kwargs) -> "Model":
         """Replace the attributes of the model.
@@ -56,7 +47,7 @@ class Model:
         return dc.replace(self, **kwargs)
 
 
-def _validate_attribute_types(model: Model) -> list[str]:
+def _validate_attribute_types(model: Model) -> None:  # noqa: C901
     """Validate the types of the model attributes."""
     error_messages = []
 
@@ -64,20 +55,18 @@ def _validate_attribute_types(model: Model) -> list[str]:
     # ----------------------------------------------------------------------------------
     for attr_name in ("choices", "states"):
         attr = getattr(model, attr_name)
-        if not isinstance(attr, dict):
-            error_messages.append(f"{attr_name} must be a dictionary.")
-        else:
+        if isinstance(attr, dict):
             for k, v in attr.items():
                 if not isinstance(k, str):
                     error_messages.append(f"{attr_name} key {k} must be a string.")
                 if not isinstance(v, Grid):
                     error_messages.append(f"{attr_name} value {v} must be an LCM grid.")
+        else:
+            error_messages.append(f"{attr_name} must be a dictionary.")
 
     # Validate types of functions
     # ----------------------------------------------------------------------------------
-    if not isinstance(model.functions, dict):
-        error_messages.append("functions must be a dictionary.")
-    else:
+    if isinstance(model.functions, dict):
         for k, v in model.functions.items():
             if not isinstance(k, str):
                 error_messages.append(f"function keys must be a strings, but is {k}.")
@@ -85,11 +74,15 @@ def _validate_attribute_types(model: Model) -> list[str]:
                 error_messages.append(
                     f"function values must be a callable, but is {v}."
                 )
+    else:
+        error_messages.append("functions must be a dictionary.")
 
-    return error_messages
+    if error_messages:
+        msg = format_messages(error_messages)
+        raise ModelInitilizationError(msg)
 
 
-def _validate_logical_consistency(model: Model) -> list[str]:
+def _validate_logical_consistency(model: Model) -> None:
     """Validate the logical consistency of the model."""
     error_messages = []
 
@@ -119,4 +112,6 @@ def _validate_logical_consistency(model: Model) -> list[str]:
             f"are used in both states and choices: {states_and_choices_overlap}.",
         )
 
-    return error_messages
+    if error_messages:
+        msg = format_messages(error_messages)
+        raise ModelInitilizationError(msg)

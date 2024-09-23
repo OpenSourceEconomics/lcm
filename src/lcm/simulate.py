@@ -9,6 +9,7 @@ from jax import vmap
 
 from lcm.argmax import argmax, segment_argmax
 from lcm.dispatchers import spacemap, vmap_1d
+from lcm.input_processing import DiscreteGridConverter
 from lcm.interfaces import InternalModel, Space
 
 
@@ -20,6 +21,7 @@ def simulate(
     compute_ccv_policy_functions,
     model: InternalModel,
     next_state,
+    discrete_grid_converter: DiscreteGridConverter,
     logger,
     solve_model=None,
     vf_arr_list=None,
@@ -43,6 +45,8 @@ def simulate(
             state and choice variables. For stochastic variables, it returns a random
             draw from the distribution of the next state.
         model (Model): Model instance.
+        discrete_grid_converter (DiscreteGridConverter): Converter for discrete
+            variables and parameters between external and internal representation.
         logger (logging.Logger): Logger that logs to stdout.
         solve_model (callable): Function that solves the model. Is only required if
             vf_arr_list is not provided.
@@ -63,7 +67,11 @@ def simulate(
             raise ValueError(
                 "You need to provide either vf_arr_list or solve_model.",
             )
+        # We do not need to convert the params here, because the solve_model function
+        # will do it.
         vf_arr_list = solve_model(params)
+
+    internal_params = discrete_grid_converter.params_to_internal_params(params)
 
     logger.info("Starting simulation")
 
@@ -89,7 +97,7 @@ def simulate(
     sparse_choice_variables = model.variable_info.query("is_choice & is_sparse").index
 
     # The following variables are updated during the forward simulation
-    states = initial_states
+    states = discrete_grid_converter.vars_to_internal_vars(initial_states)
     key = jax.random.PRNGKey(seed=seed)
 
     # Forward simulation
@@ -132,7 +140,7 @@ def simulate(
             continuous_choice_grids=continuous_choice_grids[period],
             vf_arr=vf_arr_list[period],
             state_indexers=state_indexers[period],
-            params=params,
+            params=internal_params,
         )
 
         # Get optimal discrete choice given the optimal conditional continuous choices
@@ -195,7 +203,7 @@ def simulate(
             **states,
             **choices,
             _period=jnp.repeat(period, n_initial_states),
-            params=params,
+            params=internal_params,
             keys=sim_keys,
         )
 
@@ -205,14 +213,14 @@ def simulate(
 
         logger.info("Period: %s", period)
 
-    processed = _process_simulated_data(_simulation_results)
+    processed = _process_simulated_data(_simulation_results, discrete_grid_converter)
 
     if additional_targets is not None:
         calculated_targets = _compute_targets(
             processed,
             targets=additional_targets,
             model_functions=model.functions,
-            params=params,
+            params=internal_params,
         )
         processed = {**processed, **calculated_targets}
 
@@ -331,19 +339,23 @@ def _compute_targets(processed_results, targets, model_functions, params):
     return target_func(params=params, **kwargs)
 
 
-def _process_simulated_data(results):
+def _process_simulated_data(results, discrete_grid_converter):
     """Process and flatten the simulation results.
 
     This function produces a dict of arrays for each var with dimension (n_periods *
     n_initial_states,). The arrays are flattened, so that the resulting dictionary has a
     one-dimensional array for each variable. The length of this array is the number of
     periods times the number of initial states. The order of array elements is given by
-    an outer level of periods and an inner level of initial states ids.
+    an outer level of periods and an inner level of initial states ids. Discrete
+    variables with an internal representation are converted to their external
+    representation.
+
 
     Args:
         results (list): List of dicts with simulation results. Each dict contains the
             value, choices, and states for one period. Choices and states are stored in
             a nested dictionary.
+        discrete_grid_converter (DiscreteGridConverter): Converter for discrete grids.
 
     Returns:
         dict: Dict with processed simulation results. The keys are the variable names
@@ -362,7 +374,8 @@ def _process_simulated_data(results):
     }
     out = {key: jnp.concatenate(values) for key, values in dict_of_lists.items()}
     out["_period"] = jnp.repeat(jnp.arange(n_periods), n_initial_states)
-    return out
+
+    return discrete_grid_converter.internal_vars_to_vars(out)
 
 
 # ======================================================================================

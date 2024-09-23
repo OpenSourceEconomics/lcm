@@ -9,7 +9,7 @@ from lcm.entry_point import (
     create_compute_conditional_continuation_policy,
     get_lcm_function,
 )
-from lcm.input_processing import process_model
+from lcm.input_processing import DiscreteGridConverter, process_model
 from lcm.logging import get_logger
 from lcm.model_functions import get_utility_and_feasibility_function
 from lcm.next_state import _get_next_state_function_simulation
@@ -75,6 +75,7 @@ def simulate_inputs():
         "compute_ccv_policy_functions": compute_ccv_policy_functions,
         "model": model,
         "next_state": _get_next_state_function_simulation(model),
+        "discrete_grid_converter": DiscreteGridConverter(),
     }
 
 
@@ -166,6 +167,32 @@ def test_simulate_using_get_lcm_function(
 
         # assert that higher wealth leads to higher value function in each period
         assert (res.loc[period]["value"].diff()[1:] >= 0).all()
+
+
+# ======================================================================================
+# Test simulation works correctly with discrete grid conversion
+# ======================================================================================
+
+
+def test_simulate_with_discrete_grid_conversion():
+    """Test that the simulation works correctly with discrete grid conversion."""
+    model = get_model_config("iskhakov_et_al_2017_fully_discrete", n_periods=2)
+    params = get_params(wage=2)
+
+    simulate_model, _ = get_lcm_function(model=model, targets="solve_and_simulate")
+
+    res = simulate_model(
+        params,
+        initial_states={"wealth": jnp.array([1, 4])},
+        additional_targets=["labor_income", "working"],
+    )
+
+    assert "__consumption_index__" not in res.columns
+    assert "__wealth_index__" not in res.columns
+
+    assert_array_equal(res["retirement"], jnp.array([0, 1, 1, 1]))
+    assert_array_equal(res["consumption"], jnp.array([1, 2, 2, 2]))
+    assert_array_equal(res["wealth"], jnp.array([1, 4, 2, 2]))
 
 
 # ======================================================================================
@@ -353,7 +380,9 @@ def test_process_simulated_data():
         "b": jnp.array([-1, -2, -3, -4]),
     }
 
-    got = _process_simulated_data(simulated)
+    got = _process_simulated_data(
+        simulated, discrete_grid_converter=DiscreteGridConverter()
+    )
     assert tree_equal(expected, got)
 
 

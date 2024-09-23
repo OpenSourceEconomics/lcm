@@ -1,8 +1,8 @@
 """Collection of classes that are used by the user to define the model and grids."""
 
 from abc import ABC, abstractmethod
-from collections.abc import Collection
-from dataclasses import dataclass
+from dataclasses import dataclass, fields, is_dataclass
+from typing import Any
 
 import jax.numpy as jnp
 from jax import Array
@@ -16,37 +16,56 @@ class Grid(ABC):
     """LCM Grid base class."""
 
     @abstractmethod
-    def to_jax(self) -> jnp.ndarray:
+    def to_jax(self) -> Array:
         """Convert the grid to a Jax array."""
 
 
-@dataclass(frozen=True)
 class DiscreteGrid(Grid):
-    """A grid of discrete values.
+    """A class representing a discrete grid.
+
+    Args:
+        category_class (type): The category class representing the grid categories. Must
+            be a dataclass with fields that have unique scalar int or float values.
 
     Attributes:
-        options: The options in the grid. Must be an iterable of scalar int or float
-            values.
+        categories: The list of category names.
+        codes: The list of category codes.
+
+    Raises:
+        GridInitializationError: If the `category_class` is not a dataclass with scalar
+            int or float fields.
 
     """
 
-    options: Collection[int | float]
+    def __init__(self, category_class: type) -> None:
+        """Initialize the DiscreteGrid.
 
-    def __post_init__(self) -> None:
-        if not isinstance(self.options, Collection):
-            raise GridInitializationError(
-                "options must be a collection of scalar int or float values, e.g., a ",
-                "list or tuple",
-            )
+        Args:
+            category_class (type): The category class representing the grid categories.
+                Must be a dataclass with fields that have unique scalar int or float
+                values.
 
-        errors = _validate_discrete_grid(self.options)
-        if errors:
-            msg = format_messages(errors)
-            raise GridInitializationError(msg)
+        """
+        _validate_discrete_grid(category_class)
+
+        names_and_values = _get_field_names_and_values(category_class)
+
+        self.__categories = tuple(names_and_values.keys())
+        self.__codes = tuple(names_and_values.values())
+
+    @property
+    def categories(self) -> tuple[str, ...]:
+        """Get the list of category names."""
+        return self.__categories
+
+    @property
+    def codes(self) -> tuple[int | float, ...]:
+        """Get the list of category codes."""
+        return self.__codes
 
     def to_jax(self) -> Array:
         """Convert the grid to a Jax array."""
-        return jnp.array(list(self.options))
+        return jnp.array(self.codes)
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -58,14 +77,11 @@ class ContinuousGrid(Grid, ABC):
     n_points: int
 
     def __post_init__(self) -> None:
-        errors = _validate_continuous_grid(
+        _validate_continuous_grid(
             start=self.start,
             stop=self.stop,
             n_points=self.n_points,
         )
-        if errors:
-            msg = format_messages(errors)
-            raise GridInitializationError(msg)
 
     @abstractmethod
     def to_jax(self) -> Array:
@@ -131,40 +147,78 @@ class LogspaceGrid(ContinuousGrid):
 # ======================================================================================
 
 
-def _validate_discrete_grid(options: Collection[int | float]) -> list[str]:
-    """Validate the discrete grid options.
+def _validate_discrete_grid(category_class: type) -> None:
+    """Validate the field names and values of the category_class passed to DiscreteGrid.
 
     Args:
-        options: The user options to validate.
+        category_class: The category class representing the grid categories. Must
+            be a dataclass with fields that have unique scalar int or float values.
 
-    Returns:
-        list[str]: A list of error messages.
+    Raises:
+        GridInitializationError: If the `category_class` is not a dataclass with scalar
+            int or float fields.
 
     """
-    error_messages = []
-
-    if not len(options) > 0:
-        error_messages.append("options must contain at least one element")
-
-    if not all(isinstance(option, int | float) for option in options):
-        error_messages.append("options must contain only scalar int or float values")
-
-    if len(options) != len(set(options)):
-        error_messages.append("options must contain unique values")
-
-    if list(options) != list(range(len(options))):
-        error_messages.append(
-            "options must be a list of consecutive integers starting from 0",
+    if not is_dataclass(category_class):
+        raise GridInitializationError(
+            "category_class must be a dataclass with scalar int or float fields, "
+            f"but is {category_class}."
         )
 
-    return error_messages
+    names_and_values = _get_field_names_and_values(category_class)
+
+    error_messages = []
+
+    if not names_and_values:
+        error_messages.append(
+            "category_class passed to DiscreteGrid must have at least one field"
+        )
+
+    names_with_non_numerical_values = [
+        name
+        for name, value in names_and_values.items()
+        if not isinstance(value, int | float)
+    ]
+    if names_with_non_numerical_values:
+        error_messages.append(
+            "Field values of the category_class passed to DiscreteGrid can only be "
+            "scalar int or float values. The values to the following fields are not: "
+            f"{names_with_non_numerical_values}"
+        )
+
+    values = list(names_and_values.values())
+    duplicated_values = [v for v in values if values.count(v) > 1]
+    if duplicated_values:
+        error_messages.append(
+            "Field values of the category_class passed to DiscreteGrid must be unique. "
+            "The following values are duplicated: "
+            f"{set(duplicated_values)}"
+        )
+
+    if error_messages:
+        msg = format_messages(error_messages)
+        raise GridInitializationError(msg)
+
+
+def _get_field_names_and_values(dc: type) -> dict[str, Any]:
+    """Get the fields of a dataclass.
+
+    Args:
+        dc: The dataclass to get the fields of.
+
+    Returns:
+        A dictionary with the field names as keys and the field values as values. If
+        no value is provided for a field, the value is set to None.
+
+    """
+    return {field.name: getattr(dc, field.name, None) for field in fields(dc)}
 
 
 def _validate_continuous_grid(
     start: float,
     stop: float,
     n_points: int,
-) -> list[str]:
+) -> None:
     """Validate the continuous grid parameters.
 
     Args:
@@ -172,8 +226,8 @@ def _validate_continuous_grid(
         stop: The stop value of the grid.
         n_points: The number of points in the grid.
 
-    Returns:
-        list[str]: A list of error messages.
+    Raises:
+        GridInitializationError: If the grid parameters are invalid.
 
     """
     error_messages = []
@@ -194,4 +248,6 @@ def _validate_continuous_grid(
     if valid_start_type and valid_stop_type and start >= stop:
         error_messages.append("start must be less than stop")
 
-    return error_messages
+    if error_messages:
+        msg = format_messages(error_messages)
+        raise GridInitializationError(msg)
