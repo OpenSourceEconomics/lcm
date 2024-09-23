@@ -32,7 +32,7 @@ class ModelMock:
 
 
 @pytest.fixture
-def model(category_class_factory):
+def model(binary_category_class):
     def next_c(a, b):
         return a + b
 
@@ -42,11 +42,10 @@ def model(category_class_factory):
             "next_c": next_c,
         },
         choices={
-            "a": DiscreteGrid(category_class_factory([0, 1])),
+            "a": DiscreteGrid(binary_category_class),
         },
         states={
-            # unsorted indices cannot be treated as indices
-            "c": DiscreteGrid(category_class_factory([1, 0])),
+            "c": DiscreteGrid(binary_category_class),
         },
     )
 

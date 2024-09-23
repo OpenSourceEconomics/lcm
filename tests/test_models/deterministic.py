@@ -8,7 +8,7 @@ https://doi.org/10.3982/QE643).
 """
 
 from copy import deepcopy
-from dataclasses import dataclass, make_dataclass
+from dataclasses import dataclass
 
 import jax.numpy as jnp
 
@@ -48,6 +48,13 @@ def utility_with_filter(
     return utility(consumption, working, disutility_of_work)
 
 
+def utility_discrete(consumption, working, disutility_of_work):
+    # In the discrete model, consumption is defined as "low" or "high". This can be
+    # translated to the levels 1 and 2.
+    consumption_level = 1 + (consumption == ConsumptionStatus.high)
+    return utility(consumption_level, working, disutility_of_work)
+
+
 # --------------------------------------------------------------------------------------
 # Auxiliary variables
 # --------------------------------------------------------------------------------------
@@ -72,13 +79,6 @@ def age(_period):
 # --------------------------------------------------------------------------------------
 def next_wealth(wealth, consumption, labor_income, interest_rate):
     return (1 + interest_rate) * (wealth - consumption) + labor_income
-
-
-# For discrete state variables, we need to assure that the next state also belongs to
-# the grid. We therefore round the result of the continuous state transition function.
-def next_wealth_discrete(wealth, consumption, labor_income, interest_rate):
-    next_wealth_cont = next_wealth(wealth, consumption, labor_income, interest_rate)
-    return jnp.clip(jnp.rint(next_wealth_cont).astype(jnp.int32), 1, 400)
 
 
 # --------------------------------------------------------------------------------------
@@ -171,35 +171,34 @@ ISKHAKOV_ET_AL_2017_STRIPPED_DOWN = Model(
 
 
 @dataclass
-class DiscreteConsumptionStatus:
-    low: int = 1
-    high: int = 2
+class ConsumptionStatus:
+    low: int = 0
+    high: int = 1
 
 
-DiscreteWealthStatus = make_dataclass(
-    "DiscreteWealthStatus", [(f"level_{w}", int, w) for w in range(1, 401)]
-)
-
-
-ISKHAKOV_ET_AL_2017_FULLY_DISCRETE = Model(
+ISKHAKOV_ET_AL_2017_DISCRETE = Model(
     description=(
         "Starts from Iskhakov et al. (2017), removes filters and the lagged_retirement "
-        "state, and makes the consumption decision and the wealth state discrete."
+        "state, and makes the consumption decision discrete."
     ),
     n_periods=3,
     functions={
-        "utility": utility,
-        "next_wealth": next_wealth_discrete,
+        "utility": utility_discrete,
+        "next_wealth": next_wealth,
         "consumption_constraint": consumption_constraint,
         "labor_income": labor_income,
         "working": working,
     },
     choices={
         "retirement": DiscreteGrid(RetirementStatus),
-        "consumption": DiscreteGrid(DiscreteConsumptionStatus),
+        "consumption": DiscreteGrid(ConsumptionStatus),
     },
     states={
-        "wealth": DiscreteGrid(DiscreteWealthStatus),
+        "wealth": LinspaceGrid(
+            start=0,
+            stop=400,
+            n_points=100,
+        ),
     },
 )
 
@@ -211,7 +210,7 @@ ISKHAKOV_ET_AL_2017_FULLY_DISCRETE = Model(
 IMPLEMENTED_MODELS = {
     "iskhakov_et_al_2017": ISKHAKOV_ET_AL_2017,
     "iskhakov_et_al_2017_stripped_down": ISKHAKOV_ET_AL_2017_STRIPPED_DOWN,
-    "iskhakov_et_al_2017_fully_discrete": ISKHAKOV_ET_AL_2017_FULLY_DISCRETE,
+    "iskhakov_et_al_2017_discrete": ISKHAKOV_ET_AL_2017_DISCRETE,
 }
 
 

@@ -20,7 +20,7 @@ from tests.test_models.deterministic import utility as iskhakov_et_al_2017_utili
 
 STRIPPED_DOWN_AND_FULLY_DISCRETE_MODELS = [
     "iskhakov_et_al_2017_stripped_down",
-    "iskhakov_et_al_2017_fully_discrete",
+    "iskhakov_et_al_2017_discrete",
 ]
 
 
@@ -39,7 +39,7 @@ def test_get_lcm_function_with_solve_target_stripped_down():
 
 
 def test_get_lcm_function_with_solve_target_fully_discrete():
-    model = get_model_config("iskhakov_et_al_2017_fully_discrete", n_periods=3)
+    model = get_model_config("iskhakov_et_al_2017_discrete", n_periods=3)
     solve_model, params_template = get_lcm_function(model=model)
 
     params = tree_map(lambda _: 0.2, params_template)
@@ -71,7 +71,7 @@ def test_get_lcm_function_with_simulation_target_simple_stripped_down():
 
 
 def test_get_lcm_function_with_simulation_target_simple_fully_discrete():
-    model = get_model_config("iskhakov_et_al_2017_fully_discrete", n_periods=3)
+    model = get_model_config("iskhakov_et_al_2017_discrete", n_periods=3)
 
     simulate, params_template = get_lcm_function(
         model=model,
@@ -214,7 +214,7 @@ def test_create_compute_conditional_continuation_value():
 
 def test_create_compute_conditional_continuation_value_with_discrete_model():
     model = process_model(
-        get_model_config("iskhakov_et_al_2017_fully_discrete", n_periods=3),
+        get_model_config("iskhakov_et_al_2017_discrete", n_periods=3),
     )
 
     params = {
@@ -248,9 +248,9 @@ def test_create_compute_conditional_continuation_value_with_discrete_model():
     )
 
     val = compute_ccv(
-        __consumption_index__=jnp.array([0, 1]),
+        consumption=jnp.array([0, 1]),
         retirement=1,
-        __wealth_index__=2,
+        wealth=2,
         params=params,
         vf_arr=None,
     )
@@ -318,7 +318,7 @@ def test_create_compute_conditional_continuation_policy():
 
 def test_create_compute_conditional_continuation_policy_with_discrete_model():
     model = process_model(
-        get_model_config("iskhakov_et_al_2017_fully_discrete", n_periods=3),
+        get_model_config("iskhakov_et_al_2017_discrete", n_periods=3),
     )
 
     params = {
@@ -352,9 +352,9 @@ def test_create_compute_conditional_continuation_policy_with_discrete_model():
     )
 
     policy, val = compute_ccv_policy(
-        __consumption_index__=jnp.array([0, 1]),
+        consumption=jnp.array([0, 1]),
         retirement=1,
-        __wealth_index__=2,
+        wealth=2,
         params=params,
         vf_arr=None,
     )
