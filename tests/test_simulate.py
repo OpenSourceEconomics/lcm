@@ -9,7 +9,7 @@ from lcm.entry_point import (
     create_compute_conditional_continuation_policy,
     get_lcm_function,
 )
-from lcm.input_processing import DiscreteGridConverter, process_model
+from lcm.input_processing import process_model
 from lcm.logging import get_logger
 from lcm.model_functions import get_utility_and_feasibility_function
 from lcm.next_state import _get_next_state_function_simulation
@@ -75,7 +75,6 @@ def simulate_inputs():
         "compute_ccv_policy_functions": compute_ccv_policy_functions,
         "model": model,
         "next_state": _get_next_state_function_simulation(model),
-        "discrete_grid_converter": DiscreteGridConverter(),
     }
 
 
@@ -169,13 +168,7 @@ def test_simulate_using_get_lcm_function(
         assert (res.loc[period]["value"].diff()[1:] >= 0).all()
 
 
-# ======================================================================================
-# Test simulation works correctly with discrete grid conversion
-# ======================================================================================
-
-
-def test_simulate_with_discrete_grid_conversion():
-    """Test that the simulation works correctly with discrete grid conversion."""
+def test_simulate_with_only_discrete_choices():
     model = get_model_config("iskhakov_et_al_2017_discrete", n_periods=2)
     params = get_params(wage=1.5, beta=1, interest_rate=0)
 
@@ -377,9 +370,7 @@ def test_process_simulated_data():
         "b": jnp.array([-1, -2, -3, -4]),
     }
 
-    got = _process_simulated_data(
-        simulated, discrete_grid_converter=DiscreteGridConverter()
-    )
+    got = _process_simulated_data(simulated)
     assert tree_equal(expected, got)
 
 

@@ -69,7 +69,6 @@ def filter_mask_inputs():
         functions=functions,
         function_info=function_info,
         params=None,
-        discrete_grid_converter=None,
         random_utility_shocks=None,
         n_periods=100,
     )
