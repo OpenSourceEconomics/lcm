@@ -195,7 +195,7 @@ ISKHAKOV_ET_AL_2017_STRIPPED_DOWN = Model(
 ISKHAKOV_ET_AL_2017_DISCRETE = Model(
     description=(
         "Starts from Iskhakov et al. (2017), removes filters and the lagged_retirement "
-        "state, and makes the consumption decision discrete."
+        "state, and makes the consumption decision and the wealth state discrete."
     ),
     n_periods=3,
     functions={
