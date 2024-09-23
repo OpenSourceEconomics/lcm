@@ -28,6 +28,19 @@ class RetirementStatus:
     retired: int = 1
 
 
+@dataclass
+class DiscreteConsumptionChoice:
+    low: int = 0
+    high: int = 1
+
+
+@dataclass
+class DiscreteWealthLevels:
+    low: int = 0
+    medium: int = 1
+    high: int = 2
+
+
 # --------------------------------------------------------------------------------------
 # Utility functions
 # --------------------------------------------------------------------------------------
@@ -51,7 +64,7 @@ def utility_with_filter(
 def utility_discrete(consumption, working, disutility_of_work):
     # In the discrete model, consumption is defined as "low" or "high". This can be
     # translated to the levels 1 and 2.
-    consumption_level = 1 + (consumption == ConsumptionStatus.high)
+    consumption_level = 1 + (consumption == DiscreteConsumptionChoice.high)
     return utility(consumption_level, working, disutility_of_work)
 
 
@@ -79,6 +92,15 @@ def age(_period):
 # --------------------------------------------------------------------------------------
 def next_wealth(wealth, consumption, labor_income, interest_rate):
     return (1 + interest_rate) * (wealth - consumption) + labor_income
+
+
+def next_wealth_discrete(wealth, consumption, labor_income, interest_rate):
+    # For discrete state variables, we need to assure that the next state is also a
+    # valid state, i.e., it is a member of the discrete grid.
+    continuous = next_wealth(wealth, consumption, labor_income, interest_rate)
+    return jnp.clip(
+        jnp.rint(continuous), DiscreteWealthLevels.low, DiscreteWealthLevels.high
+    ).astype(jnp.int32)
 
 
 # --------------------------------------------------------------------------------------
@@ -170,12 +192,6 @@ ISKHAKOV_ET_AL_2017_STRIPPED_DOWN = Model(
 )
 
 
-@dataclass
-class ConsumptionStatus:
-    low: int = 0
-    high: int = 1
-
-
 ISKHAKOV_ET_AL_2017_DISCRETE = Model(
     description=(
         "Starts from Iskhakov et al. (2017), removes filters and the lagged_retirement "
@@ -184,21 +200,17 @@ ISKHAKOV_ET_AL_2017_DISCRETE = Model(
     n_periods=3,
     functions={
         "utility": utility_discrete,
-        "next_wealth": next_wealth,
+        "next_wealth": next_wealth_discrete,
         "consumption_constraint": consumption_constraint,
         "labor_income": labor_income,
         "working": working,
     },
     choices={
         "retirement": DiscreteGrid(RetirementStatus),
-        "consumption": DiscreteGrid(ConsumptionStatus),
+        "consumption": DiscreteGrid(DiscreteConsumptionChoice),
     },
     states={
-        "wealth": LinspaceGrid(
-            start=0,
-            stop=400,
-            n_points=100,
-        ),
+        "wealth": DiscreteGrid(DiscreteWealthLevels),
     },
 )
 

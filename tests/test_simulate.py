@@ -182,7 +182,7 @@ def test_simulate_with_only_discrete_choices():
 
     assert_array_equal(res["retirement"], jnp.array([0, 1, 1, 1]))
     assert_array_equal(res["consumption"], jnp.array([0, 1, 1, 1]))
-    assert_array_equal(res["wealth"], jnp.array([0, 4, 1.5, 3]))
+    assert_array_equal(res["wealth"], jnp.array([0, 4, 2, 2]))
 
 
 # ======================================================================================
