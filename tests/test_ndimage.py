@@ -1,5 +1,6 @@
 from functools import partial
 
+import jax.numpy as jnp
 import jax.scipy.ndimage
 import numpy as np
 import pytest
@@ -45,8 +46,11 @@ def test_map_coordinates_against_scipy(
     """Test that all libraries implement same behavior with integer input."""
     x, c = _make_test_data(shape, coordinates_shape, dtype=dtype)
 
-    got = map_coordinates(x, c)
+    x_jax = jnp.asarray(x)
+    c_jax = [jnp.asarray(c_i) for c_i in c]
+
     expected = scipy_map_coordinates(x, c)
+    got = map_coordinates(x_jax, c_jax)
 
     assert_array_almost_equal(got, expected, decimal=14)
 
@@ -57,8 +61,11 @@ def test_map_coordinates_round_half_integer_input(map_coordinates):
     x = np.arange(-5, 5, dtype=np.int64)
     c = np.array([[0.5, 1.5, 2.5, 6.5, 8.5]])
 
+    x_jax = jnp.asarray(x)
+    c_jax = [jnp.asarray(c_i) for c_i in c]
+
     expected = scipy_map_coordinates(x, c)
-    got = map_coordinates(x, c)
+    got = map_coordinates(x_jax, c_jax)
 
     assert_array_equal(got, expected)
 
@@ -69,8 +76,11 @@ def test_map_coordinates_round_half_float_input(map_coordinates):
     x = np.arange(-5, 5, dtype=np.float64)
     c = np.array([[0.5, 1.5, 2.5, 6.5, 8.5]])
 
+    x_jax = jnp.asarray(x)
+    c_jax = [jnp.asarray(c_i) for c_i in c]
+
     expected = scipy_map_coordinates(x, c)
-    got = map_coordinates(x, c)
+    got = map_coordinates(x_jax, c_jax)
 
     assert_array_equal(got, expected)
 
@@ -78,7 +88,7 @@ def test_map_coordinates_round_half_float_input(map_coordinates):
 @pytest.mark.parametrize("map_coordinates", JAX_IMPLEMENTATIONS)
 def test_gradients(map_coordinates):
     """Test that JAX based implementations exhibit same gradient behavior."""
-    x = np.arange(9.0)
+    x = jnp.arange(9.0)
     border = 3  # square root of 9, as we are considering a parabola on x.
 
     def f(step):
@@ -89,3 +99,13 @@ def test_gradients(map_coordinates):
     # Gradient of f(step) is 2 * step
     assert_allclose(jax.grad(f)(0.5), 1.0)
     assert_allclose(jax.grad(f)(1.0), 2.0)
+
+
+def test_extrapolation():
+    x = jnp.arange(3.0)
+    c = [jnp.array([-2.0, -1.0, 5.0, 10.0])]
+
+    got = lcm.ndimage.map_coordinates(x, c)
+    expected = c[0]
+
+    assert_array_equal(got, expected)
