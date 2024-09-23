@@ -95,8 +95,6 @@ def _map_coordinates(
 def map_coordinates(
     input: ArrayLike,
     coordinates: Sequence[ArrayLike],
-    order: int,
-    mode: str = "constant",
     cval: ArrayLike = 0.0,
 ):
     """Map the input array to new coordinates using interpolation.
@@ -146,4 +144,4 @@ def map_coordinates(
       This function interprets the ``mode`` argument as documented by SciPy, but
       not as implemented by SciPy.
     """
-    return _map_coordinates(input, coordinates, order, mode, cval)
+    return _map_coordinates(input, coordinates, cval)
