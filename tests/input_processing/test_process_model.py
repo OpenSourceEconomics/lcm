@@ -18,9 +18,7 @@ from lcm.input_processing.process_model import (
     process_model,
 )
 from lcm.mark import StochasticInfo
-from tests.test_models.deterministic import (
-    get_model_config,
-)
+from tests.test_models import get_model_config
 
 
 @dataclass
@@ -39,7 +37,7 @@ class ModelMock:
 
 
 @pytest.fixture
-def model(category_class_factory):
+def model(binary_category_class):
     def next_c(a, b):
         return a + b
 
@@ -49,10 +47,10 @@ def model(category_class_factory):
             "next_c": next_c,
         },
         choices={
-            "a": DiscreteGrid(category_class_factory([0, 1])),
+            "a": DiscreteGrid(binary_category_class),
         },
         states={
-            "c": DiscreteGrid(category_class_factory([1, 10])),
+            "c": DiscreteGrid(binary_category_class),
         },
     )
 
@@ -97,13 +95,13 @@ def test_get_gridspecs(model):
 
     assert isinstance(got["c"], DiscreteGrid)
     assert got["c"].categories == ("cat0", "cat1")
-    assert got["c"].codes == (1, 10)
+    assert got["c"].codes == (0, 1)
 
 
 def test_get_grids(model):
     got = get_grids(model)
     assert_array_equal(got["a"], jnp.array([0, 1]))
-    assert_array_equal(got["c"], jnp.array([1, 10]))
+    assert_array_equal(got["c"], jnp.array([0, 1]))
 
 
 def test_process_model_iskhakov_et_al_2017():

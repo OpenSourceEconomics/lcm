@@ -6,7 +6,7 @@ import lcm
 from lcm.entry_point import (
     get_lcm_function,
 )
-from tests.test_models.stochastic import get_model_config, get_params
+from tests.test_models import get_model_config, get_params
 
 # ======================================================================================
 # Simulate
@@ -15,7 +15,7 @@ from tests.test_models.stochastic import get_model_config, get_params
 
 def test_get_lcm_function_with_simulate_target():
     simulate_model, _ = get_lcm_function(
-        model=get_model_config("only_discrete_vars_stochastic", n_periods=3),
+        model=get_model_config("iskhakov_et_al_2017_stochastic", n_periods=3),
         targets="solve_and_simulate",
     )
 
@@ -52,7 +52,7 @@ def test_get_lcm_function_with_simulate_target():
 
 def test_get_lcm_function_with_solve_target():
     solve_model, _ = get_lcm_function(
-        model=get_model_config("only_discrete_vars_stochastic", n_periods=3),
+        model=get_model_config("iskhakov_et_al_2017_stochastic", n_periods=3),
         targets="solve",
     )
     solve_model(params=get_params())
@@ -70,8 +70,10 @@ def model_and_params():
     TODO(@timmens): Add this to tests/test_models/stochastic.py.
 
     """
-    model_deterministic = get_model_config("only_discrete_vars_stochastic", n_periods=3)
-    model_stochastic = get_model_config("only_discrete_vars_stochastic", n_periods=3)
+    model_deterministic = get_model_config(
+        "iskhakov_et_al_2017_stochastic", n_periods=3
+    )
+    model_stochastic = get_model_config("iskhakov_et_al_2017_stochastic", n_periods=3)
 
     # Overwrite health transition with simple stochastic version and deterministic one
     # ==================================================================================

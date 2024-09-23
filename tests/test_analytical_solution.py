@@ -13,7 +13,7 @@ from numpy.testing import assert_array_almost_equal as aaae
 
 from lcm._config import TEST_DATA
 from lcm.entry_point import get_lcm_function
-from tests.test_models.deterministic import get_model_config, get_params
+from tests.test_models import get_model_config, get_params
 
 # ======================================================================================
 # Model specifications
