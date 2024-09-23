@@ -346,7 +346,10 @@ def _process_simulated_data(results, discrete_grid_converter):
     n_initial_states,). The arrays are flattened, so that the resulting dictionary has a
     one-dimensional array for each variable. The length of this array is the number of
     periods times the number of initial states. The order of array elements is given by
-    an outer level of periods and an inner level of initial states ids.
+    an outer level of periods and an inner level of initial states ids. Discrete
+    variables with an internal representation are converted to their external
+    representation.
+
 
     Args:
         results (list): List of dicts with simulation results. Each dict contains the
