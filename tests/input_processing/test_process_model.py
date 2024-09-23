@@ -18,9 +18,7 @@ from lcm.input_processing.process_model import (
     process_model,
 )
 from lcm.mark import StochasticInfo
-from tests.test_models import (
-    get_model_config,
-)
+from tests.test_models import get_model_config
 
 
 @dataclass
