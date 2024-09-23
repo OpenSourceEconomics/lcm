@@ -7,7 +7,6 @@ https://doi.org/10.3982/QE643).
 
 """
 
-from copy import deepcopy
 from dataclasses import dataclass
 
 import jax.numpy as jnp
@@ -28,19 +27,6 @@ class RetirementStatus:
     retired: int = 1
 
 
-@dataclass
-class DiscreteConsumptionChoice:
-    low: int = 0
-    high: int = 1
-
-
-@dataclass
-class DiscreteWealthLevels:
-    low: int = 0
-    medium: int = 1
-    high: int = 2
-
-
 # --------------------------------------------------------------------------------------
 # Utility functions
 # --------------------------------------------------------------------------------------
@@ -59,13 +45,6 @@ def utility_with_filter(
     lagged_retirement,  # noqa: ARG001
 ):
     return utility(consumption, working, disutility_of_work)
-
-
-def utility_discrete(consumption, working, disutility_of_work):
-    # In the discrete model, consumption is defined as "low" or "high". This can be
-    # translated to the levels 1 and 2.
-    consumption_level = 1 + (consumption == DiscreteConsumptionChoice.high)
-    return utility(consumption_level, working, disutility_of_work)
 
 
 # --------------------------------------------------------------------------------------
@@ -92,15 +71,6 @@ def age(_period):
 # --------------------------------------------------------------------------------------
 def next_wealth(wealth, consumption, labor_income, interest_rate):
     return (1 + interest_rate) * (wealth - consumption) + labor_income
-
-
-def next_wealth_discrete(wealth, consumption, labor_income, interest_rate):
-    # For discrete state variables, we need to assure that the next state is also a
-    # valid state, i.e., it is a member of the discrete grid.
-    continuous = next_wealth(wealth, consumption, labor_income, interest_rate)
-    return jnp.clip(
-        jnp.rint(continuous), DiscreteWealthLevels.low, DiscreteWealthLevels.high
-    ).astype(jnp.int32)
 
 
 # --------------------------------------------------------------------------------------
@@ -190,53 +160,3 @@ ISKHAKOV_ET_AL_2017_STRIPPED_DOWN = Model(
         ),
     },
 )
-
-
-ISKHAKOV_ET_AL_2017_DISCRETE = Model(
-    description=(
-        "Starts from Iskhakov et al. (2017), removes filters and the lagged_retirement "
-        "state, and makes the consumption decision and the wealth state discrete."
-    ),
-    n_periods=3,
-    functions={
-        "utility": utility_discrete,
-        "next_wealth": next_wealth_discrete,
-        "consumption_constraint": consumption_constraint,
-        "labor_income": labor_income,
-        "working": working,
-    },
-    choices={
-        "retirement": DiscreteGrid(RetirementStatus),
-        "consumption": DiscreteGrid(DiscreteConsumptionChoice),
-    },
-    states={
-        "wealth": DiscreteGrid(DiscreteWealthLevels),
-    },
-)
-
-
-# ======================================================================================
-# Get models and params
-# ======================================================================================
-
-IMPLEMENTED_MODELS = {
-    "iskhakov_et_al_2017": ISKHAKOV_ET_AL_2017,
-    "iskhakov_et_al_2017_stripped_down": ISKHAKOV_ET_AL_2017_STRIPPED_DOWN,
-    "iskhakov_et_al_2017_discrete": ISKHAKOV_ET_AL_2017_DISCRETE,
-}
-
-
-def get_model_config(model_name: str, n_periods: int):
-    model_config = deepcopy(IMPLEMENTED_MODELS[model_name])
-    return model_config.replace(n_periods=n_periods)
-
-
-def get_params(beta=0.95, disutility_of_work=0.25, interest_rate=0.05, wage=5.0):
-    return {
-        "beta": beta,
-        "utility": {"disutility_of_work": disutility_of_work},
-        "next_wealth": {
-            "interest_rate": interest_rate,
-        },
-        "labor_income": {"wage": wage},
-    }

@@ -10,12 +10,12 @@ from lcm.entry_point import (
 from lcm.input_processing import process_model
 from lcm.model_functions import get_utility_and_feasibility_function
 from lcm.state_space import create_state_choice_space
+from tests.test_models import get_model_config
 from tests.test_models.deterministic import (
-    DiscreteConsumptionChoice,
     RetirementStatus,
-    get_model_config,
 )
 from tests.test_models.deterministic import utility as iskhakov_et_al_2017_utility
+from tests.test_models.discrete_deterministic import ConsumptionChoice
 
 # ======================================================================================
 # Test cases
@@ -255,9 +255,7 @@ def test_create_compute_conditional_continuation_value_with_discrete_model():
     )
 
     val = compute_ccv(
-        consumption=jnp.array(
-            [DiscreteConsumptionChoice.low, DiscreteConsumptionChoice.high]
-        ),
+        consumption=jnp.array([ConsumptionChoice.low, ConsumptionChoice.high]),
         retirement=RetirementStatus.retired,
         wealth=2,
         params=params,
@@ -361,9 +359,7 @@ def test_create_compute_conditional_continuation_policy_with_discrete_model():
     )
 
     policy, val = compute_ccv_policy(
-        consumption=jnp.array(
-            [DiscreteConsumptionChoice.low, DiscreteConsumptionChoice.high]
-        ),
+        consumption=jnp.array([ConsumptionChoice.low, ConsumptionChoice.high]),
         retirement=RetirementStatus.retired,
         wealth=2,
         params=params,

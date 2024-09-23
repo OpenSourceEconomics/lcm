@@ -13,7 +13,7 @@ from lcm.state_space import (
     create_indexers_and_segments,
     create_state_choice_space,
 )
-from tests.test_models.deterministic import get_model_config
+from tests.test_models import get_model_config
 
 
 def test_create_state_choice_space():

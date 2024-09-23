@@ -27,7 +27,7 @@ from lcm.simulate import (
     simulate,
 )
 from lcm.state_space import create_state_choice_space
-from tests.test_models.deterministic import (
+from tests.test_models import (
     get_model_config,
     get_params,
 )
