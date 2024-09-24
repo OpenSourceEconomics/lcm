@@ -232,6 +232,7 @@ extend-ignore = [
 "explanations/*" = ["INP001", "B018", "T201", "E402", "PD008"]
 "scripts/*" = ["INP001", "D101", "RET503"]
 "**/*.ipynb" = ["FBT003", "E402"]
+"src/lcm/ndimage.py" = ["A002"]  # Argument `input` is shadowing a Python builtin
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
