@@ -23,13 +23,12 @@ keywords = [
 classifiers = [
     "Development Status :: 2 - Pre-Alpha",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: Apache Software License",
     "Operating System :: MacOS :: MacOS X",
     "Operating System :: Microsoft :: Windows",
     "Operating System :: POSIX",
     "Operating System :: Unix",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering",
 ]
 authors = [
@@ -46,7 +45,7 @@ file = "README.md"
 content-type = "text/markdown"
 
 [project.license]
-text = "MIT"
+file = "LICENSE"
 
 [project.urls]
 Repository = "https://github.com/opensourceeconomics/lcm"
