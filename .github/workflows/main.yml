@@ -26,15 +26,16 @@ jobs:
           - '3.12'
     steps:
       - uses: actions/checkout@v4
-      - uses: prefix-dev/setup-pixi@v0.8.0
+      - uses: prefix-dev/setup-pixi@v0.8.1
         with:
           pixi-version: v0.29.0
           cache: true
           cache-write: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
           environments: test-cpu
           activate-environment: true
+          frozen: true
       - name: Run pytest
-        shell: bash -l {0}
+        shell: bash {0}
         run: pixi run -e test-cpu tests
       - name: Upload coverage report
         if: runner.os == 'Linux' && matrix.python-version == '3.12'
@@ -46,26 +47,28 @@ jobs:
       fail-fast: false
     steps:
       - uses: actions/checkout@v4
-      - uses: prefix-dev/setup-pixi@v0.8.0
+      - uses: prefix-dev/setup-pixi@v0.8.1
         with:
           pixi-version: v0.29.0
           cache: true
           cache-write: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
           environments: mypy
+          frozen: true
       - name: Run mypy
-        shell: bash -l {0}
+        shell: bash {0}
         run: pixi run mypy
   run-explanation-notebooks:
     name: Run explanation notebooks on Python 3.12
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: prefix-dev/setup-pixi@v0.8.0
+      - uses: prefix-dev/setup-pixi@v0.8.1
         with:
           pixi-version: v0.29.0
           cache: true
           cache-write: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
           environments: test-cpu
+          frozen: true
       - name: Run explanation notebooks
-        shell: bash -l {0}
+        shell: bash {0}
         run: pixi run -e test-cpu explanation-notebooks

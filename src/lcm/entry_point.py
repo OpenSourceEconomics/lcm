@@ -66,7 +66,7 @@ def get_lcm_function(
     if targets not in {"solve", "simulate", "solve_and_simulate"}:
         raise NotImplementedError
 
-    _mod = process_model(model=model)
+    _mod = process_model(model)
     last_period = _mod.n_periods - 1
     interpolation_options = DefaultMapCoordinatesOptions | (interpolation_options or {})
 

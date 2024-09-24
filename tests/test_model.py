@@ -95,15 +95,15 @@ def test_model_invalid_n_periods():
         )
 
 
-def test_model_missing_next_func():
+def test_model_missing_next_func(binary_category_class):
     with pytest.raises(
         ModelInitilizationError,
         match="Each state must have a corresponding next state function.",
     ):
         Model(
             n_periods=2,
-            states={"health": DiscreteGrid([0, 1])},
-            choices={"exercise": DiscreteGrid([0, 1])},
+            states={"health": DiscreteGrid(binary_category_class)},
+            choices={"exercise": DiscreteGrid(binary_category_class)},
             functions={"utility": lambda: 0},
         )
 
@@ -121,14 +121,14 @@ def test_model_missing_utility():
         )
 
 
-def test_model_overlapping_states_choices():
+def test_model_overlapping_states_choices(binary_category_class):
     with pytest.raises(
         ModelInitilizationError,
         match="States and choices cannot have overlapping names.",
     ):
         Model(
             n_periods=2,
-            states={"health": DiscreteGrid([0, 1])},
-            choices={"health": DiscreteGrid([0, 1])},
+            states={"health": DiscreteGrid(binary_category_class)},
+            choices={"health": DiscreteGrid(binary_category_class)},
             functions={"utility": lambda: 0},
         )

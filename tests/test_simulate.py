@@ -27,7 +27,7 @@ from lcm.simulate import (
     simulate,
 )
 from lcm.state_space import create_state_choice_space
-from tests.test_models.deterministic import (
+from tests.test_models import (
     get_model_config,
     get_params,
 )
@@ -166,6 +166,23 @@ def test_simulate_using_get_lcm_function(
 
         # assert that higher wealth leads to higher value function in each period
         assert (res.loc[period]["value"].diff()[1:] >= 0).all()
+
+
+def test_simulate_with_only_discrete_choices():
+    model = get_model_config("iskhakov_et_al_2017_discrete", n_periods=2)
+    params = get_params(wage=1.5, beta=1, interest_rate=0)
+
+    simulate_model, _ = get_lcm_function(model=model, targets="solve_and_simulate")
+
+    res = simulate_model(
+        params,
+        initial_states={"wealth": jnp.array([0, 4])},
+        additional_targets=["labor_income", "working"],
+    )
+
+    assert_array_equal(res["retirement"], jnp.array([0, 1, 1, 1]))
+    assert_array_equal(res["consumption"], jnp.array([0, 1, 1, 1]))
+    assert_array_equal(res["wealth"], jnp.array([0, 4, 2, 2]))
 
 
 # ======================================================================================

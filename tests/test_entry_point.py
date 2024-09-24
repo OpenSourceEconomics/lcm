@@ -10,17 +10,19 @@ from lcm.entry_point import (
 from lcm.input_processing import process_model
 from lcm.model_functions import get_utility_and_feasibility_function
 from lcm.state_space import create_state_choice_space
-from tests.test_models.deterministic import get_model_config
+from tests.test_models import get_model_config
+from tests.test_models.deterministic import RetirementStatus
 from tests.test_models.deterministic import utility as iskhakov_et_al_2017_utility
+from tests.test_models.discrete_deterministic import ConsumptionChoice
 
 # ======================================================================================
 # Test cases
 # ======================================================================================
 
 
-STRIPPED_DOWN_AND_FULLY_DISCRETE_MODELS = [
+STRIPPED_DOWN_AND_DISCRETE_MODELS = [
     "iskhakov_et_al_2017_stripped_down",
-    "iskhakov_et_al_2017_fully_discrete",
+    "iskhakov_et_al_2017_discrete",
 ]
 
 
@@ -29,15 +31,17 @@ STRIPPED_DOWN_AND_FULLY_DISCRETE_MODELS = [
 # ======================================================================================
 
 
-@pytest.mark.parametrize(
-    "model",
-    [
-        get_model_config(name, n_periods=3)
-        for name in ["iskhakov_et_al_2017", *STRIPPED_DOWN_AND_FULLY_DISCRETE_MODELS]
-    ],
-    ids=["iskhakov_et_al_2017", *STRIPPED_DOWN_AND_FULLY_DISCRETE_MODELS],
-)
-def test_get_lcm_function_with_solve_target(model):
+def test_get_lcm_function_with_solve_target_stripped_down():
+    model = get_model_config("iskhakov_et_al_2017_stripped_down", n_periods=3)
+    solve_model, params_template = get_lcm_function(model=model)
+
+    params = tree_map(lambda _: 0.2, params_template)
+
+    solve_model(params)
+
+
+def test_get_lcm_function_with_solve_target_fully_discrete():
+    model = get_model_config("iskhakov_et_al_2017_discrete", n_periods=3)
     solve_model, params_template = get_lcm_function(model=model)
 
     params = tree_map(lambda _: 0.2, params_template)
@@ -50,15 +54,27 @@ def test_get_lcm_function_with_solve_target(model):
 # ======================================================================================
 
 
-@pytest.mark.parametrize(
-    "model",
-    [
-        get_model_config(name, n_periods=3)
-        for name in STRIPPED_DOWN_AND_FULLY_DISCRETE_MODELS
-    ],
-    ids=STRIPPED_DOWN_AND_FULLY_DISCRETE_MODELS,
-)
-def test_get_lcm_function_with_simulation_target_simple(model):
+def test_get_lcm_function_with_simulation_target_simple_stripped_down():
+    model = get_model_config("iskhakov_et_al_2017_stripped_down", n_periods=3)
+
+    simulate, params_template = get_lcm_function(
+        model=model,
+        targets="solve_and_simulate",
+    )
+    params = tree_map(lambda _: 0.2, params_template)
+
+    simulate(
+        params,
+        initial_states={
+            "wealth": jnp.array([0.0, 10.0, 50.0]),
+        },
+        additional_targets=["age"] if "age" in model.functions else None,
+    )
+
+
+def test_get_lcm_function_with_simulation_target_simple_fully_discrete():
+    model = get_model_config("iskhakov_et_al_2017_discrete", n_periods=3)
+
     simulate, params_template = get_lcm_function(
         model=model,
         targets="solve_and_simulate",
@@ -76,11 +92,8 @@ def test_get_lcm_function_with_simulation_target_simple(model):
 
 @pytest.mark.parametrize(
     "model",
-    [
-        get_model_config(name, n_periods=3)
-        for name in STRIPPED_DOWN_AND_FULLY_DISCRETE_MODELS
-    ],
-    ids=STRIPPED_DOWN_AND_FULLY_DISCRETE_MODELS,
+    [get_model_config(name, n_periods=3) for name in STRIPPED_DOWN_AND_DISCRETE_MODELS],
+    ids=STRIPPED_DOWN_AND_DISCRETE_MODELS,
 )
 def test_get_lcm_function_with_simulation_is_coherent(model):
     """Test that solve_and_simulate creates same output as solve then simulate."""
@@ -139,7 +152,13 @@ def test_get_lcm_function_with_simulation_target_iskhakov_et_al_2017(model):
         vf_arr_list=vf_arr_list,
         initial_states={
             "wealth": jnp.array([10.0, 10.0, 20.0]),
-            "lagged_retirement": jnp.array([0, 1, 1]),
+            "lagged_retirement": jnp.array(
+                [
+                    RetirementStatus.working,
+                    RetirementStatus.retired,
+                    RetirementStatus.retired,
+                ]
+            ),
         },
     )
 
@@ -186,21 +205,21 @@ def test_create_compute_conditional_continuation_value():
 
     val = compute_ccv(
         consumption=jnp.array([10, 20, 30.0]),
-        retirement=1,
+        retirement=RetirementStatus.retired,
         wealth=30,
         params=params,
         vf_arr=None,
     )
     assert val == iskhakov_et_al_2017_utility(
         consumption=30.0,
-        working=0,
+        working=RetirementStatus.working,
         disutility_of_work=1.0,
     )
 
 
 def test_create_compute_conditional_continuation_value_with_discrete_model():
     model = process_model(
-        get_model_config("iskhakov_et_al_2017_fully_discrete", n_periods=3),
+        get_model_config("iskhakov_et_al_2017_discrete", n_periods=3),
     )
 
     params = {
@@ -234,15 +253,15 @@ def test_create_compute_conditional_continuation_value_with_discrete_model():
     )
 
     val = compute_ccv(
-        consumption_index=jnp.array([0, 1]),
-        retirement=1,
+        consumption=jnp.array([ConsumptionChoice.low, ConsumptionChoice.high]),
+        retirement=RetirementStatus.retired,
         wealth=2,
         params=params,
         vf_arr=None,
     )
     assert val == iskhakov_et_al_2017_utility(
         consumption=2,
-        working=0,
+        working=RetirementStatus.working,
         disutility_of_work=1.0,
     )
 
@@ -289,7 +308,7 @@ def test_create_compute_conditional_continuation_policy():
 
     policy, val = compute_ccv_policy(
         consumption=jnp.array([10, 20, 30.0]),
-        retirement=1,
+        retirement=RetirementStatus.retired,
         wealth=30,
         params=params,
         vf_arr=None,
@@ -297,14 +316,14 @@ def test_create_compute_conditional_continuation_policy():
     assert policy == 2
     assert val == iskhakov_et_al_2017_utility(
         consumption=30.0,
-        working=0,
+        working=RetirementStatus.working,
         disutility_of_work=1.0,
     )
 
 
 def test_create_compute_conditional_continuation_policy_with_discrete_model():
     model = process_model(
-        get_model_config("iskhakov_et_al_2017_fully_discrete", n_periods=3),
+        get_model_config("iskhakov_et_al_2017_discrete", n_periods=3),
     )
 
     params = {
@@ -338,8 +357,8 @@ def test_create_compute_conditional_continuation_policy_with_discrete_model():
     )
 
     policy, val = compute_ccv_policy(
-        consumption_index=jnp.array([0, 1]),
-        retirement=1,
+        consumption=jnp.array([ConsumptionChoice.low, ConsumptionChoice.high]),
+        retirement=RetirementStatus.retired,
         wealth=2,
         params=params,
         vf_arr=None,
@@ -347,7 +366,7 @@ def test_create_compute_conditional_continuation_policy_with_discrete_model():
     assert policy == 1
     assert val == iskhakov_et_al_2017_utility(
         consumption=2,
-        working=0,
+        working=RetirementStatus.working,
         disutility_of_work=1.0,
     )
 
@@ -361,7 +380,10 @@ def test_get_lcm_function_with_period_argument_in_filter():
     model = get_model_config("iskhakov_et_al_2017", n_periods=3)
 
     def absorbing_retirement_filter(retirement, lagged_retirement, _period):
-        return jnp.logical_or(retirement == 1, lagged_retirement == 0)
+        return jnp.logical_or(
+            retirement == RetirementStatus.retired,
+            lagged_retirement == RetirementStatus.working,
+        )
 
     model.functions["absorbing_retirement_filter"] = absorbing_retirement_filter
 

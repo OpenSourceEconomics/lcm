@@ -7,7 +7,7 @@ https://doi.org/10.3982/QE643).
 
 """
 
-from copy import deepcopy
+from dataclasses import dataclass
 
 import jax.numpy as jnp
 
@@ -16,6 +16,15 @@ from lcm import DiscreteGrid, LinspaceGrid, Model
 # ======================================================================================
 # Model functions
 # ======================================================================================
+
+
+# --------------------------------------------------------------------------------------
+# Categorical variables
+# --------------------------------------------------------------------------------------
+@dataclass
+class RetirementStatus:
+    working: int = 0
+    retired: int = 1
 
 
 # --------------------------------------------------------------------------------------
@@ -35,20 +44,7 @@ def utility_with_filter(
     # https://github.com/OpenSourceEconomics/lcm/issues/30
     lagged_retirement,  # noqa: ARG001
 ):
-    return utility(consumption, working=working, disutility_of_work=disutility_of_work)
-
-
-def utility_fully_discrete(
-    consumption,
-    working,
-    disutility_of_work,
-    # Temporary workaround for bug described in issue #30, which requires us to pass
-    # all state variables to the utility function.
-    # TODO(@timmens): Remove function once #30 is fixed (re-use "utility").
-    # https://github.com/OpenSourceEconomics/lcm/issues/30
-    consumption_index,  # noqa: ARG001
-):
-    return utility(consumption, working=working, disutility_of_work=disutility_of_work)
+    return utility(consumption, working, disutility_of_work)
 
 
 # --------------------------------------------------------------------------------------
@@ -70,15 +66,6 @@ def age(_period):
     return _period + 18
 
 
-# Temporary workaround until option labels are supported that do not coincide with
-# the indices of the options.
-# TODO(@timmens): Remove this once #82 is closed.
-# https://github.com/OpenSourceEconomics/lcm/issues/82
-def consumption(consumption_index):
-    _consumption_values = jnp.array([1, 2])
-    return _consumption_values[consumption_index]
-
-
 # --------------------------------------------------------------------------------------
 # State transitions
 # --------------------------------------------------------------------------------------
@@ -97,7 +84,10 @@ def consumption_constraint(consumption, wealth):
 # Filters
 # --------------------------------------------------------------------------------------
 def absorbing_retirement_filter(retirement, lagged_retirement):
-    return jnp.logical_or(retirement == 1, lagged_retirement == 0)
+    return jnp.logical_or(
+        retirement == RetirementStatus.retired,
+        lagged_retirement == RetirementStatus.working,
+    )
 
 
 # ======================================================================================
@@ -121,7 +111,7 @@ ISKHAKOV_ET_AL_2017 = Model(
         "working": working,
     },
     choices={
-        "retirement": DiscreteGrid([0, 1]),
+        "retirement": DiscreteGrid(RetirementStatus),
         "consumption": LinspaceGrid(
             start=1,
             stop=400,
@@ -134,7 +124,7 @@ ISKHAKOV_ET_AL_2017 = Model(
             stop=400,
             n_points=100,
         ),
-        "lagged_retirement": DiscreteGrid([0, 1]),
+        "lagged_retirement": DiscreteGrid(RetirementStatus),
     },
 )
 
@@ -155,7 +145,7 @@ ISKHAKOV_ET_AL_2017_STRIPPED_DOWN = Model(
         "age": age,
     },
     choices={
-        "retirement": DiscreteGrid([0, 1]),
+        "retirement": DiscreteGrid(RetirementStatus),
         "consumption": LinspaceGrid(
             start=1,
             stop=400,
@@ -170,58 +160,3 @@ ISKHAKOV_ET_AL_2017_STRIPPED_DOWN = Model(
         ),
     },
 )
-
-
-ISKHAKOV_ET_AL_2017_FULLY_DISCRETE = Model(
-    description=(
-        "Starts from Iskhakov et al. (2017), removes filters and the lagged_retirement "
-        "state, and makes the consumption decision discrete."
-    ),
-    n_periods=3,
-    functions={
-        "utility": utility_fully_discrete,
-        "next_wealth": next_wealth,
-        "consumption_constraint": consumption_constraint,
-        "labor_income": labor_income,
-        "working": working,
-        "consumption": consumption,
-    },
-    choices={
-        "retirement": DiscreteGrid([0, 1]),
-        "consumption_index": DiscreteGrid([0, 1]),
-    },
-    states={
-        "wealth": LinspaceGrid(
-            start=1,
-            stop=400,
-            n_points=100,
-        ),
-    },
-)
-
-
-# ======================================================================================
-# Get models and params
-# ======================================================================================
-
-IMPLEMENTED_MODELS = {
-    "iskhakov_et_al_2017": ISKHAKOV_ET_AL_2017,
-    "iskhakov_et_al_2017_stripped_down": ISKHAKOV_ET_AL_2017_STRIPPED_DOWN,
-    "iskhakov_et_al_2017_fully_discrete": ISKHAKOV_ET_AL_2017_FULLY_DISCRETE,
-}
-
-
-def get_model_config(model_name: str, n_periods: int):
-    model_config = deepcopy(IMPLEMENTED_MODELS[model_name])
-    return model_config.replace(n_periods=n_periods)
-
-
-def get_params(beta=0.95, disutility_of_work=0.25, interest_rate=0.05, wage=5.0):
-    return {
-        "beta": beta,
-        "utility": {"disutility_of_work": disutility_of_work},
-        "next_wealth": {
-            "interest_rate": interest_rate,
-        },
-        "labor_income": {"wage": wage},
-    }

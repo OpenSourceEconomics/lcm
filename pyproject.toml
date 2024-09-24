@@ -23,13 +23,12 @@ keywords = [
 classifiers = [
     "Development Status :: 2 - Pre-Alpha",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: Apache Software License",
     "Operating System :: MacOS :: MacOS X",
     "Operating System :: Microsoft :: Windows",
     "Operating System :: POSIX",
     "Operating System :: Unix",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering",
 ]
 authors = [
@@ -46,7 +45,7 @@ file = "README.md"
 content-type = "text/markdown"
 
 [project.license]
-text = "MIT"
+file = "LICENSE"
 
 [project.urls]
 Repository = "https://github.com/opensourceeconomics/lcm"
@@ -227,11 +226,11 @@ extend-ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "docs/source/conf.py" = ["E501", "ERA001", "DTZ005"]
-"tests/*" = ["PLR2004"]
-"examples/*" = ["INP001"]
+"tests/*" = ["PLR2004", "D101"]
+"examples/*" = ["INP001", "D101"]
 "explanations/*" = ["INP001", "B018", "T201", "E402", "PD008"]
 "scripts/*" = ["INP001", "D101", "RET503"]
-"**/*.ipynb" = ["FBT003", "E402"]
+"**/*.ipynb" = ["FBT003", "E402", "D101"]
 "src/lcm/ndimage.py" = ["A002"]  # Argument `input` is shadowing a Python builtin
 
 [tool.ruff.lint.pydocstyle]

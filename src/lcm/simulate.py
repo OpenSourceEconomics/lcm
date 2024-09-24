@@ -63,6 +63,8 @@ def simulate(
             raise ValueError(
                 "You need to provide either vf_arr_list or solve_model.",
             )
+        # We do not need to convert the params here, because the solve_model function
+        # will do it.
         vf_arr_list = solve_model(params)
 
     logger.info("Starting simulation")
@@ -340,6 +342,7 @@ def _process_simulated_data(results):
     periods times the number of initial states. The order of array elements is given by
     an outer level of periods and an inner level of initial states ids.
 
+
     Args:
         results (list): List of dicts with simulation results. Each dict contains the
             value, choices, and states for one period. Choices and states are stored in
@@ -362,6 +365,7 @@ def _process_simulated_data(results):
     }
     out = {key: jnp.concatenate(values) for key, values in dict_of_lists.items()}
     out["_period"] = jnp.repeat(jnp.arange(n_periods), n_initial_states)
+
     return out
 
 
