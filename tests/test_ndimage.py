@@ -1,3 +1,19 @@
+# Copyright 2019 The JAX Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# Modifications made by Tim Mensinger, 2024.
+
 from functools import partial
 
 import jax.numpy as jnp
@@ -29,10 +45,9 @@ TEST_COORDINATES_SHAPES = [
 
 
 def _make_test_data(shape, coordinates_shape, dtype):
+    rng = np.random.default_rng()
     x = np.arange(np.prod(shape), dtype=dtype).reshape(shape)
-    c = [
-        (size - 1) * np.random.rand(*coordinates_shape).astype(dtype) for size in shape
-    ]
+    c = [(size - 1) * rng.random(coordinates_shape).astype(dtype) for size in shape]
     return x, c
 
 
