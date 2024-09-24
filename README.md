@@ -16,3 +16,10 @@ for installation of `jax` and `jaxlib`, please consult the `jax`
 [docs](https://jax.readthedocs.io/en/latest/installation.html#supported-platforms).
 
 > **Note:** We currently test GPU support for `LCM` only on Linux with CUDA 12.
+
+## License
+
+This project is licensed under the Apache License, Version 2.0. See the
+[LICENSE](LICENSE) file for details.
+
+Copyright (c) 2023 The LCM Authors
