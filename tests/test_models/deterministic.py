@@ -7,8 +7,7 @@ https://doi.org/10.3982/QE643).
 
 """
 
-from copy import deepcopy
-from dataclasses import dataclass, make_dataclass
+from dataclasses import dataclass
 
 import jax.numpy as jnp
 
@@ -72,13 +71,6 @@ def age(_period):
 # --------------------------------------------------------------------------------------
 def next_wealth(wealth, consumption, labor_income, interest_rate):
     return (1 + interest_rate) * (wealth - consumption) + labor_income
-
-
-# For discrete state variables, we need to assure that the next state also belongs to
-# the grid. We therefore round the result of the continuous state transition function.
-def next_wealth_discrete(wealth, consumption, labor_income, interest_rate):
-    next_wealth_cont = next_wealth(wealth, consumption, labor_income, interest_rate)
-    return jnp.clip(jnp.rint(next_wealth_cont).astype(jnp.int32), 1, 400)
 
 
 # --------------------------------------------------------------------------------------
@@ -168,64 +160,3 @@ ISKHAKOV_ET_AL_2017_STRIPPED_DOWN = Model(
         ),
     },
 )
-
-
-@dataclass
-class DiscreteConsumptionStatus:
-    low: int = 1
-    high: int = 2
-
-
-DiscreteWealthStatus = make_dataclass(
-    "DiscreteWealthStatus", [(f"level_{w}", int, w) for w in range(1, 401)]
-)
-
-
-ISKHAKOV_ET_AL_2017_FULLY_DISCRETE = Model(
-    description=(
-        "Starts from Iskhakov et al. (2017), removes filters and the lagged_retirement "
-        "state, and makes the consumption decision and the wealth state discrete."
-    ),
-    n_periods=3,
-    functions={
-        "utility": utility,
-        "next_wealth": next_wealth_discrete,
-        "consumption_constraint": consumption_constraint,
-        "labor_income": labor_income,
-        "working": working,
-    },
-    choices={
-        "retirement": DiscreteGrid(RetirementStatus),
-        "consumption": DiscreteGrid(DiscreteConsumptionStatus),
-    },
-    states={
-        "wealth": DiscreteGrid(DiscreteWealthStatus),
-    },
-)
-
-
-# ======================================================================================
-# Get models and params
-# ======================================================================================
-
-IMPLEMENTED_MODELS = {
-    "iskhakov_et_al_2017": ISKHAKOV_ET_AL_2017,
-    "iskhakov_et_al_2017_stripped_down": ISKHAKOV_ET_AL_2017_STRIPPED_DOWN,
-    "iskhakov_et_al_2017_fully_discrete": ISKHAKOV_ET_AL_2017_FULLY_DISCRETE,
-}
-
-
-def get_model_config(model_name: str, n_periods: int):
-    model_config = deepcopy(IMPLEMENTED_MODELS[model_name])
-    return model_config.replace(n_periods=n_periods)
-
-
-def get_params(beta=0.95, disutility_of_work=0.25, interest_rate=0.05, wage=5.0):
-    return {
-        "beta": beta,
-        "utility": {"disutility_of_work": disutility_of_work},
-        "next_wealth": {
-            "interest_rate": interest_rate,
-        },
-        "labor_income": {"wage": wage},
-    }

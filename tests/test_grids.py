@@ -52,6 +52,20 @@ def test_validate_discrete_grid_non_unique():
         _validate_discrete_grid(category_class)
 
 
+def test_validate_discrete_grid_non_consecutive_unordered():
+    category_class = make_dataclass("Category", [("a", int, 1), ("b", int, 0)])
+    error_msg = "Field values of the category_class passed to DiscreteGrid must be "
+    with pytest.raises(GridInitializationError, match=error_msg):
+        _validate_discrete_grid(category_class)
+
+
+def test_validate_discrete_grid_non_consecutive_jumps():
+    category_class = make_dataclass("Category", [("a", int, 0), ("b", int, 2)])
+    error_msg = "Field values of the category_class passed to DiscreteGrid must be "
+    with pytest.raises(GridInitializationError, match=error_msg):
+        _validate_discrete_grid(category_class)
+
+
 def test_get_fields_with_defaults():
     category_class = make_dataclass("Category", [("a", int, 1), ("b", int, 2)])
     assert _get_field_names_and_values(category_class) == {"a": 1, "b": 2}
@@ -132,7 +146,7 @@ def test_logspace_grid_invalid_start():
 
 def test_discrete_grid_invalid_category_class():
     category_class = make_dataclass(
-        "Category", [("a", int, 1), ("b", str, "wrong_type")]
+        "Category", [("a", int, 0), ("b", str, "wrong_type")]
     )
     with pytest.raises(
         GridInitializationError,

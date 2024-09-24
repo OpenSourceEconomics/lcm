@@ -5,7 +5,7 @@ from pybaum import tree_equal
 from lcm.input_processing import process_model
 from lcm.interfaces import InternalModel
 from lcm.next_state import _get_stochastic_next_func, get_next_state_function
-from tests.test_models.deterministic import get_model_config
+from tests.test_models import get_model_config
 
 # ======================================================================================
 # Solve target
@@ -68,7 +68,6 @@ def test_get_next_state_function_with_simulate_target():
         gridspecs=None,
         variable_info=None,
         params=None,
-        discrete_grid_converter=None,
         random_utility_shocks=None,
         n_periods=1,
     )
