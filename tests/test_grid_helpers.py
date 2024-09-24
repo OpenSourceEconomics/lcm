@@ -90,7 +90,7 @@ def test_map_coordinates_linear():
     )
 
     # Perform the linear interpolation
-    interpolated_value = map_coordinates(values, [coordinate], order=1, mode="nearest")
+    interpolated_value = map_coordinates(values, [coordinate])
     assert np.allclose(interpolated_value, 0.5)
 
 
@@ -115,7 +115,7 @@ def test_map_coordinates_logarithmic():
     )
 
     # Perform the linear interpolation
-    interpolated_value = map_coordinates(values, [coordinate], order=1, mode="nearest")
+    interpolated_value = map_coordinates(values, [coordinate])
     assert np.allclose(interpolated_value, (2.0 + 2.82842712474619) / 2)
 
 
@@ -147,7 +147,7 @@ def test_map_coordinates_linear_outside_grid():
     assert coordinate == -1.0
 
     # Perform the linear interpolation
-    interpolated_value = map_coordinates(values, [coordinate], order=1, mode="nearest")
+    interpolated_value = map_coordinates(values, [coordinate])
 
     # Because mode="nearest", the value at the first grid point is returned
     assert np.allclose(interpolated_value, 0.0)

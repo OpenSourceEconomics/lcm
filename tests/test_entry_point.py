@@ -193,7 +193,6 @@ def test_create_compute_conditional_continuation_value():
         model=model,
         space_info=space_info,
         name_of_values_on_grid="vf_arr",
-        interpolation_options={},
         period=model.n_periods - 1,
         is_last_period=True,
     )
@@ -242,7 +241,6 @@ def test_create_compute_conditional_continuation_value_with_discrete_model():
         model=model,
         space_info=space_info,
         name_of_values_on_grid="vf_arr",
-        interpolation_options={},
         period=model.n_periods - 1,
         is_last_period=True,
     )
@@ -296,7 +294,6 @@ def test_create_compute_conditional_continuation_policy():
         model=model,
         space_info=space_info,
         name_of_values_on_grid="vf_arr",
-        interpolation_options={},
         period=model.n_periods - 1,
         is_last_period=True,
     )
@@ -346,7 +343,6 @@ def test_create_compute_conditional_continuation_policy_with_discrete_model():
         model=model,
         space_info=space_info,
         name_of_values_on_grid="vf_arr",
-        interpolation_options={},
         period=model.n_periods - 1,
         is_last_period=True,
     )

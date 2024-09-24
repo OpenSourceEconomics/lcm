@@ -80,8 +80,6 @@ def test_solve_brute():
         return map_coordinates(
             input=continuous_part,
             coordinates=jnp.array([wealth]),
-            order=1,
-            mode="nearest",
         )
 
     compute_ccv = create_compute_conditional_continuation_value(
