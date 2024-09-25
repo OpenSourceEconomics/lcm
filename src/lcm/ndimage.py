@@ -50,13 +50,6 @@ def map_coordinates(
             f"{len(coordinates)} != {input.ndim}"
         )
 
-    return _map_coordinates(input, coordinates)
-
-
-def _map_coordinates(
-    input: Array,
-    coordinates: Sequence[Array],
-) -> Array:
     valid_1d_interpolations = []
     for coordinate, size in util.safe_zip(coordinates, input.shape):
         interp_nodes = _linear_indices_and_weights(coordinate, input_size=size)
