@@ -50,18 +50,19 @@ def map_coordinates(
             f"{len(coordinates)} != {input.ndim}"
         )
 
-    valid_1d_interpolations = []
-    for coordinate, size in util.safe_zip(coordinates, input.shape):
-        interp_nodes = _linear_indices_and_weights(coordinate, input_size=size)
-        valid_1d_interpolations.append(interp_nodes)
+    interpolation_data = [
+        _compute_indices_and_weights(coordinate, size)
+        for coordinate, size in util.safe_zip(coordinates, input.shape)
+    ]
 
-    outputs = []
-    for items in itertools.product(*valid_1d_interpolations):
-        indices, weights = util.unzip2(items)
+    interpolation_values = []
+    for indices_and_weights in itertools.product(*interpolation_data):
+        indices, weights = util.unzip2(indices_and_weights)
         contribution = input[indices]
-        outputs.append(_nonempty_prod(weights) * contribution)
+        weighted_value = _multiply_all(weights) * contribution
+        interpolation_values.append(weighted_value)
 
-    result = _nonempty_sum(outputs)
+    result = _sum_all(interpolation_values)
 
     if jnp.issubdtype(input.dtype, jnp.integer):
         result = _round_half_away_from_zero(result)
@@ -69,21 +70,23 @@ def map_coordinates(
     return result.astype(input.dtype)
 
 
-def _linear_indices_and_weights(
+def _compute_indices_and_weights(
     coordinate: Array, input_size: int
-) -> tuple[tuple[Array, Array], tuple[Array, Array]]:
-    lower = jnp.clip(jnp.floor(coordinate), min=0, max=input_size - 2)
-    upper_weight = coordinate - lower
+) -> list[tuple[Array, Array]]:
+    """Compute indices and weights for linear interpolation."""
+    lower_index = jnp.clip(jnp.floor(coordinate), 0, input_size - 2).astype(jnp.int32)
+    upper_weight = coordinate - lower_index
     lower_weight = 1 - upper_weight
-    index = lower.astype(jnp.int32)
-    return (index, lower_weight), (index + 1, upper_weight)
+    return [(lower_index, lower_weight), (lower_index + 1, upper_weight)]
 
 
-def _nonempty_prod(arrs: Sequence[Array]) -> Array:
+def _multiply_all(arrs: Sequence[Array]) -> Array:
+    """Multiply all arrays in the sequence."""
     return functools.reduce(operator.mul, arrs)
 
 
-def _nonempty_sum(arrs: Sequence[Array]) -> Array:
+def _sum_all(arrs: Sequence[Array]) -> Array:
+    """Sum all arrays in the sequence."""
     return functools.reduce(operator.add, arrs)
 
 

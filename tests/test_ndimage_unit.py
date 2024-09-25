@@ -2,10 +2,10 @@ import jax.numpy as jnp
 from numpy.testing import assert_array_equal
 
 from lcm.ndimage import (
-    _linear_indices_and_weights,
-    _nonempty_prod,
-    _nonempty_sum,
+    _compute_indices_and_weights,
+    _multiply_all,
     _round_half_away_from_zero,
+    _sum_all,
 )
 
 
@@ -13,7 +13,7 @@ def test_nonempty_sum():
     a = jnp.arange(3)
 
     expected = a + a + a
-    got = _nonempty_sum([a, a, a])
+    got = _sum_all([a, a, a])
 
     assert_array_equal(got, expected)
 
@@ -22,7 +22,7 @@ def test_nonempty_prod():
     a = jnp.arange(3)
 
     expected = a * a * a
-    got = _nonempty_prod([a, a, a])
+    got = _multiply_all([a, a, a])
 
     assert_array_equal(got, expected)
 
@@ -45,7 +45,7 @@ def test_linear_indices_and_weights_inside_domain():
     """Test that the indices and weights are correct for a points inside the domain."""
     coordinates = jnp.array([0, 0.5, 1])
 
-    (idx_low, weight_low), (idx_high, weight_high) = _linear_indices_and_weights(
+    (idx_low, weight_low), (idx_high, weight_high) = _compute_indices_and_weights(
         coordinates, input_size=2
     )
 
@@ -58,7 +58,7 @@ def test_linear_indices_and_weights_inside_domain():
 def test_linear_indices_and_weights_outside_domain():
     coordinates = jnp.array([-1, 2])
 
-    (idx_low, weight_low), (idx_high, weight_high) = _linear_indices_and_weights(
+    (idx_low, weight_low), (idx_high, weight_high) = _compute_indices_and_weights(
         coordinates, input_size=2
     )
 
