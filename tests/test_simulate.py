@@ -55,7 +55,6 @@ def simulate_inputs():
             model=model,
             space_info=space_info,
             name_of_values_on_grid="vf_arr",
-            interpolation_options={},
             period=period,
             is_last_period=True,
         )

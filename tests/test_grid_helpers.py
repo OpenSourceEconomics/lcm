@@ -1,6 +1,6 @@
+import jax.numpy as jnp
 import numpy as np
 import pytest
-from jax.scipy.ndimage import map_coordinates
 from numpy.testing import assert_array_almost_equal as aaae
 
 from lcm.grid_helpers import (
@@ -9,6 +9,7 @@ from lcm.grid_helpers import (
     linspace,
     logspace,
 )
+from lcm.ndimage import map_coordinates
 
 
 def test_linspace():
@@ -90,7 +91,7 @@ def test_map_coordinates_linear():
     )
 
     # Perform the linear interpolation
-    interpolated_value = map_coordinates(values, [coordinate], order=1, mode="nearest")
+    interpolated_value = map_coordinates(values, [coordinate])
     assert np.allclose(interpolated_value, 0.5)
 
 
@@ -115,39 +116,28 @@ def test_map_coordinates_logarithmic():
     )
 
     # Perform the linear interpolation
-    interpolated_value = map_coordinates(values, [coordinate], order=1, mode="nearest")
+    interpolated_value = map_coordinates(values, [coordinate])
     assert np.allclose(interpolated_value, (2.0 + 2.82842712474619) / 2)
 
 
 @pytest.mark.illustrative
 def test_map_coordinates_linear_outside_grid():
-    """Illustrative test on what happens to values outside the grid.
-
-    If mode="nearest", the value corresponding to the closest coordinate that still lies
-    within the grid is returned.
-
-    """
+    """Illustrative test on what happens to values outside the grid."""
     grid_info = {
-        "start": 0,
-        "stop": 1,
+        "start": 1,
+        "stop": 2,
         "n_points": 2,
     }
 
-    grid = linspace(**grid_info)  # [0, 1]
+    grid = linspace(**grid_info)  # [1, 2]
 
-    values = 2 * grid  # [0, 2.0]
+    values = 2 * grid  # [2, 4]
 
-    # We choose a coordinate that is exactly in the middle between the first and second
-    # entry of the grid.
-    coordinate = get_linspace_coordinate(
-        value=-1,
-        **grid_info,
+    # Get coordinates corresponding to values outside the grid [1, 2]
+    coordinates = jnp.array(
+        [get_linspace_coordinate(grid_val, **grid_info) for grid_val in [-1, 0, 3]]
     )
 
-    assert coordinate == -1.0
+    interpolated_value = map_coordinates(values, [coordinates])
 
-    # Perform the linear interpolation
-    interpolated_value = map_coordinates(values, [coordinate], order=1, mode="nearest")
-
-    # Because mode="nearest", the value at the first grid point is returned
-    assert np.allclose(interpolated_value, 0.0)
+    aaae(interpolated_value, [-2, 0, 6])

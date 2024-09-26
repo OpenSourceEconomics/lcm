@@ -19,7 +19,6 @@ def get_utility_and_feasibility_function(
     model: InternalModel,
     space_info,
     name_of_values_on_grid,
-    interpolation_options,
     period,
     is_last_period,
 ):
@@ -45,7 +44,6 @@ def get_utility_and_feasibility_function(
         scalar_value_function = get_function_representation(
             space_info=space_info,
             name_of_values_on_grid=name_of_values_on_grid,
-            interpolation_options=interpolation_options,
             input_prefix="next_",
         )
 

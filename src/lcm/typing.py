@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Any, Literal, TypedDict
+from typing import Any, TypedDict
 
 from jax import Array
 
@@ -31,31 +31,3 @@ class SegmentInfo(TypedDict):
 
     segment_ids: Array
     num_segments: int
-
-
-class MapCoordinatesOptions(TypedDict):
-    """Options passed to  `jax.scipy.ndimage.map_coordinates`.
-
-    From the JAX documentation (as of 2024-06-16):
-
-    - "order": The order of interpolation. JAX supports the following:
-      - 0: Nearest-neighbor
-      - 1: Linear
-
-    - "mode": Points outside the boundaries of the input are filled according to the
-      given mode. JAX supports one of ('constant', 'nearest', 'mirror', 'wrap',
-      'reflect'). Note the 'wrap' mode in JAX behaves as 'grid-wrap' mode in SciPy, and
-      'constant' mode in JAX behaves as 'grid-constant' mode in SciPy. This discrepancy
-      was caused by a former bug in those modes in SciPy (scipy/scipy#2640), which was
-      first fixed in JAX by changing the behavior of the existing modes, and later on
-      fixed in SciPy, by adding modes with new names, rather than fixing the existing
-      ones, for backwards compatibility reasons.
-
-    - "cval": Value used for points outside the boundaries of the input if
-      mode='constant'.
-
-    """
-
-    order: Literal[0, 1]
-    mode: Literal["constant", "nearest", "mirror", "wrap", "reflect"]
-    cval: Scalar
