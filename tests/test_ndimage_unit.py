@@ -1,4 +1,5 @@
 import jax.numpy as jnp
+import pytest
 from numpy.testing import assert_array_equal
 
 from lcm.ndimage import (
@@ -6,7 +7,25 @@ from lcm.ndimage import (
     _multiply_all,
     _round_half_away_from_zero,
     _sum_all,
+    map_coordinates,
 )
+
+
+def test_map_coordinates_wrong_input_dimensions():
+    values = jnp.arange(2)  # ndim = 1
+    coordinates = [jnp.array([0]), jnp.array([1])]  # len = 2
+    with pytest.raises(ValueError, match="coordinates must be a sequence of length"):
+        map_coordinates(values, coordinates)
+
+
+def test_map_coordinates_extrapolation():
+    x = jnp.arange(3.0)
+    c = [jnp.array([-2.0, -1.0, 5.0, 10.0])]
+
+    got = map_coordinates(x, c)
+    expected = c[0]
+
+    assert_array_equal(got, expected)
 
 
 def test_nonempty_sum():

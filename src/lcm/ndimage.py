@@ -20,9 +20,10 @@ import operator
 from collections.abc import Sequence
 
 import jax.numpy as jnp
-from jax import Array, lax, util
+from jax import Array, jit, lax, util
 
 
+@jit
 def map_coordinates(
     input: Array,
     coordinates: Sequence[Array],

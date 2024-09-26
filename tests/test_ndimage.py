@@ -100,13 +100,3 @@ def test_gradients(map_coordinates):
     # Gradient of f(step) is 2 * step
     assert_allclose(jax.grad(f)(0.5), 1.0)
     assert_allclose(jax.grad(f)(1.0), 2.0)
-
-
-def test_extrapolation():
-    x = jnp.arange(3.0)
-    c = [jnp.array([-2.0, -1.0, 5.0, 10.0])]
-
-    got = lcm_map_coordinates(x, c)
-    expected = c[0]
-
-    assert_array_equal(got, expected)
