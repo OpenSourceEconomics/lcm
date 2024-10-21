@@ -218,7 +218,7 @@ def simulate(
         )
         processed = {**processed, **calculated_targets}
 
-    return _as_data_frame(processed, n_periods=n_periods)
+    return processed
 
 
 def solve_continuous_problem(
