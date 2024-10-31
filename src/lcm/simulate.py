@@ -21,9 +21,7 @@ def simulate(
     model: InternalModel,
     next_state,
     logger,
-    solve_model=None,
     vf_arr_list=None,
-    additional_targets=None,
     seed=12345,
 ):
     """Simulate the model forward in time.
@@ -59,13 +57,9 @@ def simulate(
 
     """
     if vf_arr_list is None:
-        if solve_model is None:
-            raise ValueError(
-                "You need to provide either vf_arr_list or solve_model.",
-            )
-        # We do not need to convert the params here, because the solve_model function
-        # will do it.
-        vf_arr_list = solve_model(params)
+        raise ValueError(
+            "You need to provide either vf_arr_list or solve_model.",
+        )
 
     logger.info("Starting simulation")
 
@@ -209,15 +203,6 @@ def simulate(
 
     processed = _process_simulated_data(_simulation_results)
 
-    if additional_targets is not None:
-        calculated_targets = _compute_targets(
-            processed,
-            targets=additional_targets,
-            model_functions=model.functions,
-            params=params,
-        )
-        processed = {**processed, **calculated_targets}
-
     return processed
 
 
@@ -316,21 +301,25 @@ def _compute_targets(processed_results, targets, model_functions, params):
         dict: Dict with computed targets.
 
     """
-    target_func = concatenate_functions(
-        functions=model_functions,
-        targets=targets,
-        return_type="dict",
-    )
+    if targets is not None:
+        target_func = concatenate_functions(
+            functions=model_functions,
+            targets=targets,
+            return_type="dict",
+        )
 
-    # get list of variables over which we want to vectorize the target function
-    variables = [
-        p for p in list(inspect.signature(target_func).parameters) if p != "params"
-    ]
+        # get list of variables over which we want to vectorize the target function
+        variables = [
+            p for p in list(inspect.signature(target_func).parameters) if p != "params"
+        ]
 
-    target_func = vmap_1d(target_func, variables=variables)
+        target_func = vmap_1d(target_func, variables=variables)
 
-    kwargs = {k: v for k, v in processed_results.items() if k in variables}
-    return target_func(params=params, **kwargs)
+        kwargs = {k: v for k, v in processed_results.items() if k in variables}
+        
+        return {**processed_results, **target_func(params=params, **kwargs)}
+    else:
+        return processed_results
 
 
 def _process_simulated_data(results):
