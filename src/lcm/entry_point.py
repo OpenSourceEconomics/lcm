@@ -1,4 +1,5 @@
 import functools
+import inspect
 from collections.abc import Callable
 from functools import partial
 from typing import Literal, cast
@@ -9,13 +10,14 @@ import jax.numpy as jnp
 from lcm.argmax import argmax
 from lcm.discrete_problem import get_solve_discrete_problem
 from lcm.dispatchers import productmap
+from lcm.functools import all_as_kwargs
 from lcm.input_processing import process_model
 from lcm.logging import get_logger
 from lcm.model_functions import (
     get_utility_and_feasibility_function,
 )
 from lcm.next_state import get_next_state_function
-from lcm.simulate import simulate
+from lcm.simulate import _as_data_frame, _compute_targets, simulate
 from lcm.solve_brute import solve
 from lcm.state_space import create_state_choice_space
 from lcm.typing import ParamsDict
@@ -170,7 +172,7 @@ def get_lcm_function(
     solve_model = jax.jit(_solve_model) if jit else _solve_model
 
     _next_state_simulate = get_next_state_function(model=_mod, target="simulate")
-    simulate_model = partial(
+    _simulate_model = partial(
         simulate,
         state_indexers=state_indexers,
         continuous_choice_grids=continuous_choice_grids,
@@ -179,13 +181,43 @@ def get_lcm_function(
         next_state=jax.jit(_next_state_simulate),
         logger=logger,
     )
+    simulate_model = jax.jit(_simulate_model) if jit else _simulate_model
 
     if targets == "solve":
-        _target = solve_model
+
+        def _target(*args, **kwargs):
+            return solve_model(*args, **kwargs)
     elif targets == "simulate":
-        _target = simulate_model
+
+        def _target(*args, **kwargs):
+            kwargs = all_as_kwargs(
+                args, kwargs, list(inspect.signature(simulate).parameters)
+            )
+            additional_targets = kwargs.get("additional_targets")
+            kwargs.pop("additional_targets", None)
+            _simulated = simulate_model(**kwargs)
+            return _as_data_frame(
+                _compute_targets(
+                    _simulated, additional_targets, _mod.functions, kwargs["params"]
+                ),
+                _mod.n_periods,
+            )
     elif targets == "solve_and_simulate":
-        _target = partial(simulate_model, solve_model=solve_model)
+
+        def _target(*args, **kwargs):
+            kwargs = all_as_kwargs(
+                args, kwargs, list(inspect.signature(simulate).parameters)
+            )
+            additional_targets = kwargs.get("additional_targets")
+            kwargs.pop("additional_targets", None)
+            _solved = solve_model(kwargs["params"])
+            _simulated = simulate_model(**kwargs, vf_arr_list=_solved)
+            return _as_data_frame(
+                _compute_targets(
+                    _simulated, additional_targets, _mod.functions, kwargs["params"]
+                ),
+                _mod.n_periods,
+            )
 
     return cast(Callable, _target), _mod.params
 
