@@ -1,7 +1,7 @@
 import functools
+import inspect
 from collections.abc import Callable
 from functools import partial
-import inspect
 from typing import Literal, cast
 
 import jax
@@ -17,7 +17,7 @@ from lcm.model_functions import (
     get_utility_and_feasibility_function,
 )
 from lcm.next_state import get_next_state_function
-from lcm.simulate import simulate, _as_data_frame, _compute_targets
+from lcm.simulate import _as_data_frame, _compute_targets, simulate
 from lcm.solve_brute import solve
 from lcm.state_space import create_state_choice_space
 from lcm.typing import ParamsDict
@@ -184,23 +184,41 @@ def get_lcm_function(
     simulate_model = jax.jit(_simulate_model) if jit else _simulate_model
 
     if targets == "solve":
-        def _target(*args,**kwargs):
-            return solve_model(*args,**kwargs)
+
+        def _target(*args, **kwargs):
+            return solve_model(*args, **kwargs)
     elif targets == "simulate":
-        def _target(*args,**kwargs):
-            kwargs = all_as_kwargs(args,kwargs,list(inspect.signature(simulate).parameters,))
-            additional_targets = kwargs.get('additional_targets')
-            kwargs.pop('additional_targets',None)
+
+        def _target(*args, **kwargs):
+            kwargs = all_as_kwargs(
+                args, kwargs, list(inspect.signature(simulate).parameters)
+            )
+            additional_targets = kwargs.get("additional_targets")
+            kwargs.pop("additional_targets", None)
             _simulated = simulate_model(**kwargs)
-            return _as_data_frame(_compute_targets(_simulated, additional_targets, _mod.functions, kwargs['params']), _mod.n_periods)
+            return _as_data_frame(
+                _compute_targets(
+                    _simulated, additional_targets, _mod.functions, kwargs["params"]
+                ),
+                _mod.n_periods,
+            )
     elif targets == "solve_and_simulate":
-        def _target(*args,**kwargs):
-            kwargs = all_as_kwargs(args,kwargs,list(inspect.signature(simulate).parameters,))
-            additional_targets = kwargs.get('additional_targets')
-            kwargs.pop('additional_targets',None)
-            _solved = solve_model(kwargs['params'])
+
+        def _target(*args, **kwargs):
+            kwargs = all_as_kwargs(
+                args, kwargs, list(inspect.signature(simulate).parameters)
+            )
+            additional_targets = kwargs.get("additional_targets")
+            kwargs.pop("additional_targets", None)
+            _solved = solve_model(kwargs["params"])
             _simulated = simulate_model(**kwargs, vf_arr_list=_solved)
-            return _as_data_frame(_compute_targets(_simulated, additional_targets, _mod.functions, kwargs['params']), _mod.n_periods)
+            return _as_data_frame(
+                _compute_targets(
+                    _simulated, additional_targets, _mod.functions, kwargs["params"]
+                ),
+                _mod.n_periods,
+            )
+
     return cast(Callable, _target), _mod.params
 
 

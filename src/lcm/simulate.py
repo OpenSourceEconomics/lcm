@@ -201,9 +201,7 @@ def simulate(
 
         logger.info("Period: %s", period)
 
-    processed = _process_simulated_data(_simulation_results)
-
-    return processed
+    return _process_simulated_data(_simulation_results)
 
 
 def solve_continuous_problem(
@@ -316,10 +314,9 @@ def _compute_targets(processed_results, targets, model_functions, params):
         target_func = vmap_1d(target_func, variables=variables)
 
         kwargs = {k: v for k, v in processed_results.items() if k in variables}
-        
+
         return {**processed_results, **target_func(params=params, **kwargs)}
-    else:
-        return processed_results
+    return processed_results
 
 
 def _process_simulated_data(results):
