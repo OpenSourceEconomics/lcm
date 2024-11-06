@@ -87,7 +87,7 @@ repos:
       - id: mypy
         files: src|tests
         additional_dependencies:
-          - jax>=0.4.20
+          - jax>=0.4.34
           - numpy
           - packaging
           - pandas-stubs
