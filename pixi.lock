@@ -6525,9 +6525,9 @@ packages:
   timestamp: 1719463874284
 - kind: pypi
   name: lcm
-  version: 0.1.dev179+ga5fc6e2
+  version: 0.1.dev174+g1fef38d.d20241113
   path: .
-  sha256: efc514b4c6d74785bd569e7423386104e3e27ccc115200396c7f388d8fbe2b64
+  sha256: 81e25560cd9cdc6a4fcd35456d665443f0a128fc6d80d52443ad1fc082e81db7
   requires_dist:
   - dags
   - numpy
@@ -10019,7 +10019,7 @@ packages:
   sha256: 28575580c6ebdaf4505b22c6256a2b9de86b316dc63ba9e93abde3d78dfdbcf2
   requires_dist:
   - numpy>=1.23 ; extra == 'default'
-  - scipy!=1.11.0,!=1.11.1,>=1.9 ; extra == 'default'
+  - scipy>=1.9,!=1.11.0,!=1.11.1 ; extra == 'default'
   - matplotlib>=3.6 ; extra == 'default'
   - pandas>=1.4 ; extra == 'default'
   - changelist==0.5 ; extra == 'developer'
