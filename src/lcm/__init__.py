@@ -1,9 +1,7 @@
-import contextlib
-
 try:
     import pdbp  # noqa: F401
 except ImportError:
-    contextlib.suppress(Exception)
+    pass
 
 from lcm import mark
 from lcm.grids import DiscreteGrid, LinspaceGrid, LogspaceGrid

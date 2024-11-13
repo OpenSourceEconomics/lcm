@@ -212,6 +212,9 @@ extend-ignore = [
     # Private member accessed: `_stochastic_info`
     "SLF001",
 
+    # Use `contextlib.suppress(ImportError)` instead of `try`-`except`-`pass`
+    "SIM105",
+
     # long messages outside the exception class
     "TRY003",
 
@@ -247,6 +250,7 @@ markers = [
     "illustrative: Tests are designed for illustrative purposes",
 ]
 norecursedirs = ["docs", ".envs"]
+addopts = ["--pdbcls=pdbp:Pdb"]
 
 
 # ======================================================================================
