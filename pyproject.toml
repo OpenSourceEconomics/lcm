@@ -101,8 +101,8 @@ snakeviz = "*"
 memory_profiler = "*"
 
 [tool.pixi.target.unix.dependencies]
-jax = ">=0.4.20"
-jaxlib = ">=0.4.20"
+jax = ">=0.4.34"
+jaxlib = ">=0.4.34"
 
 # Development Dependencies (pypi)
 # --------------------------------------------------------------------------------------
@@ -112,8 +112,8 @@ lcm = {path = ".", editable = true}
 pdbp = "*"
 
 [tool.pixi.target.win-64.pypi-dependencies]
-jax = { version = ">=0.4.20", extras = ["cpu"] }
-jaxlib = ">=0.4.20"
+jax = { version = ">=0.4.34", extras = ["cpu"] }
+jaxlib = ">=0.4.34"
 
 # Features and Tasks
 # --------------------------------------------------------------------------------------
@@ -124,8 +124,8 @@ system-requirements = {cuda = "12"}
 
 [tool.pixi.feature.cuda.target.linux-64.dependencies]
 cuda-nvcc = ">=12"
-jax = ">=0.4.20"
-jaxlib = { version = ">=0.4.20", build = "cuda12*" }
+jax = ">=0.4.34"
+jaxlib = { version = ">=0.4.34", build = "cuda12*" }
 
 [tool.pixi.feature.test.dependencies]
 pytest = "*"
