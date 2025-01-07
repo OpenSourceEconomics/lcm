@@ -107,8 +107,8 @@ def test_create_combination_grid():
         "retirement": jnp.array([0, 0, 1]),
     }
 
-    for key in expected:
-        aaae(calculated[key], expected[key])
+    for key, expected_value in expected.items():
+        aaae(calculated[key], expected_value)
 
 
 def test_create_combination_grid_2_masks():
@@ -129,8 +129,8 @@ def test_create_combination_grid_2_masks():
         "retirement": jnp.array([0, 1]),
     }
 
-    for key in expected:
-        aaae(calculated[key], expected[key])
+    for key, expected_value in expected.items():
+        aaae(calculated[key], expected_value)
 
 
 def test_create_combination_grid_multiple_masks():
@@ -152,8 +152,8 @@ def test_create_combination_grid_multiple_masks():
         "retirement": jnp.array([0, 1]),
     }
 
-    for key in expected:
-        aaae(calculated[key], expected[key])
+    for key, expected_value in expected.items():
+        aaae(calculated[key], expected_value)
 
 
 def test_create_forward_mask():
