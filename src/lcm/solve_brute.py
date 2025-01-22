@@ -54,6 +54,7 @@ def solve(
     vf_arr = None
 
     logger.info("Starting solution")
+    
 
     # backwards induction loop
     for period in reversed(range(n_periods)):
@@ -112,17 +113,12 @@ def solve_continuous_problem(
     """
     _gridmapped = spacemap(
         func=compute_ccv,
-        dense_vars=list(state_choice_space.dense_vars),
-        sparse_vars=list(state_choice_space.sparse_vars),
-        put_dense_first=False,
+        state_and_discrete_vars=state_choice_space.dense_vars,
+        continous_vars=continuous_choice_grids,
+        memory_restriction=8*(10**9),
+        vf_arr=vf_arr,
+        params=params
     )
     gridmapped = jax.jit(_gridmapped)
 
-    return gridmapped(
-        **state_choice_space.dense_vars,
-        **continuous_choice_grids,
-        **state_choice_space.sparse_vars,
-        **state_indexers,
-        vf_arr=vf_arr,
-        params=params,
-    )
+    return gridmapped()

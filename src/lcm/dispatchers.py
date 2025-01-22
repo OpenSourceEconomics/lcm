@@ -1,90 +1,80 @@
 import inspect
 from collections.abc import Callable
 from typing import Literal, TypeVar
-
 from jax import Array, vmap
-
+from jax import numpy as jnp
+from jax.lax import map
 from lcm.functools import allow_args, allow_only_kwargs
+from lcm.typing import ParamsDict
 
 F = TypeVar("F", bound=Callable[..., Array])
 
 
 def spacemap(
     func: F,
-    dense_vars: list[str],
-    sparse_vars: list[str],
-    *,
-    put_dense_first: bool,
+    state_and_discrete_vars: dict[str:Array],
+    continous_vars: dict[str:Array],
+    memory_restriction: int,
+    params: ParamsDict,
+    vf_arr: Array,
 ) -> F:
-    """Apply vmap such that func is evaluated on a space of dense and sparse variables.
+    """
+    Evaluate func along all state and discrete choice axes in a way that reduces the memory usage 
+    below a preset value, trying to find a balance between speed and memory usage.
 
-    This is achieved by applying _base_productmap for all dense variables and vmap_1d
-    for the sparse variables.
+    If the dimension of the state-choice space fits into memory this will be the same as vmapping along all axes.
+    Otherwise the computation along the outermost state axes will be serialized until the remeining problem fits 
+    into memory.
 
-    spacemap preserves the function signature and allows the function to be called with
-    keyword arguments.
+    This only works if the continous part of the model fits into memory, as this part has already been vmapped in func.
+    To serialize parts of the continous axes one would have to write a more complicated function using scan that
+    replicates the behaviour of map with the batch size parameter. For models with many continous axes there
+    might be better ways to find the maximum along those axes than evaluating func on all points.
+
 
     Args:
         func: The function to be dispatched.
-        dense_vars: Names of the dense variables, i.e. those that are stored as arrays
-            of possible values in the grid.
-        sparse_vars: Names of the sparse variables, i.e. those that are stored as arrays
-            of possible combinations of variables in the grid.
-        put_dense_first: Whether the dense or sparse dimensions should come first in the
-            output of the dispatched function.
+        state_and_discrete_vars: Dict of names and values for each discrete choice axis and state axis.
+        continous_vars: Dict of names and values for each continous choice axis.
+        memory_restriction: Maximum allowed memory usage of the vmap in Bytes. Maybe the user should be able to set this.
+        Could also be grabbed through jax, but then we would have to set the limit very low 
+        and users would not be able to overwrite it for better performance.
+        params: Parameters of the Model.
+        vf_arr: Discretized Value Function from previous period.
 
 
     Returns:
-        A callable with the same arguments as func (but with an additional leading
-        dimension) that returns a jax.numpy.ndarray or pytree of arrays. If ``func``
-        returns a scalar, the dispatched function returns a jax.numpy.ndarray with 1
-        jax.numpy.ndarray with k + 1 dimensions, where k is the length of ``dense_vars``
-        and the additional dimension corresponds to the ``sparse_vars``. The order of
-        the dimensions is determined by the order of ``dense_vars`` as well as the
-        ``put_dense_first`` argument. If the output of ``func`` is a jax pytree, the
-        usual jax behavior applies, i.e. the leading dimensions of all arrays in the
-        pytree are as described above but there might be additional dimensions.
+        A callable that evaluates func along the provided dicrete choice and state axes.
 
     """
     # Check inputs and prepare function
     # ==================================================================================
-    overlap = set(dense_vars).intersection(sparse_vars)
-    if overlap:
-        raise ValueError(
-            f"Dense and sparse variables must be disjoint. Overlap: {overlap}",
-        )
-
-    duplicates = {v for v in dense_vars if dense_vars.count(v) > 1}
-    if duplicates:
-        raise ValueError(
-            f"Same argument provided more than once in dense variables: {duplicates}",
-        )
-
-    duplicates = {v for v in sparse_vars if sparse_vars.count(v) > 1}
-    if duplicates:
-        raise ValueError(
-            f"Same argument provided more than once in sparse variables: {duplicates}",
-        )
-
+    
     # jax.vmap cannot deal with keyword-only arguments
     func = allow_args(func)
+    
+    # I removed duplicate and overlap checks because we are passing dicts now 
+    # and overlap between state+dicrte and continous seems unlikely
 
-    # Apply vmap_1d for sparse and _base_productmap for dense variables
-    # ==================================================================================
-    if not sparse_vars:
-        vmapped = _base_productmap(func, dense_vars)
-    elif put_dense_first:
-        vmapped = vmap_1d(func, variables=sparse_vars, callable_with="only_args")
-        vmapped = _base_productmap(vmapped, dense_vars)
-    else:
-        vmapped = _base_productmap(func, dense_vars)
-        vmapped = vmap_1d(vmapped, variables=sparse_vars, callable_with="only_args")
+    # Set the batch size parameters for the stacked maps, controlling the degree of serialization.
+    # Checks if vmapping along given axis is possible, starting from the innermost discrete choice axis.
+    # If vmapping is possible batch size is set to len(axis) because vamp=map if batch size=len(axis), 
+    # otherwise batchsize is set to 1 serializing the evaluation of func along this axis.
 
-    # This raises a mypy error but is perfectly fine to do. See
-    # https://github.com/python/mypy/issues/12472
-    vmapped.__signature__ = inspect.signature(func)  # type: ignore[attr-defined]
-
-    return allow_only_kwargs(vmapped)
+    memory_strat = {}
+    memory_restriction = (memory_restriction/4)/2
+    for key in continous_vars.keys():
+        memory_restriction = memory_restriction / jnp.size(continous_vars[key])
+    for key in state_and_discrete_vars.keys():
+        memory_restriction = memory_restriction/jnp.size(state_and_discrete_vars[key])
+        if memory_restriction > 1:
+            memory_strat[key] = jnp.size(state_and_discrete_vars[key])
+        else:
+            memory_strat[key] = 1
+        
+    mapped = _base_productmap_map(func, state_and_discrete_vars, continous_vars, memory_strat,params, vf_arr)
+    
+    return mapped
 
 
 def vmap_1d(
@@ -199,7 +189,35 @@ def productmap(func: F, variables: list[str]) -> F:
     return allow_only_kwargs(vmapped)
 
 
-def _base_productmap(func: F, product_axes: list[str]) -> F:
+def _base_productmap_map(func: F, state_and_discrete_vars: dict[str:Array], continous_vars: dict[str:Array], strat, params, vf_arr) -> F:
+    """Map func over the Cartesian product of state_and_discrete_vars.
+
+    All arguments needed for the evaluation of func are passed via keyword args upon creation, 
+    the returned callable takes no arguments.
+
+    Args:
+        func: The function to be dispatched.
+        state_and_discrete_vars: Dict of names and values for each discrete choice axis and state axis.
+        continous_vars: Dict of names and values for each continous choice axis.
+        params: Parameters of the Model.
+        vf_arr: Discretized Value Function from previous period.
+
+    Returns:
+        A callable that maps func over the provided axes.
+
+    """
+    mapped = lambda **vals : func(**continous_vars, vf_arr = vf_arr, params = params, **vals)
+    def stack_maps(func, var, axis):
+        def one_more(**xs):
+            return map(lambda x_i: func(**xs, **{var:x_i}), axis, batch_size=strat[var])
+        return one_more
+    for key,value in reversed(state_and_discrete_vars.items()):
+        mapped = stack_maps(mapped,key,value)
+    
+
+    return mapped
+
+def _base_productmap(func: F, product_axes: list[Array]) -> F:
     """Map func over the Cartesian product of product_axes.
 
     Like vmap, this function does not preserve the function signature and does not allow
