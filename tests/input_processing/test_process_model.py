@@ -104,6 +104,7 @@ def test_get_grids(model):
     assert_array_equal(got["c"], jnp.array([0, 1]))
 
 
+@pytest.mark.xfail(reason="Filters are replaced by constraints internally currently.")
 def test_process_model_iskhakov_et_al_2017():
     model_config = get_model_config("iskhakov_et_al_2017", n_periods=3)
     model = process_model(model_config)

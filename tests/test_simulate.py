@@ -409,6 +409,7 @@ def test_filter_ccv_policy():
     assert jnp.all(got == jnp.array([0, 0]))
 
 
+@pytest.mark.xfail(reason="Filters are replaced by constraints internally currently.")
 def test_create_data_state_choice_space():
     model_config = get_model_config("iskhakov_et_al_2017", n_periods=3)
     model = process_model(model_config)

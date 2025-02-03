@@ -22,8 +22,8 @@ def get_function_info(model: Model) -> pd.DataFrame:
 
     """
     info = pd.DataFrame(index=list(model.functions))
-    info["is_filter"] = info.index.str.endswith("_filter")
-    info["is_constraint"] = info.index.str.endswith("_constraint")
+    info["is_filter"] = False
+    info["is_constraint"] = info.index.str.endswith(("_constraint", "_filter"))
     info["is_next"] = (
         info.index.str.startswith("next_") & ~info["is_constraint"] & ~info["is_filter"]
     )
