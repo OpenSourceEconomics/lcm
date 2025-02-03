@@ -182,7 +182,7 @@ def test_create_compute_conditional_continuation_value():
         },
     }
 
-    _, space_info, _, _ = create_state_choice_space(
+    _, space_info = create_state_choice_space(
         model=model,
         is_last_period=False,
     )
@@ -228,7 +228,7 @@ def test_create_compute_conditional_continuation_value_with_discrete_model():
         },
     }
 
-    _, space_info, _, _ = create_state_choice_space(
+    _, space_info = create_state_choice_space(
         model=model,
         is_last_period=False,
     )
@@ -279,7 +279,7 @@ def test_create_compute_conditional_continuation_policy():
         },
     }
 
-    _, space_info, _, _ = create_state_choice_space(
+    _, space_info = create_state_choice_space(
         model=model,
         is_last_period=False,
     )
@@ -326,7 +326,7 @@ def test_create_compute_conditional_continuation_policy_with_discrete_model():
         },
     }
 
-    _, space_info, _, _ = create_state_choice_space(
+    _, space_info = create_state_choice_space(
         model=model,
         is_last_period=False,
     )

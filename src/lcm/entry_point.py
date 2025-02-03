@@ -94,10 +94,13 @@ def get_lcm_function(
 
         # call state space creation function, append trivial items to their lists
         # ==============================================================================
-        sc_space, space_info, state_indexer, segments = create_state_choice_space(
+        sc_space, space_info = create_state_choice_space(
             model=_mod,
             is_last_period=is_last_period,
         )
+
+        state_indexer = {}
+        segments = None
 
         state_choice_spaces.append(sc_space)
         choice_segments.append(segments)

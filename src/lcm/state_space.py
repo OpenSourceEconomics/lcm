@@ -3,23 +3,13 @@
 from lcm.interfaces import InternalModel, Space, SpaceInfo
 
 
-def create_state_choice_space(model: InternalModel, *, is_last_period: bool):
-    """Create a state choice space for the model.
+def create_state_choice_space(
+    model: InternalModel, *, is_last_period: bool
+) -> tuple[Space, SpaceInfo]:
+    """Create a state-choice-space for the model.
 
-    A state_choice_space is a compressed representation of all feasible states and the
-    feasible discrete choices within that state. We currently use the following
-    compressions:
-
-    We distinguish between dense and sparse variables (dense_vars and sparse_vars).
-    Dense state or choice variables are those whose set of feasible values does not
-    depend on any other state or choice variables. Sparse state or choice variables are
-    all other state variables. For dense state variables it is thus enough to store the
-    grid of feasible values (value_grid), whereas for sparse variables all feasible
-    combinations (combination_grid) have to be stored.
-
-    Note:
-    -----
-    - We only use the filter mask, not the forward mask (yet).
+    A state-choice-space is a compressed representation of all feasible states and the
+    feasible discrete choices within that state.
 
     Args:
         model (Model): A processed model.
@@ -30,9 +20,6 @@ def create_state_choice_space(model: InternalModel, *, is_last_period: bool):
             to execute a function on an entire space.
         SpaceInfo: A SpaceInfo object that contains all information needed to work with
             the output of a function evaluated on the space.
-        dict: Dictionary containing state indexer arrays.
-        jnp.ndarray: Jax array containing the choice segments needed for the emax
-            calculations.
 
     """
     # ==================================================================================
@@ -54,12 +41,6 @@ def create_state_choice_space(model: InternalModel, *, is_last_period: bool):
         sparse_vars={},
         dense_vars=_value_grid,
     )
-    # ==================================================================================
-    # create indexers and segments
-    # ==================================================================================
-    choice_segments = None
-
-    state_indexers = {}  # type: ignore[var-annotated]
 
     # ==================================================================================
     # create state space info
@@ -85,7 +66,7 @@ def create_state_choice_space(model: InternalModel, *, is_last_period: bool):
         indexer_infos=indexer_infos,
     )
 
-    return state_choice_space, space_info, state_indexers, choice_segments
+    return state_choice_space, space_info
 
 
 def _create_value_grid(grids, subset):

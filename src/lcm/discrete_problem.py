@@ -196,27 +196,19 @@ def _segment_logsumexp(a, segment_info):
 def _determine_dense_discrete_choice_axes(
     variable_info: pd.DataFrame,
 ) -> tuple[int, ...] | None:
-    """Get axes of a state choice space that correspond to dense discrete choices.
-
-    Note: The dense choice axes determine over which axes we reduce the conditional
-    continuation values using a non-segmented operation. The axes ordering of the
-    conditional continuation value array is given by [sparse_variable, dense_variables].
-    The dense continuous choice dimension is already reduced as we are working with
-    the conditional continuation values.
+    """Get axes of a state-choice-space that correspond to discrete choices.
 
     Args:
-        variable_info (pd.DataFrame): DataFrame with information about the variables.
+        variable_info: DataFrame with information about the variables.
 
     Returns:
-        tuple[int, ...] | None: A tuple of indices representing the axes in the value
-            function that correspond to discrete choices. Returns None if there are no
-            discrete choice axes.
+        tuple[int, ...] | None: A tuple of indices representing the axes positions in
+            the value function that correspond to discrete choices. Returns None if
+            there are no discrete choice axes.
 
     """
     # List of dense variables excluding continuous choice variables.
-    axes = variable_info.query(
-        "~(is_choice & is_continuous)",
-    ).index.tolist()
+    axes = variable_info.query("~(is_choice & is_continuous)").index.tolist()
 
     choice_vars = set(variable_info.query("is_choice").index.tolist())
 

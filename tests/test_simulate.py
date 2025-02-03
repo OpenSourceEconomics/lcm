@@ -40,7 +40,7 @@ def simulate_inputs():
     model_config = get_model_config("iskhakov_et_al_2017_stripped_down", n_periods=1)
     model = process_model(model_config)
 
-    _, space_info, _, _ = create_state_choice_space(
+    _, space_info = create_state_choice_space(
         model=model,
         is_last_period=False,
     )
