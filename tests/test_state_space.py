@@ -7,10 +7,10 @@ from numpy.testing import assert_array_almost_equal as aaae
 from lcm.input_processing import process_model
 from lcm.interfaces import InternalModel
 from lcm.state_space import (
-    create_combination_grid,
-    create_filter_mask,
-    create_forward_mask,
-    create_indexers_and_segments,
+    _create_combination_grid,
+    _create_filter_mask,
+    _create_forward_mask,
+    _create_indexers_and_segments,
     create_state_choice_space,
 )
 from tests.test_models import get_model_config
@@ -80,7 +80,7 @@ PARAMETRIZATION = [
 
 @pytest.mark.parametrize(("period", "expected"), PARAMETRIZATION)
 def test_create_filter_mask(filter_mask_inputs, period, expected):
-    calculated = create_filter_mask(
+    calculated = _create_filter_mask(
         model=filter_mask_inputs,
         subset=["lagged_retirement", "retirement"],
         fixed_inputs={"period": period},
@@ -98,7 +98,7 @@ def test_create_combination_grid():
 
     mask = jnp.array([[True, False], [True, True]])
 
-    calculated = create_combination_grid(grids=grids, masks=mask)
+    calculated = _create_combination_grid(grids=grids, masks=mask)
 
     expected = {
         "lagged_retirement": jnp.array([0, 1, 1]),
@@ -120,7 +120,7 @@ def test_create_combination_grid_2_masks():
         jnp.array([[True, True], [False, True]]),
     ]
 
-    calculated = create_combination_grid(grids=grids, masks=masks)
+    calculated = _create_combination_grid(grids=grids, masks=masks)
 
     expected = {
         "lagged_retirement": jnp.array([0, 1]),
@@ -143,7 +143,7 @@ def test_create_combination_grid_multiple_masks():
         jnp.array([[True, True], [False, True]]),
     ]
 
-    calculated = create_combination_grid(grids=grids, masks=masks)
+    calculated = _create_combination_grid(grids=grids, masks=masks)
 
     expected = {
         "lagged_retirement": jnp.array([0, 1]),
@@ -177,7 +177,7 @@ def test_create_forward_mask():
     def next_experience(experience, working):
         return experience + working
 
-    calculated = create_forward_mask(
+    calculated = _create_forward_mask(
         initial=initial,
         grids=grids,
         next_functions={"next_experience": next_experience},
@@ -218,7 +218,7 @@ def test_create_forward_mask_multiple_next_funcs():
     def next_health(experience, working):
         return ((experience + working) > 1).astype(int)
 
-    calculated = create_forward_mask(
+    calculated = _create_forward_mask(
         initial=initial,
         grids=grids,
         next_functions={"next_experience": next_experience, "next_health": next_health},
@@ -271,7 +271,7 @@ def test_forward_mask_w_aux_function():
     def next_health(working):
         return (working == 2).astype(int)
 
-    calculated = create_forward_mask(
+    calculated = _create_forward_mask(
         initial=initial,
         grids=grids,
         next_functions={"next_experience": next_experience, "next_health": next_health},
@@ -300,7 +300,7 @@ def test_create_indexers_and_segments():
     mask[2] = True
     mask = jnp.array(mask)
 
-    state_indexer, choice_indexer, segments = create_indexers_and_segments(
+    state_indexer, choice_indexer, segments = _create_indexers_and_segments(
         mask=mask,
         n_sparse_states=2,
     )

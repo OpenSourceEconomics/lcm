@@ -109,7 +109,6 @@ def simulate(
         data_scs, data_choice_segments = create_data_scs(
             states=states,
             model=model,
-            period=period,
         )
 
         # Compute objects dependent on data-state-choice-space
@@ -467,7 +466,6 @@ vmapped_unravel_index = vmap(jnp.unravel_index, in_axes=(0, None))
 def create_data_scs(
     states,
     model: InternalModel,
-    period,
 ):
     """Create data state choice space.
 
@@ -485,10 +483,6 @@ def create_data_scs(
     # ==================================================================================
     vi = model.variable_info
 
-    has_sparse_choice_vars = len(vi.query("is_sparse & is_choice")) > 0
-
-    n_states = len(next(iter(states.values())))
-
     # check that all states have an initial value
     # ==================================================================================
     state_names = set(vi.query("is_state").index)
@@ -504,68 +498,14 @@ def create_data_scs(
 
     # get sparse and dense choices
     # ==================================================================================
-    sparse_choices = {
-        name: grid
-        for name, grid in model.grids.items()
-        if name in vi.query("is_sparse & is_choice").index.tolist()
-    }
-
     dense_choices = {
         name: grid
         for name, grid in model.grids.items()
         if name in vi.query("is_dense & is_choice & ~is_continuous").index.tolist()
     }
 
-    # create sparse choice state product
-    # ==================================================================================
-    if has_sparse_choice_vars:
-        # create sparse choice product
-        # ==============================================================================
-        sc_product, n_sc_product_combinations = dict_product(sparse_choices)
-
-        # create full sparse choice state product
-        # ==============================================================================
-        _combination_grid = {}
-        for name, state in states.items():
-            _combination_grid[name] = jnp.repeat(
-                state,
-                repeats=n_sc_product_combinations,
-            )
-
-        for name, choice in sc_product.items():
-            _combination_grid[name] = jnp.tile(choice, reps=n_states)
-
-        # create filter mask
-        # ==============================================================================
-        filter_names = model.function_info.query("is_filter").index.tolist()
-
-        scalar_filter = concatenate_functions(
-            functions=model.functions,
-            targets=filter_names,
-            aggregator=jnp.logical_and,
-        )
-
-        fixed_inputs = {"_period": period}
-        potential_kwargs = _combination_grid | fixed_inputs
-
-        parameters = list(inspect.signature(scalar_filter).parameters)
-        kwargs = {k: v for k, v in potential_kwargs.items() if k in parameters}
-
-        # we do not vmap over the period variable
-        vmapped_parameters = [p for p in parameters if p != "_period"]
-
-        _filter = vmap_1d(scalar_filter, variables=vmapped_parameters)
-        mask = _filter(**kwargs)
-
-        # filter infeasible combinations
-        # ==============================================================================
-        combination_grid = {
-            name: grid[mask] for name, grid in _combination_grid.items()
-        }
-
-    else:
-        combination_grid = states
-        data_choice_segments = None
+    combination_grid = states
+    data_choice_segments = None
 
     data_scs = Space(
         sparse_vars=combination_grid,
@@ -574,13 +514,7 @@ def create_data_scs(
 
     # create choice segments
     # ==================================================================================
-    if has_sparse_choice_vars:
-        data_choice_segments = create_choice_segments(
-            mask=mask,
-            n_sparse_states=n_states,
-        )
-    else:
-        data_choice_segments = None
+    data_choice_segments = None
 
     return data_scs, data_choice_segments
 
@@ -650,32 +584,6 @@ def dict_product(d):
     grid = jnp.meshgrid(*arrays, indexing="ij")
     stacked = jnp.stack(grid, axis=-1).reshape(-1, len(arrays))
     return dict(zip(d.keys(), list(stacked.T), strict=True)), len(stacked)
-
-
-def create_choice_segments(mask, n_sparse_states):
-    """Create choice segment info related to sparse states and choices.
-
-    Comment: Can be made more memory efficient by reshaping mask into 2d.
-
-    Args:
-        mask (jnp.ndarray): Boolean 1d array, where each entry corresponds to a
-            data-state-choice combination.
-        n_sparse_states (np.ndarray): Number of sparse states
-
-    Returns:
-        dict: Dict with segment_info.
-
-    """
-    n_choice_combinations = len(mask) // n_sparse_states
-    state_ids = jnp.repeat(
-        jnp.arange(n_sparse_states),
-        repeats=n_choice_combinations,
-    )
-    segments = state_ids[mask]
-    return {
-        "segment_ids": jnp.array(segments),
-        "num_segments": len(jnp.unique(segments)),
-    }
 
 
 def determine_discrete_dense_choice_axes(variable_info):

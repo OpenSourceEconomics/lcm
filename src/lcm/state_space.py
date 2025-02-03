@@ -96,7 +96,16 @@ def create_state_choice_space(model: InternalModel, *, is_last_period: bool):
     return state_choice_space, space_info, state_indexers, choice_segments
 
 
-def create_filter_mask(model: InternalModel, subset, fixed_inputs=None, *, jit_filter):
+def _create_value_grid(grids, subset):
+    return {name: grid for name, grid in grids.items() if name in subset}
+
+
+# ======================================================================================
+# Unused code from hereon:
+# ======================================================================================
+
+
+def _create_filter_mask(model: InternalModel, subset, fixed_inputs=None, *, jit_filter):
     """Create mask for combinations of grid values that is True if all filters are True.
 
     Args:
@@ -143,7 +152,7 @@ def create_filter_mask(model: InternalModel, subset, fixed_inputs=None, *, jit_f
     return _filter(**kwargs)
 
 
-def create_forward_mask(
+def _create_forward_mask(
     initial,
     grids,
     next_functions,
@@ -233,7 +242,7 @@ def create_forward_mask(
     return mask
 
 
-def create_combination_grid(grids, masks, subset=None):
+def _create_combination_grid(grids, masks, subset=None):
     """Create a grid of all feasible combinations of variables.
 
     Args:
@@ -287,7 +296,7 @@ def _combine_masks(masks):
     return np.array(mask)
 
 
-def create_indexers_and_segments(mask, n_sparse_states, fill_value=-1):
+def _create_indexers_and_segments(mask, n_sparse_states, fill_value=-1):
     """Create indexers and segment info related to sparse states and choices.
 
     Notes:
@@ -341,7 +350,3 @@ def create_indexers_and_segments(mask, n_sparse_states, fill_value=-1):
         jnp.array(state_choice_indexer),
         {"segment_ids": jnp.array(segments), "num_segments": n_feasible_states},
     )
-
-
-def _create_value_grid(grids, subset):
-    return {name: grid for name, grid in grids.items() if name in subset}
