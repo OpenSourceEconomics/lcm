@@ -83,7 +83,7 @@ def get_lcm_function(
     space_infos = []
     compute_ccv_functions = []
     compute_ccv_policy_functions = []
-    choice_segments = []
+    choice_segments = []  # type: ignore[var-annotated]
     emax_calculators = []
 
     # ==================================================================================
@@ -99,23 +99,20 @@ def get_lcm_function(
             is_last_period=is_last_period,
         )
 
-        state_indexer = {}
-        segments = None
-
         state_choice_spaces.append(sc_space)
-        choice_segments.append(segments)
+        choice_segments.append(None)
 
         if is_last_period:
             state_indexers.append({})
         else:
-            state_indexers.append(state_indexer)
+            state_indexers.append({})
 
         space_infos.append(space_info)
 
     # ==================================================================================
     # Shift space info (in period t we require the space info of period t+1)
     # ==================================================================================
-    space_infos = space_infos[1:] + [{}]
+    space_infos = space_infos[1:] + [{}]  # type: ignore[list-item]
 
     # ==================================================================================
     # Create model functions

@@ -34,7 +34,7 @@ def utility(consumption, working, disutility_of_work):
     return jnp.log(consumption) - disutility_of_work * working
 
 
-def utility_with_filter(
+def utility_with_constraint(
     consumption,
     working,
     disutility_of_work,
@@ -80,10 +80,7 @@ def consumption_constraint(consumption, wealth):
     return consumption <= wealth
 
 
-# --------------------------------------------------------------------------------------
-# Filters
-# --------------------------------------------------------------------------------------
-def absorbing_retirement_filter(retirement, lagged_retirement):
+def absorbing_retirement_constraint(retirement, lagged_retirement):
     return jnp.logical_or(
         retirement == RetirementStatus.retired,
         lagged_retirement == RetirementStatus.working,
@@ -102,11 +99,11 @@ ISKHAKOV_ET_AL_2017 = Model(
     ),
     n_periods=3,
     functions={
-        "utility": utility_with_filter,
+        "utility": utility_with_constraint,
         "next_wealth": next_wealth,
         "next_lagged_retirement": lambda retirement: retirement,
         "consumption_constraint": consumption_constraint,
-        "absorbing_retirement_filter": absorbing_retirement_filter,
+        "absorbing_retirement_constraint": absorbing_retirement_constraint,
         "labor_income": labor_income,
         "working": working,
     },
@@ -131,8 +128,8 @@ ISKHAKOV_ET_AL_2017 = Model(
 
 ISKHAKOV_ET_AL_2017_STRIPPED_DOWN = Model(
     description=(
-        "Starts from Iskhakov et al. (2017), removes filters and the lagged_retirement "
-        "state, and adds wage function that depends on age."
+        "Starts from Iskhakov et al. (2017), removes absorbing retirement constraint "
+        "and the lagged_retirement state, and adds wage function that depends on age."
     ),
     n_periods=3,
     functions={

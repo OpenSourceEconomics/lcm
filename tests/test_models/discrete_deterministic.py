@@ -71,23 +71,13 @@ def consumption_constraint(consumption, wealth):
     return consumption <= wealth
 
 
-# --------------------------------------------------------------------------------------
-# Filters
-# --------------------------------------------------------------------------------------
-def absorbing_retirement_filter(retirement, lagged_retirement):
-    return jnp.logical_or(
-        retirement == RetirementStatus.retired,
-        lagged_retirement == RetirementStatus.working,
-    )
-
-
 # ======================================================================================
 # Model specifications
 # ======================================================================================
 ISKHAKOV_ET_AL_2017_DISCRETE = Model(
     description=(
-        "Starts from Iskhakov et al. (2017), removes filters and the lagged_retirement "
-        "state, and makes the consumption decision and the wealth state discrete."
+        "Starts from Iskhakov et al. (2017), removes absorbing retirement constraint "
+        "and the lagged_retirement state, and makes the consumption decision discrete."
     ),
     n_periods=3,
     functions={
