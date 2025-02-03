@@ -22,9 +22,7 @@ def test_create_state_choice_space():
     )
     create_state_choice_space(
         model=_model,
-        period=0,
         is_last_period=False,
-        jit_filter=False,
     )
 
 

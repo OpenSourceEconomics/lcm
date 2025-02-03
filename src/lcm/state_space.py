@@ -8,12 +8,10 @@ import numpy as np
 from dags import concatenate_functions
 
 from lcm.dispatchers import productmap, spacemap
-from lcm.interfaces import IndexerInfo, InternalModel, Space, SpaceInfo
+from lcm.interfaces import InternalModel, Space, SpaceInfo
 
 
-def create_state_choice_space(
-    model: InternalModel, period, *, is_last_period, jit_filter
-):
+def create_state_choice_space(model: InternalModel, *, is_last_period: bool):
     """Create a state choice space for the model.
 
     A state_choice_space is a compressed representation of all feasible states and the
@@ -33,9 +31,7 @@ def create_state_choice_space(
 
     Args:
         model (Model): A processed model.
-        period (int): The period for which the state space is created.
         is_last_period (bool): Whether the function is created for the last period.
-        jit_filter (bool): If True, the filter function is compiled with JAX.
 
     Returns:
         Space: Space object containing the sparse and dense variables. This can be used
@@ -54,9 +50,6 @@ def create_state_choice_space(
     if is_last_period:
         vi = vi.query("~is_auxiliary")
 
-    has_sparse_states = (vi.is_sparse & vi.is_state).any()
-    has_sparse_vars = vi.is_sparse.any()
-
     # ==================================================================================
     # create state choice space
     # ==================================================================================
@@ -64,47 +57,23 @@ def create_state_choice_space(
         grids=model.grids,
         subset=vi.query("is_dense & ~(is_choice & is_continuous)").index.tolist(),
     )
-    if has_sparse_vars:
-        _filter_mask = create_filter_mask(
-            model=model,
-            subset=vi.query("is_sparse").index.tolist(),
-            fixed_inputs={"_period": period},
-            jit_filter=jit_filter,
-        )
-
-        _combination_grid = create_combination_grid(
-            grids=model.grids,
-            masks=_filter_mask,
-            subset=vi.query("is_sparse").index.tolist(),
-        )
-    else:
-        _combination_grid = {}
 
     state_choice_space = Space(
-        sparse_vars=_combination_grid,
+        sparse_vars={},
         dense_vars=_value_grid,
     )
     # ==================================================================================
     # create indexers and segments
     # ==================================================================================
-    if has_sparse_vars:
-        _state_indexer, _, choice_segments = create_indexers_and_segments(
-            mask=_filter_mask,
-            n_sparse_states=len(vi.query("is_sparse & is_state")),
-        )
-    else:
-        _state_indexer = None
-        choice_segments = None
+    choice_segments = None
 
-    state_indexers = {"state_indexer": _state_indexer} if has_sparse_states else {}
+    state_indexers = {}  # type: ignore[var-annotated]
 
     # ==================================================================================
     # create state space info
     # ==================================================================================
     # axis_names
     axis_names = vi.query("is_dense & is_state").index.tolist()
-    if has_sparse_states:
-        axis_names = ["state_index", *axis_names]
 
     # lookup_info
     _discrete_states = set(vi.query("is_discrete & is_state").index.tolist())
@@ -115,16 +84,7 @@ def create_state_choice_space(
     interpolation_info = {k: v for k, v in model.gridspecs.items() if k in _cont_states}
 
     # indexer infos
-    if has_sparse_states:
-        indexer_infos = [
-            IndexerInfo(
-                axis_names=vi.query("is_sparse & is_state").index.tolist(),
-                name="state_indexer",
-                out_name="state_index",
-            ),
-        ]
-    else:
-        indexer_infos = []
+    indexer_infos = []  # type: ignore[var-annotated]
 
     space_info = SpaceInfo(
         axis_names=axis_names,

@@ -44,9 +44,7 @@ def simulate_inputs():
 
     _, space_info, _, _ = create_state_choice_space(
         model=model,
-        period=0,
         is_last_period=False,
-        jit_filter=False,
     )
 
     compute_ccv_policy_functions = []

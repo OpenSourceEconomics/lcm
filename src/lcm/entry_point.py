@@ -96,9 +96,7 @@ def get_lcm_function(
         # ==============================================================================
         sc_space, space_info, state_indexer, segments = create_state_choice_space(
             model=_mod,
-            period=period,
             is_last_period=is_last_period,
-            jit_filter=False,
         )
 
         state_choice_spaces.append(sc_space)

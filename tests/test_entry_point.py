@@ -184,9 +184,7 @@ def test_create_compute_conditional_continuation_value():
 
     _, space_info, _, _ = create_state_choice_space(
         model=model,
-        period=0,
         is_last_period=False,
-        jit_filter=False,
     )
 
     u_and_f = get_utility_and_feasibility_function(
@@ -232,9 +230,7 @@ def test_create_compute_conditional_continuation_value_with_discrete_model():
 
     _, space_info, _, _ = create_state_choice_space(
         model=model,
-        period=0,
         is_last_period=False,
-        jit_filter=False,
     )
 
     u_and_f = get_utility_and_feasibility_function(
@@ -285,9 +281,7 @@ def test_create_compute_conditional_continuation_policy():
 
     _, space_info, _, _ = create_state_choice_space(
         model=model,
-        period=0,
         is_last_period=False,
-        jit_filter=False,
     )
 
     u_and_f = get_utility_and_feasibility_function(
@@ -334,9 +328,7 @@ def test_create_compute_conditional_continuation_policy_with_discrete_model():
 
     _, space_info, _, _ = create_state_choice_space(
         model=model,
-        period=0,
         is_last_period=False,
-        jit_filter=False,
     )
 
     u_and_f = get_utility_and_feasibility_function(
