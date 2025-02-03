@@ -59,7 +59,6 @@ def test_get_function_info(model):
     got = get_function_info(model)
     exp = pd.DataFrame(
         {
-            "is_filter": [False],
             "is_constraint": [False],
             "is_next": [True],
             "is_stochastic_next": [False],
@@ -79,8 +78,6 @@ def test_get_variable_info(model):
             "is_discrete": [True, True],
             "is_stochastic": [False, False],
             "is_auxiliary": [False, True],
-            "is_sparse": [False, False],
-            "is_dense": [True, True],
         },
         index=["a", "c"],
     )
@@ -110,11 +107,6 @@ def test_process_model_iskhakov_et_al_2017():
     model = process_model(model_config)
 
     # Variable Info
-    assert (
-        model.variable_info["is_sparse"].to_numpy()
-        == np.array([True, True, False, False])
-    ).all()
-
     assert (
         model.variable_info["is_state"].to_numpy()
         == np.array([True, False, True, False])
@@ -178,8 +170,6 @@ def test_process_model():
     model = process_model(model_config)
 
     # Variable Info
-    assert ~(model.variable_info["is_sparse"].to_numpy()).any()
-
     assert (
         model.variable_info["is_state"].to_numpy() == np.array([False, True, False])
     ).all()

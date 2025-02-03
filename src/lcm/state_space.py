@@ -47,7 +47,7 @@ def create_state_choice_space(model: InternalModel, *, is_last_period: bool):
     # ==================================================================================
     _value_grid = _create_value_grid(
         grids=model.grids,
-        subset=vi.query("is_dense & ~(is_choice & is_continuous)").index.tolist(),
+        subset=vi.query("~(is_choice & is_continuous)").index.tolist(),
     )
 
     state_choice_space = Space(
@@ -65,7 +65,7 @@ def create_state_choice_space(model: InternalModel, *, is_last_period: bool):
     # create state space info
     # ==================================================================================
     # axis_names
-    axis_names = vi.query("is_dense & is_state").index.tolist()
+    axis_names = vi.query("is_state").index.tolist()
 
     # lookup_info
     _discrete_states = set(vi.query("is_discrete & is_state").index.tolist())

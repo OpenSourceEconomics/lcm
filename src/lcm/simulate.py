@@ -88,8 +88,6 @@ def simulate(
         variable_info=model.variable_info,
     )
 
-    sparse_choice_variables = model.variable_info.query("is_choice & is_sparse").index
-
     # The following variables are updated during the forward simulation
     states = initial_states
     key = jax.random.PRNGKey(seed=seed)
@@ -168,14 +166,9 @@ def simulate(
             grid_shape=cont_choice_grid_shape,
         )
 
-        sparse_choices = {
-            key: data_scs.sparse_vars[key][sparse_argmax]
-            for key in sparse_choice_variables
-        }
-
         # Store results
         # ==============================================================================
-        choices = {**dense_choices, **sparse_choices, **cont_choices}
+        choices = {**dense_choices, **cont_choices}
 
         _simulation_results.append(
             {
@@ -500,7 +493,7 @@ def create_data_scs(
     dense_choices = {
         name: grid
         for name, grid in model.grids.items()
-        if name in vi.query("is_dense & is_choice & ~is_continuous").index.tolist()
+        if name in vi.query("is_choice & ~is_continuous").index.tolist()
     }
 
     data_scs = Space(
@@ -594,7 +587,7 @@ def determine_discrete_dense_choice_axes(variable_info):
 
     """
     discrete_dense_choice_vars = variable_info.query(
-        "~is_continuous & is_dense & is_choice",
+        "~is_continuous & is_choice",
     ).index.tolist()
 
     choice_vars = set(variable_info.query("is_choice").index.tolist())

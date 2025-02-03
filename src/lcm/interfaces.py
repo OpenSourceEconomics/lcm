@@ -80,8 +80,7 @@ class InternalModel:
         variable_info: A table with information about all variables in the model. The
             index contains the name of a model variable. The columns are booleans that
             are True if the variable has the corresponding property. The columns are:
-            is_state, is_choice, is_continuous, is_discrete, is_sparse, columns are:
-            is_state, is_choice, is_continuous, is_discrete, is_sparse, is_dense.
+            is_state, is_choice, is_continuous, is_discrete.
         functions: Dictionary that maps names of functions to functions. The functions
             differ from the user functions in that they all except the filter functions
             take ``params`` as keyword argument. If the original function depended on

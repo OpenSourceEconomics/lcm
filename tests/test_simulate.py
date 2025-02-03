@@ -438,10 +438,9 @@ def test_determine_discrete_dense_choice_axes():
     variable_info = pd.DataFrame(
         {
             "is_state": [True, True, False, True, False, False],
-            "is_dense": [False, True, True, False, True, True],
             "is_choice": [False, False, True, True, True, True],
             "is_continuous": [False, True, False, False, False, True],
         },
     )
     got = determine_discrete_dense_choice_axes(variable_info)
-    assert got == (1, 2)
+    assert got == (1, 2, 3)

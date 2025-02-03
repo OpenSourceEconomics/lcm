@@ -213,14 +213,10 @@ def _determine_dense_discrete_choice_axes(
             discrete choice axes.
 
     """
-    has_sparse = variable_info["is_sparse"].any()
-
     # List of dense variables excluding continuous choice variables.
-    dense_vars = variable_info.query(
-        "is_dense & ~(is_choice & is_continuous)",
+    axes = variable_info.query(
+        "~(is_choice & is_continuous)",
     ).index.tolist()
-
-    axes = ["__sparse__", *dense_vars] if has_sparse else dense_vars
 
     choice_vars = set(variable_info.query("is_choice").index.tolist())
 
