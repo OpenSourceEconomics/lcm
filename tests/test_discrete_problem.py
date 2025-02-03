@@ -41,6 +41,7 @@ test_cases = list(product([True, False], range(3)))
 # ======================================================================================
 
 
+@pytest.mark.xfail(reason="Removec choice segments")
 @pytest.mark.parametrize(("collapse", "n_extra_axes"), test_cases)
 def test_aggregation_without_shocks(cc_values, segment_info, collapse, n_extra_axes):
     cc_values, var_info = _get_reshaped_cc_values_and_variable_info(
@@ -157,7 +158,6 @@ def test_get_solve_discrete_problem_illustrative():
         random_utility_shock_type=ShockType.NONE,
         variable_info=variable_info,
         is_last_period=False,
-        choice_segments=None,
     )
 
     cc_values = jnp.array(
@@ -172,6 +172,7 @@ def test_get_solve_discrete_problem_illustrative():
     aaae(got, jnp.array([1, 3, 5]))
 
 
+@pytest.mark.xfail(reason="Removec choice segments")
 @pytest.mark.illustrative
 def test_solve_discrete_problem_no_shocks_illustrative():
     cc_values = jnp.array(
@@ -187,7 +188,6 @@ def test_solve_discrete_problem_no_shocks_illustrative():
     got = _solve_discrete_problem_no_shocks(
         cc_values,
         choice_axes=0,
-        choice_segments=None,
         params=None,
     )
     aaae(got, jnp.array([4, 5]))
@@ -197,7 +197,6 @@ def test_solve_discrete_problem_no_shocks_illustrative():
     got = _solve_discrete_problem_no_shocks(
         cc_values,
         choice_axes=None,
-        choice_segments={"segment_ids": jnp.array([0, 0, 1]), "num_segments": 2},
         params=None,
     )
     aaae(got, jnp.array([[2, 3], [4, 5]]))
@@ -207,7 +206,6 @@ def test_solve_discrete_problem_no_shocks_illustrative():
     got = _solve_discrete_problem_no_shocks(
         cc_values,
         choice_axes=1,
-        choice_segments={"segment_ids": jnp.array([0, 0, 1]), "num_segments": 2},
         params=None,
     )
     aaae(got, jnp.array([3, 5]))

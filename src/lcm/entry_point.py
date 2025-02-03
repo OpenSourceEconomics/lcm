@@ -150,7 +150,6 @@ def get_lcm_function(
             random_utility_shock_type=_mod.random_utility_shocks,
             variable_info=_mod.variable_info,
             is_last_period=is_last_period,
-            choice_segments=choice_segments[period],
         )
         emax_calculators.append(calculator)
 

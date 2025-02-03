@@ -24,9 +24,8 @@ import jax
 import jax.numpy as jnp
 import pandas as pd
 from jax import Array
-from jax.ops import segment_max
 
-from lcm.typing import ParamsDict, SegmentInfo, ShockType
+from lcm.typing import ParamsDict, ShockType
 
 
 def get_solve_discrete_problem(
@@ -34,20 +33,16 @@ def get_solve_discrete_problem(
     random_utility_shock_type: ShockType,
     variable_info: pd.DataFrame,
     is_last_period: bool,
-    choice_segments: SegmentInfo | None,
 ) -> Callable[[Array], Array]:
     """Get function that computes the expected max. of conditional continuation values.
 
-    The maximum is taken over the discrete and sparse choice variables in each state.
+    The maximum is taken over the discrete choice variables in each state.
 
     Args:
         random_utility_shock_type: Type of choice shock. Currently only Shock.NONE is
             supported. Work for "extreme_value" is in progress.
         variable_info: DataFrame with information about the variables.
         is_last_period: Whether the function is created for the last period.
-        choice_segments: Contains segment information of sparse choices. If None, there
-            are no sparse choices.
-        params: Dictionary with model parameters.
 
     Returns:
         callable: Function that calculates the expected maximum of the conditional
@@ -67,11 +62,7 @@ def get_solve_discrete_problem(
     else:
         raise ValueError(f"Invalid shock_type: {random_utility_shock_type}.")
 
-    return partial(
-        func,
-        choice_axes=choice_axes,
-        choice_segments=choice_segments,
-    )
+    return partial(func, choice_axes=choice_axes)
 
 
 # ======================================================================================
@@ -82,7 +73,6 @@ def get_solve_discrete_problem(
 def _solve_discrete_problem_no_shocks(
     cc_values: Array,
     choice_axes: tuple[int, ...] | None,
-    choice_segments: SegmentInfo | None,
     params: ParamsDict,  # noqa: ARG001
 ) -> Array:
     """Reduce conditional continuation values over discrete choices.
@@ -93,7 +83,6 @@ def _solve_discrete_problem_no_shocks(
         choice_axes (tuple[int, ...]): A tuple of indices representing the axes in the
             value function that correspond to discrete choices. Returns None if there
             are no discrete choice axes.
-        choice_segments: See `get_solve_discrete_problem`.
         params: See `get_solve_discrete_problem`.
 
     Returns:
@@ -105,12 +94,6 @@ def _solve_discrete_problem_no_shocks(
     out = cc_values
     if choice_axes is not None:
         out = out.max(axis=choice_axes)
-    if choice_segments is not None:
-        out = segment_max(
-            data=out,
-            indices_are_sorted=True,
-            **choice_segments,
-        )
 
     return out
 
