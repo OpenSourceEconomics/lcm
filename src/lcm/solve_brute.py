@@ -113,7 +113,6 @@ def solve_continuous_problem(
     _gridmapped = spacemap(
         func=compute_ccv,
         dense_vars=list(state_choice_space.dense_vars),
-        sparse_vars=[],
     )
     gridmapped = jax.jit(_gridmapped)
 
