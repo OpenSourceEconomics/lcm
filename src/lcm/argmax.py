@@ -1,6 +1,5 @@
 import jax.numpy as jnp
 from jax import Array
-from jax.ops import segment_max
 
 # ======================================================================================
 # argmax
@@ -93,74 +92,3 @@ def _flatten_last_n_axes(a: Array, n: int) -> Array:
 
     """
     return a.reshape(*a.shape[:-n], -1)
-
-
-# ======================================================================================
-# segment argmax
-# ======================================================================================
-
-
-def segment_argmax(
-    data: Array,
-    segment_ids: Array,
-    num_segments: int,
-) -> tuple[Array, Array]:
-    """Computes the maximum within segments of an array over the first axis of data.
-
-    See `jax.ops.segment_max` for reference. If multiple maxima exist, the last index
-    will be selected.
-
-    Args:
-        data (Array): Multidimensional array.
-        segment_ids (Array): An array with integer dtype that indicates the segments
-            of data (along its leading axis) to be reduced. Values can be repeated and
-            need not be sorted. Values outside of the range [0, num_segments) are
-            dropped and do not contribute to the result.
-        num_segments (int): An int with nonnegative value indicating the number of
-            segments. The default is set to be the minimum number of segments that would
-            support all indices in segment_ids, calculated as max(segment_ids) + 1.
-            Since num_segments determines the size of the output, a static value must be
-            provided to use segment_max in a JIT-compiled function.
-
-    Returns:
-        - Array: The argmax values. Has shape (num_segments, *data.shape[1:]).
-
-        - Array: The maximum values. Has shape (num_segments, *data.shape[1:]).
-
-    """
-    # Compute segment maximum and bring to the same shape as data
-    # ==================================================================================
-    segment_maximum = segment_max(
-        data=data,
-        segment_ids=segment_ids,
-        num_segments=num_segments,
-        indices_are_sorted=True,
-    )
-    segment_maximum_expanded = segment_maximum[segment_ids]
-
-    # Check where the array attains its maximum
-    # ==================================================================================
-    max_value_mask = data == segment_maximum_expanded
-
-    # Create index array of argmax indices for each segment (has same shape as data)
-    # ==================================================================================
-    arange = jnp.arange(data.shape[0])
-    reshaped = arange.reshape(-1, *([1] * (data.ndim - 1)))
-    segment_argmax_ids = jnp.broadcast_to(reshaped, data.shape)
-
-    # Set indices to zero that do not correspond to a maximum
-    # ==================================================================================
-    max_value_indices = max_value_mask * segment_argmax_ids
-
-    # Select argmax indices for each segment
-    # ----------------------------------------------------------------------------------
-    # Note: If multiple maxima exist, this approach will select the last index.
-    # ==================================================================================
-    segment_argmax = segment_max(
-        data=max_value_indices,
-        segment_ids=segment_ids,
-        num_segments=num_segments,
-        indices_are_sorted=True,
-    )
-
-    return segment_argmax, segment_maximum

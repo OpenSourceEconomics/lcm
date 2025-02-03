@@ -7,7 +7,7 @@ import pandas as pd
 from dags import concatenate_functions
 from jax import vmap
 
-from lcm.argmax import argmax, segment_argmax
+from lcm.argmax import argmax
 from lcm.dispatchers import spacemap, vmap_1d
 from lcm.interfaces import InternalModel, Space
 
@@ -623,10 +623,7 @@ def get_discrete_policy_calculator(variable_info):
 
         # Determine argmax and max over sparse choices
         # ==============================================================================
-        if choice_segments is not None:
-            sparse_argmax, _max = segment_argmax(_max, **choice_segments)
-        else:
-            sparse_argmax = None
+        sparse_argmax = None
 
         return dense_argmax, sparse_argmax, _max
 
