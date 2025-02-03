@@ -260,7 +260,6 @@ def solve_continuous_problem(
         func=compute_ccv,
         dense_vars=list(data_scs.dense_vars),
         sparse_vars=list(data_scs.sparse_vars),
-        put_dense_first=False,
     )
     gridmapped = jax.jit(_gridmapped)
 
@@ -504,11 +503,8 @@ def create_data_scs(
         if name in vi.query("is_dense & is_choice & ~is_continuous").index.tolist()
     }
 
-    combination_grid = states
-    data_choice_segments = None
-
     data_scs = Space(
-        sparse_vars=combination_grid,
+        sparse_vars=states,
         dense_vars=dense_choices,
     )
 
@@ -545,7 +541,7 @@ def get_discrete_policy_calculator(variable_info):
     """
     choice_axes = determine_discrete_dense_choice_axes(variable_info)
 
-    def _calculate_discrete_argmax(values, choice_axes, choice_segments):
+    def _calculate_discrete_argmax(values, choice_axes, choice_segments):  # noqa: ARG001
         _max = values
 
         # Determine argmax and max over dense choices

@@ -13,8 +13,6 @@ def spacemap(
     func: F,
     dense_vars: list[str],
     sparse_vars: list[str],
-    *,
-    put_dense_first: bool,
 ) -> F:
     """Apply vmap such that func is evaluated on a space of dense and sparse variables.
 
@@ -71,6 +69,8 @@ def spacemap(
 
     # Apply vmap_1d for sparse and _base_productmap for dense variables
     # ==================================================================================
+    put_dense_first = False
+
     if not sparse_vars:
         vmapped = _base_productmap(func, dense_vars)
     elif put_dense_first:

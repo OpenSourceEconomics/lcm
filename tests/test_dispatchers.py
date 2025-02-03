@@ -225,11 +225,9 @@ def expected_spacemap():
     return allow_args(g)(*helper).reshape(3, 2, 4 * 5)
 
 
-@pytest.mark.parametrize("put_dense_first", [True, False])
 def test_spacemap_all_arguments_mapped(
     setup_spacemap,
     expected_spacemap,
-    put_dense_first,
 ):
     dense_vars, sparse_vars = setup_spacemap
 
@@ -237,14 +235,10 @@ def test_spacemap_all_arguments_mapped(
         g,
         list(dense_vars),
         list(sparse_vars),
-        put_dense_first=put_dense_first,
     )
     calculated = decorated(**dense_vars, **sparse_vars)
 
-    if put_dense_first:
-        aaae(calculated, expected_spacemap)
-    else:
-        aaae(calculated, jnp.transpose(expected_spacemap, axes=(2, 0, 1)))
+    aaae(calculated, jnp.transpose(expected_spacemap, axes=(2, 0, 1)))
 
 
 @pytest.mark.parametrize(
@@ -264,7 +258,7 @@ def test_spacemap_all_arguments_mapped(
 )
 def test_spacemap_arguments_overlap(error_msg, dense_vars, sparse_vars):
     with pytest.raises(ValueError, match=error_msg):
-        spacemap(g, dense_vars, sparse_vars, put_dense_first=True)
+        spacemap(g, dense_vars, sparse_vars)
 
 
 # ======================================================================================
