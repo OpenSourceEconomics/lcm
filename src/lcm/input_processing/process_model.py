@@ -65,13 +65,11 @@ def _get_internal_functions(
         dict: Dictionary containing all functions of the model. The keys are
             the names of the functions. The values are the processed functions.
             The main difference between processed and unprocessed functions is that
-            processed functions take `params` as argument unless they are filter
-            functions.
+            processed functions take `params` as argument.
 
     """
     variable_info = get_variable_info(model)
     grids = get_grids(model)
-    function_info = get_function_info(model)
 
     raw_functions = deepcopy(model.functions)
 
@@ -93,9 +91,8 @@ def _get_internal_functions(
     # ==================================================================================
     # We wrap the user functions such that they can be called with the 'params' argument
     # instead of the individual parameters. This is done for all functions except for
-    # filter functions, because they cannot depend on model parameters; and dynamically
-    # generated weighting functions for stochastic next functions, since they are
-    # constructed to accept the 'params' argument by default.
+    # the dynamically generated weighting functions for stochastic next functions, since
+    # they are constructed to accept the 'params' argument by default.
 
     functions = {}
     for name, func in raw_functions.items():
@@ -105,19 +102,11 @@ def _get_internal_functions(
             processed_func = func
 
         else:
-            is_filter_function = function_info.loc[name, "is_filter"]
             # params[name] contains the dictionary of parameters for the function, which
             # is empty if the function does not depend on any model parameters.
             depends_on_params = bool(params[name])
 
-            if is_filter_function:
-                if params.get(name, False):
-                    raise ValueError(
-                        f"filters cannot depend on model parameters, but {name} does."
-                    )
-                processed_func = func
-
-            elif depends_on_params:
+            if depends_on_params:
                 processed_func = _replace_func_parameters_by_params(
                     func=func,
                     params=params,
