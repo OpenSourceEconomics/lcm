@@ -182,6 +182,9 @@ extend-ignore = [
     # missing return type annotation for private function
     "ANN202",
 
+    # module shadows module from the python standard-library
+    "A005",
+
     # Missing docstring in public module
     "D100",
 
