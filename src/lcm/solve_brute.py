@@ -1,5 +1,5 @@
 import jax
-
+import nvtx
 from lcm.dispatchers import spacemap
 
 
@@ -54,8 +54,8 @@ def solve(
     vf_arr = None
 
     logger.info("Starting solution")
-    
 
+    
     # backwards induction loop
     for period in reversed(range(n_periods)):
         # solve continuous problem, conditional on discrete choices
@@ -67,7 +67,6 @@ def solve(
             state_indexers=state_indexers[period],
             params=params,
         )
-
         # solve discrete problem by calculating expected maximum over discrete choices
         calculate_emax = emax_calculators[period]
         vf_arr = calculate_emax(conditional_continuation_values, params=params)
@@ -116,9 +115,9 @@ def solve_continuous_problem(
         state_and_discrete_vars=state_choice_space.dense_vars,
         continous_vars=continuous_choice_grids,
         memory_restriction=8*(10**9),
-        vf_arr=vf_arr,
-        params=params
+        
     )
     gridmapped = jax.jit(_gridmapped)
-
-    return gridmapped()
+    res = gridmapped(params, vf_arr)
+    res = jax.numpy.moveaxis(res,(0),(-1))
+    return res

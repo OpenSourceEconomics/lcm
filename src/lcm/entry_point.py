@@ -8,7 +8,7 @@ import jax.numpy as jnp
 
 from lcm.argmax import argmax
 from lcm.discrete_problem import get_solve_discrete_problem
-from lcm.dispatchers import productmap
+from lcm.dispatchers import productmap_scan, productmap
 from lcm.input_processing import process_model
 from lcm.logging import get_logger
 from lcm.model_functions import (
@@ -134,7 +134,7 @@ def get_lcm_function(
 
         compute_ccv = create_compute_conditional_continuation_value(
             utility_and_feasibility=u_and_f,
-            continuous_choice_variables=list(_choice_grids),
+            continuous_choice_variables=_choice_grids,
         )
         compute_ccv_functions.append(compute_ccv)
 
@@ -214,17 +214,11 @@ def create_compute_conditional_continuation_value(
 
     """
     if continuous_choice_variables:
-        utility_and_feasibility = productmap(
+        utility_and_feasibility = productmap_scan(
             func=utility_and_feasibility,
             variables=continuous_choice_variables,
         )
-
-    @functools.wraps(utility_and_feasibility)
-    def compute_ccv(*args, **kwargs):
-        u, f = utility_and_feasibility(*args, **kwargs)
-        return u.max(where=f, initial=-jnp.inf)
-
-    return compute_ccv
+    return utility_and_feasibility
 
 
 def create_compute_conditional_continuation_policy(
