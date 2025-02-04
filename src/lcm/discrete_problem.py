@@ -21,7 +21,6 @@ from collections.abc import Callable
 from functools import partial
 
 import jax
-import jax.numpy as jnp
 import pandas as pd
 from jax import Array
 
@@ -105,7 +104,7 @@ def _solve_discrete_problem_no_shocks(
 # ======================================================================================
 
 
-def _calculate_emax_extreme_value_shocks(values, choice_axes, choice_segments, params):
+def _calculate_emax_extreme_value_shocks(values, choice_axes, params):
     """Aggregate conditional continuation values over discrete choices.
 
     Args:
@@ -129,63 +128,8 @@ def _calculate_emax_extreme_value_shocks(values, choice_axes, choice_segments, p
     out = values
     if choice_axes is not None:
         out = scale * jax.scipy.special.logsumexp(out / scale, axis=choice_axes)
-    if choice_segments is not None:
-        out = _segment_extreme_value_emax_over_first_axis(out, scale, choice_segments)
 
     return out
-
-
-def _segment_extreme_value_emax_over_first_axis(a, scale, segment_info):
-    """Calculate emax under iid extreme value assumption over segments of first axis.
-
-    TODO: Explain in more detail how this function is related to EMAX under IID EV.
-
-    Args:
-        a (jax.numpy.ndarray): Multidimensional jax array.
-        scale (float): Scale parameter of the extreme value distribution.
-        segment_info (dict): Dictionary with the entries "segment_ids"
-            and "num_segments". segment_ids are a 1d integer array that partitions the
-            last dimension of a. "num_segments" is the number of segments. The
-            segment_ids are assumed to be sorted.
-
-    Returns:
-        jax.numpy.ndarray
-
-    """
-    return scale * _segment_logsumexp(a / scale, segment_info)
-
-
-def _segment_logsumexp(a, segment_info):
-    """Calculate a logsumexp over segments of the first axis of a.
-
-    We use the familiar logsumexp trick for numerical stability. See:
-    https://gregorygundersen.com/blog/2020/02/09/log-sum-exp/ for details.
-
-    Args:
-        a (jax.numpy.ndarray): Multidimensional jax array.
-        segment_info (dict): Dictionary with the entries "segment_ids"
-            and "num_segments". segment_ids are a 1d integer array that partitions the
-            first dimension of a. "num_segments" is the number of segments. The
-            segment_ids are assumed to be sorted.
-
-    Returns:
-        jax.numpy.ndarray
-
-    """
-    segmax = jax.ops.segment_max(
-        data=a,
-        indices_are_sorted=True,
-        **segment_info,
-    )
-
-    exp = jnp.exp(a - segmax[segment_info["segment_ids"]])
-
-    summed = jax.ops.segment_sum(
-        data=exp,
-        indices_are_sorted=True,
-        **segment_info,
-    )
-    return segmax + jnp.log(summed)
 
 
 # ======================================================================================
