@@ -1,6 +1,5 @@
 import jax.numpy as jnp
 import numpy as np
-import pytest
 from numpy.testing import assert_array_almost_equal as aaae
 
 from lcm.entry_point import create_compute_conditional_continuation_value
@@ -117,11 +116,14 @@ def test_solve_brute():
     assert isinstance(solution, list)
 
 
-@pytest.mark.xfail(reason="Removec sparse vars segments")
 def test_solve_continuous_problem_no_vf_arr():
     state_choice_space = Space(
-        dense_vars={"a": jnp.array([0, 1.0]), "b": jnp.array([2, 3.0])},
-        sparse_vars={"c": jnp.array([4, 5, 6])},
+        dense_vars={
+            "a": jnp.array([0, 1.0]),
+            "b": jnp.array([2, 3.0]),
+            "c": jnp.array([4, 5, 6]),
+        },
+        sparse_vars={},
     )
 
     def _utility_and_feasibility(a, c, b, d, vf_arr, params):  # noqa: ARG001
@@ -137,7 +139,6 @@ def test_solve_continuous_problem_no_vf_arr():
     )
 
     expected = np.array([[[6.0, 7, 8], [7, 8, 9]], [[7, 8, 9], [8, 9, 10]]])
-    expected = np.transpose(expected, axes=(2, 0, 1))
 
     got = solve_continuous_problem(
         state_choice_space,
