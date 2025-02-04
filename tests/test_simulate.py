@@ -405,7 +405,6 @@ def test_filter_ccv_policy():
     assert jnp.all(got == jnp.array([0, 0]))
 
 
-@pytest.mark.xfail(reason="Filters are replaced by constraints internally currently.")
 def test_create_data_state_choice_space():
     model_config = get_model_config("iskhakov_et_al_2017", n_periods=3)
     model = process_model(model_config)
@@ -415,14 +414,11 @@ def test_create_data_state_choice_space():
             "lagged_retirement": jnp.array([0, 1]),
         },
         model=model,
-        period=0,
     )
-    assert got_space.dense_vars == {}
-    assert_array_equal(got_space.sparse_vars["wealth"], jnp.array([10.0, 10.0, 20.0]))
-    assert_array_equal(got_space.sparse_vars["lagged_retirement"], jnp.array([0, 0, 1]))
-    assert_array_equal(got_space.sparse_vars["retirement"], jnp.array([0, 1, 1]))
-    assert_array_equal(got_segment_info["segment_ids"], jnp.array([0, 0, 1]))
-    assert got_segment_info["num_segments"] == 2
+    assert_array_equal(got_space.dense_vars["retirement"], jnp.array([0, 1]))
+    assert_array_equal(got_space.sparse_vars["wealth"], jnp.array([10.0, 20.0]))
+    assert_array_equal(got_space.sparse_vars["lagged_retirement"], jnp.array([0, 1]))
+    assert got_segment_info is None
 
 
 def test_dict_product():
