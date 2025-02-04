@@ -493,7 +493,7 @@ def create_data_scs(
     dense_choices = {
         name: grid
         for name, grid in model.grids.items()
-        if name in vi.query("is_choice & ~is_continuous").index.tolist()
+        if name in vi.query("is_choice & is_discrete").index.tolist()
     }
 
     data_scs = Space(
@@ -587,7 +587,7 @@ def determine_discrete_dense_choice_axes(variable_info):
 
     """
     discrete_dense_choice_vars = variable_info.query(
-        "~is_continuous & is_choice",
+        "is_choice & is_discrete",
     ).index.tolist()
 
     choice_vars = set(variable_info.query("is_choice").index.tolist())

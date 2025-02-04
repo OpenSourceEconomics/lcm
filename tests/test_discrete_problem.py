@@ -21,6 +21,8 @@ def test_get_solve_discrete_problem_illustrative():
     variable_info = pd.DataFrame(
         {
             "is_choice": [False, True],
+            "is_state": [True, False],
+            "is_discrete": [True, True],
             "is_continuous": [False, False],
         },
     )  # leads to choice_axes = [1]
@@ -111,6 +113,8 @@ def test_determine_discrete_choice_axes_illustrative_one_var():
     variable_info = pd.DataFrame(
         {
             "is_choice": [False, True],
+            "is_state": [True, False],
+            "is_discrete": [True, True],
             "is_continuous": [False, False],
         },
     )
@@ -123,6 +127,8 @@ def test_determine_discrete_choice_axes_illustrative_three_var():
     variable_info = pd.DataFrame(
         {
             "is_choice": [False, True, True, True],
+            "is_state": [True, False, False, False],
+            "is_discrete": [True, True, True, True],
             "is_continuous": [False, False, False, False],
         },
     )

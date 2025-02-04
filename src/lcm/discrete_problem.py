@@ -146,13 +146,13 @@ def _determine_dense_discrete_choice_axes(
         variable_info: DataFrame with information about the variables.
 
     Returns:
-        tuple[int, ...] | None: A tuple of indices representing the axes positions in
+        tuple[int, ...] | None: A tuple of indices representing the axes' positions in
             the value function that correspond to discrete choices. Returns None if
             there are no discrete choice axes.
 
     """
     # List of dense variables excluding continuous choice variables.
-    axes = variable_info.query("~(is_choice & is_continuous)").index.tolist()
+    axes = variable_info.query("is_state | is_discrete").index.tolist()
 
     choice_vars = set(variable_info.query("is_choice").index.tolist())
 

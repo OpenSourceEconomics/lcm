@@ -435,6 +435,7 @@ def test_determine_discrete_dense_choice_axes():
         {
             "is_state": [True, True, False, True, False, False],
             "is_choice": [False, False, True, True, True, True],
+            "is_discrete": [True, True, True, True, True, False],
             "is_continuous": [False, True, False, False, False, True],
         },
     )
