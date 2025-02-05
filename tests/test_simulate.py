@@ -90,8 +90,8 @@ def test_simulate_using_raw_inputs(simulate_inputs):
         **simulate_inputs,
     )
 
-    assert_array_equal(got.loc[0, :]["retirement"], 1)
-    assert_array_almost_equal(got.loc[0, :]["consumption"], jnp.array([1.0, 50.400803]))
+    assert_array_equal(got["retirement"], 1)
+    assert_array_almost_equal(got["consumption"], jnp.array([1.0, 50.400803]))
 
 
 # ======================================================================================
@@ -332,6 +332,7 @@ def test_compute_targets():
         params={"disutility_of_work": -1.0},
     )
     expected = {
+        **processed_results,
         "fa": jnp.arange(3) - 1.0,
         "fb": 1 + jnp.arange(3),
     }
