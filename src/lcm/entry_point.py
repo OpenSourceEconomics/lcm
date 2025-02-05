@@ -83,7 +83,7 @@ def get_lcm_function(
     space_infos = []
     compute_ccv_functions = []
     compute_ccv_policy_functions = []
-    choice_segments = []
+    choice_segments = []  # type: ignore[var-annotated]
     emax_calculators = []
 
     # ==================================================================================
@@ -94,27 +94,25 @@ def get_lcm_function(
 
         # call state space creation function, append trivial items to their lists
         # ==============================================================================
-        sc_space, space_info, state_indexer, segments = create_state_choice_space(
+        sc_space, space_info = create_state_choice_space(
             model=_mod,
-            period=period,
             is_last_period=is_last_period,
-            jit_filter=False,
         )
 
         state_choice_spaces.append(sc_space)
-        choice_segments.append(segments)
+        choice_segments.append(None)
 
         if is_last_period:
             state_indexers.append({})
         else:
-            state_indexers.append(state_indexer)
+            state_indexers.append({})
 
         space_infos.append(space_info)
 
     # ==================================================================================
     # Shift space info (in period t we require the space info of period t+1)
     # ==================================================================================
-    space_infos = space_infos[1:] + [{}]
+    space_infos = space_infos[1:] + [{}]  # type: ignore[list-item]
 
     # ==================================================================================
     # Create model functions
@@ -150,7 +148,6 @@ def get_lcm_function(
             random_utility_shock_type=_mod.random_utility_shocks,
             variable_info=_mod.variable_info,
             is_last_period=is_last_period,
-            choice_segments=choice_segments[period],
         )
         emax_calculators.append(calculator)
 

@@ -59,7 +59,6 @@ def test_get_function_info(model):
     got = get_function_info(model)
     exp = pd.DataFrame(
         {
-            "is_filter": [False],
             "is_constraint": [False],
             "is_next": [True],
             "is_stochastic_next": [False],
@@ -79,8 +78,6 @@ def test_get_variable_info(model):
             "is_discrete": [True, True],
             "is_stochastic": [False, False],
             "is_auxiliary": [False, True],
-            "is_sparse": [False, False],
-            "is_dense": [True, True],
         },
         index=["a", "c"],
     )
@@ -109,11 +106,6 @@ def test_process_model_iskhakov_et_al_2017():
     model = process_model(model_config)
 
     # Variable Info
-    assert (
-        model.variable_info["is_sparse"].to_numpy()
-        == np.array([True, True, False, False])
-    ).all()
-
     assert (
         model.variable_info["is_state"].to_numpy()
         == np.array([True, False, True, False])
@@ -166,7 +158,7 @@ def test_process_model_iskhakov_et_al_2017():
 
     assert (
         model.function_info["is_constraint"].to_numpy()
-        == np.array([False, False, False, True, False, False, False])
+        == np.array([False, False, False, True, True, False, False])
     ).all()
 
     assert ~model.function_info.loc["utility"].to_numpy().any()
@@ -177,8 +169,6 @@ def test_process_model():
     model = process_model(model_config)
 
     # Variable Info
-    assert ~(model.variable_info["is_sparse"].to_numpy()).any()
-
     assert (
         model.variable_info["is_state"].to_numpy() == np.array([False, True, False])
     ).all()
@@ -273,13 +263,13 @@ def test_get_stochastic_weight_function_non_state_dependency():
         )
 
 
-def test_variable_info_with_continuous_filter_has_unique_index():
+def test_variable_info_with_continuous_constraint_has_unique_index():
     model = get_model_config("iskhakov_et_al_2017", n_periods=3)
 
-    def wealth_filter(wealth):
+    def wealth_constraint(wealth):
         return wealth > 200
 
-    model.functions["wealth_filter"] = wealth_filter
+    model.functions["wealth_constraint"] = wealth_constraint
 
     got = get_variable_info(model)
     assert got.index.is_unique

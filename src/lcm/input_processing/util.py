@@ -18,15 +18,13 @@ def get_function_info(model: Model) -> pd.DataFrame:
         pd.DataFrame: A table with information about all functions in the model. The
             index contains the name of a model function. The columns are booleans that
             are True if the function has the corresponding property. The columns are:
-            is_next, is_stochastic_next, is_filter, is_constraint.
+            is_next, is_stochastic_next, is_constraint.
 
     """
     info = pd.DataFrame(index=list(model.functions))
-    info["is_filter"] = info.index.str.endswith("_filter")
-    info["is_constraint"] = info.index.str.endswith("_constraint")
-    info["is_next"] = (
-        info.index.str.startswith("next_") & ~info["is_constraint"] & ~info["is_filter"]
-    )
+    # Convert both filter and constraint to constraints, until we forbid filters.
+    info["is_constraint"] = info.index.str.endswith(("_constraint", "_filter"))
+    info["is_next"] = info.index.str.startswith("next_") & ~info["is_constraint"]
     info["is_stochastic_next"] = [
         hasattr(func, "_stochastic_info") for func in model.functions.values()
     ]
@@ -43,7 +41,7 @@ def get_variable_info(model: Model) -> pd.DataFrame:
         pd.DataFrame: A table with information about all variables in the model. The
             index contains the name of a model variable. The columns are booleans that
             are True if the variable has the corresponding property. The columns are:
-            is_state, is_choice, is_continuous, is_discrete, is_sparse, is_dense.
+            is_state, is_choice, is_continuous, is_discrete.
 
     """
     function_info = get_function_info(model)
@@ -72,20 +70,10 @@ def get_variable_info(model: Model) -> pd.DataFrame:
     )
     info["is_auxiliary"] = [var in auxiliary_variables for var in variables]
 
-    filter_names = function_info.query("is_filter").index.tolist()
-    filtered_variables: set[str] = set()
-    for name in filter_names:
-        filtered_variables.update(get_ancestors(model.functions, name))
-
-    info["is_sparse"] = [var in filtered_variables for var in variables]
-    info["is_dense"] = ~info["is_sparse"]
-
-    order = info.query("is_sparse & is_state").index.tolist()
-    order += info.query("is_sparse & is_choice").index.tolist()
-    order += info.query("is_dense & is_discrete & is_state").index.tolist()
-    order += info.query("is_dense & is_discrete & is_choice").index.tolist()
-    order += info.query("is_dense & is_continuous & is_state").index.tolist()
-    order += info.query("is_dense & is_continuous & is_choice").index.tolist()
+    order = info.query("is_discrete & is_state").index.tolist()
+    order += info.query("is_discrete & is_choice").index.tolist()
+    order += info.query("is_continuous & is_state").index.tolist()
+    order += info.query("is_continuous & is_choice").index.tolist()
 
     if set(order) != set(info.index):
         raise ValueError("Order and index do not match.")

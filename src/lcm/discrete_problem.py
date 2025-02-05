@@ -21,12 +21,10 @@ from collections.abc import Callable
 from functools import partial
 
 import jax
-import jax.numpy as jnp
 import pandas as pd
 from jax import Array
-from jax.ops import segment_max
 
-from lcm.typing import ParamsDict, SegmentInfo, ShockType
+from lcm.typing import ParamsDict, ShockType
 
 
 def get_solve_discrete_problem(
@@ -34,20 +32,16 @@ def get_solve_discrete_problem(
     random_utility_shock_type: ShockType,
     variable_info: pd.DataFrame,
     is_last_period: bool,
-    choice_segments: SegmentInfo | None,
 ) -> Callable[[Array], Array]:
     """Get function that computes the expected max. of conditional continuation values.
 
-    The maximum is taken over the discrete and sparse choice variables in each state.
+    The maximum is taken over the discrete choice variables in each state.
 
     Args:
         random_utility_shock_type: Type of choice shock. Currently only Shock.NONE is
             supported. Work for "extreme_value" is in progress.
         variable_info: DataFrame with information about the variables.
         is_last_period: Whether the function is created for the last period.
-        choice_segments: Contains segment information of sparse choices. If None, there
-            are no sparse choices.
-        params: Dictionary with model parameters.
 
     Returns:
         callable: Function that calculates the expected maximum of the conditional
@@ -67,11 +61,7 @@ def get_solve_discrete_problem(
     else:
         raise ValueError(f"Invalid shock_type: {random_utility_shock_type}.")
 
-    return partial(
-        func,
-        choice_axes=choice_axes,
-        choice_segments=choice_segments,
-    )
+    return partial(func, choice_axes=choice_axes)
 
 
 # ======================================================================================
@@ -82,7 +72,6 @@ def get_solve_discrete_problem(
 def _solve_discrete_problem_no_shocks(
     cc_values: Array,
     choice_axes: tuple[int, ...] | None,
-    choice_segments: SegmentInfo | None,
     params: ParamsDict,  # noqa: ARG001
 ) -> Array:
     """Reduce conditional continuation values over discrete choices.
@@ -93,7 +82,6 @@ def _solve_discrete_problem_no_shocks(
         choice_axes (tuple[int, ...]): A tuple of indices representing the axes in the
             value function that correspond to discrete choices. Returns None if there
             are no discrete choice axes.
-        choice_segments: See `get_solve_discrete_problem`.
         params: See `get_solve_discrete_problem`.
 
     Returns:
@@ -105,12 +93,6 @@ def _solve_discrete_problem_no_shocks(
     out = cc_values
     if choice_axes is not None:
         out = out.max(axis=choice_axes)
-    if choice_segments is not None:
-        out = segment_max(
-            data=out,
-            indices_are_sorted=True,
-            **choice_segments,
-        )
 
     return out
 
@@ -122,7 +104,7 @@ def _solve_discrete_problem_no_shocks(
 # ======================================================================================
 
 
-def _calculate_emax_extreme_value_shocks(values, choice_axes, choice_segments, params):
+def _calculate_emax_extreme_value_shocks(values, choice_axes, params):
     """Aggregate conditional continuation values over discrete choices.
 
     Args:
@@ -146,63 +128,8 @@ def _calculate_emax_extreme_value_shocks(values, choice_axes, choice_segments, p
     out = values
     if choice_axes is not None:
         out = scale * jax.scipy.special.logsumexp(out / scale, axis=choice_axes)
-    if choice_segments is not None:
-        out = _segment_extreme_value_emax_over_first_axis(out, scale, choice_segments)
 
     return out
-
-
-def _segment_extreme_value_emax_over_first_axis(a, scale, segment_info):
-    """Calculate emax under iid extreme value assumption over segments of first axis.
-
-    TODO: Explain in more detail how this function is related to EMAX under IID EV.
-
-    Args:
-        a (jax.numpy.ndarray): Multidimensional jax array.
-        scale (float): Scale parameter of the extreme value distribution.
-        segment_info (dict): Dictionary with the entries "segment_ids"
-            and "num_segments". segment_ids are a 1d integer array that partitions the
-            last dimension of a. "num_segments" is the number of segments. The
-            segment_ids are assumed to be sorted.
-
-    Returns:
-        jax.numpy.ndarray
-
-    """
-    return scale * _segment_logsumexp(a / scale, segment_info)
-
-
-def _segment_logsumexp(a, segment_info):
-    """Calculate a logsumexp over segments of the first axis of a.
-
-    We use the familiar logsumexp trick for numerical stability. See:
-    https://gregorygundersen.com/blog/2020/02/09/log-sum-exp/ for details.
-
-    Args:
-        a (jax.numpy.ndarray): Multidimensional jax array.
-        segment_info (dict): Dictionary with the entries "segment_ids"
-            and "num_segments". segment_ids are a 1d integer array that partitions the
-            first dimension of a. "num_segments" is the number of segments. The
-            segment_ids are assumed to be sorted.
-
-    Returns:
-        jax.numpy.ndarray
-
-    """
-    segmax = jax.ops.segment_max(
-        data=a,
-        indices_are_sorted=True,
-        **segment_info,
-    )
-
-    exp = jnp.exp(a - segmax[segment_info["segment_ids"]])
-
-    summed = jax.ops.segment_sum(
-        data=exp,
-        indices_are_sorted=True,
-        **segment_info,
-    )
-    return segmax + jnp.log(summed)
 
 
 # ======================================================================================
@@ -213,31 +140,19 @@ def _segment_logsumexp(a, segment_info):
 def _determine_dense_discrete_choice_axes(
     variable_info: pd.DataFrame,
 ) -> tuple[int, ...] | None:
-    """Get axes of a state choice space that correspond to dense discrete choices.
-
-    Note: The dense choice axes determine over which axes we reduce the conditional
-    continuation values using a non-segmented operation. The axes ordering of the
-    conditional continuation value array is given by [sparse_variable, dense_variables].
-    The dense continuous choice dimension is already reduced as we are working with
-    the conditional continuation values.
+    """Get axes of a state-choice-space that correspond to discrete choices.
 
     Args:
-        variable_info (pd.DataFrame): DataFrame with information about the variables.
+        variable_info: DataFrame with information about the variables.
 
     Returns:
-        tuple[int, ...] | None: A tuple of indices representing the axes in the value
-            function that correspond to discrete choices. Returns None if there are no
-            discrete choice axes.
+        tuple[int, ...] | None: A tuple of indices representing the axes' positions in
+            the value function that correspond to discrete choices. Returns None if
+            there are no discrete choice axes.
 
     """
-    has_sparse = variable_info["is_sparse"].any()
-
     # List of dense variables excluding continuous choice variables.
-    dense_vars = variable_info.query(
-        "is_dense & ~(is_choice & is_continuous)",
-    ).index.tolist()
-
-    axes = ["__sparse__", *dense_vars] if has_sparse else dense_vars
+    axes = variable_info.query("is_state | is_discrete").index.tolist()
 
     choice_vars = set(variable_info.query("is_choice").index.tolist())
 

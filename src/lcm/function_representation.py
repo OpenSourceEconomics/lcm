@@ -20,8 +20,7 @@ def get_function_representation(
     """Create a function representation of pre-calculated values on a grid.
 
     An example of a pre-calculated function is a value or policy function. These are
-    evaluated on the space of all sparse and dense discrete state variables as well as
-    all continuous state variables.
+    evaluated on the space of all discrete and continuous state variables.
 
     This function dynamically generates a function that looks up and interpolates values
     of the pre-calculated function. The arguments of the resulting function can be split
@@ -37,7 +36,6 @@ def get_function_representation(
     The resulting function roughly does the following steps:
 
     - Translate values of discrete variables into positions
-    - Look up the position of sparse variables in an indexer array.
     - Index into the array with the pre-calculated function values to extract only the
       part on which interpolation is needed.
     - Translate values of continuous variables into coordinates needed for interpolation

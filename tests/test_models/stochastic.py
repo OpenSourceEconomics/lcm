@@ -99,8 +99,9 @@ def consumption_constraint(consumption, wealth):
 
 ISKHAKOV_ET_AL_2017_STOCHASTIC = Model(
     description=(
-        "Starts from Iskhakov et al. (2017), removes filters and the lagged_retirement "
-        "state, and adds discrete stochastic state variables health and partner."
+        "Starts from Iskhakov et al. (2017), removes absorbing retirement constraint "
+        "and the lagged_retirement state, and adds discrete stochastic state variables "
+        "health and partner."
     ),
     n_periods=3,
     functions={

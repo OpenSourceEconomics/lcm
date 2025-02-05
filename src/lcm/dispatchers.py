@@ -12,9 +12,7 @@ F = TypeVar("F", bound=Callable[..., Array])
 def spacemap(
     func: F,
     dense_vars: list[str],
-    sparse_vars: list[str],
-    *,
-    put_dense_first: bool,
+    sparse_vars: list[str] | None = None,
 ) -> F:
     """Apply vmap such that func is evaluated on a space of dense and sparse variables.
 
@@ -48,23 +46,25 @@ def spacemap(
     """
     # Check inputs and prepare function
     # ==================================================================================
-    overlap = set(dense_vars).intersection(sparse_vars)
-    if overlap:
-        raise ValueError(
-            f"Dense and sparse variables must be disjoint. Overlap: {overlap}",
-        )
-
     duplicates = {v for v in dense_vars if dense_vars.count(v) > 1}
     if duplicates:
         raise ValueError(
             f"Same argument provided more than once in dense variables: {duplicates}",
         )
 
-    duplicates = {v for v in sparse_vars if sparse_vars.count(v) > 1}
-    if duplicates:
-        raise ValueError(
-            f"Same argument provided more than once in sparse variables: {duplicates}",
-        )
+    if sparse_vars:
+        overlap = set(dense_vars).intersection(sparse_vars)
+        if overlap:
+            raise ValueError(
+                f"Dense and sparse variables must be disjoint. Overlap: {overlap}",
+            )
+
+        duplicates = {v for v in sparse_vars if sparse_vars.count(v) > 1}
+        if duplicates:
+            raise ValueError(
+                "Same argument provided more than once in sparse variables: "
+                f"{duplicates}",
+            )
 
     # jax.vmap cannot deal with keyword-only arguments
     func = allow_args(func)
@@ -73,9 +73,6 @@ def spacemap(
     # ==================================================================================
     if not sparse_vars:
         vmapped = _base_productmap(func, dense_vars)
-    elif put_dense_first:
-        vmapped = vmap_1d(func, variables=sparse_vars, callable_with="only_args")
-        vmapped = _base_productmap(vmapped, dense_vars)
     else:
         vmapped = _base_productmap(func, dense_vars)
         vmapped = vmap_1d(vmapped, variables=sparse_vars, callable_with="only_args")

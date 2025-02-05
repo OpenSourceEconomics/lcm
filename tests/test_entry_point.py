@@ -182,11 +182,9 @@ def test_create_compute_conditional_continuation_value():
         },
     }
 
-    _, space_info, _, _ = create_state_choice_space(
+    _, space_info = create_state_choice_space(
         model=model,
-        period=0,
         is_last_period=False,
-        jit_filter=False,
     )
 
     u_and_f = get_utility_and_feasibility_function(
@@ -230,11 +228,9 @@ def test_create_compute_conditional_continuation_value_with_discrete_model():
         },
     }
 
-    _, space_info, _, _ = create_state_choice_space(
+    _, space_info = create_state_choice_space(
         model=model,
-        period=0,
         is_last_period=False,
-        jit_filter=False,
     )
 
     u_and_f = get_utility_and_feasibility_function(
@@ -283,11 +279,9 @@ def test_create_compute_conditional_continuation_policy():
         },
     }
 
-    _, space_info, _, _ = create_state_choice_space(
+    _, space_info = create_state_choice_space(
         model=model,
-        period=0,
         is_last_period=False,
-        jit_filter=False,
     )
 
     u_and_f = get_utility_and_feasibility_function(
@@ -332,11 +326,9 @@ def test_create_compute_conditional_continuation_policy_with_discrete_model():
         },
     }
 
-    _, space_info, _, _ = create_state_choice_space(
+    _, space_info = create_state_choice_space(
         model=model,
-        period=0,
         is_last_period=False,
-        jit_filter=False,
     )
 
     u_and_f = get_utility_and_feasibility_function(
@@ -368,20 +360,20 @@ def test_create_compute_conditional_continuation_policy_with_discrete_model():
 
 
 # ======================================================================================
-# Test filter with _period argument
+# Test constraints with _period argument
 # ======================================================================================
 
 
-def test_get_lcm_function_with_period_argument_in_filter():
+def test_get_lcm_function_with_period_argument_in_constraint():
     model = get_model_config("iskhakov_et_al_2017", n_periods=3)
 
-    def absorbing_retirement_filter(retirement, lagged_retirement, _period):
+    def absorbing_retirement_constraint(retirement, lagged_retirement, _period):
         return jnp.logical_or(
             retirement == RetirementStatus.retired,
             lagged_retirement == RetirementStatus.working,
         )
 
-    model.functions["absorbing_retirement_filter"] = absorbing_retirement_filter
+    model.functions["absorbing_retirement_constraint"] = absorbing_retirement_constraint
 
     solve_model, params_template = get_lcm_function(model=model)
     params = tree_map(lambda _: 0.2, params_template)

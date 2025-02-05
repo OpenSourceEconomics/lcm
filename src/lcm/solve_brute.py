@@ -88,7 +88,7 @@ def solve_continuous_problem(
     """Solve the agent's continuous choices problem problem.
 
     Args:
-        state_choice_space (Space): Class with entries dense_vars and sparse_vars.
+        state_choice_space (Space): Class with model variables.
         compute_ccv (callable): Function that returns the conditional continuation
             values for a given combination of states and discrete choices. The function
             depends on:
@@ -113,15 +113,12 @@ def solve_continuous_problem(
     _gridmapped = spacemap(
         func=compute_ccv,
         dense_vars=list(state_choice_space.dense_vars),
-        sparse_vars=list(state_choice_space.sparse_vars),
-        put_dense_first=False,
     )
     gridmapped = jax.jit(_gridmapped)
 
     return gridmapped(
         **state_choice_space.dense_vars,
         **continuous_choice_grids,
-        **state_choice_space.sparse_vars,
         **state_indexers,
         vf_arr=vf_arr,
         params=params,

@@ -1,7 +1,6 @@
 import jax.numpy as jnp
 import pandas as pd
 import pytest
-from jax import random
 from numpy.testing import assert_array_almost_equal, assert_array_equal
 from pybaum import tree_equal
 
@@ -18,7 +17,6 @@ from lcm.simulate import (
     _compute_targets,
     _generate_simulation_keys,
     _process_simulated_data,
-    create_choice_segments,
     create_data_scs,
     determine_discrete_dense_choice_axes,
     dict_product,
@@ -42,11 +40,9 @@ def simulate_inputs():
     model_config = get_model_config("iskhakov_et_al_2017_stripped_down", n_periods=1)
     model = process_model(model_config)
 
-    _, space_info, _, _ = create_state_choice_space(
+    _, space_info = create_state_choice_space(
         model=model,
-        period=0,
         is_last_period=False,
-        jit_filter=False,
     )
 
     compute_ccv_policy_functions = []
@@ -418,32 +414,11 @@ def test_create_data_state_choice_space():
             "lagged_retirement": jnp.array([0, 1]),
         },
         model=model,
-        period=0,
     )
-    assert got_space.dense_vars == {}
-    assert_array_equal(got_space.sparse_vars["wealth"], jnp.array([10.0, 10.0, 20.0]))
-    assert_array_equal(got_space.sparse_vars["lagged_retirement"], jnp.array([0, 0, 1]))
-    assert_array_equal(got_space.sparse_vars["retirement"], jnp.array([0, 1, 1]))
-    assert_array_equal(got_segment_info["segment_ids"], jnp.array([0, 0, 1]))
-    assert got_segment_info["num_segments"] == 2
-
-
-def test_choice_segments():
-    got = create_choice_segments(
-        mask=jnp.array([True, False, True, False, True, False]),
-        n_sparse_states=2,
-    )
-    assert_array_equal(jnp.array([0, 0, 1]), got["segment_ids"])
-    assert got["num_segments"] == 2
-
-
-def test_choice_segments_weakly_increasing():
-    key = random.PRNGKey(12345)
-    n_states, n_choices = random.randint(key, shape=(2,), minval=1, maxval=100)
-    mask_len = n_states * n_choices
-    mask = random.choice(key, a=2, shape=(mask_len,), p=jnp.array([0.5, 0.5]))
-    got = create_choice_segments(mask, n_sparse_states=n_states)["segment_ids"]
-    assert jnp.all(got[1:] - got[:-1] >= 0)
+    assert_array_equal(got_space.dense_vars["retirement"], jnp.array([0, 1]))
+    assert_array_equal(got_space.sparse_vars["wealth"], jnp.array([10.0, 20.0]))
+    assert_array_equal(got_space.sparse_vars["lagged_retirement"], jnp.array([0, 1]))
+    assert got_segment_info is None
 
 
 def test_dict_product():
@@ -459,10 +434,10 @@ def test_determine_discrete_dense_choice_axes():
     variable_info = pd.DataFrame(
         {
             "is_state": [True, True, False, True, False, False],
-            "is_dense": [False, True, True, False, True, True],
             "is_choice": [False, False, True, True, True, True],
+            "is_discrete": [True, True, True, True, True, False],
             "is_continuous": [False, True, False, False, False, True],
         },
     )
     got = determine_discrete_dense_choice_axes(variable_info)
-    assert got == (1, 2)
+    assert got == (1, 2, 3)
