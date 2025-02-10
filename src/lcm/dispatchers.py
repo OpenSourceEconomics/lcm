@@ -34,12 +34,12 @@ def spacemap(
 
     Returns:
         A callable with the same arguments as func (but with an additional leading
-        dimension) that returns a jax.numpy.ndarray or pytree of arrays. If ``func``
+        dimension) that returns a jax.numpy.ndarray or pytree of arrays. If `func`
         returns a scalar, the dispatched function returns a jax.numpy.ndarray with 1
-        jax.numpy.ndarray with k + 1 dimensions, where k is the length of ``dense_vars``
-        and the additional dimension corresponds to the ``sparse_vars``. The order of
-        the dimensions is determined by the order of ``dense_vars`` as well as the
-        ``put_dense_first`` argument. If the output of ``func`` is a jax pytree, the
+        jax.numpy.ndarray with k + 1 dimensions, where k is the length of `dense_vars`
+        and the additional dimension corresponds to the `sparse_vars`. The order of
+        the dimensions is determined by the order of `dense_vars` as well as the
+        `put_dense_first` argument. If the output of `func` is a jax pytree, the
         usual jax behavior applies, i.e. the leading dimensions of all arrays in the
         pytree are as described above but there might be additional dimensions.
 
@@ -106,12 +106,12 @@ def vmap_1d(
 
     Returns:
         A callable with the same arguments as func (but with an additional leading
-        dimension) that returns a jax.numpy.ndarray or pytree of arrays. If ``func``
+        dimension) that returns a jax.numpy.ndarray or pytree of arrays. If `func`
         returns a scalar, the dispatched function returns a jax.numpy.ndarray with 1
         jax.numpy.ndarray with 1 dimension and length k, where k is the length of one of
-        the mapped inputs in ``variables``. The order of the dimensions is determined by
-        the order of ``variables`` which can be different to the order of ``funcs``
-        arguments. If the output of ``func`` is a jax pytree, the usual jax behavior
+        the mapped inputs in `variables`. The order of the dimensions is determined by
+        the order of `variables` which can be different to the order of `funcs`
+        arguments. If the output of `func` is a jax pytree, the usual jax behavior
         applies, i.e. the leading dimensions of all arrays in the pytree are as
         described above but there might be additional dimensions.
 
@@ -169,11 +169,11 @@ def productmap(func: F, variables: list[str]) -> F:
 
     Returns:
         A callable with the same arguments as func (but with an additional leading
-        dimension) that returns a jax.numpy.ndarray or pytree of arrays. If ``func``
+        dimension) that returns a jax.numpy.ndarray or pytree of arrays. If `func`
         returns a scalar, the dispatched function returns a jax.numpy.ndarray with k
-        dimensions, where k is the length of ``variables``. The order of the dimensions
-        is determined by the order of ``variables`` which can be different to the order
-        of ``funcs`` arguments. If the output of ``func`` is a jax pytree, the usual jax
+        dimensions, where k is the length of `variables`. The order of the dimensions
+        is determined by the order of `variables` which can be different to the order
+        of `funcs` arguments. If the output of `func` is a jax pytree, the usual jax
         behavior applies, i.e. the leading dimensions of all arrays in the pytree are as
         described above but there might be additional dimensions.
 
@@ -207,7 +207,7 @@ def _base_productmap(func: F, product_axes: list[str]) -> F:
         product_axes: List with names of arguments over which we apply vmap.
 
     Returns:
-        A callable with the same arguments as func. See ``product_map`` for details.
+        A callable with the same arguments as func. See `product_map` for details.
 
     """
     signature = inspect.signature(func)

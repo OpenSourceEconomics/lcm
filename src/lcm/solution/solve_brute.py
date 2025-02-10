@@ -107,7 +107,7 @@ def solve_continuous_problem(
     Returns:
         jnp.ndarray: Jax array with continuation values for each combination of a
             state and a discrete choice. The number and order of dimensions is defined
-            by the ``gridmap`` function.
+            by the `gridmap` function.
 
     """
     _gridmapped = spacemap(
