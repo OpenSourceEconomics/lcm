@@ -15,9 +15,9 @@ from lcm.model_functions import (
     get_utility_and_feasibility_function,
 )
 from lcm.next_state import get_next_state_function
-from lcm.simulate import simulate
-from lcm.solve_brute import solve
-from lcm.state_space import create_state_choice_space
+from lcm.simulation.simulate import simulate
+from lcm.solution.solve_brute import solve
+from lcm.solution.state_space import create_state_choice_space
 from lcm.typing import ParamsDict
 from lcm.user_model import Model
 

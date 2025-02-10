@@ -6,7 +6,7 @@ from lcm.entry_point import create_compute_conditional_continuation_value
 from lcm.interfaces import Space
 from lcm.logging import get_logger
 from lcm.ndimage import map_coordinates
-from lcm.solve_brute import solve, solve_continuous_problem
+from lcm.solution.solve_brute import solve, solve_continuous_problem
 
 
 def test_solve_brute():

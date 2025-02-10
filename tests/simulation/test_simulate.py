@@ -12,7 +12,7 @@ from lcm.input_processing import process_model
 from lcm.logging import get_logger
 from lcm.model_functions import get_utility_and_feasibility_function
 from lcm.next_state import _get_next_state_function_simulation
-from lcm.simulate import (
+from lcm.simulation.simulate import (
     _as_data_frame,
     _compute_targets,
     _generate_simulation_keys,
@@ -24,7 +24,7 @@ from lcm.simulate import (
     retrieve_non_sparse_choices,
     simulate,
 )
-from lcm.state_space import create_state_choice_space
+from lcm.solution.state_space import create_state_choice_space
 from tests.test_models import (
     get_model_config,
     get_params,

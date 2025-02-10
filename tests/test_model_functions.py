@@ -10,7 +10,7 @@ from lcm.model_functions import (
     get_multiply_weights,
     get_utility_and_feasibility_function,
 )
-from lcm.state_space import create_state_choice_space
+from lcm.solution.state_space import create_state_choice_space
 from tests.test_models import get_model_config
 from tests.test_models.deterministic import utility
 

@@ -1,5 +1,5 @@
 from lcm.input_processing import process_model
-from lcm.state_space import (
+from lcm.solution.state_space import (
     create_state_choice_space,
 )
 from tests.test_models import get_model_config
