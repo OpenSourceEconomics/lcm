@@ -71,7 +71,7 @@ def get_solve_discrete_problem(
 
 def _solve_discrete_problem_no_shocks(
     cc_values: Array,
-    choice_axes: tuple[int, ...] | None,
+    choice_axes: tuple[int, ...],
     params: ParamsDict,  # noqa: ARG001
 ) -> Array:
     """Reduce conditional continuation values over discrete choices.
@@ -90,11 +90,7 @@ def _solve_discrete_problem_no_shocks(
             if choice_segments is not None.
 
     """
-    out = cc_values
-    if choice_axes is not None:
-        out = out.max(axis=choice_axes)
-
-    return out
+    return cc_values.max(axis=choice_axes)
 
 
 # ======================================================================================
@@ -139,24 +135,18 @@ def _calculate_emax_extreme_value_shocks(values, choice_axes, params):
 
 def _determine_dense_discrete_choice_axes(
     variable_info: pd.DataFrame,
-) -> tuple[int, ...] | None:
+) -> tuple[int, ...]:
     """Get axes of a state-choice-space that correspond to discrete choices.
 
     Args:
         variable_info: DataFrame with information about the variables.
 
     Returns:
-        tuple[int, ...] | None: A tuple of indices representing the axes' positions in
-            the value function that correspond to discrete choices. Returns None if
-            there are no discrete choice axes.
+        tuple[int, ...]: A tuple of indices representing the axes' positions in
+            the value function that correspond to discrete choices.
 
     """
     # List of dense variables excluding continuous choice variables.
     axes = variable_info.query("is_state | is_discrete").index.tolist()
-
     choice_vars = set(variable_info.query("is_choice").index.tolist())
-
-    choice_indices = tuple(i for i, ax in enumerate(axes) if ax in choice_vars)
-
-    # Return None if there are no discrete choice axes, otherwise return the indices.
-    return choice_indices if choice_indices else None
+    return tuple(i for i, ax in enumerate(axes) if ax in choice_vars)

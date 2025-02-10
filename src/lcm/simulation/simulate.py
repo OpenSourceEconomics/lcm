@@ -530,10 +530,7 @@ def get_discrete_policy_calculator(variable_info):
 
         # Determine argmax and max over dense choices
         # ==============================================================================
-        if choice_axes is not None:
-            dense_argmax, _max = argmax(_max, axis=choice_axes)
-        else:
-            dense_argmax = None
+        dense_argmax, _max = argmax(_max, axis=choice_axes)
 
         # Determine argmax and max over sparse choices
         # ==============================================================================
@@ -584,8 +581,6 @@ def determine_discrete_dense_choice_axes(variable_info):
     choice_vars = set(variable_info.query("is_choice").index.tolist())
 
     # We add 1 because the first dimension corresponds to the sparse state variables
-    choice_indices = [
+    return tuple(
         i + 1 for i, ax in enumerate(discrete_dense_choice_vars) if ax in choice_vars
-    ]
-
-    return None if not choice_indices else tuple(choice_indices)
+    )
