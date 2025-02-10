@@ -25,8 +25,8 @@ def get_function_representation(
     This function dynamically generates a function that looks up and interpolates values
     of the pre-calculated function. The arguments of the resulting function can be split
     in two categories:
-       1. Helper arguments such as information about the grid, indexer arrays and the
-          pre-calculated values of the function.
+       1. Helper arguments such as information about the grid and the pre-calculated
+          values of the function.
        2. The original arguments of the function that was pre-calculated on the grid.
 
     After partialling in all helper arguments, the resulting function behaves like an
@@ -57,7 +57,7 @@ def get_function_representation(
             'vf_arr', in which case, one would partial in 'vf_arr' into the
             representation.
         input_prefix: Prefix that will be added to all argument names of the resulting
-            function, except for the helpers arguments such as indexers or value arrays.
+            function, except for the helpers arguments such as the value arrays.
             Default is the empty string. The prefix needs to contain the separator. E.g.
             `next_` if an undescore should be used as separator.
 
@@ -80,15 +80,6 @@ def get_function_representation(
     for var in space_info.lookup_info:
         funcs[f"__{var}_pos__"] = _get_label_translator(
             in_name=input_prefix + var,
-        )
-
-    # ==================================================================================
-    # wrap the indexers and put them it into funcs
-    # ==================================================================================
-    for indexer_info in space_info.indexer_infos:
-        funcs[f"__{indexer_info.out_name}_pos__"] = _get_lookup_function(
-            array_name=indexer_info.name,
-            axis_names=[f"__{var}_pos__" for var in indexer_info.axis_names],
         )
 
     # ==================================================================================
@@ -171,8 +162,8 @@ def _get_lookup_function(
         axis_names (list): List of strings with names for each axis in the array.
 
     Returns:
-        callable: A callable with the keyword-only arguments [axis_names] + [array_name]
-            that looks up values in an indexer array called `array_name`.
+        callable: A callable with the keyword-only arguments `[*axis_names]` that looks
+            up values from an array called `array_name`.
 
     """
     arg_names = [*axis_names, array_name]

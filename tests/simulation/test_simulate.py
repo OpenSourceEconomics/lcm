@@ -63,7 +63,6 @@ def simulate_inputs():
     n_grid_points = model_config.choices["consumption"].n_points
 
     return {
-        "state_indexers": [{}],
         "continuous_choice_grids": [
             {"consumption": jnp.linspace(1, 100, num=n_grid_points)},
         ],

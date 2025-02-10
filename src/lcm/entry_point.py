@@ -38,11 +38,6 @@ def get_lcm_function(
     source code of this function to see how the lower level components are meant to be
     used.
 
-    Notes:
-    -----
-    - There is a hack to make the state_indexers empty in the last period which needs
-      to be replaced by a better solution, when we want to allow for bequest motives.
-
     Args:
         model: User model specification.
         targets: The requested function types. Currently only "solve", "simulate" and
@@ -79,7 +74,6 @@ def get_lcm_function(
     # Initialize other argument lists
     # ==================================================================================
     state_choice_spaces = []
-    state_indexers = []  # type:ignore[var-annotated]
     space_infos = []
     compute_ccv_functions = []
     compute_ccv_policy_functions = []
@@ -101,12 +95,6 @@ def get_lcm_function(
 
         state_choice_spaces.append(sc_space)
         choice_segments.append(None)
-
-        if is_last_period:
-            state_indexers.append({})
-        else:
-            state_indexers.append({})
-
         space_infos.append(space_info)
 
     # ==================================================================================
@@ -157,7 +145,6 @@ def get_lcm_function(
     _solve_model = partial(
         solve,
         state_choice_spaces=state_choice_spaces,
-        state_indexers=state_indexers,
         continuous_choice_grids=continuous_choice_grids,
         compute_ccv_functions=compute_ccv_functions,
         emax_calculators=emax_calculators,
@@ -169,7 +156,6 @@ def get_lcm_function(
     _next_state_simulate = get_next_state_function(model=_mod, target="simulate")
     simulate_model = partial(
         simulate,
-        state_indexers=state_indexers,
         continuous_choice_grids=continuous_choice_grids,
         compute_ccv_policy_functions=compute_ccv_policy_functions,
         model=_mod,

@@ -9,28 +9,6 @@ from lcm.typing import ParamsDict, ShockType
 
 
 @dataclass(frozen=True)
-class IndexerInfo:
-    """Information needed to work with an indexer array.
-
-    In particular, this contains enough information to wrap an indexer array into a
-    function that can be understood by dags.
-
-    Attributes:
-        axis_names (list): List of strings containing the names of the axes of the
-            indexer array.
-        name (str): The name of the indexer array. This will become an argument name
-            of the function we need for dags.
-        out_name (str): The name of the result of indexing into the indexer. This will
-            become the name of the function we need for dags.
-
-    """
-
-    axis_names: list[str]
-    name: str
-    out_name: str
-
-
-@dataclass(frozen=True)
 class Space:
     """Everything needed to evaluate a function on a space (e.g. state space).
 
@@ -58,14 +36,12 @@ class SpaceInfo:
             their order.
         interpolation_info: Dict that defines information on the grids of all continuous
             variables.
-        indexer_infos: List of IndexerInfo objects.
 
     """
 
     axis_names: list[str]
     lookup_info: dict[str, DiscreteGrid]
     interpolation_info: dict[str, ContinuousGrid]
-    indexer_infos: list[IndexerInfo]
 
 
 @dataclass(frozen=True)

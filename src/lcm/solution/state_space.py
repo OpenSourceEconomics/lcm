@@ -56,14 +56,10 @@ def create_state_choice_space(
     _cont_states = set(vi.query("is_continuous & is_state").index.tolist())
     interpolation_info = {k: v for k, v in model.gridspecs.items() if k in _cont_states}
 
-    # indexer infos
-    indexer_infos = []  # type: ignore[var-annotated]
-
     space_info = SpaceInfo(
         axis_names=axis_names,
         lookup_info=lookup_info,  # type: ignore[arg-type]
         interpolation_info=interpolation_info,  # type: ignore[arg-type]
-        indexer_infos=indexer_infos,
     )
 
     return state_choice_space, space_info

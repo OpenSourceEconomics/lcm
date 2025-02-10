@@ -15,7 +15,6 @@ from lcm.interfaces import InternalModel, Space
 def simulate(
     params,
     initial_states,
-    state_indexers,
     continuous_choice_grids,
     compute_ccv_policy_functions,
     model: InternalModel,
@@ -32,8 +31,6 @@ def simulate(
         params (dict): Dict of model parameters.
         initial_states (list): List of initial states to start from. Typically from the
             observed dataset.
-        state_indexers (list): List of dicts of length n_periods. Each dict contains one
-            or several state indexers.
         continuous_choice_grids (list): List of dicts of length n_periods. Each dict
             contains 1d grids for continuous choice variables.
         compute_ccv_policy_functions (list): List of functions of length n_periods. Each
@@ -130,7 +127,6 @@ def simulate(
             compute_ccv=compute_ccv_policy_functions[period],
             continuous_choice_grids=continuous_choice_grids[period],
             vf_arr=vf_arr_list[period],
-            state_indexers=state_indexers[period],
             params=params,
         )
 
@@ -218,7 +214,6 @@ def solve_continuous_problem(
     compute_ccv,
     continuous_choice_grids,
     vf_arr,
-    state_indexers,
     params,
 ):
     """Solve the agent's continuous choices problem problem.
@@ -231,13 +226,10 @@ def solve_continuous_problem(
             - discrete and continuous state variables
             - discrete and continuous choice variables
             - vf_arr
-            - one or several state_indexers
             - params
         continuous_choice_grids (list): List of dicts with 1d grids for continuous
             choice variables.
         vf_arr (jax.numpy.ndarray): Value function array.
-        state_indexers (list): List of dicts with length n_periods. Each dict contains
-            one or several state indexers.
         params (dict): Dict of model parameters.
 
     Returns:
@@ -260,7 +252,6 @@ def solve_continuous_problem(
         **data_scs.dense_vars,
         **continuous_choice_grids,
         **data_scs.sparse_vars,
-        **state_indexers,
         vf_arr=vf_arr,
         params=params,
     )

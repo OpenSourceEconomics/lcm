@@ -39,11 +39,6 @@ def test_solve_brute():
     state_choice_spaces = [_scs] * 2
 
     # ==================================================================================
-    # create the state_indexers (trivial because we do not have sparsity)
-    # ==================================================================================
-    state_indexers = [{}, {}]
-
-    # ==================================================================================
     # create continuous choice grids
     # ==================================================================================
 
@@ -106,7 +101,6 @@ def test_solve_brute():
     solution = solve(
         params=params,
         state_choice_spaces=state_choice_spaces,
-        state_indexers=state_indexers,
         continuous_choice_grids=continuous_choice_grids,
         compute_ccv_functions=utility_and_feasibility_functions,
         emax_calculators=emax_calculators,
@@ -145,7 +139,6 @@ def test_solve_continuous_problem_no_vf_arr():
         compute_ccv,
         continuous_choice_grids,
         vf_arr=None,
-        state_indexers={},
         params={},
     )
     aaae(got, expected)

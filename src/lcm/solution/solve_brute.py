@@ -6,7 +6,6 @@ from lcm.dispatchers import spacemap
 def solve(
     params,
     state_choice_spaces,
-    state_indexers,
     continuous_choice_grids,
     compute_ccv_functions,
     emax_calculators,
@@ -28,8 +27,6 @@ def solve(
         state_choice_spaces (list): List with one state_choice_space per period.
         value_function_evaluators (list): List with one value_function_evaluator per
             period.
-        state_indexers (list): List of dicts with length n_periods. Each dict contains
-            one or several state indexers.
         continuous_choice_grids (list): List of dicts with 1d grids for continuous
             choice variables.
         compute_ccv_functions (list): List of functions needed to solve the agent's
@@ -37,7 +34,6 @@ def solve(
             - discrete and continuous state variables
             - discrete and continuous choice variables
             - vf_arr
-            - one or several state_indexers
             - params
         emax_calculators (list): List of functions that take continuation
             values for combinations of states and discrete choices and calculate the
@@ -63,7 +59,6 @@ def solve(
             compute_ccv=compute_ccv_functions[period],
             continuous_choice_grids=continuous_choice_grids[period],
             vf_arr=vf_arr,
-            state_indexers=state_indexers[period],
             params=params,
         )
 
@@ -82,7 +77,6 @@ def solve_continuous_problem(
     compute_ccv,
     continuous_choice_grids,
     vf_arr,
-    state_indexers,
     params,
 ):
     """Solve the agent's continuous choices problem problem.
@@ -95,13 +89,10 @@ def solve_continuous_problem(
             - discrete and continuous state variables
             - discrete and continuous choice variables
             - vf_arr
-            - one or several state_indexers
             - params
         continuous_choice_grids (list): List of dicts with 1d grids for continuous
             choice variables.
         vf_arr (jax.numpy.ndarray): Value function array.
-        state_indexers (list): List of dicts with length n_periods. Each dict contains
-            one or several state indexers.
         params (dict): Dict of model parameters.
 
     Returns:
@@ -119,7 +110,6 @@ def solve_continuous_problem(
     return gridmapped(
         **state_choice_space.dense_vars,
         **continuous_choice_grids,
-        **state_indexers,
         vf_arr=vf_arr,
         params=params,
     )
