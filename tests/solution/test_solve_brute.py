@@ -3,7 +3,7 @@ import numpy as np
 from numpy.testing import assert_array_almost_equal as aaae
 
 from lcm.entry_point import create_compute_conditional_continuation_value
-from lcm.interfaces import Space
+from lcm.interfaces import SolutionSpace
 from lcm.logging import get_logger
 from lcm.ndimage import map_coordinates
 from lcm.solution.solve_brute import solve, solve_continuous_problem
@@ -25,9 +25,8 @@ def test_solve_brute():
     # ==================================================================================
     # create the list of state_choice_spaces
     # ==================================================================================
-    _scs = Space(
-        sparse_vars={},
-        dense_vars={
+    _scs = SolutionSpace(
+        vars={
             # pick [0, 1] such that no label translation is needed
             # lazy is like a type, it influences utility but is not affected by choices
             "lazy": jnp.array([0, 1]),
@@ -35,6 +34,7 @@ def test_solve_brute():
             # pick [0, 1, 2] such that no coordinate mapping is needed
             "wealth": jnp.array([0.0, 1.0, 2.0]),
         },
+        state_space_info=None,
     )
     state_choice_spaces = [_scs] * 2
 
@@ -111,13 +111,13 @@ def test_solve_brute():
 
 
 def test_solve_continuous_problem_no_vf_arr():
-    state_choice_space = Space(
-        dense_vars={
+    state_choice_space = SolutionSpace(
+        vars={
             "a": jnp.array([0, 1.0]),
             "b": jnp.array([2, 3.0]),
             "c": jnp.array([4, 5, 6]),
         },
-        sparse_vars={},
+        state_space_info=None,
     )
 
     def _utility_and_feasibility(a, c, b, d, vf_arr, params):  # noqa: ARG001

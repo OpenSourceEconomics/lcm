@@ -11,16 +11,17 @@ from lcm.functools import (
     all_as_kwargs,
     get_union_of_arguments,
 )
-from lcm.interfaces import InternalModel
+from lcm.interfaces import InternalModel, SpaceInfo
 from lcm.next_state import get_next_state_function
 
 
 def get_utility_and_feasibility_function(
     model: InternalModel,
-    space_info,
-    name_of_values_on_grid,
-    period,
-    is_last_period,
+    space_info: SpaceInfo,
+    name_of_values_on_grid: str,
+    period: int,
+    *,
+    is_last_period: bool,
 ):
     # ==================================================================================
     # Gather information on the model variables

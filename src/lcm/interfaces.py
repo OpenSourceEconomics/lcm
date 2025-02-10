@@ -9,6 +9,25 @@ from lcm.typing import ParamsDict, ShockType
 
 
 @dataclass(frozen=True)
+class SolutionSpace:
+    """The state-choice space of a model used during the solution process.
+
+    The state-choice space is the Cartesian product of the state variables and the
+    choice variables, stored here as a dictionary of one-dimensional arrays. The
+    continuous choice variables are handled outside of this class.
+
+    Attributes:
+        vars: Dictionary containing one dimensional grids of all variables, except for
+            continuous choice variables.
+        state_space_info: Information on the state variables.
+
+    """
+
+    vars: dict[str, Array]
+    state_space_info: "SpaceInfo"
+
+
+@dataclass(frozen=True)
 class Space:
     """Everything needed to evaluate a function on a space (e.g. state space).
 
