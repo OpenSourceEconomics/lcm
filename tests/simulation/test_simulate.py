@@ -40,7 +40,7 @@ def simulate_inputs():
     model_config = get_model_config("iskhakov_et_al_2017_stripped_down", n_periods=1)
     model = process_model(model_config)
 
-    sc_space = create_state_choice_space(
+    _, sc_space_info = create_state_choice_space(
         model=model,
         is_last_period=False,
     )
@@ -49,7 +49,7 @@ def simulate_inputs():
     for period in range(model.n_periods):
         u_and_f = get_utility_and_feasibility_function(
             model=model,
-            state_space_info=sc_space.state_space_info,
+            state_space_info=sc_space_info,
             name_of_values_on_grid="vf_arr",
             period=period,
             is_last_period=True,

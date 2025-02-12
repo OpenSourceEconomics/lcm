@@ -9,6 +9,35 @@ from lcm.typing import ParamsDict, ShockType
 
 
 @dataclass(frozen=True)
+class StateChoiceSpace:
+    """The state-choice space.
+
+    When used for the model solution:
+    ---------------------------------
+
+    The state-choice space becomes the full Cartesian product of the state variables and
+    the choice variables.
+
+    When used for the simulation:
+    ----------------------------
+
+    The state-choice space becomes the product of state-combinations with the full
+    Cartesian product of the choice variables.
+
+    Attributes:
+        states: Dictionary containing the values of the state variables.
+        choices: Dictionary containing the values of the choice variables.
+        ordered_var_names: List with names of state and choice variables in the order
+            they appear in the variable info table.
+
+    """
+
+    states: dict[str, Array]
+    choices: dict[str, Array]
+    ordered_var_names: list[str]
+
+
+@dataclass(frozen=True)
 class SpaceInfo:
     """Information to work with the output of a function evaluated on a space.
 
@@ -25,42 +54,6 @@ class SpaceInfo:
     var_names: list[str]
     discrete_vars: dict[str, DiscreteGrid]
     continuous_vars: dict[str, ContinuousGrid]
-
-
-@dataclass(frozen=True)
-class SolutionSpace:
-    """The state-choice space of a model used during the solution process.
-
-    The state-choice space is the Cartesian product of the state variables and the
-    choice variables, stored here as a dictionary of one-dimensional arrays. The
-    continuous choice variables are handled outside of this class.
-
-    Attributes:
-        vars: Dictionary containing one dimensional grids of all variables, except for
-            continuous choice variables.
-        state_space_info: Information on the state variables.
-
-    """
-
-    vars: dict[str, Array]
-    state_space_info: SpaceInfo
-
-
-@dataclass(frozen=True)
-class SimulationSpace:
-    """The state-choice space of a model used during the simulation process.
-
-    The state-choice space is the product of the state variables with the Cartesian
-    product of the choice variables.
-
-    Attributes:
-        states: Dictionary containing the values of the state variables.
-        choices: Dictionary containing the values of the choice variables.
-
-    """
-
-    states: dict[str, Array]
-    choices: dict[str, Array]
 
 
 @dataclass(frozen=True)

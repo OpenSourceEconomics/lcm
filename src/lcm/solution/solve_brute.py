@@ -1,7 +1,7 @@
 import jax
 
 from lcm.dispatchers import spacemap
-from lcm.interfaces import SolutionSpace
+from lcm.interfaces import StateChoiceSpace
 
 
 def solve(
@@ -74,7 +74,7 @@ def solve(
 
 
 def solve_continuous_problem(
-    state_choice_space: SolutionSpace,
+    state_choice_space: StateChoiceSpace,
     compute_ccv,
     continuous_choice_grids,
     vf_arr,
@@ -104,12 +104,13 @@ def solve_continuous_problem(
     """
     _gridmapped = spacemap(
         func=compute_ccv,
-        product_vars=list(state_choice_space.vars),
+        product_vars=state_choice_space.ordered_var_names,
     )
     gridmapped = jax.jit(_gridmapped)
 
     return gridmapped(
-        **state_choice_space.vars,
+        **state_choice_space.states,
+        **state_choice_space.choices,
         **continuous_choice_grids,
         vf_arr=vf_arr,
         params=params,

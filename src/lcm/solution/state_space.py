@@ -1,13 +1,13 @@
 """Create a state space for a given model."""
 
-from lcm.interfaces import InternalModel, SolutionSpace, SpaceInfo
+from lcm.interfaces import InternalModel, SpaceInfo, StateChoiceSpace
 
 
 def create_state_choice_space(
     model: InternalModel,
     *,
     is_last_period: bool,
-) -> SolutionSpace:
+) -> tuple[StateChoiceSpace, SpaceInfo]:
     """Create a state-choice-space for the model solution.
 
     A state-choice-space is a compressed representation of all feasible states and the
@@ -18,9 +18,11 @@ def create_state_choice_space(
         is_last_period: Whether the function is created for the last period.
 
     Returns:
-        SolutionSpace: An object containing the variable values of all variables in the
+        tuple[StateChoiceSpace, SpaceInfo]:
+        - An object containing the variable values of all variables in the
             state-choice-space, the grid specifications for the state variables, and the
             names of the state variables. Continuous choice variables are not included.
+        - The state-space information.
 
     """
     vi = model.variable_info
@@ -33,11 +35,11 @@ def create_state_choice_space(
     discrete_states = {sn: model.gridspecs[sn] for sn in discrete_states_names}
     continuous_states = {sn: model.gridspecs[sn] for sn in continuous_states_names}
 
-    # Create a dictionary with all state and choice variables and their feasible values,
-    # except for continuous choice variables, since they are treated differently.
-    space_grids = {
-        sn: model.grids[sn] for sn in vi.query("is_state | is_discrete").index.tolist()
+    state_grids = {sn: model.grids[sn] for sn in vi.query("is_state").index.tolist()}
+    choice_grids = {
+        sn: model.grids[sn] for sn in vi.query("is_choice & is_discrete").index.tolist()
     }
+    ordered_var_names = vi.query("is_state | is_discrete").index.tolist()
 
     state_space_info = SpaceInfo(
         var_names=discrete_states_names + continuous_states_names,
@@ -45,7 +47,10 @@ def create_state_choice_space(
         continuous_vars=continuous_states,  # type: ignore[arg-type]
     )
 
-    return SolutionSpace(
-        vars=space_grids,
-        state_space_info=state_space_info,
+    state_choice_space = StateChoiceSpace(
+        states=state_grids,
+        choices=choice_grids,
+        ordered_var_names=ordered_var_names,
     )
+
+    return state_choice_space, state_space_info

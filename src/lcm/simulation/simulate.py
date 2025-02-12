@@ -9,7 +9,7 @@ from jax import vmap
 
 from lcm.argmax import argmax
 from lcm.dispatchers import spacemap, vmap_1d
-from lcm.interfaces import InternalModel, SimulationSpace
+from lcm.interfaces import InternalModel, StateChoiceSpace
 
 
 def simulate(
@@ -201,7 +201,7 @@ def simulate(
 
 
 def solve_continuous_problem(
-    data_scs: SimulationSpace,
+    data_scs: StateChoiceSpace,
     compute_ccv,
     continuous_choice_grids,
     vf_arr,
@@ -473,9 +473,10 @@ def create_data_scs(
         if name in vi.query("is_choice & is_discrete").index.tolist()
     }
 
-    data_scs = SimulationSpace(
+    data_scs = StateChoiceSpace(
         states=states,
         choices=choices,
+        ordered_var_names=vi.query("is_state | is_discrete").index.tolist(),
     )
 
     # create choice segments

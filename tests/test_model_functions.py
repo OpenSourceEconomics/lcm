@@ -30,14 +30,14 @@ def test_get_utility_and_feasibility_function():
         },
     }
 
-    sc_space = create_state_choice_space(
+    _, sc_space_info = create_state_choice_space(
         model=model,
         is_last_period=False,
     )
 
     u_and_f = get_utility_and_feasibility_function(
         model=model,
-        state_space_info=sc_space.state_space_info,
+        state_space_info=sc_space_info,
         name_of_values_on_grid="vf_arr",
         period=model.n_periods - 1,
         is_last_period=True,
