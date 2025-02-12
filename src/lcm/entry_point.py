@@ -88,14 +88,14 @@ def get_lcm_function(
 
         # call state space creation function, append trivial items to their lists
         # ==============================================================================
-        sc_space, sc_space_info = create_state_choice_space(
+        sc_space, state_space_info = create_state_choice_space(
             model=_mod,
             is_last_period=is_last_period,
         )
 
         state_choice_spaces.append(sc_space)
         choice_segments.append(None)
-        state_space_infos.append(sc_space_info)
+        state_space_infos.append(state_space_info)
 
     # ==================================================================================
     # Shift space info (in period t we require the space info of period t+1)
