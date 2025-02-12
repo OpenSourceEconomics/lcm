@@ -74,7 +74,7 @@ def get_lcm_function(
     # Initialize other argument lists
     # ==================================================================================
     state_choice_spaces = []
-    space_infos = []
+    state_space_infos = []
     compute_ccv_functions = []
     compute_ccv_policy_functions = []
     choice_segments = []  # type: ignore[var-annotated]
@@ -95,12 +95,12 @@ def get_lcm_function(
 
         state_choice_spaces.append(sc_space)
         choice_segments.append(None)
-        space_infos.append(sc_space.state_space_info)
+        state_space_infos.append(sc_space.state_space_info)
 
     # ==================================================================================
     # Shift space info (in period t we require the space info of period t+1)
     # ==================================================================================
-    space_infos = space_infos[1:] + [{}]  # type: ignore[list-item]
+    state_space_infos = state_space_infos[1:] + [{}]  # type: ignore[list-item]
 
     # ==================================================================================
     # Create model functions
@@ -112,7 +112,7 @@ def get_lcm_function(
         # ==============================================================================
         u_and_f = get_utility_and_feasibility_function(
             model=_mod,
-            space_info=space_infos[period],
+            state_space_info=state_space_infos[period],
             name_of_values_on_grid="vf_arr",
             period=period,
             is_last_period=is_last_period,

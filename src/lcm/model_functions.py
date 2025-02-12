@@ -17,7 +17,7 @@ from lcm.next_state import get_next_state_function
 
 def get_utility_and_feasibility_function(
     model: InternalModel,
-    space_info: SpaceInfo,
+    state_space_info: SpaceInfo,
     name_of_values_on_grid: str,
     period: int,
     *,
@@ -43,7 +43,7 @@ def get_utility_and_feasibility_function(
         next_weights = get_next_weights_function(model)
 
         scalar_value_function = get_function_representation(
-            space_info=space_info,
+            space_info=state_space_info,
             name_of_values_on_grid=name_of_values_on_grid,
             input_prefix="next_",
         )
