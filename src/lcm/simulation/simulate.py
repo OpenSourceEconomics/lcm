@@ -108,7 +108,7 @@ def simulate(
 
         # Compute objects dependent on data-state-choice-space
         # ==============================================================================
-        dense_vars_grid_shape = tuple(len(grid) for grid in data_scs.choices.values())
+        vars_grid_shape = tuple(len(grid) for grid in data_scs.choices.values())
         cont_choice_grid_shape = tuple(
             len(grid) for grid in continuous_choice_grids[period].values()
         )
@@ -130,31 +130,31 @@ def simulate(
 
         # Get optimal discrete choice given the optimal conditional continuous choices
         # ==============================================================================
-        dense_argmax, sparse_argmax, value = discrete_policy_calculator(ccv)
+        discrete_argmax, sparse_argmax, value = discrete_policy_calculator(ccv)
 
         # Select optimal continuous choice corresponding to optimal discrete choice
         # ------------------------------------------------------------------------------
         # The conditional continuous choice argmax is computed for each discrete choice
         # in the data-state-choice-space. Here we select the the optimal continuous
-        # choice corresponding to the optimal discrete choice (dense and sparse).
+        # choice corresponding to the optimal discrete choice.
         # ==============================================================================
         cont_choice_argmax = filter_ccv_policy(
             ccv_policy=ccv_policy,
-            dense_argmax=dense_argmax,
-            dense_vars_grid_shape=dense_vars_grid_shape,
+            discrete_argmax=discrete_argmax,
+            vars_grid_shape=vars_grid_shape,
         )
         if sparse_argmax is not None:
             cont_choice_argmax = cont_choice_argmax[sparse_argmax]
 
         # Convert optimal choice indices to actual choice values
         # ==============================================================================
-        dense_choices = retrieve_non_sparse_choices(
-            indices=dense_argmax,
+        choices = retrieve_choices(
+            indices=discrete_argmax,
             grids=data_scs.choices,
-            grid_shape=dense_vars_grid_shape,
+            grid_shape=vars_grid_shape,
         )
 
-        cont_choices = retrieve_non_sparse_choices(
+        cont_choices = retrieve_choices(
             indices=cont_choice_argmax,
             grids=continuous_choice_grids[period],
             grid_shape=cont_choice_grid_shape,
@@ -162,7 +162,7 @@ def simulate(
 
         # Store results
         # ==============================================================================
-        choices = {**dense_choices, **cont_choices}
+        choices = {**choices, **cont_choices}
 
         _simulation_results.append(
             {
@@ -217,7 +217,7 @@ def solve_continuous_problem(
     """Solve the agent's continuous choices problem problem.
 
     Args:
-        data_scs (Space): Class with entries dense_vars and sparse_vars.
+        data_scs: Class with entries choices and states.
         compute_ccv (callable): Function that returns the conditional continuation
             values for a given combination of states and discrete choices. The function
             depends on:
@@ -379,28 +379,28 @@ def _generate_simulation_keys(key, ids):
 # ======================================================================================
 
 
-@partial(vmap_1d, variables=["ccv_policy", "dense_argmax"])
+@partial(vmap_1d, variables=["ccv_policy", "discrete_argmax"])
 def filter_ccv_policy(
     ccv_policy,
-    dense_argmax,
-    dense_vars_grid_shape,
+    discrete_argmax,
+    vars_grid_shape,
 ):
     """Select optimal continuous choice index given optimal discrete choice.
 
     Args:
         ccv_policy (jax.Array): Index array of optimal continous choices
             conditional on discrete choices.
-        dense_argmax (jax.numpy.array): Index array of optimal dense choices.
-        dense_vars_grid_shape (tuple): Shape of the dense variables grid.
+        discrete_argmax (jax.numpy.array): Index array of optimal discrete choices.
+        vars_grid_shape (tuple): Shape of the variables grid.
 
     Returns:
         jax.Array: Index array of optimal continuous choices.
 
     """
-    if dense_argmax is None:
+    if discrete_argmax is None:
         out = ccv_policy
     else:
-        indices = jnp.unravel_index(dense_argmax, shape=dense_vars_grid_shape)
+        indices = jnp.unravel_index(discrete_argmax, shape=vars_grid_shape)
         out = ccv_policy[indices]
     return out
 
@@ -410,8 +410,8 @@ def filter_ccv_policy(
 # ======================================================================================
 
 
-def retrieve_non_sparse_choices(indices, grids, grid_shape):
-    """Retrieve dense or continuous choices given indices.
+def retrieve_choices(indices, grids, grid_shape):
+    """Retrieve choices given indices.
 
     Args:
         indices (jnp.numpy.ndarray or None): General indices. Represents the index of
@@ -477,9 +477,9 @@ def create_data_scs(
             f"Provided variables that are not states: {too_many}",
         )
 
-    # get sparse and dense choices
+    # get choices
     # ==================================================================================
-    dense_choices = {
+    choices = {
         name: grid
         for name, grid in model.grids.items()
         if name in vi.query("is_choice & is_discrete").index.tolist()
@@ -487,7 +487,7 @@ def create_data_scs(
 
     data_scs = SimulationSpace(
         states=states,
-        choices=dense_choices,
+        choices=choices,
     )
 
     # create choice segments
@@ -521,20 +521,20 @@ def get_discrete_policy_calculator(variable_info):
                 one state.
 
     """
-    choice_axes = determine_discrete_dense_choice_axes(variable_info)
+    choice_axes = determine_discrete_choice_axes(variable_info)
 
     def _calculate_discrete_argmax(values, choice_axes, choice_segments):  # noqa: ARG001
         _max = values
 
-        # Determine argmax and max over dense choices
+        # Determine argmax and max over choices
         # ==============================================================================
-        dense_argmax, _max = argmax(_max, axis=choice_axes)
+        discrete_argmax, _max = argmax(_max, axis=choice_axes)
 
         # Determine argmax and max over sparse choices
         # ==============================================================================
         sparse_argmax = None
 
-        return dense_argmax, sparse_argmax, _max
+        return discrete_argmax, sparse_argmax, _max
 
     return partial(_calculate_discrete_argmax, choice_axes=choice_axes)
 
@@ -561,18 +561,18 @@ def dict_product(d):
     return dict(zip(d.keys(), list(stacked.T), strict=True)), len(stacked)
 
 
-def determine_discrete_dense_choice_axes(variable_info):
-    """Determine which axes correspond to discrete and dense choices.
+def determine_discrete_choice_axes(variable_info):
+    """Determine which axes correspond to discrete choices.
 
     Args:
         variable_info (pd.DataFrame): DataFrame with information about the variables.
 
     Returns:
         tuple: Tuple of ints, specifying which axes in a value function correspond to
-            discrete and dense choices.
+            discrete choices.
 
     """
-    discrete_dense_choice_vars = variable_info.query(
+    discrete_choice_vars = variable_info.query(
         "is_choice & is_discrete",
     ).index.tolist()
 
@@ -580,5 +580,5 @@ def determine_discrete_dense_choice_axes(variable_info):
 
     # We add 1 because the first dimension corresponds to the sparse state variables
     return tuple(
-        i + 1 for i, ax in enumerate(discrete_dense_choice_vars) if ax in choice_vars
+        i + 1 for i, ax in enumerate(discrete_choice_vars) if ax in choice_vars
     )

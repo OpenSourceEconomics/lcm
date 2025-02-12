@@ -18,10 +18,10 @@ from lcm.simulation.simulate import (
     _generate_simulation_keys,
     _process_simulated_data,
     create_data_scs,
-    determine_discrete_dense_choice_axes,
+    determine_discrete_choice_axes,
     dict_product,
     filter_ccv_policy,
-    retrieve_non_sparse_choices,
+    retrieve_choices,
     simulate,
 )
 from lcm.solution.state_space import create_state_choice_space
@@ -369,7 +369,7 @@ def test_process_simulated_data():
 
 
 def test_retrieve_non_sparse_choices():
-    got = retrieve_non_sparse_choices(
+    got = retrieve_choices(
         indices=jnp.array([0, 3, 7]),
         grids={"a": jnp.linspace(0, 1, 5), "b": jnp.linspace(10, 20, 6)},
         grid_shape=(5, 6),
@@ -379,7 +379,7 @@ def test_retrieve_non_sparse_choices():
 
 
 def test_retrieve_non_sparse_choices_no_indices():
-    got = retrieve_non_sparse_choices(
+    got = retrieve_choices(
         indices=None,
         grids={"a": jnp.linspace(0, 1, 5), "b": jnp.linspace(10, 20, 6)},
         grid_shape=(5, 6),
@@ -394,12 +394,12 @@ def test_filter_ccv_policy():
             [1, 0],
         ],
     )
-    dense_argmax = jnp.array([0, 1])
-    dense_vars_grid_shape = (2,)
+    argmax = jnp.array([0, 1])
+    vars_grid_shape = (2,)
     got = filter_ccv_policy(
         ccv_policy=ccc_policy,
-        dense_argmax=dense_argmax,
-        dense_vars_grid_shape=dense_vars_grid_shape,
+        discrete_argmax=argmax,
+        vars_grid_shape=vars_grid_shape,
     )
     assert jnp.all(got == jnp.array([0, 0]))
 
@@ -429,7 +429,7 @@ def test_dict_product():
         assert_array_equal(got_dict[key], val)
 
 
-def test_determine_discrete_dense_choice_axes():
+def test_determine_discrete_choice_axes():
     variable_info = pd.DataFrame(
         {
             "is_state": [True, True, False, True, False, False],
@@ -438,5 +438,5 @@ def test_determine_discrete_dense_choice_axes():
             "is_continuous": [False, True, False, False, False, True],
         },
     )
-    got = determine_discrete_dense_choice_axes(variable_info)
+    got = determine_discrete_choice_axes(variable_info)
     assert got == (1, 2, 3)
