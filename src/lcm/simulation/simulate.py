@@ -9,7 +9,7 @@ from jax import vmap
 
 from lcm.argmax import argmax
 from lcm.dispatchers import spacemap, vmap_1d
-from lcm.interfaces import InternalModel, Space
+from lcm.interfaces import InternalModel, SimulationSpace
 
 
 def simulate(
@@ -108,9 +108,7 @@ def simulate(
 
         # Compute objects dependent on data-state-choice-space
         # ==============================================================================
-        dense_vars_grid_shape = tuple(
-            len(grid) for grid in data_scs.dense_vars.values()
-        )
+        dense_vars_grid_shape = tuple(len(grid) for grid in data_scs.choices.values())
         cont_choice_grid_shape = tuple(
             len(grid) for grid in continuous_choice_grids[period].values()
         )
@@ -152,7 +150,7 @@ def simulate(
         # ==============================================================================
         dense_choices = retrieve_non_sparse_choices(
             indices=dense_argmax,
-            grids=data_scs.dense_vars,
+            grids=data_scs.choices,
             grid_shape=dense_vars_grid_shape,
         )
 
@@ -210,7 +208,7 @@ def simulate(
 
 
 def solve_continuous_problem(
-    data_scs,
+    data_scs: SimulationSpace,
     compute_ccv,
     continuous_choice_grids,
     vf_arr,
@@ -229,7 +227,7 @@ def solve_continuous_problem(
             - params
         continuous_choice_grids (list): List of dicts with 1d grids for continuous
             choice variables.
-        vf_arr (jax.numpy.ndarray): Value function array.
+        vf_arr (jax.Array): Value function array.
         params (dict): Dict of model parameters.
 
     Returns:
@@ -243,15 +241,15 @@ def solve_continuous_problem(
     """
     _gridmapped = spacemap(
         func=compute_ccv,
-        dense_vars=list(data_scs.dense_vars),
-        sparse_vars=list(data_scs.sparse_vars),
+        product_vars=list(data_scs.choices),
+        combination_vars=list(data_scs.states),
     )
     gridmapped = jax.jit(_gridmapped)
 
     return gridmapped(
-        **data_scs.dense_vars,
+        **data_scs.choices,
+        **data_scs.states,
         **continuous_choice_grids,
-        **data_scs.sparse_vars,
         vf_arr=vf_arr,
         params=params,
     )
@@ -390,13 +388,13 @@ def filter_ccv_policy(
     """Select optimal continuous choice index given optimal discrete choice.
 
     Args:
-        ccv_policy (jax.numpy.ndarray): Index array of optimal continous choices
+        ccv_policy (jax.Array): Index array of optimal continous choices
             conditional on discrete choices.
         dense_argmax (jax.numpy.array): Index array of optimal dense choices.
         dense_vars_grid_shape (tuple): Shape of the dense variables grid.
 
     Returns:
-        jax.numpy.ndarray: Index array of optimal continuous choices.
+        jax.Array: Index array of optimal continuous choices.
 
     """
     if dense_argmax is None:
@@ -487,9 +485,9 @@ def create_data_scs(
         if name in vi.query("is_choice & is_discrete").index.tolist()
     }
 
-    data_scs = Space(
-        sparse_vars=states,
-        dense_vars=dense_choices,
+    data_scs = SimulationSpace(
+        states=states,
+        choices=dense_choices,
     )
 
     # create choice segments
@@ -516,9 +514,9 @@ def get_discrete_policy_calculator(variable_info):
     Returns:
         callable: Function that calculates the argmax of the conditional continuation
             values. The function depends on:
-            - values (jax.numpy.ndarray): Multidimensional jax array with conditional
+            - values (jax.Array): Multidimensional jax array with conditional
                 continuation values.
-            - choice_segments (jax.numpy.ndarray): Jax array with the indices of the
+            - choice_segments (jax.Array): Jax array with the indices of the
                 choice segments that indicate which sparse choice variables belong to
                 one state.
 

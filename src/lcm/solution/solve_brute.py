@@ -93,7 +93,7 @@ def solve_continuous_problem(
             - params
         continuous_choice_grids (list): List of dicts with 1d grids for continuous
             choice variables.
-        vf_arr (jax.numpy.ndarray): Value function array.
+        vf_arr (jax.Array): Value function array.
         params (dict): Dict of model parameters.
 
     Returns:
@@ -104,7 +104,7 @@ def solve_continuous_problem(
     """
     _gridmapped = spacemap(
         func=compute_ccv,
-        dense_vars=list(state_choice_space.vars),
+        product_vars=list(state_choice_space.vars),
     )
     gridmapped = jax.jit(_gridmapped)
 

@@ -414,9 +414,9 @@ def test_create_data_state_choice_space():
         },
         model=model,
     )
-    assert_array_equal(got_space.dense_vars["retirement"], jnp.array([0, 1]))
-    assert_array_equal(got_space.sparse_vars["wealth"], jnp.array([10.0, 20.0]))
-    assert_array_equal(got_space.sparse_vars["lagged_retirement"], jnp.array([0, 1]))
+    assert_array_equal(got_space.choices["retirement"], jnp.array([0, 1]))
+    assert_array_equal(got_space.states["wealth"], jnp.array([10.0, 20.0]))
+    assert_array_equal(got_space.states["lagged_retirement"], jnp.array([0, 1]))
     assert got_segment_info is None
 
 

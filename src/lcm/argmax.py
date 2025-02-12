@@ -73,7 +73,7 @@ def _move_axes_to_back(a: Array, axes: tuple[int, ...]) -> Array:
         axes (tuple): Axes to move to the back.
 
     Returns:
-        jax.numpy.ndarray: Array a with shifted axes.
+        jax.Array: Array a with shifted axes.
 
     """
     front_axes = sorted(set(range(a.ndim)) - set(axes))
@@ -88,7 +88,7 @@ def _flatten_last_n_axes(a: Array, n: int) -> Array:
         n (int): Number of axes to flatten.
 
     Returns:
-        jax.numpy.ndarray: Array a with flattened last n axes.
+        jax.Array: Array a with flattened last n axes.
 
     """
     return a.reshape(*a.shape[:-n], -1)

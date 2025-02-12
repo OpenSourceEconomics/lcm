@@ -229,20 +229,20 @@ def test_spacemap_all_arguments_mapped(
     setup_spacemap,
     expected_spacemap,
 ):
-    dense_vars, sparse_vars = setup_spacemap
+    product_vars, combination_vars = setup_spacemap
 
     decorated = spacemap(
         g,
-        list(dense_vars),
-        list(sparse_vars),
+        list(product_vars),
+        list(combination_vars),
     )
-    calculated = decorated(**dense_vars, **sparse_vars)
+    calculated = decorated(**product_vars, **combination_vars)
 
     aaae(calculated, jnp.transpose(expected_spacemap, axes=(2, 0, 1)))
 
 
 @pytest.mark.parametrize(
-    ("error_msg", "dense_vars", "sparse_vars"),
+    ("error_msg", "product_vars", "combination_vars"),
     [
         (
             "Dense and sparse variables must be disjoint. Overlap: {'a'}",
@@ -250,15 +250,15 @@ def test_spacemap_all_arguments_mapped(
             ["a", "c", "d"],
         ),
         (
-            "Same argument provided more than once in dense variables: {'a'}",
+            "Same argument provided more than once in product variables: {'a'}",
             ["a", "a", "b"],
             ["c", "d"],
         ),
     ],
 )
-def test_spacemap_arguments_overlap(error_msg, dense_vars, sparse_vars):
+def test_spacemap_arguments_overlap(error_msg, product_vars, combination_vars):
     with pytest.raises(ValueError, match=error_msg):
-        spacemap(g, dense_vars=dense_vars, sparse_vars=sparse_vars)
+        spacemap(g, product_vars=product_vars, combination_vars=combination_vars)
 
 
 # ======================================================================================

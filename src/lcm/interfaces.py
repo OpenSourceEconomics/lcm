@@ -28,20 +28,20 @@ class SolutionSpace:
 
 
 @dataclass(frozen=True)
-class Space:
-    """Everything needed to evaluate a function on a space (e.g. state space).
+class SimulationSpace:
+    """The state-choice space of a model used during the simulation process.
+
+    The state-choice space is the product of the state variables with the Cartesian
+    product of the choice variables.
 
     Attributes:
-        sparse_vars (dict): Dictionary containing the names of sparse variables as keys
-            and arrays with values of those variables as values. Together, the arrays
-            define all feasible combinations of sparse variables.
-        dense_vars (dict): Dictionary containing one dimensional grids of
-            dense variables.
+        states: Dictionary containing the values of the state variables.
+        choices: Dictionary containing the values of the choice variables.
 
     """
 
-    sparse_vars: dict[str, Array]
-    dense_vars: dict[str, Array]
+    states: dict[str, Array]
+    choices: dict[str, Array]
 
 
 @dataclass(frozen=True)
