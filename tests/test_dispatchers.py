@@ -193,12 +193,12 @@ def setup_spacemap():
         "b": jnp.array([3.0, 4]),
     }
 
-    sparse_values = {
+    combination_values = {
         "c": jnp.array([7.0, 8, 9, 10]),
         "d": jnp.array([9.0, 10, 11, 12, 13]),
     }
 
-    helper = jnp.array(list(itertools.product(*sparse_values.values()))).T
+    helper = jnp.array(list(itertools.product(*combination_values.values()))).T
 
     combination_grid = {
         "c": helper[0],
@@ -245,7 +245,7 @@ def test_spacemap_all_arguments_mapped(
     ("error_msg", "product_vars", "combination_vars"),
     [
         (
-            "Dense and sparse variables must be disjoint. Overlap: {'a'}",
+            "Product and combination variables must be disjoint. Overlap: {'a'}",
             ["a", "b"],
             ["a", "c", "d"],
         ),

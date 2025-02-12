@@ -368,7 +368,7 @@ def test_process_simulated_data():
     assert tree_equal(expected, got)
 
 
-def test_retrieve_non_sparse_choices():
+def test_retrieve_choices():
     got = retrieve_choices(
         indices=jnp.array([0, 3, 7]),
         grids={"a": jnp.linspace(0, 1, 5), "b": jnp.linspace(10, 20, 6)},
@@ -378,7 +378,7 @@ def test_retrieve_non_sparse_choices():
     assert_array_equal(got["b"], jnp.array([10, 16, 12]))
 
 
-def test_retrieve_non_sparse_choices_no_indices():
+def test_retrieve_choices_no_indices():
     got = retrieve_choices(
         indices=None,
         grids={"a": jnp.linspace(0, 1, 5), "b": jnp.linspace(10, 20, 6)},

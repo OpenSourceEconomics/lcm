@@ -60,20 +60,21 @@ def spacemap(
         overlap = set(product_vars).intersection(combination_vars)
         if overlap:
             raise ValueError(
-                f"Dense and sparse variables must be disjoint. Overlap: {overlap}",
+                "Product and combination variables must be disjoint. Overlap: "
+                f"{overlap}",
             )
 
         duplicates = {v for v in combination_vars if combination_vars.count(v) > 1}
         if duplicates:
             raise ValueError(
-                "Same argument provided more than once in sparse variables: "
+                "Same argument provided more than once in combination variables: "
                 f"{duplicates}",
             )
 
     # jax.vmap cannot deal with keyword-only arguments
     func = allow_args(func)
 
-    # Apply vmap_1d for sparse and _base_productmap for product variables
+    # Apply vmap_1d for combination variables and _base_productmap for product variables
     # ==================================================================================
     if not combination_vars:
         vmapped = _base_productmap(func, product_vars)

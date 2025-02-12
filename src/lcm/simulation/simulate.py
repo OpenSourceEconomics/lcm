@@ -81,7 +81,7 @@ def simulate(
     n_periods = len(vf_arr_list)
     n_initial_states = len(next(iter(initial_states.values())))
 
-    _discrete_policy_calculator = get_discrete_policy_calculator(
+    discrete_policy_calculator = get_discrete_policy_calculator(
         variable_info=model.variable_info,
     )
 
@@ -96,12 +96,12 @@ def simulate(
     for period in range(n_periods):
         # Create data state choice space
         # ------------------------------------------------------------------------------
-        # Initial states are treated as sparse variables, so that the sparse variables
-        # in the data-state-choice-space correspond to the feasible product of sparse
-        # choice variables and initial states. The space has to be created in each
-        # iteration because the states change over time.
+        # Initial states are treated as combination variables, so that the combination
+        # variables in the data-state-choice-space correspond to the feasible product
+        # of combination variables and initial states. The space has to be created in
+        # each iteration because the states change over time.
         # ==============================================================================
-        data_scs, data_choice_segments = create_data_scs(
+        data_scs, _ = create_data_scs(
             states=states,
             model=model,
         )
@@ -111,11 +111,6 @@ def simulate(
         vars_grid_shape = tuple(len(grid) for grid in data_scs.choices.values())
         cont_choice_grid_shape = tuple(
             len(grid) for grid in continuous_choice_grids[period].values()
-        )
-
-        discrete_policy_calculator = partial(
-            _discrete_policy_calculator,
-            choice_segments=data_choice_segments,
         )
 
         # Compute optimal continuous choice conditional on discrete choices
@@ -130,7 +125,7 @@ def simulate(
 
         # Get optimal discrete choice given the optimal conditional continuous choices
         # ==============================================================================
-        discrete_argmax, sparse_argmax, value = discrete_policy_calculator(ccv)
+        discrete_argmax, value = discrete_policy_calculator(ccv)
 
         # Select optimal continuous choice corresponding to optimal discrete choice
         # ------------------------------------------------------------------------------
@@ -143,8 +138,6 @@ def simulate(
             discrete_argmax=discrete_argmax,
             vars_grid_shape=vars_grid_shape,
         )
-        if sparse_argmax is not None:
-            cont_choice_argmax = cont_choice_argmax[sparse_argmax]
 
         # Convert optimal choice indices to actual choice values
         # ==============================================================================
@@ -405,11 +398,6 @@ def filter_ccv_policy(
     return out
 
 
-# ======================================================================================
-# Non-sparse choices
-# ======================================================================================
-
-
 def retrieve_choices(indices, grids, grid_shape):
     """Retrieve choices given indices.
 
@@ -516,25 +504,12 @@ def get_discrete_policy_calculator(variable_info):
             values. The function depends on:
             - values (jax.Array): Multidimensional jax array with conditional
                 continuation values.
-            - choice_segments (jax.Array): Jax array with the indices of the
-                choice segments that indicate which sparse choice variables belong to
-                one state.
 
     """
     choice_axes = determine_discrete_choice_axes(variable_info)
 
-    def _calculate_discrete_argmax(values, choice_axes, choice_segments):  # noqa: ARG001
-        _max = values
-
-        # Determine argmax and max over choices
-        # ==============================================================================
-        discrete_argmax, _max = argmax(_max, axis=choice_axes)
-
-        # Determine argmax and max over sparse choices
-        # ==============================================================================
-        sparse_argmax = None
-
-        return discrete_argmax, sparse_argmax, _max
+    def _calculate_discrete_argmax(values, choice_axes):
+        return argmax(values, axis=choice_axes)
 
     return partial(_calculate_discrete_argmax, choice_axes=choice_axes)
 
@@ -578,7 +553,8 @@ def determine_discrete_choice_axes(variable_info):
 
     choice_vars = set(variable_info.query("is_choice").index.tolist())
 
-    # We add 1 because the first dimension corresponds to the sparse state variables
+    # We must add 1 because the first dimension corresponds to the state variables,
+    # which are treated as combination variables during the simulation.
     return tuple(
         i + 1 for i, ax in enumerate(discrete_choice_vars) if ax in choice_vars
     )
