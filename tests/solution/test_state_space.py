@@ -29,6 +29,6 @@ def test_create_state_choice_space():
 
     state_space_info = state_choice_space.state_space_info
 
-    assert state_space_info.axis_names == ["wealth"]
-    assert state_space_info.lookup_info == {}
-    assert state_space_info.interpolation_info == model.states
+    assert state_space_info.var_names == ["wealth"]
+    assert state_space_info.discrete_vars == {}
+    assert state_space_info.continuous_vars == model.states

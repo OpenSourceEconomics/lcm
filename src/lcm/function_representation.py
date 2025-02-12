@@ -70,14 +70,14 @@ def get_function_representation(
     # check inputs
     # ==================================================================================
     _fail_if_interpolation_axes_are_not_last(space_info)
-    _need_interpolation = bool(space_info.interpolation_info)
+    _need_interpolation = bool(space_info.continuous_vars)
 
     # ==================================================================================
     # create functions to look up position of discrete variables from labels
     # ==================================================================================
     funcs = {}
 
-    for var in space_info.lookup_info:
+    for var in space_info.discrete_vars:
         funcs[f"__{var}_pos__"] = _get_label_translator(
             in_name=input_prefix + var,
         )
@@ -87,20 +87,20 @@ def get_function_representation(
     # ==================================================================================
     # lookup is positional, so the inputs of the wrapper functions need to be the
     # outcomes of tranlating labels into positions
-    _internal_axes = [f"__{var}_pos__" for var in space_info.axis_names]
-    _lookup_axes = [var for var in _internal_axes if var in funcs]
+    _internal_axes = [f"__{var}_pos__" for var in space_info.var_names]
+    _discrete_axes = [ax for ax in _internal_axes if ax in funcs]
 
     _out_name = "__interpolation_data__" if _need_interpolation else "__fval__"
     funcs[_out_name] = _get_lookup_function(
         array_name=name_of_values_on_grid,
-        axis_names=_lookup_axes,
+        axis_names=_discrete_axes,
     )
 
     if _need_interpolation:
         # ==============================================================================
         # create functions to find coordinates for the interpolation
         # ==============================================================================
-        for var, grid_spec in space_info.interpolation_info.items():
+        for var, grid_spec in space_info.continuous_vars.items():
             funcs[f"__{var}_coord__"] = _get_coordinate_finder(
                 in_name=input_prefix + var,
                 grid=grid_spec,  # type: ignore[arg-type]
@@ -109,14 +109,14 @@ def get_function_representation(
         # ==============================================================================
         # create interpolation function
         # ==============================================================================
-        _interpolation_axes = [
+        _continuous_axes = [
             f"__{var}_coord__"
-            for var in space_info.axis_names
-            if var in space_info.interpolation_info
+            for var in space_info.var_names
+            if var in space_info.continuous_vars
         ]
         funcs["__fval__"] = _get_interpolator(
             name_of_values_on_grid="__interpolation_data__",
-            axis_names=_interpolation_axes,
+            axis_names=_continuous_axes,
         )
 
     return concatenate_functions(
@@ -238,21 +238,20 @@ def _get_interpolator(
 
 
 def _fail_if_interpolation_axes_are_not_last(space_info: SpaceInfo) -> None:
-    """Fail if the interpolation axes are not the last elements in axis_names.
+    """Fail if the continuous variables are not the last elements in var_names.
 
     Args:
         space_info: Class containing all information needed to interpret the
             precalculated values of a function.
 
     Raises:
-        ValueError: If the interpolation axes are not the last elements in axis_names.
+        ValueError: If the continuous variables are not the last elements in var_names.
 
     """
-    common = set(space_info.interpolation_info) & set(space_info.axis_names)
+    common = set(space_info.continuous_vars) & set(space_info.var_names)
 
     if common:
         n_common = len(common)
-        if sorted(common) != sorted(space_info.axis_names[-n_common:]):
-            raise ValueError(
-                "Interpolation axes need to be the last entries in axis_order.",
-            )
+        if sorted(common) != sorted(space_info.var_names[-n_common:]):
+            msg = "Continuous variables need to be the last entries in var_names."
+            raise ValueError(msg)

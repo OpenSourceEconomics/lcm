@@ -9,6 +9,25 @@ from lcm.typing import ParamsDict, ShockType
 
 
 @dataclass(frozen=True)
+class SpaceInfo:
+    """Information to work with the output of a function evaluated on a space.
+
+    An example is the value function array, which is the output of the value function
+    evaluated on the state space.
+
+    Attributes:
+        var_names: List with names of state variables.
+        discrete_vars: Dictionary with grids of discrete state variables.
+        continuous_vars: Dictionary with grids of continuous state variables.
+
+    """
+
+    var_names: list[str]
+    discrete_vars: dict[str, DiscreteGrid]
+    continuous_vars: dict[str, ContinuousGrid]
+
+
+@dataclass(frozen=True)
 class SolutionSpace:
     """The state-choice space of a model used during the solution process.
 
@@ -24,7 +43,7 @@ class SolutionSpace:
     """
 
     vars: dict[str, Array]
-    state_space_info: "SpaceInfo"
+    state_space_info: SpaceInfo
 
 
 @dataclass(frozen=True)
@@ -42,25 +61,6 @@ class SimulationSpace:
 
     states: dict[str, Array]
     choices: dict[str, Array]
-
-
-@dataclass(frozen=True)
-class SpaceInfo:
-    """Everything needed to work with the output of a function evaluated on a space.
-
-    Attributes:
-        axis_names: List with axis names of an array that contains function values for
-            all elements in a space.
-        lookup_info: Dict that defines the possible labels of all discrete variables and
-            their order.
-        interpolation_info: Dict that defines information on the grids of all continuous
-            variables.
-
-    """
-
-    axis_names: list[str]
-    lookup_info: dict[str, DiscreteGrid]
-    interpolation_info: dict[str, ContinuousGrid]
 
 
 @dataclass(frozen=True)

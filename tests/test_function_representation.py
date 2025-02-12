@@ -23,9 +23,9 @@ def test_function_evaluator_with_one_continuous_variable():
     wealth_grid = LinspaceGrid(start=-3, stop=3, n_points=7)
 
     space_info = SpaceInfo(
-        axis_names=["wealth"],
-        lookup_info={},
-        interpolation_info={
+        var_names=["wealth"],
+        discrete_vars={},
+        continuous_vars={
             "wealth": wealth_grid,
         },
     )
@@ -52,9 +52,9 @@ def test_function_evaluator_with_one_discrete_variable():
     vf_arr = jnp.array([1, 2])
 
     space_info = SpaceInfo(
-        axis_names=["working"],
-        lookup_info={"working": [0, 1]},
-        interpolation_info={},
+        var_names=["working"],
+        discrete_vars={"working": [0, 1]},
+        continuous_vars={},
     )
 
     # create the evaluator
@@ -97,24 +97,24 @@ def test_function_evaluator():
     vf_arr = discrete_part + cont_part
 
     # create info on discrete variables
-    lookup_info = {
+    discrete_vars = {
         "retired": [0, 1],
         "insured": [0, 1],
     }
 
     # create info on continuous grids
-    interpolation_info = {
+    continuous_vars = {
         "wealth": LinspaceGrid(start=100, stop=1100, n_points=6),
         "human_capital": LinspaceGrid(start=-3, stop=3, n_points=7),
     }
 
     # create info on axis of value function array
-    axis_names = ["retired", "insured", "wealth", "human_capital"]
+    var_names = ["retired", "insured", "wealth", "human_capital"]
 
     space_info = SpaceInfo(
-        axis_names=axis_names,
-        lookup_info=lookup_info,
-        interpolation_info=interpolation_info,
+        var_names=var_names,
+        discrete_vars=discrete_vars,
+        continuous_vars=continuous_vars,
     )
 
     # create the evaluator
@@ -210,9 +210,9 @@ def test_get_function_evaluator_illustrative():
     a_grid = LinspaceGrid(start=0, stop=1, n_points=3)
 
     space_info = SpaceInfo(
-        axis_names=["a"],
-        lookup_info={},
-        interpolation_info={
+        var_names=["a"],
+        discrete_vars={},
+        continuous_vars={
             "a": a_grid,
         },
     )
@@ -279,15 +279,15 @@ def test_get_interpolator_illustrative():
 
 @pytest.mark.illustrative
 def test_fail_if_interpolation_axes_are_not_last_illustrative():
-    # Empty intersection of axis_names and interpolation_info
+    # Empty intersection of var_names and continuous_vars
     # ==================================================================================
 
     space_info = SpaceInfo(
-        axis_names=["a", "b"],
-        interpolation_info={
+        var_names=["a", "b"],
+        continuous_vars={
             "c": None,
         },
-        lookup_info=None,
+        discrete_vars={},
     )
 
     _fail_if_interpolation_axes_are_not_last(space_info)  # does not fail
@@ -296,13 +296,13 @@ def test_fail_if_interpolation_axes_are_not_last_illustrative():
     # ==================================================================================
 
     space_info = SpaceInfo(
-        axis_names=["a", "b", "c"],
-        interpolation_info={
+        var_names=["a", "b", "c"],
+        continuous_vars={
             "b": None,
             "c": None,
             "d": None,
         },
-        lookup_info=None,
+        discrete_vars={},
     )
 
     _fail_if_interpolation_axes_are_not_last(space_info)  # does not fail
@@ -311,14 +311,14 @@ def test_fail_if_interpolation_axes_are_not_last_illustrative():
     # ==================================================================================
 
     space_info = SpaceInfo(
-        axis_names=["b", "c", "a"],  # "b", "c" are not last anymore
-        interpolation_info={
+        var_names=["b", "c", "a"],  # "b", "c" are not last anymore
+        continuous_vars={
             "b": None,
             "c": None,
             "d": None,
         },
-        lookup_info=None,
+        discrete_vars={},
     )
 
-    with pytest.raises(ValueError, match="Interpolation axes need to be the last"):
+    with pytest.raises(ValueError, match="Continuous variables need to be the last"):
         _fail_if_interpolation_axes_are_not_last(space_info)

@@ -40,9 +40,9 @@ def create_state_choice_space(
     }
 
     state_space_info = SpaceInfo(
-        axis_names=discrete_states_names + continuous_states_names,
-        lookup_info=discrete_states,  # type: ignore[arg-type]
-        interpolation_info=continuous_states,  # type: ignore[arg-type]
+        var_names=discrete_states_names + continuous_states_names,
+        discrete_vars=discrete_states,  # type: ignore[arg-type]
+        continuous_vars=continuous_states,  # type: ignore[arg-type]
     )
 
     return SolutionSpace(
