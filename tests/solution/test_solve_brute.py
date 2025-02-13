@@ -3,10 +3,10 @@ import numpy as np
 from numpy.testing import assert_array_almost_equal as aaae
 
 from lcm.entry_point import create_compute_conditional_continuation_value
-from lcm.interfaces import Space
+from lcm.interfaces import StateChoiceSpace
 from lcm.logging import get_logger
 from lcm.ndimage import map_coordinates
-from lcm.solve_brute import solve, solve_continuous_problem
+from lcm.solution.solve_brute import solve, solve_continuous_problem
 
 
 def test_solve_brute():
@@ -25,23 +25,20 @@ def test_solve_brute():
     # ==================================================================================
     # create the list of state_choice_spaces
     # ==================================================================================
-    _scs = Space(
-        sparse_vars={},
-        dense_vars={
+    _scs = StateChoiceSpace(
+        choices={
             # pick [0, 1] such that no label translation is needed
             # lazy is like a type, it influences utility but is not affected by choices
             "lazy": jnp.array([0, 1]),
             "working": jnp.array([0, 1]),
+        },
+        states={
             # pick [0, 1, 2] such that no coordinate mapping is needed
             "wealth": jnp.array([0.0, 1.0, 2.0]),
         },
+        ordered_var_names=("lazy", "working", "wealth"),
     )
     state_choice_spaces = [_scs] * 2
-
-    # ==================================================================================
-    # create the state_indexers (trivial because we do not have sparsity)
-    # ==================================================================================
-    state_indexers = [{}, {}]
 
     # ==================================================================================
     # create continuous choice grids
@@ -106,7 +103,6 @@ def test_solve_brute():
     solution = solve(
         params=params,
         state_choice_spaces=state_choice_spaces,
-        state_indexers=state_indexers,
         continuous_choice_grids=continuous_choice_grids,
         compute_ccv_functions=utility_and_feasibility_functions,
         emax_calculators=emax_calculators,
@@ -117,13 +113,14 @@ def test_solve_brute():
 
 
 def test_solve_continuous_problem_no_vf_arr():
-    state_choice_space = Space(
-        dense_vars={
+    state_choice_space = StateChoiceSpace(
+        choices={
             "a": jnp.array([0, 1.0]),
             "b": jnp.array([2, 3.0]),
             "c": jnp.array([4, 5, 6]),
         },
-        sparse_vars={},
+        states={},
+        ordered_var_names=("a", "b", "c"),
     )
 
     def _utility_and_feasibility(a, c, b, d, vf_arr, params):  # noqa: ARG001
@@ -145,7 +142,6 @@ def test_solve_continuous_problem_no_vf_arr():
         compute_ccv,
         continuous_choice_grids,
         vf_arr=None,
-        state_indexers={},
         params={},
     )
     aaae(got, expected)

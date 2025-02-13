@@ -5,22 +5,22 @@ from dags import concatenate_functions
 from dags.signature import with_signature
 
 from lcm.dispatchers import productmap
-from lcm.function_representation import get_function_representation
+from lcm.function_representation import get_value_function_representation
 from lcm.functools import (
     all_as_args,
     all_as_kwargs,
     get_union_of_arguments,
 )
-from lcm.interfaces import InternalModel
+from lcm.interfaces import InternalModel, StateSpaceInfo
 from lcm.next_state import get_next_state_function
 
 
 def get_utility_and_feasibility_function(
     model: InternalModel,
-    space_info,
-    name_of_values_on_grid,
-    period,
-    is_last_period,
+    state_space_info: StateSpaceInfo,
+    period: int,
+    *,
+    is_last_period: bool,
 ):
     # ==================================================================================
     # Gather information on the model variables
@@ -41,11 +41,7 @@ def get_utility_and_feasibility_function(
         next_state = get_next_state_function(model, target="solve")
         next_weights = get_next_weights_function(model)
 
-        scalar_value_function = get_function_representation(
-            space_info=space_info,
-            name_of_values_on_grid=name_of_values_on_grid,
-            input_prefix="next_",
-        )
+        scalar_value_function = get_value_function_representation(state_space_info)
 
         multiply_weights = get_multiply_weights(stochastic_variables)
 
@@ -142,7 +138,7 @@ def get_multiply_weights(stochastic_variables):
         callable
 
     """
-    arg_names = [f"weight_next_{var}" for var in stochastic_variables]
+    arg_names = tuple(f"weight_next_{var}" for var in stochastic_variables)
 
     @with_signature(args=arg_names)
     def _outer(*args, **kwargs):

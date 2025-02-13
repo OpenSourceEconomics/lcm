@@ -9,63 +9,51 @@ from lcm.typing import ParamsDict, ShockType
 
 
 @dataclass(frozen=True)
-class IndexerInfo:
-    """Information needed to work with an indexer array.
+class StateChoiceSpace:
+    """The state-choice space.
 
-    In particular, this contains enough information to wrap an indexer array into a
-    function that can be understood by dags.
+    When used for the model solution:
+    ---------------------------------
+
+    The state-choice space becomes the full Cartesian product of the state variables and
+    the choice variables.
+
+    When used for the simulation:
+    ----------------------------
+
+    The state-choice space becomes the product of state-combinations with the full
+    Cartesian product of the choice variables.
 
     Attributes:
-        axis_names (list): List of strings containing the names of the axes of the
-            indexer array.
-        name (str): The name of the indexer array. This will become an argument name
-            of the function we need for dags.
-        out_name (str): The name of the result of indexing into the indexer. This will
-            become the name of the function we need for dags.
+        states: Dictionary containing the values of the state variables.
+        choices: Dictionary containing the values of the choice variables.
+        ordered_var_names: Tuple with names of state and choice variables in the order
+            they appear in the variable info table.
 
     """
 
-    axis_names: list[str]
-    name: str
-    out_name: str
+    states: dict[str, Array]
+    choices: dict[str, Array]
+    ordered_var_names: tuple[str, ...]
 
 
 @dataclass(frozen=True)
-class Space:
-    """Everything needed to evaluate a function on a space (e.g. state space).
+class StateSpaceInfo:
+    """Information to work with the output of a function evaluated on a state space.
+
+    An example is the value function array, which is the output of the value function
+    evaluated on the state space.
 
     Attributes:
-        sparse_vars (dict): Dictionary containing the names of sparse variables as keys
-            and arrays with values of those variables as values. Together, the arrays
-            define all feasible combinations of sparse variables.
-        dense_vars (dict): Dictionary containing one dimensional grids of
-            dense variables.
+        var_names: Tuple with names of state variables.
+        discrete_vars: Dictionary with grids of discrete state variables.
+        continuous_vars: Dictionary with grids of continuous state variables.
 
     """
 
-    sparse_vars: dict[str, Array]
-    dense_vars: dict[str, Array]
-
-
-@dataclass(frozen=True)
-class SpaceInfo:
-    """Everything needed to work with the output of a function evaluated on a space.
-
-    Attributes:
-        axis_names: List with axis names of an array that contains function values for
-            all elements in a space.
-        lookup_info: Dict that defines the possible labels of all discrete variables and
-            their order.
-        interpolation_info: Dict that defines information on the grids of all continuous
-            variables.
-        indexer_infos: List of IndexerInfo objects.
-
-    """
-
-    axis_names: list[str]
-    lookup_info: dict[str, DiscreteGrid]
-    interpolation_info: dict[str, ContinuousGrid]
-    indexer_infos: list[IndexerInfo]
+    states_names: tuple[str, ...]
+    discrete_states: dict[str, DiscreteGrid]
+    continuous_states: dict[str, ContinuousGrid]
 
 
 @dataclass(frozen=True)
@@ -82,12 +70,12 @@ class InternalModel:
             are True if the variable has the corresponding property. The columns are:
             is_state, is_choice, is_continuous, is_discrete.
         functions: Dictionary that maps names of functions to functions. The functions
-            differ from the user functions in that they take ``params`` as a keyword
+            differ from the user functions in that they take `params` as a keyword
             argument. Two cases:
             - If the original function depended on model parameters, those are
-              automatically extracted from ``params`` and passed to the original
+              automatically extracted from `params` and passed to the original
               function.
-            - Otherwise, the ``params`` argument is simply ignored.
+            - Otherwise, the `params` argument is simply ignored.
         function_info: A table with information about all functions in the model. The
             index contains the name of a function. The columns are booleans that are
             True if the function has the corresponding property. The columns are:

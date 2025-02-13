@@ -10,6 +10,7 @@ from jax import Array
 from lcm import grid_helpers
 from lcm.exceptions import GridInitializationError, format_messages
 from lcm.typing import Scalar
+from lcm.utils import find_duplicates
 
 
 class Grid(ABC):
@@ -188,12 +189,12 @@ def _validate_discrete_grid(category_class: type) -> None:
 
     values = list(names_and_values.values())
 
-    duplicated_values = [v for v in values if values.count(v) > 1]
+    duplicated_values = find_duplicates(values)
     if duplicated_values:
         error_messages.append(
             "Field values of the category_class passed to DiscreteGrid must be unique. "
             "The following values are duplicated: "
-            f"{set(duplicated_values)}"
+            f"{duplicated_values}"
         )
 
     if values != list(range(len(values))):

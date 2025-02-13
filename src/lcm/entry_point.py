@@ -15,9 +15,9 @@ from lcm.model_functions import (
     get_utility_and_feasibility_function,
 )
 from lcm.next_state import get_next_state_function
-from lcm.simulate import simulate
-from lcm.solve_brute import solve
-from lcm.state_space import create_state_choice_space
+from lcm.simulation.simulate import simulate
+from lcm.solution.solve_brute import solve
+from lcm.solution.state_choice_space import create_state_choice_space
 from lcm.typing import ParamsDict
 from lcm.user_model import Model
 
@@ -37,11 +37,6 @@ def get_lcm_function(
     Advanced users might want to use lower level functions instead, but can read the
     source code of this function to see how the lower level components are meant to be
     used.
-
-    Notes:
-    -----
-    - There is a hack to make the state_indexers empty in the last period which needs
-      to be replaced by a better solution, when we want to allow for bequest motives.
 
     Args:
         model: User model specification.
@@ -79,8 +74,7 @@ def get_lcm_function(
     # Initialize other argument lists
     # ==================================================================================
     state_choice_spaces = []
-    state_indexers = []  # type:ignore[var-annotated]
-    space_infos = []
+    state_space_infos = []
     compute_ccv_functions = []
     compute_ccv_policy_functions = []
     choice_segments = []  # type: ignore[var-annotated]
@@ -94,25 +88,19 @@ def get_lcm_function(
 
         # call state space creation function, append trivial items to their lists
         # ==============================================================================
-        sc_space, space_info = create_state_choice_space(
+        state_choice_space, state_space_info = create_state_choice_space(
             model=_mod,
             is_last_period=is_last_period,
         )
 
-        state_choice_spaces.append(sc_space)
+        state_choice_spaces.append(state_choice_space)
         choice_segments.append(None)
-
-        if is_last_period:
-            state_indexers.append({})
-        else:
-            state_indexers.append({})
-
-        space_infos.append(space_info)
+        state_space_infos.append(state_space_info)
 
     # ==================================================================================
     # Shift space info (in period t we require the space info of period t+1)
     # ==================================================================================
-    space_infos = space_infos[1:] + [{}]  # type: ignore[list-item]
+    state_space_infos = state_space_infos[1:] + [{}]  # type: ignore[list-item]
 
     # ==================================================================================
     # Create model functions
@@ -124,8 +112,7 @@ def get_lcm_function(
         # ==============================================================================
         u_and_f = get_utility_and_feasibility_function(
             model=_mod,
-            space_info=space_infos[period],
-            name_of_values_on_grid="vf_arr",
+            state_space_info=state_space_infos[period],
             period=period,
             is_last_period=is_last_period,
         )
@@ -157,7 +144,6 @@ def get_lcm_function(
     _solve_model = partial(
         solve,
         state_choice_spaces=state_choice_spaces,
-        state_indexers=state_indexers,
         continuous_choice_grids=continuous_choice_grids,
         compute_ccv_functions=compute_ccv_functions,
         emax_calculators=emax_calculators,
@@ -169,7 +155,6 @@ def get_lcm_function(
     _next_state_simulate = get_next_state_function(model=_mod, target="simulate")
     simulate_model = partial(
         simulate,
-        state_indexers=state_indexers,
         continuous_choice_grids=continuous_choice_grids,
         compute_ccv_policy_functions=compute_ccv_policy_functions,
         model=_mod,
@@ -213,7 +198,7 @@ def create_compute_conditional_continuation_value(
     if continuous_choice_variables:
         utility_and_feasibility = productmap(
             func=utility_and_feasibility,
-            variables=continuous_choice_variables,
+            variables=tuple(continuous_choice_variables),
         )
 
     @functools.wraps(utility_and_feasibility)
@@ -251,7 +236,7 @@ def create_compute_conditional_continuation_policy(
     if continuous_choice_variables:
         utility_and_feasibility = productmap(
             func=utility_and_feasibility,
-            variables=continuous_choice_variables,
+            variables=tuple(continuous_choice_variables),
         )
 
     @functools.wraps(utility_and_feasibility)

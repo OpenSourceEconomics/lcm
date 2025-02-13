@@ -12,19 +12,19 @@ from lcm.input_processing import process_model
 from lcm.logging import get_logger
 from lcm.model_functions import get_utility_and_feasibility_function
 from lcm.next_state import _get_next_state_function_simulation
-from lcm.simulate import (
+from lcm.simulation.simulate import (
     _as_data_frame,
     _compute_targets,
     _generate_simulation_keys,
     _process_simulated_data,
     create_data_scs,
-    determine_discrete_dense_choice_axes,
+    determine_discrete_choice_axes,
     dict_product,
     filter_ccv_policy,
-    retrieve_non_sparse_choices,
+    retrieve_choices,
     simulate,
 )
-from lcm.state_space import create_state_choice_space
+from lcm.solution.state_choice_space import create_state_choice_space
 from tests.test_models import (
     get_model_config,
     get_params,
@@ -40,17 +40,16 @@ def simulate_inputs():
     model_config = get_model_config("iskhakov_et_al_2017_stripped_down", n_periods=1)
     model = process_model(model_config)
 
-    _, space_info = create_state_choice_space(
+    state_space_info = create_state_choice_space(
         model=model,
         is_last_period=False,
-    )
+    )[1]
 
     compute_ccv_policy_functions = []
     for period in range(model.n_periods):
         u_and_f = get_utility_and_feasibility_function(
             model=model,
-            space_info=space_info,
-            name_of_values_on_grid="vf_arr",
+            state_space_info=state_space_info,
             period=period,
             is_last_period=True,
         )
@@ -63,7 +62,6 @@ def simulate_inputs():
     n_grid_points = model_config.choices["consumption"].n_points
 
     return {
-        "state_indexers": [{}],
         "continuous_choice_grids": [
             {"consumption": jnp.linspace(1, 100, num=n_grid_points)},
         ],
@@ -369,23 +367,14 @@ def test_process_simulated_data():
     assert tree_equal(expected, got)
 
 
-def test_retrieve_non_sparse_choices():
-    got = retrieve_non_sparse_choices(
-        indices=jnp.array([0, 3, 7]),
+def test_retrieve_choices():
+    got = retrieve_choices(
+        flat_indices=jnp.array([0, 3, 7]),
         grids={"a": jnp.linspace(0, 1, 5), "b": jnp.linspace(10, 20, 6)},
-        grid_shape=(5, 6),
+        grids_shapes=(5, 6),
     )
     assert_array_equal(got["a"], jnp.array([0, 0, 0.25]))
     assert_array_equal(got["b"], jnp.array([10, 16, 12]))
-
-
-def test_retrieve_non_sparse_choices_no_indices():
-    got = retrieve_non_sparse_choices(
-        indices=None,
-        grids={"a": jnp.linspace(0, 1, 5), "b": jnp.linspace(10, 20, 6)},
-        grid_shape=(5, 6),
-    )
-    assert got == {}
 
 
 def test_filter_ccv_policy():
@@ -395,12 +384,12 @@ def test_filter_ccv_policy():
             [1, 0],
         ],
     )
-    dense_argmax = jnp.array([0, 1])
-    dense_vars_grid_shape = (2,)
+    argmax = jnp.array([0, 1])
+    vars_grid_shape = (2,)
     got = filter_ccv_policy(
         ccv_policy=ccc_policy,
-        dense_argmax=dense_argmax,
-        dense_vars_grid_shape=dense_vars_grid_shape,
+        discrete_argmax=argmax,
+        vars_grid_shape=vars_grid_shape,
     )
     assert jnp.all(got == jnp.array([0, 0]))
 
@@ -415,9 +404,9 @@ def test_create_data_state_choice_space():
         },
         model=model,
     )
-    assert_array_equal(got_space.dense_vars["retirement"], jnp.array([0, 1]))
-    assert_array_equal(got_space.sparse_vars["wealth"], jnp.array([10.0, 20.0]))
-    assert_array_equal(got_space.sparse_vars["lagged_retirement"], jnp.array([0, 1]))
+    assert_array_equal(got_space.choices["retirement"], jnp.array([0, 1]))
+    assert_array_equal(got_space.states["wealth"], jnp.array([10.0, 20.0]))
+    assert_array_equal(got_space.states["lagged_retirement"], jnp.array([0, 1]))
     assert got_segment_info is None
 
 
@@ -430,7 +419,7 @@ def test_dict_product():
         assert_array_equal(got_dict[key], val)
 
 
-def test_determine_discrete_dense_choice_axes():
+def test_determine_discrete_choice_axes():
     variable_info = pd.DataFrame(
         {
             "is_state": [True, True, False, True, False, False],
@@ -439,5 +428,5 @@ def test_determine_discrete_dense_choice_axes():
             "is_continuous": [False, True, False, False, False, True],
         },
     )
-    got = determine_discrete_dense_choice_axes(variable_info)
+    got = determine_discrete_choice_axes(variable_info)
     assert got == (1, 2, 3)

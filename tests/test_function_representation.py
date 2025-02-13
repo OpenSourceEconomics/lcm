@@ -12,34 +12,28 @@ from lcm.function_representation import (
     _get_interpolator,
     _get_label_translator,
     _get_lookup_function,
-    get_function_representation,
+    get_value_function_representation,
 )
 from lcm.interfaces import (
-    IndexerInfo,
-    SpaceInfo,
+    StateSpaceInfo,
 )
 
 
 def test_function_evaluator_with_one_continuous_variable():
     wealth_grid = LinspaceGrid(start=-3, stop=3, n_points=7)
 
-    space_info = SpaceInfo(
-        axis_names=["wealth"],
-        lookup_info={},
-        interpolation_info={
+    state_space_info = StateSpaceInfo(
+        states_names=["wealth"],
+        discrete_states={},
+        continuous_states={
             "wealth": wealth_grid,
         },
-        indexer_infos=[],
     )
 
     vf_arr = jnp.pi * wealth_grid.to_jax() + 2
 
     # create the evaluator
-    evaluator = get_function_representation(
-        space_info=space_info,
-        name_of_values_on_grid="vf_arr",
-        input_prefix="next_",
-    )
+    evaluator = get_value_function_representation(state_space_info)
 
     # partial the function values into the evaluator
     func = partial(evaluator, vf_arr=vf_arr)
@@ -53,19 +47,14 @@ def test_function_evaluator_with_one_continuous_variable():
 def test_function_evaluator_with_one_discrete_variable():
     vf_arr = jnp.array([1, 2])
 
-    space_info = SpaceInfo(
-        axis_names=["working"],
-        lookup_info={"working": [0, 1]},
-        interpolation_info={},
-        indexer_infos=[],
+    state_space_info = StateSpaceInfo(
+        states_names=["working"],
+        discrete_states={"working": [0, 1]},
+        continuous_states={},
     )
 
     # create the evaluator
-    evaluator = get_function_representation(
-        space_info=space_info,
-        name_of_values_on_grid="vf_arr",
-        input_prefix="next_",
-    )
+    evaluator = get_value_function_representation(state_space_info)
 
     # partial the function values into the evaluator
     func = partial(evaluator, vf_arr=vf_arr)
@@ -78,155 +67,65 @@ def test_function_evaluator_with_one_discrete_variable():
 def test_function_evaluator():
     """Test get_precalculated_function_evaluator in simple example.
 
-    - One sparse discrete state variable: retired (True, False)
-    - One sparse discrete choice variable: working (True, False)
-    - One dense discrete choice variable: insured ("yes", "no")
-    - Two dense continuous state variables:
+    - One discrete state variable: retired (True, False)
+    - One discrete choice variable: insured ("yes", "no")
+    - Two continuous state variables:
         - wealth (linspace(100, 1100, 6))
         - human_capital (linspace(-3, 3, 7))
 
     The utility function is wealth + human_capital + c. c takes a different
     value for each discrete state choice combination.
 
-    The setup of space_info here is quite long. Usually these inputs will be generated
-    from a model specification.
+    The setup of state_space_info here is quite long. Usually these inputs will be
+    generated from a model specification.
 
     """
     # create a value function array
-    discrete_part = jnp.arange(6).repeat(6 * 7).reshape((3, 2, 6, 7)) * 100
-    cont_func = productmap(lambda x, y: x + y, ["x", "y"])
+    discrete_part = jnp.arange(4).repeat(6 * 7).reshape((2, 2, 6, 7)) * 100
+
+    cont_func = productmap(lambda x, y: x + y, ("x", "y"))
     cont_part = cont_func(x=jnp.linspace(100, 1100, 6), y=jnp.linspace(-3, 3, 7))
+
     vf_arr = discrete_part + cont_part
 
     # create info on discrete variables
-    lookup_info = {
+    discrete_vars = {
         "retired": [0, 1],
-        "working": [0, 1],
         "insured": [0, 1],
     }
 
-    # create an indexer for the sparse discrete part
-    indexer_infos = [
-        IndexerInfo(
-            axis_names=["retired", "working"],
-            name="state_indexer",
-            out_name="state_index",
-        ),
-    ]
-
-    indexer_array = jnp.array([[-1, 0], [1, 2]])
-
     # create info on continuous grids
-    interpolation_info = {
+    continuous_vars = {
         "wealth": LinspaceGrid(start=100, stop=1100, n_points=6),
         "human_capital": LinspaceGrid(start=-3, stop=3, n_points=7),
     }
 
     # create info on axis of value function array
-    axis_names = ["state_index", "insured", "wealth", "human_capital"]
+    var_names = ["retired", "insured", "wealth", "human_capital"]
 
-    space_info = SpaceInfo(
-        axis_names=axis_names,
-        lookup_info=lookup_info,
-        interpolation_info=interpolation_info,
-        indexer_infos=indexer_infos,
+    state_space_info = StateSpaceInfo(
+        states_names=var_names,
+        discrete_states=discrete_vars,
+        continuous_states=continuous_vars,
     )
 
     # create the evaluator
-    evaluator = get_function_representation(
-        space_info=space_info,
-        name_of_values_on_grid="vf_arr",
+    evaluator = get_value_function_representation(
+        state_space_info=state_space_info,
     )
 
-    # test the evaluator
+    # test the evaluator; note that the prefix 'next_' is added to the variable names
+    # by default, and that the argument name of the value function array is 'vf_arr' by
+    # default; these can be changed when calling get_value_function_representation
     out = evaluator(
-        retired=1,
-        working=1,
-        insured=0,
-        wealth=600,
-        human_capital=1.5,
-        state_indexer=indexer_array,
+        next_retired=1,
+        next_insured=0,
+        next_wealth=600,
+        next_human_capital=1.5,
         vf_arr=vf_arr,
     )
 
-    assert jnp.allclose(out, 1001.5)
-
-
-def test_function_evaluator_longer_indexer():
-    """Test get_precalculated_function_evaluator in an extended example.
-
-    - One sparse discrete state variable: retired ('working', 'part retired', retired)
-    - One sparse discrete choice variable: working (0, 1, 2)
-    - One dense discrete choice variable: insured ("yes", "no")
-    - Two dense continuous state variables:
-        - wealth (linspace(100, 1100, 6))
-        - human_capital (linspace(-3, 3, 7))
-
-    The utility function is wealth + human_capital + c. c takes a different
-    value for each discrete state choice combination.
-
-    The setup of space_info here is quite long. Usually these inputs will be generated
-    from a model specification.
-
-    """
-    # create a value function array
-    discrete_part = jnp.arange(10).repeat(6 * 7).reshape((5, 2, 6, 7)) * 100
-    cont_func = productmap(lambda x, y: x + y, ["x", "y"])
-    cont_part = cont_func(x=jnp.linspace(100, 1100, 6), y=jnp.linspace(-3, 3, 7))
-    vf_arr = discrete_part + cont_part
-
-    # create info on discrete variables
-    lookup_info = {
-        "retired": [0, 1, 2],
-        "working": [0, 1, 2],
-        "insured": [0, 1],
-    }
-
-    # create an indexer for the sparse discrete part
-    indexer_infos = [
-        IndexerInfo(
-            axis_names=["retired", "working"],
-            name="state_indexer",
-            out_name="state_index",
-        ),
-    ]
-
-    indexer_array = jnp.array([[-1, 0, 1], [2, 3, -1], [4, -1, -1]])
-
-    # create info on continuous grids
-    interpolation_info = {
-        "wealth": LinspaceGrid(start=100, stop=1100, n_points=6),
-        "human_capital": LinspaceGrid(start=-3, stop=3, n_points=7),
-    }
-
-    # create info on axis of value function array
-    axis_names = ["state_index", "insured", "wealth", "human_capital"]
-
-    space_info = SpaceInfo(
-        axis_names=axis_names,
-        lookup_info=lookup_info,
-        interpolation_info=interpolation_info,
-        indexer_infos=indexer_infos,
-    )
-
-    # create the evaluator
-    evaluator = get_function_representation(
-        space_info=space_info,
-        name_of_values_on_grid="vf_arr",
-    )
-
-    # test the evaluator
-    out = evaluator(
-        retired=0,
-        working=1,
-        insured=0,
-        wealth=600,
-        human_capital=1.5,
-        state_indexer=indexer_array,
-        vf_arr=vf_arr,
-    )
-
-    assert jnp.allclose(out, 601.5)
+    assert jnp.allclose(out, 801.5)
 
 
 def test_get_label_translator_with_args():
@@ -255,10 +154,10 @@ def test_get_label_translator_wrong_kwarg():
 
 
 def test_get_lookup_function():
-    indexer = jnp.arange(6).reshape(3, 2)
-    func = _get_lookup_function(array_name="my_indexer", axis_names=["a", "b"])
+    array = jnp.arange(6).reshape(3, 2)
+    func = _get_lookup_function(array_name="my_array", axis_names=["a", "b"])
 
-    pure_lookup_func = partial(func, my_indexer=indexer)
+    pure_lookup_func = partial(func, my_array=array)
     calculated = pure_lookup_func(a=2, b=0)
     assert calculated == 4
 
@@ -282,7 +181,7 @@ def test_get_interpolator():
     def _utility(wealth, working):
         return 2 * wealth - working
 
-    prod_utility = productmap(_utility, variables=["wealth", "working"])
+    prod_utility = productmap(_utility, variables=("wealth", "working"))
 
     values = prod_utility(
         wealth=jnp.arange(4, dtype=float),
@@ -303,20 +202,19 @@ def test_get_interpolator():
 def test_get_function_evaluator_illustrative():
     a_grid = LinspaceGrid(start=0, stop=1, n_points=3)
 
-    space_info = SpaceInfo(
-        axis_names=["a"],
-        lookup_info={},
-        interpolation_info={
+    state_space_info = StateSpaceInfo(
+        states_names=["a"],
+        discrete_states={},
+        continuous_states={
             "a": a_grid,
         },
-        indexer_infos=[],
     )
 
     values = jnp.pi * a_grid.to_jax() + 2
 
     # create the evaluator
-    evaluator = get_function_representation(
-        space_info=space_info,
+    evaluator = get_value_function_representation(
+        state_space_info=state_space_info,
         name_of_values_on_grid="values_name",
         input_prefix="prefix_",
     )
@@ -362,7 +260,7 @@ def test_get_interpolator_illustrative():
     def f(a, b):
         return a - b
 
-    prod_f = productmap(f, variables=["a", "b"])
+    prod_f = productmap(f, variables=("a", "b"))
 
     values = prod_f(a=jnp.arange(2, dtype=float), b=jnp.arange(3, dtype=float))
 
@@ -374,49 +272,46 @@ def test_get_interpolator_illustrative():
 
 @pytest.mark.illustrative
 def test_fail_if_interpolation_axes_are_not_last_illustrative():
-    # Empty intersection of axis_names and interpolation_info
+    # Empty intersection of var_names and continuous_vars
     # ==================================================================================
 
-    space_info = SpaceInfo(
-        axis_names=["a", "b"],
-        interpolation_info={
+    state_space_info = StateSpaceInfo(
+        states_names=["a", "b"],
+        continuous_states={
             "c": None,
         },
-        lookup_info=None,
-        indexer_infos=None,
+        discrete_states={},
     )
 
-    _fail_if_interpolation_axes_are_not_last(space_info)  # does not fail
+    _fail_if_interpolation_axes_are_not_last(state_space_info)  # does not fail
 
     # Non-empty intersection but correct order
     # ==================================================================================
 
-    space_info = SpaceInfo(
-        axis_names=["a", "b", "c"],
-        interpolation_info={
+    state_space_info = StateSpaceInfo(
+        states_names=["a", "b", "c"],
+        continuous_states={
             "b": None,
             "c": None,
             "d": None,
         },
-        lookup_info=None,
-        indexer_infos=None,
+        discrete_states={},
     )
 
-    _fail_if_interpolation_axes_are_not_last(space_info)  # does not fail
+    _fail_if_interpolation_axes_are_not_last(state_space_info)  # does not fail
 
     # Non-empty intersection and in-correct order
     # ==================================================================================
 
-    space_info = SpaceInfo(
-        axis_names=["b", "c", "a"],  # "b", "c" are not last anymore
-        interpolation_info={
+    state_space_info = StateSpaceInfo(
+        states_names=["b", "c", "a"],  # "b", "c" are not last anymore
+        continuous_states={
             "b": None,
             "c": None,
             "d": None,
         },
-        lookup_info=None,
-        indexer_infos=None,
+        discrete_states={},
     )
 
-    with pytest.raises(ValueError, match="Interpolation axes need to be the last"):
-        _fail_if_interpolation_axes_are_not_last(space_info)
+    with pytest.raises(ValueError, match="Continuous variables need to be the last"):
+        _fail_if_interpolation_axes_are_not_last(state_space_info)

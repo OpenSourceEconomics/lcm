@@ -7,40 +7,45 @@ from jax import Array
 
 from lcm.functools import all_as_kwargs
 from lcm.grids import ContinuousGrid
-from lcm.interfaces import SpaceInfo
+from lcm.interfaces import StateSpaceInfo
 from lcm.ndimage import map_coordinates
 
 
-def get_function_representation(
-    space_info: SpaceInfo,
-    name_of_values_on_grid: str,
+def get_value_function_representation(
+    state_space_info: StateSpaceInfo,
     *,
-    input_prefix: str = "",
+    input_prefix: str = "next_",
+    name_of_values_on_grid: str = "vf_arr",
 ) -> Callable[..., Array]:
-    """Create a function representation of pre-calculated values on a grid.
+    """Create a function representation of the value function array.
 
-    An example of a pre-calculated function is a value or policy function. These are
-    evaluated on the space of all discrete and continuous state variables.
+    The returned function
+    ---------------------
 
-    This function dynamically generates a function that looks up and interpolates values
-    of the pre-calculated function. The arguments of the resulting function can be split
-    in two categories:
-       1. Helper arguments such as information about the grid, indexer arrays and the
-          pre-calculated values of the function.
-       2. The original arguments of the function that was pre-calculated on the grid.
+    This function generates a function that looks up discrete values and interpolates
+    values for continuous variables on the value function array. The arguments of the
+    resulting function can be split in two categories:
+
+       1. The original arguments of the function that was used to pre-calculate the
+          value function on the state space grid.
+
+       2. Auxiliary arguments, such as information about the grids, which are needed for
+          example, for the interpolation.
 
     After partialling in all helper arguments, the resulting function behaves like an
-    analytical function. In particular, it can be jitted, differentiated and vmapped
-    with jax.
+    analytical function, i.e. it can be evaluated on points that do not lie on the grid
+    points of the state variables. In particular, it can also be jitted, differentiated
+    and vmapped with jax.
+
+    How does it work?
+    -----------------
 
     The resulting function roughly does the following steps:
 
-    - Translate values of discrete variables into positions
-    - Index into the array with the pre-calculated function values to extract only the
-      part on which interpolation is needed.
-    - Translate values of continuous variables into coordinates needed for interpolation
-      via jax.scipy.ndimage.map_coordinates.
-    - Do the actual interpolation.
+    - It translates values of discrete variables into positions.
+    - It translates values of continuous variables into coordinates needed for
+      interpolation via jax.scipy.ndimage.map_coordinates.
+    - It performs the interpolation.
 
     Depending on the grid, only a subset of these steps is relevant. The chosen
     implementation of each step is also adjusted to the type of grid. In particular we
@@ -49,46 +54,34 @@ def get_function_representation(
     functions are called is determined by a DAG.
 
     Args:
-        space_info: Class containing all information needed to interpret the
+        state_space_info: Class containing all information needed to interpret the
             pre-calculated values of a function.
+        input_prefix: Prefix that will be added to all argument names of the resulting
+            function, except for the helpers arguments. Default is "next_"; since the
+            value function is typically evaluated on the next period's state space.
         name_of_values_on_grid: The name of the argument via which the pre-calculated
             values, that have been evaluated on the state-space grid, will be passed
-            into the resulting function. In the value function case, this could be
-            'vf_arr', in which case, one would partial in 'vf_arr' into the
-            representation.
-        input_prefix: Prefix that will be added to all argument names of the resulting
-            function, except for the helpers arguments such as indexers or value arrays.
-            Default is the empty string. The prefix needs to contain the separator. E.g.
-            `next_` if an undescore should be used as separator.
+            into the resulting function. Defaults to "vf_arr".
 
     Returns:
-        callable: A callable that lets you evaluate a function defined be precalculated
-            values on space formed by discrete and continuous grids.
+        A callable that lets you treat the result of pre-calculating a function on the
+            state space as an analytical function.
 
     """
     # ==================================================================================
     # check inputs
     # ==================================================================================
-    _fail_if_interpolation_axes_are_not_last(space_info)
-    _need_interpolation = bool(space_info.interpolation_info)
+    _fail_if_interpolation_axes_are_not_last(state_space_info)
+    _need_interpolation = bool(state_space_info.continuous_states)
 
     # ==================================================================================
     # create functions to look up position of discrete variables from labels
     # ==================================================================================
     funcs = {}
 
-    for var in space_info.lookup_info:
+    for var in state_space_info.discrete_states:
         funcs[f"__{var}_pos__"] = _get_label_translator(
             in_name=input_prefix + var,
-        )
-
-    # ==================================================================================
-    # wrap the indexers and put them it into funcs
-    # ==================================================================================
-    for indexer_info in space_info.indexer_infos:
-        funcs[f"__{indexer_info.out_name}_pos__"] = _get_lookup_function(
-            array_name=indexer_info.name,
-            axis_names=[f"__{var}_pos__" for var in indexer_info.axis_names],
         )
 
     # ==================================================================================
@@ -96,20 +89,20 @@ def get_function_representation(
     # ==================================================================================
     # lookup is positional, so the inputs of the wrapper functions need to be the
     # outcomes of tranlating labels into positions
-    _internal_axes = [f"__{var}_pos__" for var in space_info.axis_names]
-    _lookup_axes = [var for var in _internal_axes if var in funcs]
+    _internal_axes = [f"__{var}_pos__" for var in state_space_info.states_names]
+    _discrete_axes = [ax for ax in _internal_axes if ax in funcs]
 
     _out_name = "__interpolation_data__" if _need_interpolation else "__fval__"
     funcs[_out_name] = _get_lookup_function(
         array_name=name_of_values_on_grid,
-        axis_names=_lookup_axes,
+        axis_names=_discrete_axes,
     )
 
     if _need_interpolation:
         # ==============================================================================
         # create functions to find coordinates for the interpolation
         # ==============================================================================
-        for var, grid_spec in space_info.interpolation_info.items():
+        for var, grid_spec in state_space_info.continuous_states.items():
             funcs[f"__{var}_coord__"] = _get_coordinate_finder(
                 in_name=input_prefix + var,
                 grid=grid_spec,  # type: ignore[arg-type]
@@ -118,14 +111,14 @@ def get_function_representation(
         # ==============================================================================
         # create interpolation function
         # ==============================================================================
-        _interpolation_axes = [
+        _continuous_axes = [
             f"__{var}_coord__"
-            for var in space_info.axis_names
-            if var in space_info.interpolation_info
+            for var in state_space_info.states_names
+            if var in state_space_info.continuous_states
         ]
         funcs["__fval__"] = _get_interpolator(
             name_of_values_on_grid="__interpolation_data__",
-            axis_names=_interpolation_axes,
+            axis_names=_continuous_axes,
         )
 
     return concatenate_functions(
@@ -147,7 +140,7 @@ def _get_label_translator(
             resulting function.
 
     Returns:
-        callable: A callable with the keyword only argument ``in_name`` that converts a
+        callable: A callable with the keyword only argument `in_name` that converts a
             label into a position in a list of labels.
 
     """
@@ -171,8 +164,8 @@ def _get_lookup_function(
         axis_names (list): List of strings with names for each axis in the array.
 
     Returns:
-        callable: A callable with the keyword-only arguments [axis_names] + [array_name]
-            that looks up values in an indexer array called ``array_name``.
+        callable: A callable with the keyword-only arguments `[*axis_names]` that looks
+            up values from an array called `array_name`.
 
     """
     arg_names = [*axis_names, array_name]
@@ -246,22 +239,23 @@ def _get_interpolator(
     return interpolate
 
 
-def _fail_if_interpolation_axes_are_not_last(space_info: SpaceInfo) -> None:
-    """Fail if the interpolation axes are not the last elements in axis_names.
+def _fail_if_interpolation_axes_are_not_last(state_space_info: StateSpaceInfo) -> None:
+    """Fail if the continuous variables are not the last elements in var_names.
 
     Args:
-        space_info: Class containing all information needed to interpret the
+        state_space_info: Class containing all information needed to interpret the
             precalculated values of a function.
 
     Raises:
-        ValueError: If the interpolation axes are not the last elements in axis_names.
+        ValueError: If the continuous variables are not the last elements in var_names.
 
     """
-    common = set(space_info.interpolation_info) & set(space_info.axis_names)
+    common = set(state_space_info.continuous_states) & set(
+        state_space_info.states_names
+    )
 
     if common:
         n_common = len(common)
-        if sorted(common) != sorted(space_info.axis_names[-n_common:]):
-            raise ValueError(
-                "Interpolation axes need to be the last entries in axis_order.",
-            )
+        if sorted(common) != sorted(state_space_info.states_names[-n_common:]):
+            msg = "Continuous variables need to be the last entries in var_names."
+            raise ValueError(msg)

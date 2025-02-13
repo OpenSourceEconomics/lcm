@@ -52,7 +52,7 @@ def get_solve_discrete_problem(
     if is_last_period:
         variable_info = variable_info.query("~is_auxiliary")
 
-    choice_axes = _determine_dense_discrete_choice_axes(variable_info)
+    choice_axes = _determine_discrete_choice_axes(variable_info)
 
     if random_utility_shock_type == ShockType.NONE:
         func = _solve_discrete_problem_no_shocks
@@ -71,7 +71,7 @@ def get_solve_discrete_problem(
 
 def _solve_discrete_problem_no_shocks(
     cc_values: Array,
-    choice_axes: tuple[int, ...] | None,
+    choice_axes: tuple[int, ...],
     params: ParamsDict,  # noqa: ARG001
 ) -> Array:
     """Reduce conditional continuation values over discrete choices.
@@ -90,11 +90,7 @@ def _solve_discrete_problem_no_shocks(
             if choice_segments is not None.
 
     """
-    out = cc_values
-    if choice_axes is not None:
-        out = out.max(axis=choice_axes)
-
-    return out
+    return cc_values.max(axis=choice_axes)
 
 
 # ======================================================================================
@@ -108,10 +104,10 @@ def _calculate_emax_extreme_value_shocks(values, choice_axes, params):
     """Aggregate conditional continuation values over discrete choices.
 
     Args:
-        values (jax.numpy.ndarray): Multidimensional jax array with conditional
+        values (jax.Array): Multidimensional jax array with conditional
             continuation values.
         choice_axes (int or tuple): Int or tuple of int, specifying which axes in
-            values correspond to dense choice variables.
+            values correspond to the discrete choice variables.
         choice_segments (dict): Dictionary with the entries "segment_ids"
             and "num_segments". segment_ids are a 1d integer array that partitions the
             first dimension of values into choice sets over which we need to aggregate.
@@ -119,7 +115,7 @@ def _calculate_emax_extreme_value_shocks(values, choice_axes, params):
         params (dict): Params dict that contains the schock_scale if necessary.
 
     Returns:
-        jax.numpy.ndarray: Multidimensional jax array with aggregated continuation
+        jax.Array: Multidimensional jax array with aggregated continuation
         values. Has less dimensions than values if choice_axes is not None and
         is shorter in the first dimension if choice_segments is not None.
 
@@ -137,26 +133,22 @@ def _calculate_emax_extreme_value_shocks(values, choice_axes, params):
 # ======================================================================================
 
 
-def _determine_dense_discrete_choice_axes(
+def _determine_discrete_choice_axes(
     variable_info: pd.DataFrame,
-) -> tuple[int, ...] | None:
+) -> tuple[int, ...]:
     """Get axes of a state-choice-space that correspond to discrete choices.
 
     Args:
         variable_info: DataFrame with information about the variables.
 
     Returns:
-        tuple[int, ...] | None: A tuple of indices representing the axes' positions in
-            the value function that correspond to discrete choices. Returns None if
-            there are no discrete choice axes.
+        A tuple of indices representing the axes' positions in the value function that
+        correspond to discrete choices.
 
     """
-    # List of dense variables excluding continuous choice variables.
-    axes = variable_info.query("is_state | is_discrete").index.tolist()
-
-    choice_vars = set(variable_info.query("is_choice").index.tolist())
-
-    choice_indices = tuple(i for i, ax in enumerate(axes) if ax in choice_vars)
-
-    # Return None if there are no discrete choice axes, otherwise return the indices.
-    return choice_indices if choice_indices else None
+    discrete_choice_vars = set(
+        variable_info.query("is_choice & is_discrete").index.tolist()
+    )
+    return tuple(
+        i for i, ax in enumerate(variable_info.index) if ax in discrete_choice_vars
+    )

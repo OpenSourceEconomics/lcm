@@ -5,88 +5,76 @@ from typing import Literal, TypeVar
 from jax import Array, vmap
 
 from lcm.functools import allow_args, allow_only_kwargs
+from lcm.utils import find_duplicates
 
 F = TypeVar("F", bound=Callable[..., Array])
 
 
 def spacemap(
     func: F,
-    dense_vars: list[str],
-    sparse_vars: list[str] | None = None,
+    product_vars: tuple[str, ...],
+    combination_vars: tuple[str, ...],
 ) -> F:
-    """Apply vmap such that func is evaluated on a space of dense and sparse variables.
+    """Apply vmap such that func can be evaluated on product and combination variables.
 
-    This is achieved by applying _base_productmap for all dense variables and vmap_1d
-    for the sparse variables.
+    Product variables are used to create a Cartesian product of possible values. I.e.,
+    for each product variable, we create a new leading dimension in the output object,
+    with the size of the dimension being the number of possible values in the grid. The
+    i-th entries of the combination variables, correspond to one valid combination. For
+    the combination variables, a single dimension is thus added to the output object,
+    with the size of the dimension being the number of possible combinations. This means
+    that all combination variables must have the same size (e.g., in the simulation the
+    states act as combination variables, and their size equals the number of
+    simulations).
 
     spacemap preserves the function signature and allows the function to be called with
     keyword arguments.
 
     Args:
         func: The function to be dispatched.
-        dense_vars: Names of the dense variables, i.e. those that are stored as arrays
-            of possible values in the grid.
-        sparse_vars: Names of the sparse variables, i.e. those that are stored as arrays
-            of possible combinations of variables in the grid.
-        put_dense_first: Whether the dense or sparse dimensions should come first in the
-            output of the dispatched function.
-
+        product_vars: Names of the product variables, i.e. those that are stored as
+            arrays of possible values in the grid, over which we create a Cartesian
+            product.
+        combination_vars: Names of the combination variables, i.e. those that are
+            stored as arrays of possible combinations.
 
     Returns:
         A callable with the same arguments as func (but with an additional leading
-        dimension) that returns a jax.numpy.ndarray or pytree of arrays. If ``func``
-        returns a scalar, the dispatched function returns a jax.numpy.ndarray with 1
-        jax.numpy.ndarray with k + 1 dimensions, where k is the length of ``dense_vars``
-        and the additional dimension corresponds to the ``sparse_vars``. The order of
-        the dimensions is determined by the order of ``dense_vars`` as well as the
-        ``put_dense_first`` argument. If the output of ``func`` is a jax pytree, the
-        usual jax behavior applies, i.e. the leading dimensions of all arrays in the
-        pytree are as described above but there might be additional dimensions.
+        dimension) that returns a jax.Array or pytree of arrays. If `func` returns a
+        scalar, the dispatched function returns a jax.Array with k + 1 dimensions, where
+        k is the length of `product_vars` and the additional dimension corresponds to
+        the `combination_vars`. The order of the dimensions is determined by the order
+        of `product_vars`. If the output of `func` is a jax pytree, the usual jax
+        behavior applies, i.e. the leading dimensions of all arrays in the pytree are as
+        described above but there might be additional dimensions.
 
     """
-    # Check inputs and prepare function
-    # ==================================================================================
-    duplicates = {v for v in dense_vars if dense_vars.count(v) > 1}
-    if duplicates:
-        raise ValueError(
-            f"Same argument provided more than once in dense variables: {duplicates}",
+    if duplicates := find_duplicates(product_vars, combination_vars):
+        msg = (
+            "Same argument provided more than once in product variables or combination "
+            f"variables, or is present in both: {duplicates}"
         )
+        raise ValueError(msg)
 
-    if sparse_vars:
-        overlap = set(dense_vars).intersection(sparse_vars)
-        if overlap:
-            raise ValueError(
-                f"Dense and sparse variables must be disjoint. Overlap: {overlap}",
-            )
+    func_callable_with_args = allow_args(func)
 
-        duplicates = {v for v in sparse_vars if sparse_vars.count(v) > 1}
-        if duplicates:
-            raise ValueError(
-                "Same argument provided more than once in sparse variables: "
-                f"{duplicates}",
-            )
+    vmapped = _base_productmap(func_callable_with_args, product_vars)
 
-    # jax.vmap cannot deal with keyword-only arguments
-    func = allow_args(func)
-
-    # Apply vmap_1d for sparse and _base_productmap for dense variables
-    # ==================================================================================
-    if not sparse_vars:
-        vmapped = _base_productmap(func, dense_vars)
-    else:
-        vmapped = _base_productmap(func, dense_vars)
-        vmapped = vmap_1d(vmapped, variables=sparse_vars, callable_with="only_args")
+    if combination_vars:
+        vmapped = vmap_1d(
+            vmapped, variables=combination_vars, callable_with="only_args"
+        )
 
     # This raises a mypy error but is perfectly fine to do. See
     # https://github.com/python/mypy/issues/12472
-    vmapped.__signature__ = inspect.signature(func)  # type: ignore[attr-defined]
+    vmapped.__signature__ = inspect.signature(func_callable_with_args)  # type: ignore[attr-defined]
 
     return allow_only_kwargs(vmapped)
 
 
 def vmap_1d(
     func: F,
-    variables: list[str],
+    variables: tuple[str, ...],
     *,
     callable_with: Literal["only_args", "only_kwargs"] = "only_kwargs",
 ) -> F:
@@ -98,7 +86,7 @@ def vmap_1d(
 
     Args:
         func: The function to be dispatched.
-        variables: List with names of arguments that over which we map.
+        variables: Tuple with names of arguments that over which we map.
         callable_with: Whether to apply the allow_kwargs decorator to the dispatched
             function. If "only_args", the returned function can only be called with
             positional arguments. If "only_kwargs", the returned function can only be
@@ -106,18 +94,17 @@ def vmap_1d(
 
     Returns:
         A callable with the same arguments as func (but with an additional leading
-        dimension) that returns a jax.numpy.ndarray or pytree of arrays. If ``func``
-        returns a scalar, the dispatched function returns a jax.numpy.ndarray with 1
-        jax.numpy.ndarray with 1 dimension and length k, where k is the length of one of
-        the mapped inputs in ``variables``. The order of the dimensions is determined by
-        the order of ``variables`` which can be different to the order of ``funcs``
-        arguments. If the output of ``func`` is a jax pytree, the usual jax behavior
+        dimension) that returns a jax.Array or pytree of arrays. If `func`
+        returns a scalar, the dispatched function returns a jax.Array with 1
+        jax.Array with 1 dimension and length k, where k is the length of one of
+        the mapped inputs in `variables`. The order of the dimensions is determined by
+        the order of `variables` which can be different to the order of `funcs`
+        arguments. If the output of `func` is a jax pytree, the usual jax behavior
         applies, i.e. the leading dimensions of all arrays in the pytree are as
         described above but there might be additional dimensions.
 
     """
-    duplicates = {v for v in variables if variables.count(v) > 1}
-    if duplicates:
+    if duplicates := find_duplicates(variables):
         raise ValueError(
             f"Same argument provided more than once in variables: {duplicates}",
         )
@@ -154,7 +141,7 @@ def vmap_1d(
     return out
 
 
-def productmap(func: F, variables: list[str]) -> F:
+def productmap(func: F, variables: tuple[str, ...]) -> F:
     """Apply vmap such that func is evaluated on the Cartesian product of variables.
 
     This is achieved by an iterative application of vmap.
@@ -164,39 +151,37 @@ def productmap(func: F, variables: list[str]) -> F:
 
     Args:
         func: The function to be dispatched.
-        variables: List with names of arguments that over which the Cartesian product
+        variables: Tuple with names of arguments that over which the Cartesian product
             should be formed.
 
     Returns:
         A callable with the same arguments as func (but with an additional leading
-        dimension) that returns a jax.numpy.ndarray or pytree of arrays. If ``func``
-        returns a scalar, the dispatched function returns a jax.numpy.ndarray with k
-        dimensions, where k is the length of ``variables``. The order of the dimensions
-        is determined by the order of ``variables`` which can be different to the order
-        of ``funcs`` arguments. If the output of ``func`` is a jax pytree, the usual jax
+        dimension) that returns a jax.Array or pytree of arrays. If `func`
+        returns a scalar, the dispatched function returns a jax.Array with k
+        dimensions, where k is the length of `variables`. The order of the dimensions
+        is determined by the order of `variables` which can be different to the order
+        of `funcs` arguments. If the output of `func` is a jax pytree, the usual jax
         behavior applies, i.e. the leading dimensions of all arrays in the pytree are as
         described above but there might be additional dimensions.
 
     """
-    func = allow_args(func)  # jax.vmap cannot deal with keyword-only arguments
-
-    duplicates = {v for v in variables if variables.count(v) > 1}
-    if duplicates:
+    if duplicates := find_duplicates(variables):
         raise ValueError(
             f"Same argument provided more than once in variables: {duplicates}",
         )
 
-    signature = inspect.signature(func)
-    vmapped = _base_productmap(func, variables)
+    func_callable_with_args = allow_args(func)
+
+    vmapped = _base_productmap(func_callable_with_args, variables)
 
     # This raises a mypy error but is perfectly fine to do. See
     # https://github.com/python/mypy/issues/12472
-    vmapped.__signature__ = signature  # type: ignore[attr-defined]
+    vmapped.__signature__ = inspect.signature(func_callable_with_args)  # type: ignore[attr-defined]
 
     return allow_only_kwargs(vmapped)
 
 
-def _base_productmap(func: F, product_axes: list[str]) -> F:
+def _base_productmap(func: F, product_axes: tuple[str, ...]) -> F:
     """Map func over the Cartesian product of product_axes.
 
     Like vmap, this function does not preserve the function signature and does not allow
@@ -204,10 +189,10 @@ def _base_productmap(func: F, product_axes: list[str]) -> F:
 
     Args:
         func: The function to be dispatched. Cannot have keyword-only arguments.
-        product_axes: List with names of arguments over which we apply vmap.
+        product_axes: Tuple with names of arguments over which we apply vmap.
 
     Returns:
-        A callable with the same arguments as func. See ``product_map`` for details.
+        A callable with the same arguments as func. See `product_map` for details.
 
     """
     signature = inspect.signature(func)

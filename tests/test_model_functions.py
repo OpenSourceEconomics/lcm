@@ -10,7 +10,7 @@ from lcm.model_functions import (
     get_multiply_weights,
     get_utility_and_feasibility_function,
 )
-from lcm.state_space import create_state_choice_space
+from lcm.solution.state_choice_space import create_state_choice_space
 from tests.test_models import get_model_config
 from tests.test_models.deterministic import utility
 
@@ -30,15 +30,14 @@ def test_get_utility_and_feasibility_function():
         },
     }
 
-    _, space_info = create_state_choice_space(
+    state_space_info = create_state_choice_space(
         model=model,
         is_last_period=False,
-    )
+    )[1]
 
     u_and_f = get_utility_and_feasibility_function(
         model=model,
-        space_info=space_info,
-        name_of_values_on_grid="vf_arr",
+        state_space_info=state_space_info,
         period=model.n_periods - 1,
         is_last_period=True,
     )

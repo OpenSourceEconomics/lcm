@@ -1,12 +1,12 @@
 import jax
 
 from lcm.dispatchers import spacemap
+from lcm.interfaces import StateChoiceSpace
 
 
 def solve(
     params,
     state_choice_spaces,
-    state_indexers,
     continuous_choice_grids,
     compute_ccv_functions,
     emax_calculators,
@@ -28,8 +28,6 @@ def solve(
         state_choice_spaces (list): List with one state_choice_space per period.
         value_function_evaluators (list): List with one value_function_evaluator per
             period.
-        state_indexers (list): List of dicts with length n_periods. Each dict contains
-            one or several state indexers.
         continuous_choice_grids (list): List of dicts with 1d grids for continuous
             choice variables.
         compute_ccv_functions (list): List of functions needed to solve the agent's
@@ -37,7 +35,6 @@ def solve(
             - discrete and continuous state variables
             - discrete and continuous choice variables
             - vf_arr
-            - one or several state_indexers
             - params
         emax_calculators (list): List of functions that take continuation
             values for combinations of states and discrete choices and calculate the
@@ -63,7 +60,6 @@ def solve(
             compute_ccv=compute_ccv_functions[period],
             continuous_choice_grids=continuous_choice_grids[period],
             vf_arr=vf_arr,
-            state_indexers=state_indexers[period],
             params=params,
         )
 
@@ -78,11 +74,10 @@ def solve(
 
 
 def solve_continuous_problem(
-    state_choice_space,
+    state_choice_space: StateChoiceSpace,
     compute_ccv,
     continuous_choice_grids,
     vf_arr,
-    state_indexers,
     params,
 ):
     """Solve the agent's continuous choices problem problem.
@@ -95,31 +90,29 @@ def solve_continuous_problem(
             - discrete and continuous state variables
             - discrete and continuous choice variables
             - vf_arr
-            - one or several state_indexers
             - params
         continuous_choice_grids (list): List of dicts with 1d grids for continuous
             choice variables.
-        vf_arr (jax.numpy.ndarray): Value function array.
-        state_indexers (list): List of dicts with length n_periods. Each dict contains
-            one or several state indexers.
+        vf_arr (jax.Array): Value function array.
         params (dict): Dict of model parameters.
 
     Returns:
         jnp.ndarray: Jax array with continuation values for each combination of a
             state and a discrete choice. The number and order of dimensions is defined
-            by the ``gridmap`` function.
+            by the `gridmap` function.
 
     """
     _gridmapped = spacemap(
         func=compute_ccv,
-        dense_vars=list(state_choice_space.dense_vars),
+        product_vars=state_choice_space.ordered_var_names,
+        combination_vars=(),
     )
     gridmapped = jax.jit(_gridmapped)
 
     return gridmapped(
-        **state_choice_space.dense_vars,
+        **state_choice_space.states,
+        **state_choice_space.choices,
         **continuous_choice_grids,
-        **state_indexers,
         vf_arr=vf_arr,
         params=params,
     )
