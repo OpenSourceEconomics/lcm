@@ -50,7 +50,6 @@ def simulate_inputs():
         u_and_f = get_utility_and_feasibility_function(
             model=model,
             state_space_info=state_space_info,
-            name_of_values_on_grid="vf_arr",
             period=period,
             is_last_period=True,
         )

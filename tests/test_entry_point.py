@@ -190,7 +190,6 @@ def test_create_compute_conditional_continuation_value():
     u_and_f = get_utility_and_feasibility_function(
         model=model,
         state_space_info=state_space_info,
-        name_of_values_on_grid="vf_arr",
         period=model.n_periods - 1,
         is_last_period=True,
     )
@@ -236,7 +235,6 @@ def test_create_compute_conditional_continuation_value_with_discrete_model():
     u_and_f = get_utility_and_feasibility_function(
         model=model,
         state_space_info=state_space_info,
-        name_of_values_on_grid="vf_arr",
         period=model.n_periods - 1,
         is_last_period=True,
     )
@@ -287,7 +285,6 @@ def test_create_compute_conditional_continuation_policy():
     u_and_f = get_utility_and_feasibility_function(
         model=model,
         state_space_info=state_space_info,
-        name_of_values_on_grid="vf_arr",
         period=model.n_periods - 1,
         is_last_period=True,
     )
@@ -334,7 +331,6 @@ def test_create_compute_conditional_continuation_policy_with_discrete_model():
     u_and_f = get_utility_and_feasibility_function(
         model=model,
         state_space_info=state_space_info,
-        name_of_values_on_grid="vf_arr",
         period=model.n_periods - 1,
         is_last_period=True,
     )

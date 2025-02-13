@@ -38,8 +38,8 @@ class StateChoiceSpace:
 
 
 @dataclass(frozen=True)
-class SpaceInfo:
-    """Information to work with the output of a function evaluated on a space.
+class StateSpaceInfo:
+    """Information to work with the output of a function evaluated on a state space.
 
     An example is the value function array, which is the output of the value function
     evaluated on the state space.
@@ -51,9 +51,9 @@ class SpaceInfo:
 
     """
 
-    var_names: tuple[str, ...]
-    discrete_vars: dict[str, DiscreteGrid]
-    continuous_vars: dict[str, ContinuousGrid]
+    states_names: tuple[str, ...]
+    discrete_states: dict[str, DiscreteGrid]
+    continuous_states: dict[str, ContinuousGrid]
 
 
 @dataclass(frozen=True)

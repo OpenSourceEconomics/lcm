@@ -1,13 +1,13 @@
 """Create a state space for a given model."""
 
-from lcm.interfaces import InternalModel, SpaceInfo, StateChoiceSpace
+from lcm.interfaces import InternalModel, StateChoiceSpace, StateSpaceInfo
 
 
 def create_state_choice_space(
     model: InternalModel,
     *,
     is_last_period: bool,
-) -> tuple[StateChoiceSpace, SpaceInfo]:
+) -> tuple[StateChoiceSpace, StateSpaceInfo]:
     """Create a state-choice-space for the model solution.
 
     A state-choice-space is a compressed representation of all feasible states and the
@@ -41,10 +41,10 @@ def create_state_choice_space(
     }
     ordered_var_names = tuple(vi.query("is_state | is_discrete").index.tolist())
 
-    state_space_info = SpaceInfo(
-        var_names=tuple(discrete_states_names + continuous_states_names),
-        discrete_vars=discrete_states,  # type: ignore[arg-type]
-        continuous_vars=continuous_states,  # type: ignore[arg-type]
+    state_space_info = StateSpaceInfo(
+        states_names=tuple(discrete_states_names + continuous_states_names),
+        discrete_states=discrete_states,  # type: ignore[arg-type]
+        continuous_states=continuous_states,  # type: ignore[arg-type]
     )
 
     state_choice_space = StateChoiceSpace(
