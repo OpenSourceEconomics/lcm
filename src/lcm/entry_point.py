@@ -198,7 +198,7 @@ def create_compute_conditional_continuation_value(
     if continuous_choice_variables:
         utility_and_feasibility = productmap(
             func=utility_and_feasibility,
-            variables=continuous_choice_variables,
+            variables=tuple(continuous_choice_variables),
         )
 
     @functools.wraps(utility_and_feasibility)
@@ -236,7 +236,7 @@ def create_compute_conditional_continuation_policy(
     if continuous_choice_variables:
         utility_and_feasibility = productmap(
             func=utility_and_feasibility,
-            variables=continuous_choice_variables,
+            variables=tuple(continuous_choice_variables),
         )
 
     @functools.wraps(utility_and_feasibility)

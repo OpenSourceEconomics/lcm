@@ -138,7 +138,7 @@ def get_multiply_weights(stochastic_variables):
         callable
 
     """
-    arg_names = [f"weight_next_{var}" for var in stochastic_variables]
+    arg_names = tuple(f"weight_next_{var}" for var in stochastic_variables)
 
     @with_signature(args=arg_names)
     def _outer(*args, **kwargs):

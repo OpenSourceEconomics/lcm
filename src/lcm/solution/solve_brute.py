@@ -104,7 +104,8 @@ def solve_continuous_problem(
     """
     _gridmapped = spacemap(
         func=compute_ccv,
-        product_vars=list(state_choice_space.ordered_var_names),
+        product_vars=state_choice_space.ordered_var_names,
+        combination_vars=(),
     )
     gridmapped = jax.jit(_gridmapped)
 

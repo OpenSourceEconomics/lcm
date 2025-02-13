@@ -234,8 +234,8 @@ def solve_continuous_problem(
     """
     _gridmapped = spacemap(
         func=compute_ccv,
-        product_vars=list(data_scs.choices),
-        combination_vars=list(data_scs.states),
+        product_vars=tuple(data_scs.choices),
+        combination_vars=tuple(data_scs.states),
     )
     gridmapped = jax.jit(_gridmapped)
 
@@ -372,7 +372,7 @@ def _generate_simulation_keys(key, ids):
 # ======================================================================================
 
 
-@partial(vmap_1d, variables=["ccv_policy", "discrete_argmax"])
+@partial(vmap_1d, variables=("ccv_policy", "discrete_argmax"))
 def filter_ccv_policy(
     ccv_policy,
     discrete_argmax,

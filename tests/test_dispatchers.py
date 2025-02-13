@@ -103,7 +103,7 @@ def test_productmap_with_all_arguments_mapped(func, args, grids, expected, reque
 
 
 def test_productmap_with_positional_args(setup_productmap_f):
-    decorated = productmap(f, ["a", "b", "c"])
+    decorated = productmap(f, ("a", "b", "c"))
     match = (
         "This function has been decorated so that it allows only kwargs, but was "
         "called with positional arguments."
@@ -113,10 +113,10 @@ def test_productmap_with_positional_args(setup_productmap_f):
 
 
 def test_productmap_different_func_order(setup_productmap_f):
-    decorated_f = productmap(f, ["a", "b", "c"])
+    decorated_f = productmap(f, ("a", "b", "c"))
     expected = decorated_f(**setup_productmap_f)
 
-    decorated_f2 = productmap(f2, ["a", "b", "c"])
+    decorated_f2 = productmap(f2, ("a", "b", "c"))
     calculated_f2 = decorated_f2(**setup_productmap_f)
 
     aaae(calculated_f2, expected)
@@ -125,7 +125,7 @@ def test_productmap_different_func_order(setup_productmap_f):
 def test_productmap_change_arg_order(setup_productmap_f, expected_productmap_f):
     expected = jnp.transpose(expected_productmap_f, (1, 0, 2))
 
-    decorated = productmap(f, ["b", "a", "c"])
+    decorated = productmap(f, ("b", "a", "c"))
     calculated = decorated(**setup_productmap_f)
 
     aaae(calculated, expected)
@@ -142,7 +142,7 @@ def test_productmap_with_all_arguments_mapped_some_len_one():
 
     expected = allow_args(f)(*helper).reshape(1, 1, 5)
 
-    decorated = productmap(f, ["a", "b", "c"])
+    decorated = productmap(f, ("a", "b", "c"))
     calculated = decorated(**grids)
     aaae(calculated, expected)
 
@@ -154,7 +154,7 @@ def test_productmap_with_all_arguments_mapped_some_scalar():
         "c": jnp.linspace(1, 5, 5),
     }
 
-    decorated = productmap(f, ["a", "b", "c"])
+    decorated = productmap(f, ("a", "b", "c"))
     with pytest.raises(ValueError, match="vmap was requested to map its argument"):
         decorated(**grids)
 
@@ -170,7 +170,7 @@ def test_productmap_with_some_arguments_mapped():
 
     expected = allow_args(f)(*helper).reshape(10, 5)
 
-    decorated = productmap(f, ["a", "c"])
+    decorated = productmap(f, ("a", "c"))
     calculated = decorated(**grids)
     aaae(calculated, expected)
 
@@ -178,7 +178,7 @@ def test_productmap_with_some_arguments_mapped():
 def test_productmap_with_some_argument_mapped_twice():
     error_msg = "Same argument provided more than once."
     with pytest.raises(ValueError, match=error_msg):
-        productmap(f, ["a", "a", "c"])
+        productmap(f, ("a", "a", "c"))
 
 
 # ======================================================================================
@@ -233,8 +233,8 @@ def test_spacemap_all_arguments_mapped(
 
     decorated = spacemap(
         g,
-        list(product_vars),
-        list(combination_vars),
+        tuple(product_vars),
+        tuple(combination_vars),
     )
     calculated = decorated(**product_vars, **combination_vars)
 
@@ -245,12 +245,12 @@ def test_spacemap_all_arguments_mapped(
     ("error_msg", "product_vars", "combination_vars"),
     [
         (
-            "Product and combination variables must be disjoint. Overlap: {'a'}",
+            "Same argument provided more than once in product variables or combination",
             ["a", "b"],
             ["a", "c", "d"],
         ),
         (
-            "Same argument provided more than once in product variables: {'a'}",
+            "Same argument provided more than once in product variables or combination",
             ["a", "a", "b"],
             ["c", "d"],
         ),

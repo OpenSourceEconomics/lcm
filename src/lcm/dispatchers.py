@@ -5,14 +5,15 @@ from typing import Literal, TypeVar
 from jax import Array, vmap
 
 from lcm.functools import allow_args, allow_only_kwargs
+from lcm.utils import find_duplicates
 
 F = TypeVar("F", bound=Callable[..., Array])
 
 
 def spacemap(
     func: F,
-    product_vars: list[str],
-    combination_vars: list[str] | None = None,
+    product_vars: tuple[str, ...],
+    combination_vars: tuple[str, ...],
 ) -> F:
     """Apply vmap such that func can be evaluated on product and combination variables.
 
@@ -48,52 +49,32 @@ def spacemap(
         described above but there might be additional dimensions.
 
     """
-    # Check inputs and prepare function
-    # ==================================================================================
-    duplicates = {v for v in product_vars if product_vars.count(v) > 1}
-    if duplicates:
-        raise ValueError(
-            f"Same argument provided more than once in product variables: {duplicates}",
+    if duplicates := find_duplicates(product_vars, combination_vars):
+        msg = (
+            "Same argument provided more than once in product variables or combination "
+            f"variables, or is present in both: {duplicates}"
         )
+        raise ValueError(msg)
+
+    func_callable_with_args = allow_args(func)
+
+    vmapped = _base_productmap(func_callable_with_args, product_vars)
 
     if combination_vars:
-        overlap = set(product_vars).intersection(combination_vars)
-        if overlap:
-            raise ValueError(
-                "Product and combination variables must be disjoint. Overlap: "
-                f"{overlap}",
-            )
-
-        duplicates = {v for v in combination_vars if combination_vars.count(v) > 1}
-        if duplicates:
-            raise ValueError(
-                "Same argument provided more than once in combination variables: "
-                f"{duplicates}",
-            )
-
-    # jax.vmap cannot deal with keyword-only arguments
-    func = allow_args(func)
-
-    # Apply vmap_1d for combination variables and _base_productmap for product variables
-    # ==================================================================================
-    if not combination_vars:
-        vmapped = _base_productmap(func, product_vars)
-    else:
-        vmapped = _base_productmap(func, product_vars)
         vmapped = vmap_1d(
             vmapped, variables=combination_vars, callable_with="only_args"
         )
 
     # This raises a mypy error but is perfectly fine to do. See
     # https://github.com/python/mypy/issues/12472
-    vmapped.__signature__ = inspect.signature(func)  # type: ignore[attr-defined]
+    vmapped.__signature__ = inspect.signature(func_callable_with_args)  # type: ignore[attr-defined]
 
     return allow_only_kwargs(vmapped)
 
 
 def vmap_1d(
     func: F,
-    variables: list[str],
+    variables: tuple[str, ...],
     *,
     callable_with: Literal["only_args", "only_kwargs"] = "only_kwargs",
 ) -> F:
@@ -105,7 +86,7 @@ def vmap_1d(
 
     Args:
         func: The function to be dispatched.
-        variables: List with names of arguments that over which we map.
+        variables: Tuple with names of arguments that over which we map.
         callable_with: Whether to apply the allow_kwargs decorator to the dispatched
             function. If "only_args", the returned function can only be called with
             positional arguments. If "only_kwargs", the returned function can only be
@@ -123,8 +104,7 @@ def vmap_1d(
         described above but there might be additional dimensions.
 
     """
-    duplicates = {v for v in variables if variables.count(v) > 1}
-    if duplicates:
+    if duplicates := find_duplicates(variables):
         raise ValueError(
             f"Same argument provided more than once in variables: {duplicates}",
         )
@@ -161,7 +141,7 @@ def vmap_1d(
     return out
 
 
-def productmap(func: F, variables: list[str]) -> F:
+def productmap(func: F, variables: tuple[str, ...]) -> F:
     """Apply vmap such that func is evaluated on the Cartesian product of variables.
 
     This is achieved by an iterative application of vmap.
@@ -171,7 +151,7 @@ def productmap(func: F, variables: list[str]) -> F:
 
     Args:
         func: The function to be dispatched.
-        variables: List with names of arguments that over which the Cartesian product
+        variables: Tuple with names of arguments that over which the Cartesian product
             should be formed.
 
     Returns:
@@ -185,25 +165,23 @@ def productmap(func: F, variables: list[str]) -> F:
         described above but there might be additional dimensions.
 
     """
-    func = allow_args(func)  # jax.vmap cannot deal with keyword-only arguments
-
-    duplicates = {v for v in variables if variables.count(v) > 1}
-    if duplicates:
+    if duplicates := find_duplicates(variables):
         raise ValueError(
             f"Same argument provided more than once in variables: {duplicates}",
         )
 
-    signature = inspect.signature(func)
-    vmapped = _base_productmap(func, variables)
+    func_callable_with_args = allow_args(func)
+
+    vmapped = _base_productmap(func_callable_with_args, variables)
 
     # This raises a mypy error but is perfectly fine to do. See
     # https://github.com/python/mypy/issues/12472
-    vmapped.__signature__ = signature  # type: ignore[attr-defined]
+    vmapped.__signature__ = inspect.signature(func_callable_with_args)  # type: ignore[attr-defined]
 
     return allow_only_kwargs(vmapped)
 
 
-def _base_productmap(func: F, product_axes: list[str]) -> F:
+def _base_productmap(func: F, product_axes: tuple[str, ...]) -> F:
     """Map func over the Cartesian product of product_axes.
 
     Like vmap, this function does not preserve the function signature and does not allow
@@ -211,7 +189,7 @@ def _base_productmap(func: F, product_axes: list[str]) -> F:
 
     Args:
         func: The function to be dispatched. Cannot have keyword-only arguments.
-        product_axes: List with names of arguments over which we apply vmap.
+        product_axes: Tuple with names of arguments over which we apply vmap.
 
     Returns:
         A callable with the same arguments as func. See `product_map` for details.

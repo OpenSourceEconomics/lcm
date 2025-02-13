@@ -83,7 +83,7 @@ def test_function_evaluator():
     # create a value function array
     discrete_part = jnp.arange(4).repeat(6 * 7).reshape((2, 2, 6, 7)) * 100
 
-    cont_func = productmap(lambda x, y: x + y, ["x", "y"])
+    cont_func = productmap(lambda x, y: x + y, ("x", "y"))
     cont_part = cont_func(x=jnp.linspace(100, 1100, 6), y=jnp.linspace(-3, 3, 7))
 
     vf_arr = discrete_part + cont_part
@@ -181,7 +181,7 @@ def test_get_interpolator():
     def _utility(wealth, working):
         return 2 * wealth - working
 
-    prod_utility = productmap(_utility, variables=["wealth", "working"])
+    prod_utility = productmap(_utility, variables=("wealth", "working"))
 
     values = prod_utility(
         wealth=jnp.arange(4, dtype=float),
@@ -260,7 +260,7 @@ def test_get_interpolator_illustrative():
     def f(a, b):
         return a - b
 
-    prod_f = productmap(f, variables=["a", "b"])
+    prod_f = productmap(f, variables=("a", "b"))
 
     values = prod_f(a=jnp.arange(2, dtype=float), b=jnp.arange(3, dtype=float))
 
