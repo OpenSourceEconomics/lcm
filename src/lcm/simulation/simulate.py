@@ -5,7 +5,7 @@ import jax
 import jax.numpy as jnp
 import pandas as pd
 from dags import concatenate_functions
-from jax import vmap
+from jax import Array, vmap
 
 from lcm.argmax import argmax
 from lcm.dispatchers import spacemap, vmap_1d
@@ -101,15 +101,15 @@ def simulate(
         # of combination variables and initial states. The space has to be created in
         # each iteration because the states change over time.
         # ==============================================================================
-        data_scs, _ = create_data_scs(
+        data_scs = create_data_scs(
             states=states,
             model=model,
-        )
+        )[0]
 
         # Compute objects dependent on data-state-choice-space
         # ==============================================================================
-        vars_grid_shape = tuple(len(grid) for grid in data_scs.choices.values())
-        cont_choice_grid_shape = tuple(
+        choices_grid_shape = tuple(len(grid) for grid in data_scs.choices.values())
+        cont_choices_grid_shape = tuple(
             len(grid) for grid in continuous_choice_grids[period].values()
         )
 
@@ -136,21 +136,21 @@ def simulate(
         cont_choice_argmax = filter_ccv_policy(
             ccv_policy=ccv_policy,
             discrete_argmax=discrete_argmax,
-            vars_grid_shape=vars_grid_shape,
+            vars_grid_shape=choices_grid_shape,
         )
 
         # Convert optimal choice indices to actual choice values
         # ==============================================================================
         choices = retrieve_choices(
-            indices=discrete_argmax,
+            flat_indices=discrete_argmax,
             grids=data_scs.choices,
-            grid_shape=vars_grid_shape,
+            grids_shapes=choices_grid_shape,
         )
 
         cont_choices = retrieve_choices(
-            indices=cont_choice_argmax,
+            flat_indices=cont_choice_argmax,
             grids=continuous_choice_grids[period],
-            grid_shape=cont_choice_grid_shape,
+            grids_shapes=cont_choices_grid_shape,
         )
 
         # Store results
@@ -398,28 +398,27 @@ def filter_ccv_policy(
     return out
 
 
-def retrieve_choices(indices, grids, grid_shape):
-    """Retrieve choices given indices.
+def retrieve_choices(
+    flat_indices: Array,
+    grids: dict[str, Array],
+    grids_shapes: tuple[int, ...],
+) -> dict[str, Array]:
+    """Retrieve choices given flat indices.
 
     Args:
-        indices (jnp.numpy.ndarray or None): General indices. Represents the index of
-            the flattened grid.
-        grids (dict): Dictionary of grids.
-        grid_shape (tuple): Shape of the grids. Is used to unravel the index.
+        flat_indices: General indices. Represents the index of the flattened grid.
+        grids: Dictionary of grid values.
+        grids_shapes: Shape of the grids. Is used to unravel the index.
 
     Returns:
-        dict: Dictionary of choices.
+        Dictionary of choices.
 
     """
-    if indices is None:
-        out = {}
-    else:
-        indices = vmapped_unravel_index(indices, grid_shape)
-        out = {
-            name: grid[index]
-            for (name, grid), index in zip(grids.items(), indices, strict=True)
-        }
-    return out
+    nd_indices = vmapped_unravel_index(flat_indices, grids_shapes)
+    return {
+        name: grid[index]
+        for (name, grid), index in zip(grids.items(), nd_indices, strict=True)
+    }
 
 
 # vmap jnp.unravel_index over the first axis of the `indices` argument, while holding
@@ -476,7 +475,7 @@ def create_data_scs(
     data_scs = StateChoiceSpace(
         states=states,
         choices=choices,
-        ordered_var_names=vi.query("is_state | is_discrete").index.tolist(),
+        ordered_var_names=tuple(vi.query("is_state | is_discrete").index.tolist()),
     )
 
     # create choice segments
@@ -554,8 +553,7 @@ def determine_discrete_choice_axes(variable_info):
 
     choice_vars = set(variable_info.query("is_choice").index.tolist())
 
-    # We must add 1 because the first dimension corresponds to the state variables,
-    # which are treated as combination variables during the simulation.
+    # The first dimension corresponds to the simulated states, so add 1.
     return tuple(
-        i + 1 for i, ax in enumerate(discrete_choice_vars) if ax in choice_vars
+        1 + i for i, ax in enumerate(discrete_choice_vars) if ax in choice_vars
     )

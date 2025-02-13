@@ -36,7 +36,7 @@ def test_solve_brute():
             # pick [0, 1, 2] such that no coordinate mapping is needed
             "wealth": jnp.array([0.0, 1.0, 2.0]),
         },
-        ordered_var_names=["lazy", "working", "wealth"],
+        ordered_var_names=("lazy", "working", "wealth"),
     )
     state_choice_spaces = [_scs] * 2
 
@@ -120,7 +120,7 @@ def test_solve_continuous_problem_no_vf_arr():
             "c": jnp.array([4, 5, 6]),
         },
         states={},
-        ordered_var_names=["a", "b", "c"],
+        ordered_var_names=("a", "b", "c"),
     )
 
     def _utility_and_feasibility(a, c, b, d, vf_arr, params):  # noqa: ARG001

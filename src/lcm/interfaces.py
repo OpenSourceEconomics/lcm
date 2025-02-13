@@ -27,14 +27,14 @@ class StateChoiceSpace:
     Attributes:
         states: Dictionary containing the values of the state variables.
         choices: Dictionary containing the values of the choice variables.
-        ordered_var_names: List with names of state and choice variables in the order
+        ordered_var_names: Tuple with names of state and choice variables in the order
             they appear in the variable info table.
 
     """
 
     states: dict[str, Array]
     choices: dict[str, Array]
-    ordered_var_names: list[str]
+    ordered_var_names: tuple[str, ...]
 
 
 @dataclass(frozen=True)
@@ -45,13 +45,13 @@ class SpaceInfo:
     evaluated on the state space.
 
     Attributes:
-        var_names: List with names of state variables.
+        var_names: Tuple with names of state variables.
         discrete_vars: Dictionary with grids of discrete state variables.
         continuous_vars: Dictionary with grids of continuous state variables.
 
     """
 
-    var_names: list[str]
+    var_names: tuple[str, ...]
     discrete_vars: dict[str, DiscreteGrid]
     continuous_vars: dict[str, ContinuousGrid]
 

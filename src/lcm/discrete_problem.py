@@ -142,11 +142,13 @@ def _determine_discrete_choice_axes(
         variable_info: DataFrame with information about the variables.
 
     Returns:
-        tuple[int, ...]: A tuple of indices representing the axes' positions in
-            the value function that correspond to discrete choices.
+        A tuple of indices representing the axes' positions in the value function that
+        correspond to discrete choices.
 
     """
-    # List of all model variables excluding the continuous choice variables.
-    axes = variable_info.query("is_state | is_discrete").index.tolist()
-    choice_vars = set(variable_info.query("is_choice").index.tolist())
-    return tuple(i for i, ax in enumerate(axes) if ax in choice_vars)
+    discrete_choice_vars = set(
+        variable_info.query("is_choice & is_discrete").index.tolist()
+    )
+    return tuple(
+        i for i, ax in enumerate(variable_info.index) if ax in discrete_choice_vars
+    )

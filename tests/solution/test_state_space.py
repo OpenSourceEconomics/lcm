@@ -2,7 +2,7 @@ import jax.numpy as jnp
 
 from lcm.input_processing import process_model
 from lcm.interfaces import SpaceInfo, StateChoiceSpace
-from lcm.solution.state_space import (
+from lcm.solution.state_choice_space import (
     create_state_choice_space,
 )
 from tests.test_models import get_model_config
@@ -27,6 +27,6 @@ def test_create_state_choice_space():
         state_choice_space.states["wealth"], model.states["wealth"].to_jax()
     )
 
-    assert state_space_info.var_names == ["wealth"]
+    assert state_space_info.var_names == ("wealth",)
     assert state_space_info.discrete_vars == {}
     assert state_space_info.continuous_vars == model.states

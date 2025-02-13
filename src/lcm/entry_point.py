@@ -17,7 +17,7 @@ from lcm.model_functions import (
 from lcm.next_state import get_next_state_function
 from lcm.simulation.simulate import simulate
 from lcm.solution.solve_brute import solve
-from lcm.solution.state_space import create_state_choice_space
+from lcm.solution.state_choice_space import create_state_choice_space
 from lcm.typing import ParamsDict
 from lcm.user_model import Model
 
@@ -88,12 +88,12 @@ def get_lcm_function(
 
         # call state space creation function, append trivial items to their lists
         # ==============================================================================
-        sc_space, state_space_info = create_state_choice_space(
+        state_choice_space, state_space_info = create_state_choice_space(
             model=_mod,
             is_last_period=is_last_period,
         )
 
-        state_choice_spaces.append(sc_space)
+        state_choice_spaces.append(state_choice_space)
         choice_segments.append(None)
         state_space_infos.append(state_space_info)
 

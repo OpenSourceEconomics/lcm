@@ -24,7 +24,7 @@ from lcm.simulation.simulate import (
     retrieve_choices,
     simulate,
 )
-from lcm.solution.state_space import create_state_choice_space
+from lcm.solution.state_choice_space import create_state_choice_space
 from tests.test_models import (
     get_model_config,
     get_params,
@@ -40,16 +40,16 @@ def simulate_inputs():
     model_config = get_model_config("iskhakov_et_al_2017_stripped_down", n_periods=1)
     model = process_model(model_config)
 
-    _, sc_space_info = create_state_choice_space(
+    state_space_info = create_state_choice_space(
         model=model,
         is_last_period=False,
-    )
+    )[1]
 
     compute_ccv_policy_functions = []
     for period in range(model.n_periods):
         u_and_f = get_utility_and_feasibility_function(
             model=model,
-            state_space_info=sc_space_info,
+            state_space_info=state_space_info,
             name_of_values_on_grid="vf_arr",
             period=period,
             is_last_period=True,
@@ -370,21 +370,12 @@ def test_process_simulated_data():
 
 def test_retrieve_choices():
     got = retrieve_choices(
-        indices=jnp.array([0, 3, 7]),
+        flat_indices=jnp.array([0, 3, 7]),
         grids={"a": jnp.linspace(0, 1, 5), "b": jnp.linspace(10, 20, 6)},
-        grid_shape=(5, 6),
+        grids_shapes=(5, 6),
     )
     assert_array_equal(got["a"], jnp.array([0, 0, 0.25]))
     assert_array_equal(got["b"], jnp.array([10, 16, 12]))
-
-
-def test_retrieve_choices_no_indices():
-    got = retrieve_choices(
-        indices=None,
-        grids={"a": jnp.linspace(0, 1, 5), "b": jnp.linspace(10, 20, 6)},
-        grid_shape=(5, 6),
-    )
-    assert got == {}
 
 
 def test_filter_ccv_policy():

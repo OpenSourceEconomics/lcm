@@ -9,7 +9,7 @@ from lcm.entry_point import (
 )
 from lcm.input_processing import process_model
 from lcm.model_functions import get_utility_and_feasibility_function
-from lcm.solution.state_space import create_state_choice_space
+from lcm.solution.state_choice_space import create_state_choice_space
 from tests.test_models import get_model_config
 from tests.test_models.deterministic import RetirementStatus
 from tests.test_models.deterministic import utility as iskhakov_et_al_2017_utility
@@ -182,14 +182,14 @@ def test_create_compute_conditional_continuation_value():
         },
     }
 
-    _, sc_space_info = create_state_choice_space(
+    state_space_info = create_state_choice_space(
         model=model,
         is_last_period=False,
-    )
+    )[1]
 
     u_and_f = get_utility_and_feasibility_function(
         model=model,
-        state_space_info=sc_space_info,
+        state_space_info=state_space_info,
         name_of_values_on_grid="vf_arr",
         period=model.n_periods - 1,
         is_last_period=True,
@@ -228,14 +228,14 @@ def test_create_compute_conditional_continuation_value_with_discrete_model():
         },
     }
 
-    _, sc_space_info = create_state_choice_space(
+    state_space_info = create_state_choice_space(
         model=model,
         is_last_period=False,
-    )
+    )[1]
 
     u_and_f = get_utility_and_feasibility_function(
         model=model,
-        state_space_info=sc_space_info,
+        state_space_info=state_space_info,
         name_of_values_on_grid="vf_arr",
         period=model.n_periods - 1,
         is_last_period=True,
@@ -279,14 +279,14 @@ def test_create_compute_conditional_continuation_policy():
         },
     }
 
-    _, sc_space_info = create_state_choice_space(
+    state_space_info = create_state_choice_space(
         model=model,
         is_last_period=False,
-    )
+    )[1]
 
     u_and_f = get_utility_and_feasibility_function(
         model=model,
-        state_space_info=sc_space_info,
+        state_space_info=state_space_info,
         name_of_values_on_grid="vf_arr",
         period=model.n_periods - 1,
         is_last_period=True,
@@ -326,14 +326,14 @@ def test_create_compute_conditional_continuation_policy_with_discrete_model():
         },
     }
 
-    _, sc_space_info = create_state_choice_space(
+    state_space_info = create_state_choice_space(
         model=model,
         is_last_period=False,
-    )
+    )[1]
 
     u_and_f = get_utility_and_feasibility_function(
         model=model,
-        state_space_info=sc_space_info,
+        state_space_info=state_space_info,
         name_of_values_on_grid="vf_arr",
         period=model.n_periods - 1,
         is_last_period=True,
