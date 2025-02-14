@@ -4,7 +4,7 @@ import jax
 
 
 def random_choice(
-    key: jax.random.PRNGKey,
+    key: jax.Array,
     probs: jax.Array,
     labels: jax.Array,
 ) -> jax.Array:
@@ -25,5 +25,7 @@ def random_choice(
 
 
 @partial(jax.vmap, in_axes=(0, 0, None))
-def _vmapped_random_choice(key, probs, labels):
+def _vmapped_random_choice(
+    key: jax.Array, probs: jax.Array, labels: jax.Array
+) -> jax.Array:
     return jax.random.choice(key, a=labels, p=probs)
