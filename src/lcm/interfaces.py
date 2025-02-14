@@ -1,11 +1,10 @@
-from collections.abc import Callable
 from dataclasses import dataclass
 
 import pandas as pd
 from jax import Array
 
 from lcm.grids import ContinuousGrid, DiscreteGrid, Grid
-from lcm.typing import ParamsDict, Scalar, ShockType
+from lcm.typing import ParamsDict, ShockType, UserFunction
 
 
 @dataclass(frozen=True)
@@ -89,7 +88,7 @@ class InternalModel:
     grids: dict[str, Array]
     gridspecs: dict[str, Grid]
     variable_info: pd.DataFrame
-    functions: dict[str, Callable[..., Scalar]]
+    functions: dict[str, UserFunction]
     function_info: pd.DataFrame
     params: ParamsDict
     n_periods: int

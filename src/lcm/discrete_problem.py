@@ -123,11 +123,7 @@ def _calculate_emax_extreme_value_shocks(
 
     """
     scale = params["additive_utility_shock"]["scale"]
-    out = values
-    if choice_axes:
-        out = scale * jax.scipy.special.logsumexp(out / scale, axis=choice_axes)
-
-    return out
+    return scale * jax.scipy.special.logsumexp(values / scale, axis=choice_axes)
 
 
 # ======================================================================================

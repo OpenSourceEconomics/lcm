@@ -60,7 +60,7 @@ def get_lcm_function(
     _mod = process_model(model)
     last_period = _mod.n_periods - 1
 
-    logger = get_logger(debug_mode)
+    logger = get_logger(debug_mode=debug_mode)
 
     # ==================================================================================
     # create list of continuous choice grids

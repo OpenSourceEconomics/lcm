@@ -1,10 +1,8 @@
-from collections.abc import Callable
-
 import pandas as pd
 from dags import get_ancestors
 
 from lcm.grids import ContinuousGrid, Grid
-from lcm.typing import Array
+from lcm.typing import Array, UserFunction
 from lcm.user_model import Model
 
 
@@ -84,7 +82,7 @@ def get_variable_info(model: Model) -> pd.DataFrame:
 def _get_auxiliary_variables(
     state_variables: list[str],
     function_info: pd.DataFrame,
-    user_functions: dict[str, Callable],
+    user_functions: dict[str, UserFunction],
 ) -> list[str]:
     """Get state variables that only occur in next functions.
 
