@@ -1,6 +1,6 @@
 import inspect
 from collections.abc import Callable
-from typing import Literal, TypeVar
+from typing import Literal, TypeVar, cast
 
 from jax import Array, vmap
 
@@ -69,7 +69,7 @@ def spacemap(
     # https://github.com/python/mypy/issues/12472
     vmapped.__signature__ = inspect.signature(func_callable_with_args)  # type: ignore[attr-defined]
 
-    return allow_only_kwargs(vmapped)
+    return cast(F, allow_only_kwargs(vmapped))
 
 
 def vmap_1d(
@@ -138,7 +138,7 @@ def vmap_1d(
             "('only_args', 'only_kwargs')",
         )
 
-    return out
+    return cast(F, out)
 
 
 def productmap(func: F, variables: tuple[str, ...]) -> F:
@@ -178,7 +178,7 @@ def productmap(func: F, variables: tuple[str, ...]) -> F:
     # https://github.com/python/mypy/issues/12472
     vmapped.__signature__ = inspect.signature(func_callable_with_args)  # type: ignore[attr-defined]
 
-    return allow_only_kwargs(vmapped)
+    return cast(F, allow_only_kwargs(vmapped))
 
 
 def _base_productmap(func: F, product_axes: tuple[str, ...]) -> F:
