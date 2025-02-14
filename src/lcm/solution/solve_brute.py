@@ -1,17 +1,22 @@
+import logging
+from collections.abc import Callable
+
 import jax
+from jax import Array
 
 from lcm.dispatchers import spacemap
 from lcm.interfaces import StateChoiceSpace
+from lcm.typing import ParamsDict
 
 
 def solve(
-    params,
-    state_choice_spaces,
-    continuous_choice_grids,
-    compute_ccv_functions,
-    emax_calculators,
-    logger,
-):
+    params: ParamsDict,
+    state_choice_spaces: list[StateChoiceSpace],
+    continuous_choice_grids: list[dict[str, Array]],
+    compute_ccv_functions: list[Callable[[Array, Array], Array]],
+    emax_calculators: list[Callable[[Array, Array], Array]],
+    logger: logging.Logger,
+) -> list[Array]:
     """Solve a model by brute force.
 
     Notes:
@@ -24,25 +29,23 @@ def solve(
       loop.
 
     Args:
-        params (dict): Dict of model parameters.
-        state_choice_spaces (list): List with one state_choice_space per period.
-        value_function_evaluators (list): List with one value_function_evaluator per
-            period.
-        continuous_choice_grids (list): List of dicts with 1d grids for continuous
+        params: Dict of model parameters.
+        state_choice_spaces: List with one state_choice_space per period.
+        continuous_choice_grids: List of dicts with 1d grids for continuous
             choice variables.
-        compute_ccv_functions (list): List of functions needed to solve the agent's
+        compute_ccv_functions: List of functions needed to solve the agent's
             problem. Each function depends on:
             - discrete and continuous state variables
             - discrete and continuous choice variables
             - vf_arr
             - params
-        emax_calculators (list): List of functions that take continuation
+        emax_calculators: List of functions that take continuation
             values for combinations of states and discrete choices and calculate the
             expected maximum over all discrete choices of a given state.
-        logger (logging.Logger): Logger that logs to stdout.
+        logger: Logger that logs to stdout.
 
     Returns:
-        list: List with one value function array per period.
+        List with one value function array per period.
 
     """
     # extract information
@@ -75,31 +78,31 @@ def solve(
 
 def solve_continuous_problem(
     state_choice_space: StateChoiceSpace,
-    compute_ccv,
-    continuous_choice_grids,
-    vf_arr,
-    params,
-):
+    compute_ccv: Callable[..., Array],
+    continuous_choice_grids: dict[str, Array],
+    vf_arr: Array | None,
+    params: ParamsDict,
+) -> Array:
     """Solve the agent's continuous choices problem problem.
 
     Args:
-        state_choice_space (Space): Class with model variables.
-        compute_ccv (callable): Function that returns the conditional continuation
+        state_choice_space: Class with model variables.
+        compute_ccv: Function that returns the conditional continuation
             values for a given combination of states and discrete choices. The function
             depends on:
             - discrete and continuous state variables
             - discrete and continuous choice variables
             - vf_arr
             - params
-        continuous_choice_grids (list): List of dicts with 1d grids for continuous
+        continuous_choice_grids: List of dicts with 1d grids for continuous
             choice variables.
-        vf_arr (jax.Array): Value function array.
-        params (dict): Dict of model parameters.
+        vf_arr: Value function array.
+        params: Dict of model parameters.
 
     Returns:
-        jnp.ndarray: Jax array with continuation values for each combination of a
-            state and a discrete choice. The number and order of dimensions is defined
-            by the `gridmap` function.
+        Jax array with continuation values for each combination of a state and a
+            discrete choice. The number and order of dimensions is defined by the
+            `gridmap` function.
 
     """
     _gridmapped = spacemap(
