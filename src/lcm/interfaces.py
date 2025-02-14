@@ -5,7 +5,7 @@ import pandas as pd
 from jax import Array
 
 from lcm.grids import ContinuousGrid, DiscreteGrid, Grid
-from lcm.typing import ParamsDict, ShockType
+from lcm.typing import ParamsDict, Scalar, ShockType
 
 
 @dataclass(frozen=True)
@@ -89,7 +89,7 @@ class InternalModel:
     grids: dict[str, Array]
     gridspecs: dict[str, Grid]
     variable_info: pd.DataFrame
-    functions: dict[str, Callable]
+    functions: dict[str, Callable[..., Scalar]]
     function_info: pd.DataFrame
     params: ParamsDict
     n_periods: int
