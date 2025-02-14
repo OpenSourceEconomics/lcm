@@ -22,3 +22,10 @@ class ShockType(Enum):
 
     EXTREME_VALUE = "extreme_value"
     NONE = None
+
+
+class Target(Enum):
+    """Target of the function."""
+
+    SOLVE = "solve"
+    SIMULATE = "simulate"
