@@ -100,7 +100,9 @@ def _solve_discrete_problem_no_shocks(
 # ======================================================================================
 
 
-def _calculate_emax_extreme_value_shocks(values, choice_axes, params):
+def _calculate_emax_extreme_value_shocks(
+    values: Array, choice_axes: tuple[int, ...], params: ParamsDict
+) -> Array:
     """Aggregate conditional continuation values over discrete choices.
 
     Args:
@@ -122,7 +124,7 @@ def _calculate_emax_extreme_value_shocks(values, choice_axes, params):
     """
     scale = params["additive_utility_shock"]["scale"]
     out = values
-    if choice_axes is not None:
+    if choice_axes:
         out = scale * jax.scipy.special.logsumexp(out / scale, axis=choice_axes)
 
     return out
