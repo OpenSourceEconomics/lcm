@@ -927,12 +927,9 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/zipp-3.21.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstandard-0.23.0-py312h7606c53_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.6-h0ea2cb4_0.conda
+      - pypi: https://files.pythonhosted.org/packages/d1/d6/3965ed04c63042e047cb6a3e6ed1a63a35087b6a609aa3a15ed8ac56c221/colorama-0.4.6-py2.py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/f5/92/8f28e56b94ef20dcf0e04ffcfa99d5b515624f4870d420d858480171238a/dags-0.2.3-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/62/20/6c57c50c0ccc645fea1895950f1e5cd02f961ee44b3ffe83617fa46b0c1d/jax-0.4.35-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/97/05/093b3c511837ba514f0b97581f7b21e1bb79768b8b9c29013a406b00d484/jaxlib-0.4.35-cp312-cp312-win_amd64.whl
-      - pypi: https://files.pythonhosted.org/packages/00/3a/40c40b78a7eb456837817bfa2c5bc442db59aefdf21c5ecb94700037813d/ml_dtypes-0.5.0-cp312-cp312-win_amd64.whl
       - pypi: https://files.pythonhosted.org/packages/b9/54/dd730b32ea14ea797530a4479b2ed46a6fb250f682a9cfb997e968bf0261/networkx-3.4.2-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/23/cd/066e86230ae37ed0be70aae89aabf03ca8d9f39c8aea0dec8029455b5540/opt_einsum-3.4.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/29/d4/1244ab8edf173a10fd601f7e13b9566c1b525c4f365d6bee918e68381889/pandas-2.2.3-cp312-cp312-win_amd64.whl
       - pypi: https://files.pythonhosted.org/packages/29/93/d56fb9ba5569dc29d8263c72e46d21a2fd38741339ebf03f54cf7561828c/pdbp-1.6.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/5a/dc/491b7661614ab97483abf2056be1deee4dc2490ecbf7bff9ab5cdbac86e1/pyreadline3-3.5.4-py3-none-any.whl
@@ -1857,11 +1854,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstandard-0.23.0-py312h7606c53_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.6-h0ea2cb4_0.conda
       - pypi: https://files.pythonhosted.org/packages/f5/92/8f28e56b94ef20dcf0e04ffcfa99d5b515624f4870d420d858480171238a/dags-0.2.3-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/62/20/6c57c50c0ccc645fea1895950f1e5cd02f961ee44b3ffe83617fa46b0c1d/jax-0.4.35-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/97/05/093b3c511837ba514f0b97581f7b21e1bb79768b8b9c29013a406b00d484/jaxlib-0.4.35-cp312-cp312-win_amd64.whl
-      - pypi: https://files.pythonhosted.org/packages/00/3a/40c40b78a7eb456837817bfa2c5bc442db59aefdf21c5ecb94700037813d/ml_dtypes-0.5.0-cp312-cp312-win_amd64.whl
       - pypi: https://files.pythonhosted.org/packages/b9/54/dd730b32ea14ea797530a4479b2ed46a6fb250f682a9cfb997e968bf0261/networkx-3.4.2-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/23/cd/066e86230ae37ed0be70aae89aabf03ca8d9f39c8aea0dec8029455b5540/opt_einsum-3.4.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/29/d4/1244ab8edf173a10fd601f7e13b9566c1b525c4f365d6bee918e68381889/pandas-2.2.3-cp312-cp312-win_amd64.whl
       - pypi: https://files.pythonhosted.org/packages/29/93/d56fb9ba5569dc29d8263c72e46d21a2fd38741339ebf03f54cf7561828c/pdbp-1.6.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/5a/dc/491b7661614ab97483abf2056be1deee4dc2490ecbf7bff9ab5cdbac86e1/pyreadline3-3.5.4-py3-none-any.whl
@@ -2598,11 +2591,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstandard-0.23.0-py312h7606c53_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.6-h0ea2cb4_0.conda
       - pypi: https://files.pythonhosted.org/packages/f5/92/8f28e56b94ef20dcf0e04ffcfa99d5b515624f4870d420d858480171238a/dags-0.2.3-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/62/20/6c57c50c0ccc645fea1895950f1e5cd02f961ee44b3ffe83617fa46b0c1d/jax-0.4.35-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/97/05/093b3c511837ba514f0b97581f7b21e1bb79768b8b9c29013a406b00d484/jaxlib-0.4.35-cp312-cp312-win_amd64.whl
-      - pypi: https://files.pythonhosted.org/packages/00/3a/40c40b78a7eb456837817bfa2c5bc442db59aefdf21c5ecb94700037813d/ml_dtypes-0.5.0-cp312-cp312-win_amd64.whl
       - pypi: https://files.pythonhosted.org/packages/b9/54/dd730b32ea14ea797530a4479b2ed46a6fb250f682a9cfb997e968bf0261/networkx-3.4.2-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/23/cd/066e86230ae37ed0be70aae89aabf03ca8d9f39c8aea0dec8029455b5540/opt_einsum-3.4.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/29/d4/1244ab8edf173a10fd601f7e13b9566c1b525c4f365d6bee918e68381889/pandas-2.2.3-cp312-cp312-win_amd64.whl
       - pypi: https://files.pythonhosted.org/packages/29/93/d56fb9ba5569dc29d8263c72e46d21a2fd38741339ebf03f54cf7561828c/pdbp-1.6.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/5a/dc/491b7661614ab97483abf2056be1deee4dc2490ecbf7bff9ab5cdbac86e1/pyreadline3-3.5.4-py3-none-any.whl
@@ -3542,6 +3531,11 @@ packages:
   - pkg:pypi/charset-normalizer?source=hash-mapping
   size: 47314
   timestamp: 1728479405343
+- pypi: https://files.pythonhosted.org/packages/d1/d6/3965ed04c63042e047cb6a3e6ed1a63a35087b6a609aa3a15ed8ac56c221/colorama-0.4.6-py2.py3-none-any.whl
+  name: colorama
+  version: 0.4.6
+  sha256: 4f1d9991f5acc0ca119f9d443620b77f9d6b33703e51011c16baf57afb285fc6
+  requires_python: '>=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*,!=3.6.*'
 - conda: https://conda.anaconda.org/conda-forge/noarch/colorama-0.4.6-pyhd8ed1ab_0.tar.bz2
   sha256: 2c1b2e9755ce3102bca8d69e8f26e4f087ece73f50418186aee7c74bef8e1698
   md5: 3faab06a954c2a04039983f2c4a50d99
@@ -4809,34 +4803,6 @@ packages:
   - pkg:pypi/isoduration?source=hash-mapping
   size: 17189
   timestamp: 1638811664194
-- pypi: https://files.pythonhosted.org/packages/62/20/6c57c50c0ccc645fea1895950f1e5cd02f961ee44b3ffe83617fa46b0c1d/jax-0.4.35-py3-none-any.whl
-  name: jax
-  version: 0.4.35
-  sha256: fa99e909a31424abfec750019a6dd36f6acc18a6e7d40e2c0086b932cc351325
-  requires_dist:
-  - jaxlib>=0.4.34,<=0.4.35
-  - ml-dtypes>=0.4.0
-  - numpy>=1.24
-  - opt-einsum
-  - scipy>=1.10
-  - numpy>=1.26.0 ; python_full_version >= '3.12'
-  - scipy>=1.11.1 ; python_full_version >= '3.12'
-  - jaxlib==0.4.34 ; extra == 'ci'
-  - jaxlib==0.4.34 ; extra == 'cuda'
-  - jax-cuda12-plugin[with-cuda]>=0.4.34,<=0.4.35 ; extra == 'cuda'
-  - jaxlib==0.4.34 ; extra == 'cuda12'
-  - jax-cuda12-plugin[with-cuda]>=0.4.34,<=0.4.35 ; extra == 'cuda12'
-  - jaxlib==0.4.34 ; extra == 'cuda12-local'
-  - jax-cuda12-plugin==0.4.34 ; extra == 'cuda12-local'
-  - jaxlib==0.4.34 ; extra == 'cuda12-pip'
-  - jax-cuda12-plugin[with-cuda]>=0.4.34,<=0.4.35 ; extra == 'cuda12-pip'
-  - kubernetes ; extra == 'k8s'
-  - jaxlib==0.4.34 ; extra == 'minimum-jaxlib'
-  - jaxlib>=0.4.34,<=0.4.35 ; extra == 'tpu'
-  - libtpu-nightly==0.1.dev20241010+nightly.cleanup ; extra == 'tpu'
-  - libtpu==0.0.2 ; extra == 'tpu'
-  - requests ; extra == 'tpu'
-  requires_python: '>=3.10'
 - conda: https://conda.anaconda.org/conda-forge/noarch/jax-0.4.34-pyhd8ed1ab_0.conda
   sha256: da3880afc35042b92e0ad214beee372e41162da374dfaa8b1164db1dcee671b2
   md5: f0d3c57355acf3f06d93672e57c0c1e8
@@ -4856,16 +4822,6 @@ packages:
   - pkg:pypi/jax?source=hash-mapping
   size: 1421248
   timestamp: 1729336456855
-- pypi: https://files.pythonhosted.org/packages/97/05/093b3c511837ba514f0b97581f7b21e1bb79768b8b9c29013a406b00d484/jaxlib-0.4.35-cp312-cp312-win_amd64.whl
-  name: jaxlib
-  version: 0.4.35
-  sha256: dddffce48d7e6057008999aed2d8a9daecc57a48c45a4f8c475e00880eb2e41d
-  requires_dist:
-  - scipy>=1.10
-  - numpy>=1.24
-  - ml-dtypes>=0.2.0
-  - scipy>=1.11.1 ; python_full_version >= '3.12'
-  requires_python: '>=3.10'
 - conda: https://conda.anaconda.org/conda-forge/linux-64/jaxlib-0.4.34-cpu_py312haec0345_0.conda
   sha256: 8e2dce1d39ccb4e6883444f71b7155168c0612d9d086b58616578448aeb33afe
   md5: 08f587f0f6505671c7715163e18b6f3a
@@ -5424,8 +5380,8 @@ packages:
   timestamp: 1719463874284
 - pypi: .
   name: lcm
-  version: 0.1.dev179+g67d52fc.d20250204
-  sha256: 9c96d7243695df2457097b024d67b4f1d81104a05f886c940bef2be104cbd068
+  version: 0.1.dev179+geb1e5bf.d20250214
+  sha256: a1deceb10d02715e15ada7ddbe396cdb13578f1b71457e2f9fae54a757b5fdad
   requires_dist:
   - dags
   - numpy
@@ -7575,22 +7531,6 @@ packages:
   purls: []
   size: 103019089
   timestamp: 1727378392081
-- pypi: https://files.pythonhosted.org/packages/00/3a/40c40b78a7eb456837817bfa2c5bc442db59aefdf21c5ecb94700037813d/ml_dtypes-0.5.0-cp312-cp312-win_amd64.whl
-  name: ml-dtypes
-  version: 0.5.0
-  sha256: afa08343069874a30812871d639f9c02b4158ace065601406a493a8511180c02
-  requires_dist:
-  - numpy>=1.21
-  - numpy>=1.21.2 ; python_full_version >= '3.10'
-  - numpy>=1.23.3 ; python_full_version >= '3.11'
-  - numpy>=1.26.0 ; python_full_version >= '3.12'
-  - numpy>=2.1.0 ; python_full_version >= '3.13'
-  - absl-py ; extra == 'dev'
-  - pytest ; extra == 'dev'
-  - pytest-xdist ; extra == 'dev'
-  - pylint>=2.6.0 ; extra == 'dev'
-  - pyink ; extra == 'dev'
-  requires_python: '>=3.9'
 - conda: https://conda.anaconda.org/conda-forge/linux-64/ml_dtypes-0.5.0-py312hf9745cd_0.conda
   sha256: 559c14640ce8e3f2270da6130ba50ae624f3db56176fad29a5436b2dec3fc3b2
   md5: 8ca779f3f30b00181aeee820fe8b22d5
@@ -8121,11 +8061,6 @@ packages:
   purls: []
   size: 8491156
   timestamp: 1731379715927
-- pypi: https://files.pythonhosted.org/packages/23/cd/066e86230ae37ed0be70aae89aabf03ca8d9f39c8aea0dec8029455b5540/opt_einsum-3.4.0-py3-none-any.whl
-  name: opt-einsum
-  version: 3.4.0
-  sha256: 69bb92469f86a1565195ece4ac0323943e83477171b91d24c35afe028a90d7cd
-  requires_python: '>=3.8'
 - conda: https://conda.anaconda.org/conda-forge/noarch/opt-einsum-3.4.0-hd8ed1ab_0.conda
   sha256: 583cb8748a9821e301a404806da0de62e8ba01607feecf12c0ef06d8bc77077e
   md5: 73d0b1d98a9030bdefe712648af583a0
