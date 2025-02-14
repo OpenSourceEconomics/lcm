@@ -13,6 +13,7 @@ from lcm.functools import (
 )
 from lcm.interfaces import InternalModel, StateSpaceInfo
 from lcm.next_state import get_next_state_function
+from lcm.typing import Target
 
 
 def get_utility_and_feasibility_function(
@@ -38,7 +39,7 @@ def get_utility_and_feasibility_function(
         relevant_functions = [current_u_and_f]
 
     else:
-        next_state = get_next_state_function(model, target="solve")
+        next_state = get_next_state_function(model, target=Target.SOLVE)
         next_weights = get_next_weights_function(model)
 
         scalar_value_function = get_value_function_representation(state_space_info)

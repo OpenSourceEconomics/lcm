@@ -133,12 +133,12 @@ def test_compare_deterministic_and_stochastic_results(model_and_params):
 
     simulation_deterministic = simulate_model_deterministic(
         params,
-        vf_arr_list=solution_deterministic,
+        pre_computed_vf_arr_list=solution_deterministic,
         initial_states=initial_states,
     )
     simulation_stochastic = simulate_model_stochastic(
         params,
-        vf_arr_list=solution_stochastic,
+        pre_computed_vf_arr_list=solution_stochastic,
         initial_states=initial_states,
     )
     pd.testing.assert_frame_equal(simulation_deterministic, simulation_stochastic)

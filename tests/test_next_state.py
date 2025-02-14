@@ -5,6 +5,7 @@ from pybaum import tree_equal
 from lcm.input_processing import process_model
 from lcm.interfaces import InternalModel
 from lcm.next_state import _get_stochastic_next_func, get_next_state_function
+from lcm.typing import Target
 from tests.test_models import get_model_config
 
 # ======================================================================================
@@ -16,7 +17,7 @@ def test_get_next_state_function_with_solve_target():
     model = process_model(
         get_model_config("iskhakov_et_al_2017_stripped_down", n_periods=3),
     )
-    got_func = get_next_state_function(model, target="solve")
+    got_func = get_next_state_function(model, target=Target.SOLVE)
 
     params = {
         "beta": 1.0,
@@ -72,7 +73,7 @@ def test_get_next_state_function_with_simulate_target():
         n_periods=1,
     )
 
-    got_func = get_next_state_function(model, target="solve")
+    got_func = get_next_state_function(model, target=Target.SOLVE)
 
     keys = {"b": jnp.arange(2, dtype="uint32")}
     got = got_func(state=jnp.arange(2), keys=keys)

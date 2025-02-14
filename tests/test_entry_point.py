@@ -110,7 +110,7 @@ def test_get_lcm_function_with_simulation_is_coherent(model):
 
     solve_then_simulate = simulate_model(
         params,
-        vf_arr_list=vf_arr_list,
+        pre_computed_vf_arr_list=vf_arr_list,
         initial_states={
             "wealth": jnp.array([0.0, 10.0, 50.0]),
         },
@@ -149,7 +149,7 @@ def test_get_lcm_function_with_simulation_target_iskhakov_et_al_2017(model):
 
     simulate_model(
         params,
-        vf_arr_list=vf_arr_list,
+        pre_computed_vf_arr_list=vf_arr_list,
         initial_states={
             "wealth": jnp.array([10.0, 10.0, 20.0]),
             "lagged_retirement": jnp.array(

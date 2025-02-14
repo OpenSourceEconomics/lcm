@@ -18,7 +18,7 @@ from lcm.next_state import get_next_state_function
 from lcm.simulation.simulate import simulate
 from lcm.solution.solve_brute import solve
 from lcm.solution.state_choice_space import create_state_choice_space
-from lcm.typing import ParamsDict
+from lcm.typing import ParamsDict, Target
 from lcm.user_model import Model
 
 
@@ -152,7 +152,7 @@ def get_lcm_function(
 
     solve_model = jax.jit(_solve_model) if jit else _solve_model
 
-    _next_state_simulate = get_next_state_function(model=_mod, target="simulate")
+    _next_state_simulate = get_next_state_function(model=_mod, target=Target.SIMULATE)
     simulate_model = partial(
         simulate,
         continuous_choice_grids=continuous_choice_grids,

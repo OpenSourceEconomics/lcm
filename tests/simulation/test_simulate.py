@@ -82,7 +82,7 @@ def test_simulate_using_raw_inputs(simulate_inputs):
 
     got = simulate(
         params=params,
-        vf_arr_list=[None],
+        pre_computed_vf_arr_list=[None],
         initial_states={"wealth": jnp.array([1.0, 50.400803])},
         logger=get_logger(debug_mode=False),
         **simulate_inputs,
@@ -132,7 +132,7 @@ def test_simulate_using_get_lcm_function(
 
     res = simulate_model(
         params,
-        vf_arr_list=vf_arr_list,
+        pre_computed_vf_arr_list=vf_arr_list,
         initial_states={
             "wealth": jnp.array([20.0, 150, 250, 320]),
         },
@@ -208,13 +208,13 @@ def test_effect_of_beta_on_last_period():
 
     res_low = simulate_model(
         params_low,
-        vf_arr_list=solution_low,
+        pre_computed_vf_arr_list=solution_low,
         initial_states={"wealth": initial_wealth},
     )
 
     res_high = simulate_model(
         params_high,
-        vf_arr_list=solution_high,
+        pre_computed_vf_arr_list=solution_high,
         initial_states={"wealth": initial_wealth},
     )
 
@@ -252,13 +252,13 @@ def test_effect_of_disutility_of_work():
 
     res_low = simulate_model(
         params_low,
-        vf_arr_list=solution_low,
+        pre_computed_vf_arr_list=solution_low,
         initial_states={"wealth": initial_wealth},
     )
 
     res_high = simulate_model(
         params_high,
-        vf_arr_list=solution_high,
+        pre_computed_vf_arr_list=solution_high,
         initial_states={"wealth": initial_wealth},
     )
 
@@ -397,7 +397,7 @@ def test_filter_ccv_policy():
 def test_create_data_state_choice_space():
     model_config = get_model_config("iskhakov_et_al_2017", n_periods=3)
     model = process_model(model_config)
-    got_space, got_segment_info = create_data_scs(
+    got_space = create_data_scs(
         states={
             "wealth": jnp.array([10.0, 20.0]),
             "lagged_retirement": jnp.array([0, 1]),
@@ -407,7 +407,6 @@ def test_create_data_state_choice_space():
     assert_array_equal(got_space.choices["retirement"], jnp.array([0, 1]))
     assert_array_equal(got_space.states["wealth"], jnp.array([10.0, 20.0]))
     assert_array_equal(got_space.states["lagged_retirement"], jnp.array([0, 1]))
-    assert got_segment_info is None
 
 
 def test_dict_product():
