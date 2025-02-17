@@ -1,13 +1,13 @@
 import functools
 import inspect
-from collections.abc import Callable
 from copy import deepcopy
+from typing import cast
 
 import pandas as pd
 from dags.signature import with_signature
 from jax import Array
 
-from lcm.functools import all_as_args, all_as_kwargs
+from lcm.functools import all_as_args
 from lcm.input_processing.create_params_template import create_params_template
 from lcm.input_processing.util import (
     get_function_info,
@@ -16,7 +16,7 @@ from lcm.input_processing.util import (
     get_variable_info,
 )
 from lcm.interfaces import InternalModel
-from lcm.typing import ParamsDict, ShockType
+from lcm.typing import InternalUserFunction, ParamsDict, Scalar, ShockType, UserFunction
 from lcm.user_model import Model
 
 
@@ -54,7 +54,7 @@ def process_model(model: Model) -> InternalModel:
 def _get_internal_functions(
     model: Model,
     params: ParamsDict,
-) -> dict[str, Callable]:
+) -> dict[str, InternalUserFunction]:
     """Process the user provided model functions.
 
     Args:
@@ -80,7 +80,7 @@ def _get_internal_functions(
                 grid=grids[var],
             )
 
-            raw_functions[f"weight_next_{var}"] = _get_stochastic_weight_function(
+            raw_functions[f"weight_next_{var}"] = _get_stochastic_weight_function(  # type: ignore[assignment]
                 raw_func=raw_functions[f"next_{var}"],
                 name=var,
                 variable_info=variable_info,
@@ -94,12 +94,13 @@ def _get_internal_functions(
     # the dynamically generated weighting functions for stochastic next functions, since
     # they are constructed to accept the 'params' argument by default.
 
-    functions = {}
+    functions: dict[str, InternalUserFunction] = {}
+
     for name, func in raw_functions.items():
         is_weight_next_function = name.startswith("weight_next_")
 
         if is_weight_next_function:
-            processed_func = func
+            processed_func = cast(InternalUserFunction, func)
 
         else:
             # params[name] contains the dictionary of parameters for the function, which
@@ -122,51 +123,43 @@ def _get_internal_functions(
 
 
 def _replace_func_parameters_by_params(
-    func: Callable, params: ParamsDict, name: str
-) -> Callable:
+    func: UserFunction, params: ParamsDict, name: str
+) -> InternalUserFunction:
     old_signature = list(inspect.signature(func).parameters)
-    new_kwargs = [
-        p
-        for p in old_signature
-        if p not in params[name]  # type: ignore[operator]
-    ] + ["params"]
+    new_kwargs = [p for p in old_signature if p not in params[name]] + ["params"]
 
     @with_signature(args=new_kwargs)
     @functools.wraps(func)
-    def processed_func(*args, **kwargs):
-        kwargs = all_as_kwargs(args, kwargs, arg_names=new_kwargs)
-        _kwargs = {k: v for k, v in kwargs.items() if k in new_kwargs and k != "params"}
-        return func(**_kwargs, **kwargs["params"][name])
+    def processed_func(*args: Scalar, params: ParamsDict, **kwargs: Scalar) -> Scalar:
+        return func(*args, **kwargs, **params[name])
 
     return processed_func
 
 
-def _add_dummy_params_argument(func: Callable) -> Callable:
+def _add_dummy_params_argument(func: UserFunction) -> InternalUserFunction:
     old_signature = list(inspect.signature(func).parameters)
 
     new_kwargs = [*old_signature, "params"]
 
     @with_signature(args=new_kwargs)
     @functools.wraps(func)
-    def processed_func(*args, **kwargs):
-        kwargs = all_as_kwargs(args, kwargs, arg_names=new_kwargs)
-        _kwargs = {k: v for k, v in kwargs.items() if k != "params"}
-        return func(**_kwargs)
+    def processed_func(*args: Scalar, params: ParamsDict, **kwargs: Scalar) -> Scalar:  # noqa: ARG001
+        return func(*args, **kwargs)
 
     return processed_func
 
 
-def _get_stochastic_next_function(raw_func: Callable, grid: Array):
+def _get_stochastic_next_function(raw_func: UserFunction, grid: Array) -> UserFunction:
     @functools.wraps(raw_func)
-    def next_func(*args, **kwargs):  # noqa: ARG001
+    def next_func(*args: Scalar, **kwargs: Scalar) -> Array:  # noqa: ARG001
         return grid
 
     return next_func
 
 
 def _get_stochastic_weight_function(
-    raw_func: Callable, name: str, variable_info: pd.DataFrame
-):
+    raw_func: UserFunction, name: str, variable_info: pd.DataFrame
+) -> InternalUserFunction:
     """Get a function that returns the transition weights of a stochastic variable.
 
     Example:
@@ -217,14 +210,8 @@ def _get_stochastic_weight_function(
     new_kwargs = [*function_parameters, "params"]
 
     @with_signature(args=new_kwargs)
-    def weight_func(*args, **kwargs):
+    def weight_func(*args: Array, params: ParamsDict, **kwargs: Array) -> Array:
         args = all_as_args(args, kwargs, arg_names=new_kwargs)
-        params = args[-1]  # by definition of new_kargs, params is the last argument
-        # By assumption, all discrete variables that LCM handles internally are
-        # themselves indices (i.e. a range starting at 0 with a step size of 1).
-        # Therefore, the arguments themselves are the indices. For the special variable
-        # '_period' the same holds.
-        indices = args[:-1]
-        return params["shocks"][name][*indices]
+        return params["shocks"][name][*args]
 
     return weight_func

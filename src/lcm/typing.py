@@ -12,13 +12,21 @@ ParamsDict = dict[str, Any]
 
 
 class UserFunction(Protocol):
-    """A function that can be provided by the user. Only used for type checking."""
+    """A function provided by the user. Only used for type checking."""
 
     def __call__(self, *args: Scalar, **kwargs: Scalar) -> Scalar: ...  # noqa: D102
 
 
+class InternalUserFunction(Protocol):
+    """A function provided by the user. Only used for type checking."""
+
+    def __call__(  # noqa: D102
+        self, *args: Scalar, params: ParamsDict, **kwargs: Scalar
+    ) -> Scalar: ...
+
+
 class DiscreteProblemSolverFunction(Protocol):
-    """The solution to the discrete problem."""
+    """The solution to the discrete problem. Only used for type checking."""
 
     def __call__(self, values: Array, params: ParamsDict) -> Array: ...  # noqa: D102
 

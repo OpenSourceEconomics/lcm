@@ -13,7 +13,7 @@ from jax import Array, vmap
 from lcm.argmax import argmax
 from lcm.dispatchers import spacemap, vmap_1d
 from lcm.interfaces import InternalModel, StateChoiceSpace
-from lcm.typing import ParamsDict, UserFunction
+from lcm.typing import InternalUserFunction, ParamsDict
 
 
 def simulate(
@@ -284,7 +284,7 @@ def _as_data_frame(processed: dict[str, Array], n_periods: int) -> pd.DataFrame:
 def _compute_targets(
     processed_results: dict[str, Array],
     targets: list[str],
-    model_functions: dict[str, UserFunction],
+    model_functions: dict[str, InternalUserFunction],
     params: ParamsDict,
 ) -> dict[str, Array]:
     """Compute targets.
