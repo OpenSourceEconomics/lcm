@@ -17,14 +17,13 @@ How we (want to) solve the problem:
 
 """
 
-from collections.abc import Callable
 from functools import partial
 
 import jax
 import pandas as pd
 from jax import Array
 
-from lcm.typing import ParamsDict, ShockType
+from lcm.typing import DiscreteProblemSolverFunction, ParamsDict, ShockType
 
 
 def get_solve_discrete_problem(
@@ -32,7 +31,7 @@ def get_solve_discrete_problem(
     random_utility_shock_type: ShockType,
     variable_info: pd.DataFrame,
     is_last_period: bool,
-) -> Callable[[Array, ParamsDict], Array]:
+) -> DiscreteProblemSolverFunction:
     """Get function that computes the expected max. of conditional continuation values.
 
     The maximum is taken over the discrete choice variables in each state.
