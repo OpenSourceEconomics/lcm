@@ -20,7 +20,7 @@ def simulate(
     params: ParamsDict,
     initial_states: dict[str, Array],
     continuous_choice_grids: list[dict[str, Array]],
-    compute_ccv_policy_functions: list[Callable[..., Array]],
+    compute_ccv_policy_functions: list[Callable[..., tuple[Array, Array]]],
     model: InternalModel,
     next_state: Callable[..., dict[str, Array]],
     logger: logging.Logger,
@@ -208,7 +208,7 @@ def simulate(
 
 def solve_continuous_problem(
     data_scs: StateChoiceSpace,
-    compute_ccv: Callable[..., Array],
+    compute_ccv: Callable[..., tuple[Array, Array]],
     continuous_choice_grids: dict[str, Array],
     vf_arr: Array,
     params: ParamsDict,

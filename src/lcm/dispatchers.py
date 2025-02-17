@@ -7,7 +7,7 @@ from jax import Array, vmap
 from lcm.functools import allow_args, allow_only_kwargs
 from lcm.utils import find_duplicates
 
-F = TypeVar("F", bound=Callable[..., Array])
+F = TypeVar("F", bound=Callable[..., Array | tuple[Array, Array]])
 
 
 def spacemap(
