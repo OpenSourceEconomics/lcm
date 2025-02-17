@@ -21,7 +21,7 @@ from lcm.typing import Scalar, Target
 
 def get_next_state_function(
     model: InternalModel, target: Target
-) -> Callable[..., Scalar]:
+) -> Callable[..., dict[str, Scalar]]:
     """Get function that computes the next states of the model.
 
     Args:
@@ -46,7 +46,9 @@ def get_next_state_function(
 # ======================================================================================
 
 
-def _get_next_state_function_solution(model: InternalModel) -> Callable[..., Scalar]:
+def _get_next_state_function_solution(
+    model: InternalModel,
+) -> Callable[..., dict[str, Scalar]]:
     """Get function that computes the next states for the solution.
 
     Args:
@@ -72,7 +74,9 @@ def _get_next_state_function_solution(model: InternalModel) -> Callable[..., Sca
 # ======================================================================================
 
 
-def _get_next_state_function_simulation(model: InternalModel) -> Callable[..., Scalar]:
+def _get_next_state_function_simulation(
+    model: InternalModel,
+) -> Callable[..., dict[str, Scalar]]:
     """Get function that computes the next states for the simulation.
 
     Args:

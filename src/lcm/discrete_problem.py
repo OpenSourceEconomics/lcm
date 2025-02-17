@@ -32,7 +32,7 @@ def get_solve_discrete_problem(
     random_utility_shock_type: ShockType,
     variable_info: pd.DataFrame,
     is_last_period: bool,
-) -> Callable[[Array], Array]:
+) -> Callable[[Array, ParamsDict], Array]:
     """Get function that computes the expected max. of conditional continuation values.
 
     The maximum is taken over the discrete choice variables in each state.

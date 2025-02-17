@@ -1,8 +1,10 @@
 import inspect
+from collections.abc import Callable
 
 import jax.numpy as jnp
 from dags import concatenate_functions
 from dags.signature import with_signature
+from jax import Array
 
 from lcm.dispatchers import productmap
 from lcm.function_representation import get_value_function_representation
@@ -13,7 +15,7 @@ from lcm.functools import (
 )
 from lcm.interfaces import InternalModel, StateSpaceInfo
 from lcm.next_state import get_next_state_function
-from lcm.typing import Target
+from lcm.typing import ParamsDict, Scalar, Target
 
 
 def get_utility_and_feasibility_function(
@@ -22,7 +24,7 @@ def get_utility_and_feasibility_function(
     period: int,
     *,
     is_last_period: bool,
-):
+) -> Callable[..., tuple[Array, Array]]:
     # ==================================================================================
     # Gather information on the model variables
     # ==================================================================================
@@ -36,7 +38,11 @@ def get_utility_and_feasibility_function(
     current_u_and_f = get_current_u_and_f(model)
 
     if is_last_period:
-        relevant_functions = [current_u_and_f]
+        relevant_functions: list[
+            Callable[..., Scalar]
+            | Callable[..., tuple[Scalar, Scalar]]
+            | Callable[..., dict[str, Scalar]]
+        ] = [current_u_and_f]
 
     else:
         next_state = get_next_state_function(model, target=Target.SOLVE)
@@ -61,13 +67,17 @@ def get_utility_and_feasibility_function(
     # Create the utility and feasability function
     # ==================================================================================
 
-    arg_names = {"vf_arr"} | get_union_of_arguments(relevant_functions) - {"_period"}
-    arg_names = [arg for arg in arg_names if "next_" not in arg]  # type: ignore[assignment]
+    arg_names_set = {"vf_arr"} | get_union_of_arguments(relevant_functions) - {
+        "_period"
+    }
+    arg_names = [arg for arg in arg_names_set if "next_" not in arg]
 
     if is_last_period:
 
         @with_signature(args=arg_names)
-        def u_and_f(*args, **kwargs):
+        def u_and_f(
+            *args: Scalar, params: ParamsDict, **kwargs: Scalar
+        ) -> tuple[Scalar, Scalar]:
             kwargs = all_as_kwargs(args, kwargs, arg_names=arg_names)
 
             states = {k: v for k, v in kwargs.items() if k in state_variables}
@@ -77,13 +87,15 @@ def get_utility_and_feasibility_function(
                 **states,
                 **choices,
                 _period=period,
-                params=kwargs["params"],
+                params=params,
             )
 
     else:
 
         @with_signature(args=arg_names)
-        def u_and_f(*args, **kwargs):
+        def u_and_f(
+            *args: Scalar, params: ParamsDict, **kwargs: Scalar
+        ) -> tuple[Scalar, Scalar]:
             kwargs = all_as_kwargs(args, kwargs, arg_names=arg_names)
 
             states = {k: v for k, v in kwargs.items() if k in state_variables}
@@ -93,25 +105,25 @@ def get_utility_and_feasibility_function(
                 **states,
                 **choices,
                 _period=period,
-                params=kwargs["params"],
+                params=params,
             )
 
             _next_state = next_state(
                 **states,
                 **choices,
                 _period=period,
-                params=kwargs["params"],
+                params=params,
             )
             weights = next_weights(
                 **states,
                 **choices,
                 _period=period,
-                params=kwargs["params"],
+                params=params,
             )
 
             value_function = productmap(
                 scalar_value_function,
-                variables=[f"next_{var}" for var in stochastic_variables],
+                variables=tuple(f"next_{var}" for var in stochastic_variables),
             )
 
             ccvs_at_nodes = value_function(
@@ -123,13 +135,13 @@ def get_utility_and_feasibility_function(
 
             ccv = (ccvs_at_nodes * node_weights).sum()
 
-            big_u = u + kwargs["params"]["beta"] * ccv
+            big_u = u + params["beta"] * ccv
             return big_u, f
 
     return u_and_f
 
 
-def get_multiply_weights(stochastic_variables):
+def get_multiply_weights(stochastic_variables: list[str]) -> Callable[..., Array]:
     """Get multiply_weights function.
 
     Args:
@@ -139,17 +151,17 @@ def get_multiply_weights(stochastic_variables):
         callable
 
     """
-    arg_names = tuple(f"weight_next_{var}" for var in stochastic_variables)
+    arg_names = [f"weight_next_{var}" for var in stochastic_variables]
 
     @with_signature(args=arg_names)
-    def _outer(*args, **kwargs):
+    def _outer(*args: Array, **kwargs: Array) -> Array:
         args = all_as_args(args, kwargs, arg_names=arg_names)
         return jnp.prod(jnp.array(args))
 
-    return productmap(_outer, variables=arg_names)
+    return productmap(_outer, variables=tuple(arg_names))
 
 
-def get_combined_constraint(model: InternalModel):
+def get_combined_constraint(model: InternalModel) -> Callable[..., Scalar]:
     """Create a function that combines all constraint functions into a single one.
 
     Args:
@@ -169,13 +181,13 @@ def get_combined_constraint(model: InternalModel):
         )
     else:
 
-        def combined_constraint():
+        def combined_constraint() -> None:
             return None
 
     return combined_constraint
 
 
-def get_current_u_and_f(model: InternalModel):
+def get_current_u_and_f(model: InternalModel) -> Callable[..., tuple[Scalar, Scalar]]:
     functions = {"feasibility": get_combined_constraint(model), **model.functions}
 
     return concatenate_functions(
@@ -185,7 +197,7 @@ def get_current_u_and_f(model: InternalModel):
     )
 
 
-def get_next_weights_function(model: InternalModel):
+def get_next_weights_function(model: InternalModel) -> Callable[..., dict[str, Scalar]]:
     targets = [
         f"weight_{name}"
         for name in model.function_info.query("is_stochastic_next").index.tolist()

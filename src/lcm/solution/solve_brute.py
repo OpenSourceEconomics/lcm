@@ -14,7 +14,7 @@ def solve(
     state_choice_spaces: list[StateChoiceSpace],
     continuous_choice_grids: list[dict[str, Array]],
     compute_ccv_functions: list[Callable[[Array, Array], Array]],
-    emax_calculators: list[Callable[[Array, Array], Array]],
+    emax_calculators: list[Callable[[Array, ParamsDict], Array]],
     logger: logging.Logger,
 ) -> list[Array]:
     """Solve a model by brute force.
