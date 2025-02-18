@@ -52,11 +52,11 @@ jobs:
           pixi-version: v0.40.3
           cache: true
           cache-write: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
-          environments: mypy
+          environments: test-cpu
           frozen: true
       - name: Run mypy
         shell: bash {0}
-        run: pixi run mypy
+        run: pixi run -e test-cpu mypy
   # run-explanation-notebooks:
   #   name: Run explanation notebooks on Python 3.12
   #   runs-on: ubuntu-latest

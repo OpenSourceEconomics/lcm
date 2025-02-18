@@ -87,7 +87,7 @@ allow-direct-references = true
 channels = ["conda-forge"]
 platforms = ["linux-64", "osx-64", "osx-arm64", "win-64"]
 
-# Development Dependencies (conda)
+# Development Dependencies (conda and pypi)
 # --------------------------------------------------------------------------------------
 
 [tool.pixi.dependencies]
@@ -103,9 +103,6 @@ memory_profiler = "*"
 [tool.pixi.target.unix.dependencies]
 jax = ">=0.4.34"
 jaxlib = ">=0.4.34"
-
-# Development Dependencies (pypi)
-# --------------------------------------------------------------------------------------
 
 [tool.pixi.pypi-dependencies]
 lcm = {path = ".", editable = true}

@@ -4,7 +4,6 @@ from typing import Any
 import jax.numpy as jnp
 import pandas as pd
 import pytest
-from numpy.testing import assert_equal
 
 from lcm.grids import DiscreteGrid
 from lcm.input_processing.create_params_template import (
@@ -82,7 +81,7 @@ def test_create_shock_params():
         variable_info=variable_info,
         grids={"a": jnp.array([1, 2])},
     )
-    assert_equal(got["a"], jnp.full((2, 3, 2), jnp.nan))
+    jnp.array_equal(got["a"], jnp.full((2, 3, 2), jnp.nan), equal_nan=True)
 
 
 def test_create_shock_params_invalid_variable():
