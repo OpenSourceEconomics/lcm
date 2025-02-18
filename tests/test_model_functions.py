@@ -1,6 +1,7 @@
 import jax.numpy as jnp
 import pandas as pd
 import pytest
+from jax import Array
 from numpy.testing import assert_array_equal
 
 from lcm.input_processing import process_model
@@ -184,4 +185,5 @@ def test_get_combined_constraint():
         n_periods=0,
     )
     combined_constraint = get_combined_constraint(model)
-    assert combined_constraint(params={}) is False
+    feasibility: Array = combined_constraint(params={})  # type: ignore[assignment]
+    assert feasibility.item() is False

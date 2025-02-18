@@ -127,33 +127,28 @@ cuda-nvcc = ">=12"
 jax = ">=0.4.34"
 jaxlib = { version = ">=0.4.34", build = "cuda12*" }
 
-[tool.pixi.feature.test.dependencies]
+[tool.pixi.feature.testing.dependencies]
 pytest = "*"
 pytest-cov = "*"
 pytest-xdist = "*"
-
-[tool.pixi.feature.test.tasks]
-tests = "pytest tests"
-tests-with-cov = "pytest tests --cov-report=xml --cov=./"
-explanation-notebooks = "jupyter execute explanations/*.ipynb"
-
-[tool.pixi.feature.mypy.dependencies]
-mypy = ">=1.11.2"
+mypy = "==1.15.0"
 pandas-stubs = "*"
 matplotlib = "*"  # required because of pandas
 scipy-stubs = "*"
 
-[tool.pixi.feature.mypy.tasks]
+[tool.pixi.feature.testing.tasks]
+tests = "pytest tests"
+tests-with-cov = "pytest tests --cov-report=xml --cov=./"
 mypy = "mypy"
+explanation-notebooks = "jupyter execute explanations/*.ipynb"
 
 # Environments
 # --------------------------------------------------------------------------------------
 
 [tool.pixi.environments]
 cuda = {features = ["cuda"], solve-group = "cuda"}
-mypy = {features = ["mypy", "test"], solve-group = "default"}
-test-cpu = {features = ["test"], solve-group = "default"}
-test-gpu = {features = ["test", "cuda"], solve-group = "cuda"}
+test-cpu = {features = ["testing"], solve-group = "default"}
+test-gpu = {features = ["testing", "cuda"], solve-group = "cuda"}
 
 
 # ======================================================================================
