@@ -77,10 +77,10 @@ def test_get_next_state_function_with_simulate_target():
         n_periods=1,
     )
 
-    got_func = get_next_state_function(model, target=Target.SOLVE)
+    got_func = get_next_state_function(model, target=Target.SIMULATE)
 
     keys = {"b": jnp.arange(2, dtype="uint32")}
-    got = got_func(state=jnp.arange(2), keys=keys)
+    got = got_func(state=jnp.arange(2), keys=keys, params={})
 
     expected = {"a": jnp.array([0]), "b": jnp.array([1])}
     assert tree_equal(expected, got)
