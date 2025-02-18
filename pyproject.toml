@@ -30,6 +30,7 @@ classifiers = [
     "Operating System :: Unix",
     "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering",
+    "Typing :: Typed",
 ]
 authors = [
     { name = "Tim Mensinger", email = "mensingertim@gmail.com" },
@@ -71,6 +72,9 @@ only-packages = true
 [tool.hatch.build.targets.wheel]
 only-include = ["src"]
 sources = ["src"]
+include = [
+    "src/lcm/py.typed",
+]
 
 [tool.hatch.version]
 source = "vcs"
