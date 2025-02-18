@@ -112,7 +112,7 @@ lcm = {path = ".", editable = true}
 pdbp = "*"
 
 [tool.pixi.target.win-64.pypi-dependencies]
-jax = { version = ">=0.4.34", extras = ["cpu"] }
+jax = ">=0.4.34"
 jaxlib = ">=0.4.34"
 
 # Features and Tasks
