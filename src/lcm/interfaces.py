@@ -5,6 +5,7 @@ from jax import Array
 
 from lcm.grids import ContinuousGrid, DiscreteGrid, Grid
 from lcm.typing import InternalUserFunction, ParamsDict, ShockType
+from typing import Mapping
 
 
 @dataclass(frozen=True)
@@ -51,8 +52,8 @@ class StateSpaceInfo:
     """
 
     states_names: tuple[str, ...]
-    discrete_states: dict[str, DiscreteGrid]
-    continuous_states: dict[str, ContinuousGrid]
+    discrete_states: Mapping[str, DiscreteGrid]
+    continuous_states: Mapping[str, ContinuousGrid]
 
 
 @dataclass(frozen=True)
