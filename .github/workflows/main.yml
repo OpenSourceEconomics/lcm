@@ -37,6 +37,11 @@ jobs:
       - name: Run pytest
         shell: bash {0}
         run: pixi run -e test-cpu tests
+        if: runner.os != 'Linux' || matrix.python-version != '3.12'
+      - name: Run pytest and collect coverage
+        shell: bash {0}
+        run: pixi run -e test-cpu tests-with-cov
+        if: runner.os == 'Linux' && matrix.python-version == '3.12'
       - name: Upload coverage report
         if: runner.os == 'Linux' && matrix.python-version == '3.12'
         uses: codecov/codecov-action@v4
