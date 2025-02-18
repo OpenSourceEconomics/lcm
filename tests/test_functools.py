@@ -230,7 +230,7 @@ def test_allow_args_with_vmap():
 
     with pytest.raises(TypeError):
         # TypeError since b is keyword-only
-        f_vmapped(a, b)  # type: ignore[call-arg]
+        f_vmapped(a, b)  # type: ignore[misc]
 
     with pytest.raises(ValueError, match="vmap in_axes must be an int"):
         # ValueError since vmap doesn't support keyword arguments

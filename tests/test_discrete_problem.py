@@ -41,7 +41,7 @@ def test_get_solve_discrete_problem_illustrative():
         ],
     )
 
-    got = solve_discrete_problem(cc_values, params=None)
+    got = solve_discrete_problem(cc_values, params={"ignore": "this"})
     aaae(got, jnp.array([1, 3, 5]))
 
 
@@ -59,8 +59,8 @@ def test_solve_discrete_problem_no_shocks_illustrative():
     # ==================================================================================
     got = _solve_discrete_problem_no_shocks(
         cc_values,
-        choice_axes=0,
-        params=None,
+        choice_axes=(0,),
+        params={"ignore": "this"},
     )
     aaae(got, jnp.array([4, 5]))
 
@@ -69,7 +69,7 @@ def test_solve_discrete_problem_no_shocks_illustrative():
     got = _solve_discrete_problem_no_shocks(
         cc_values,
         choice_axes=(0, 1),
-        params=None,
+        params={"ignore": "this"},
     )
     aaae(got, 5)
 
@@ -88,7 +88,7 @@ def test_calculate_emax_extreme_value_shocks_illustrative():
     # ==================================================================================
     got = _calculate_emax_extreme_value_shocks(
         cc_values,
-        choice_axes=0,
+        choice_axes=(0,),
         params={"additive_utility_shock": {"scale": 0.1}},
     )
     aaae(got, jnp.array([4, 5]), decimal=5)
