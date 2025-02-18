@@ -9,11 +9,11 @@ from jax import Array
 
 from lcm import grid_helpers
 from lcm.exceptions import GridInitializationError, format_messages
-from lcm.typing import Scalar
+from lcm.typing import ReplaceMixin, Scalar
 from lcm.utils import find_duplicates
 
 
-class Grid(ABC):
+class Grid(ABC, ReplaceMixin):
     """LCM Grid base class."""
 
     @abstractmethod

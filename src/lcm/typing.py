@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Any, Protocol
+from typing import Any, Protocol, Self
 
 from jax import Array
 
@@ -43,3 +43,11 @@ class Target(Enum):
 
     SOLVE = "solve"
     SIMULATE = "simulate"
+
+
+class ReplaceMixin:
+    """Mixin for replacing init-attributes of a class."""
+
+    def replace(self: Self, **kwargs: Any) -> Self:  # noqa: ANN401
+        """Replace the init-attributes of the class with the given values."""
+        return type(self)(**{**self.__dict__, **kwargs})

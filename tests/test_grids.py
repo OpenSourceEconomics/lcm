@@ -153,3 +153,11 @@ def test_discrete_grid_invalid_category_class():
         match="Field values of the category_class passed to DiscreteGrid can only be",
     ):
         DiscreteGrid(category_class)
+
+
+def test_replace_mixin():
+    grid = LinspaceGrid(start=1, stop=5, n_points=5)
+    new_grid = grid.replace(start=0)
+    assert new_grid.start == 0
+    assert new_grid.stop == 5
+    assert new_grid.n_points == 5
