@@ -9,8 +9,8 @@ from jax import Array
 
 from lcm import grid_helpers
 from lcm.exceptions import GridInitializationError, format_messages
-from lcm.typing import ReplaceMixin, Scalar
-from lcm.utils import find_duplicates
+from lcm.typing import Scalar
+from lcm.utils import ReplaceMixin, find_duplicates
 
 
 class Grid(ABC, ReplaceMixin):
