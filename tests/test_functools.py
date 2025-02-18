@@ -127,7 +127,7 @@ def test_allow_only_kwargs():
         return a + b
 
     with pytest.raises(TypeError):
-        f(a=1, b=2)
+        f(a=1, b=2)  # type: ignore[call-arg]
 
     assert allow_only_kwargs(f)(a=1, b=2) == 3
 
@@ -137,7 +137,7 @@ def test_allow_only_kwargs_with_keyword_only_args():
         return a + b
 
     with pytest.raises(TypeError):
-        f(a=1, b=2)
+        f(a=1, b=2)  # type: ignore[call-arg]
 
     assert allow_only_kwargs(f)(a=1, b=2) == 3
 
@@ -183,7 +183,7 @@ def test_allow_args():
         return a + b
 
     with pytest.raises(TypeError):
-        f(1, 2)
+        f(1, 2)  # type: ignore[misc]
 
     assert allow_args(f)(1, 2) == 3
     assert allow_args(f)(1, b=2) == 3
@@ -195,7 +195,7 @@ def test_allow_args_different_kwargs_order():
         return a + b + c + d
 
     with pytest.raises(TypeError):
-        f(1, 2, 3, 4)
+        f(1, 2, 3, 4)  # type: ignore[misc]
 
     assert allow_args(f)(1, 2, 3, 4) == 10
     assert allow_args(f)(1, 2, d=4, c=3) == 10
@@ -230,7 +230,7 @@ def test_allow_args_with_vmap():
 
     with pytest.raises(TypeError):
         # TypeError since b is keyword-only
-        f_vmapped(a, b)
+        f_vmapped(a, b)  # type: ignore[call-arg]
 
     with pytest.raises(ValueError, match="vmap in_axes must be an int"):
         # ValueError since vmap doesn't support keyword arguments

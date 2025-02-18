@@ -150,7 +150,7 @@ mypy = "mypy"
 
 [tool.pixi.environments]
 cuda = {features = ["cuda"], solve-group = "cuda"}
-mypy = {features = ["mypy"], solve-group = "default"}
+mypy = {features = ["mypy", "test"], solve-group = "default"}
 test-cpu = {features = ["test"], solve-group = "default"}
 test-gpu = {features = ["test", "cuda"], solve-group = "cuda"}
 
@@ -288,7 +288,6 @@ warn_unused_ignores = true
 [[tool.mypy.overrides]]
 module = "tests.*"
 disallow_untyped_defs = false
-ignore_errors = true
 
 [[tool.mypy.overrides]]
 module = ["dags", "dags.signature", "pybaum", "pdbp"]
