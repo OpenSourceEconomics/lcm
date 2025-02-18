@@ -280,12 +280,6 @@ no_implicit_optional = true
 warn_redundant_casts = true
 warn_unused_ignores = true
 
-# [[tool.mypy.overrides]]
-# module = []
-# check_untyped_defs = false
-# disallow_any_generics = false
-# disallow_untyped_defs = false
-
 [[tool.mypy.overrides]]
 module = "tests.*"
 disallow_untyped_defs = false

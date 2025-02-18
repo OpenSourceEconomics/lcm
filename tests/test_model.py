@@ -9,9 +9,9 @@ def test_model_invalid_states():
     with pytest.raises(ModelInitilizationError, match="states must be a dictionary"):
         Model(
             n_periods=2,
-            states="health",
+            states="health",  # type: ignore[arg-type]
             choices={},
-            functions={"utility": lambda: 0},
+            functions={"utility": lambda: 0},  # type: ignore[dict-item]
         )
 
 
@@ -20,8 +20,8 @@ def test_model_invalid_choices():
         Model(
             n_periods=2,
             states={},
-            choices="exercise",
-            functions={"utility": lambda: 0},
+            choices="exercise",  # type: ignore[arg-type]
+            functions={"utility": lambda: 0},  # type: ignore[dict-item]
         )
 
 
@@ -31,7 +31,7 @@ def test_model_invalid_functions():
             n_periods=2,
             states={},
             choices={},
-            functions="utility",
+            functions="utility",  # type: ignore[arg-type]
         )
 
 
@@ -43,7 +43,7 @@ def test_model_invalid_functions_values():
             n_periods=2,
             states={},
             choices={},
-            functions={"utility": 0},
+            functions={"utility": 0},  # type: ignore[dict-item]
         )
 
 
@@ -55,7 +55,7 @@ def test_model_invalid_functions_keys():
             n_periods=2,
             states={},
             choices={},
-            functions={0: lambda: 0},
+            functions={0: lambda: 0},  # type: ignore[dict-item]
         )
 
 
@@ -66,8 +66,8 @@ def test_model_invalid_choices_values():
         Model(
             n_periods=2,
             states={},
-            choices={"exercise": 0},
-            functions={"utility": lambda: 0},
+            choices={"exercise": 0},  # type: ignore[dict-item]
+            functions={"utility": lambda: 0},  # type: ignore[dict-item]
         )
 
 
@@ -77,9 +77,9 @@ def test_model_invalid_states_values():
     ):
         Model(
             n_periods=2,
-            states={"health": 0},
+            states={"health": 0},  # type: ignore[dict-item]
             choices={},
-            functions={"utility": lambda: 0},
+            functions={"utility": lambda: 0},  # type: ignore[dict-item]
         )
 
 
@@ -91,7 +91,7 @@ def test_model_invalid_n_periods():
             n_periods=0,
             states={},
             choices={},
-            functions={"utility": lambda: 0},
+            functions={"utility": lambda: 0},  # type: ignore[dict-item]
         )
 
 
@@ -104,7 +104,7 @@ def test_model_missing_next_func(binary_category_class):
             n_periods=2,
             states={"health": DiscreteGrid(binary_category_class)},
             choices={"exercise": DiscreteGrid(binary_category_class)},
-            functions={"utility": lambda: 0},
+            functions={"utility": lambda: 0},  # type: ignore[dict-item]
         )
 
 
@@ -130,5 +130,5 @@ def test_model_overlapping_states_choices(binary_category_class):
             n_periods=2,
             states={"health": DiscreteGrid(binary_category_class)},
             choices={"health": DiscreteGrid(binary_category_class)},
-            functions={"utility": lambda: 0},
+            functions={"utility": lambda: 0},  # type: ignore[dict-item]
         )
