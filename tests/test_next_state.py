@@ -1,11 +1,12 @@
 import jax.numpy as jnp
 import pandas as pd
+from jax import Array
 from pybaum import tree_equal
 
 from lcm.input_processing import process_model
 from lcm.interfaces import InternalModel
 from lcm.next_state import _get_stochastic_next_func, get_next_state_function
-from lcm.typing import Target
+from lcm.typing import ParamsDict, Scalar, ShockType, Target
 from tests.test_models import get_model_config
 
 # ======================================================================================
@@ -40,14 +41,17 @@ def test_get_next_state_function_with_solve_target():
 
 
 def test_get_next_state_function_with_simulate_target():
-    def f_b(state):  # noqa: ARG001
-        return None
+    def f_a(state: Array, params: ParamsDict) -> Scalar:  # noqa: ARG001
+        return state[0]
 
-    def f_weight_b(state):  # noqa: ARG001
+    def f_b(state: Scalar, params: ParamsDict) -> Scalar:  # noqa: ARG001
+        return None  # type: ignore[return-value]
+
+    def f_weight_b(state: Scalar, params: ParamsDict) -> Array:  # noqa: ARG001
         return jnp.array([[0.0, 1.0]])
 
     functions = {
-        "a": lambda state: state[0],
+        "a": f_a,
         "b": f_b,
         "weight_b": f_weight_b,
     }
@@ -63,13 +67,13 @@ def test_get_next_state_function_with_simulate_target():
     )
 
     model = InternalModel(
-        functions=functions,
+        functions=functions,  # type: ignore[arg-type]
         grids=grids,
         function_info=function_info,
-        gridspecs=None,
-        variable_info=None,
-        params=None,
-        random_utility_shocks=None,
+        gridspecs={},
+        variable_info=pd.DataFrame(),
+        params={},
+        random_utility_shocks=ShockType.NONE,
         n_periods=1,
     )
 
@@ -88,6 +92,6 @@ def test_get_stochastic_next_func():
 
     keys = {"a": jnp.arange(2, dtype="uint32")}  # PRNG dtype
     weights = jnp.array([[0.0, 1], [1, 0]])
-    got = got_func(keys=keys, weight_a=weights)
+    got = got_func(keys=keys, weight_a=weights)  # type: ignore[call-arg]
 
     assert jnp.array_equal(got, jnp.array([1, 0]))
