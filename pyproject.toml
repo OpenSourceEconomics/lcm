@@ -141,6 +141,7 @@ explanation-notebooks = "jupyter execute explanations/*.ipynb"
 mypy = ">=1.11.2"
 pandas-stubs = "*"
 matplotlib = "*"  # required because of pandas
+scipy-stubs = "*"
 
 [tool.pixi.feature.mypy.tasks]
 mypy = "mypy"
