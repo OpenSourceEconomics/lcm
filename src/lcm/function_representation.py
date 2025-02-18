@@ -1,4 +1,5 @@
 from collections.abc import Callable
+from typing import cast
 
 import jax.numpy as jnp
 from dags import concatenate_functions
@@ -175,7 +176,7 @@ def _get_lookup_function(
     def lookup_wrapper(*args: Scalar, **kwargs: Scalar) -> Scalar:
         kwargs = all_as_kwargs(args, kwargs, arg_names=arg_names)
         positions = tuple(kwargs[var] for var in axis_names)
-        arr = kwargs[array_name]
+        arr = cast(Array, kwargs[array_name])
         return arr[positions]
 
     return lookup_wrapper

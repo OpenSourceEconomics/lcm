@@ -170,7 +170,7 @@ def get_union_of_arguments(list_of_functions: list[Callable[..., Any]]) -> set[s
 
 
 def all_as_kwargs(
-    args: tuple[Any],
+    args: tuple[Any, ...],
     kwargs: dict[str, Any],
     arg_names: list[str],
 ) -> dict[str, Any]:
@@ -189,10 +189,10 @@ def all_as_kwargs(
 
 
 def all_as_args(
-    args: tuple[Any],
+    args: tuple[Any, ...],
     kwargs: dict[str, Any],
     arg_names: list[str],
-) -> tuple[Any]:
+) -> tuple[Any, ...]:
     """Return args tuple containing all arguments.
 
     Args:

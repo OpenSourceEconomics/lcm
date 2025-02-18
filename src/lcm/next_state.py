@@ -158,7 +158,7 @@ def _get_stochastic_next_func(
 
     @with_signature(args=arg_names)
     def _next_stochastic_state(*args: Array, **kwargs: Array) -> Array:
-        keys, weights = all_as_args(args, kwargs, arg_names=arg_names)  # type: ignore[misc,arg-type]
+        keys, weights = all_as_args(args, kwargs, arg_names=arg_names)
         return random_choice(
             key=keys[name],
             probs=weights,

@@ -15,7 +15,7 @@ from lcm.functools import (
 )
 from lcm.interfaces import InternalModel, StateSpaceInfo
 from lcm.next_state import get_next_state_function
-from lcm.typing import ParamsDict, Scalar, Target
+from lcm.typing import InternalUserFunction, ParamsDict, Scalar, Target
 
 
 def get_utility_and_feasibility_function(
@@ -161,7 +161,7 @@ def get_multiply_weights(stochastic_variables: list[str]) -> Callable[..., Array
     return productmap(_outer, variables=tuple(arg_names))
 
 
-def get_combined_constraint(model: InternalModel) -> Callable[..., Scalar]:
+def get_combined_constraint(model: InternalModel) -> InternalUserFunction:
     """Create a function that combines all constraint functions into a single one.
 
     Args:
