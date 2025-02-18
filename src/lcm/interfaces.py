@@ -1,3 +1,4 @@
+from collections.abc import Mapping
 from dataclasses import dataclass
 
 import pandas as pd
@@ -5,7 +6,6 @@ from jax import Array
 
 from lcm.grids import ContinuousGrid, DiscreteGrid, Grid
 from lcm.typing import InternalUserFunction, ParamsDict, ShockType
-from typing import Mapping
 
 
 @dataclass(frozen=True)
