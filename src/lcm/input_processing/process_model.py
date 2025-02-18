@@ -80,7 +80,7 @@ def _get_internal_functions(
                 grid=grids[var],
             )
 
-            raw_functions[f"weight_next_{var}"] = _get_stochastic_weight_function(  # type: ignore[assignment]
+            raw_functions[f"weight_next_{var}"] = _get_stochastic_weight_function(
                 raw_func=raw_functions[f"next_{var}"],
                 name=var,
                 variable_info=variable_info,
