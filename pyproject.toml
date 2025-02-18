@@ -285,5 +285,11 @@ module = "tests.*"
 disallow_untyped_defs = false
 
 [[tool.mypy.overrides]]
+module = [
+    "tests/test_dispatchers",
+]
+ignore_errors = true
+
+[[tool.mypy.overrides]]
 module = ["dags", "dags.signature", "pybaum", "pdbp"]
 ignore_missing_imports = true

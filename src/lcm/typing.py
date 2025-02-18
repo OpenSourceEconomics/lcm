@@ -14,7 +14,7 @@ ParamsDict = dict[str, Any]
 class UserFunction(Protocol):
     """A function provided by the user. Only used for type checking."""
 
-    def __call__(self, *args: Scalar, **kwargs: Scalar) -> Scalar: ...  # noqa: D102
+    def __call__(self, *args: Any, **kwargs: Any) -> Any: ...  # noqa: ANN401, D102
 
 
 class InternalUserFunction(Protocol):

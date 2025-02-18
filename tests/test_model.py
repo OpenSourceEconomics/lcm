@@ -11,7 +11,7 @@ def test_model_invalid_states():
             n_periods=2,
             states="health",  # type: ignore[arg-type]
             choices={},
-            functions={"utility": lambda: 0},  # type: ignore[dict-item]
+            functions={"utility": lambda: 0},
         )
 
 
@@ -21,7 +21,7 @@ def test_model_invalid_choices():
             n_periods=2,
             states={},
             choices="exercise",  # type: ignore[arg-type]
-            functions={"utility": lambda: 0},  # type: ignore[dict-item]
+            functions={"utility": lambda: 0},
         )
 
 
@@ -67,7 +67,7 @@ def test_model_invalid_choices_values():
             n_periods=2,
             states={},
             choices={"exercise": 0},  # type: ignore[dict-item]
-            functions={"utility": lambda: 0},  # type: ignore[dict-item]
+            functions={"utility": lambda: 0},
         )
 
 
@@ -79,7 +79,7 @@ def test_model_invalid_states_values():
             n_periods=2,
             states={"health": 0},  # type: ignore[dict-item]
             choices={},
-            functions={"utility": lambda: 0},  # type: ignore[dict-item]
+            functions={"utility": lambda: 0},
         )
 
 
@@ -91,7 +91,7 @@ def test_model_invalid_n_periods():
             n_periods=0,
             states={},
             choices={},
-            functions={"utility": lambda: 0},  # type: ignore[dict-item]
+            functions={"utility": lambda: 0},
         )
 
 
@@ -104,7 +104,7 @@ def test_model_missing_next_func(binary_category_class):
             n_periods=2,
             states={"health": DiscreteGrid(binary_category_class)},
             choices={"exercise": DiscreteGrid(binary_category_class)},
-            functions={"utility": lambda: 0},  # type: ignore[dict-item]
+            functions={"utility": lambda: 0},
         )
 
 
@@ -130,5 +130,5 @@ def test_model_overlapping_states_choices(binary_category_class):
             n_periods=2,
             states={"health": DiscreteGrid(binary_category_class)},
             choices={"health": DiscreteGrid(binary_category_class)},
-            functions={"utility": lambda: 0},  # type: ignore[dict-item]
+            functions={"utility": lambda: 0},
         )
