@@ -195,8 +195,8 @@ def create_compute_conditional_continuation_value(
             continuous.
 
     Returns:
-        callable: A function that takes a state-choice combination and returns the
-            conditional continuation value over the continuous choices.
+        A function that takes a state-choice combination and returns the conditional
+        continuation value over the continuous choices.
 
     """
     if continuous_choice_variables:
@@ -232,9 +232,9 @@ def create_compute_conditional_continuation_policy(
             continuous.
 
     Returns:
-        callable: A function that takes a state-choice combination and returns the
-            conditional continuation value over the continuous choices, and the index
-            that maximizes the conditional continuation value.
+        A function that takes a state-choice combination and returns the conditional
+        continuation value over the continuous choices, and the index that maximizes the
+        conditional continuation value.
 
     """
     if continuous_choice_variables:

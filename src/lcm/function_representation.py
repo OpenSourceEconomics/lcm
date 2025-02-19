@@ -142,8 +142,8 @@ def _get_label_translator(
             resulting function.
 
     Returns:
-        callable: A callable with the keyword only argument `in_name` that converts a
-            label into a position in a list of labels.
+        A callable with the keyword only argument `in_name` that converts a label into a
+        position in a list of labels.
 
     """
 
@@ -166,8 +166,8 @@ def _get_lookup_function(
         axis_names (list): List of strings with names for each axis in the array.
 
     Returns:
-        callable: A callable with the keyword-only arguments `[*axis_names]` that looks
-            up values from an array called `array_name`.
+        A callable with the keyword-only arguments `[*axis_names]` that looks up values
+        from an array called `array_name`.
 
     """
     arg_names = [*axis_names, array_name]
@@ -198,8 +198,8 @@ def _get_coordinate_finder(
             coordinates.
 
     Returns:
-        callable: A callable with keyword-only argument [in_name] that translates a
-            value into coordinates on a grid.
+        A callable with keyword-only argument [in_name] that translates a value into
+        coordinates on a grid.
 
     """
 
@@ -224,7 +224,7 @@ def _get_interpolator(
         axis_names: Names of the axes in the data array.
 
     Returns:
-        callable: A callable that interpolates a function via named axes.
+        A callable that interpolates a function via named axes.
 
     """
     arg_names = [name_of_values_on_grid, *axis_names]

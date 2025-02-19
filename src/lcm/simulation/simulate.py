@@ -55,7 +55,7 @@ def simulate(
         seed: Random number seed; will be passed to `jax.random.key`.
 
     Returns:
-        pd.DataFrame: DataFrame with the simulation results.
+        DataFrame with the simulation results.
 
     """
     if pre_computed_vf_arr_list is None:
@@ -229,12 +229,11 @@ def solve_continuous_problem(
         params: Dict of model parameters.
 
     Returns:
-        - jnp.ndarray: Jax array with policies for each combination of a state and a
+        - Jax array with policies for each combination of a state and a discrete choice.
+          The number and order of dimensions is defined by the `gridmap` function.
+        - Jax array with continuation values for each combination of a state and a
           discrete choice. The number and order of dimensions is defined by the
           `gridmap` function.
-        - jnp.ndarray: Jax array with continuation values for each combination of a
-            state and a discrete choice. The number and order of dimensions is defined
-            by the `gridmap` function.
 
     """
     _gridmapped = spacemap(
@@ -266,10 +265,10 @@ def _as_data_frame(processed: dict[str, Array], n_periods: int) -> pd.DataFrame:
         n_periods: Number of periods.
 
     Returns:
-        pd.DataFrame: DataFrame with the simulation results. The index is a multi-index
-            with the first level corresponding to the period and the second level
-            corresponding to the initial state id. The columns correspond to the value,
-            and the choice and state variables, and potentially auxiliary variables.
+        DataFrame with the simulation results. The index is a multi-index with the first
+        level corresponding to the period and the second level corresponding to the
+        initial state id. The columns correspond to the value, and the choice and state
+        variables, and potentially auxiliary variables.
 
     """
     n_initial_states = len(processed["value"]) // n_periods
@@ -296,7 +295,7 @@ def _compute_targets(
         params: Dict with model parameters.
 
     Returns:
-        dict: Dict with computed targets.
+        Dict with computed targets.
 
     """
     target_func = concatenate_functions(
@@ -332,9 +331,9 @@ def _process_simulated_data(results: list[dict[str, Any]]) -> dict[str, Array]:
             a nested dictionary.
 
     Returns:
-        dict: Dict with processed simulation results. The keys are the variable names
-            and the values are the flattened arrays, with dimension (n_periods *
-            n_initial_states, ). Additionally, the _period variable is added.
+        Dict with processed simulation results. The keys are the variable names and the
+        values are the flattened arrays, with dimension (n_periods * n_initial_states,).
+        Additionally, the _period variable is added.
 
     """
     n_periods = len(results)

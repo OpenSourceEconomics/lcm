@@ -27,7 +27,7 @@ def stochastic(
         **kwargs (dict): Keyword arguments to be passed to the StochasticInfo.
 
     Returns:
-        callable: The decorated function
+        The decorated function
 
     """
     stochastic_info = StochasticInfo(*args, **kwargs)

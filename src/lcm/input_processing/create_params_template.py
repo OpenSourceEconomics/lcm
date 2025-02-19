@@ -59,7 +59,7 @@ def _create_function_params(model: Model) -> dict[str, dict[str, float]]:
 
     Returns:
         A dictionary for each model function, containing a parameters required in the
-            model functions, initialized with jnp.nan.
+        model functions, initialized with jnp.nan.
 
     """
     # Collect all model variables, that includes choices, states, the period, and
@@ -99,7 +99,7 @@ def _create_stochastic_transition_params(
 
     Returns:
         A dictionary of parameters required for stochastic transitions, initialized with
-            jnp.nan matrices of the correct dimensions.
+        jnp.nan matrices of the correct dimensions.
 
     """
     stochastic_variables = variable_info.query("is_stochastic").index.tolist()

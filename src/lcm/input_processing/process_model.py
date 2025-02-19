@@ -62,10 +62,10 @@ def _get_internal_functions(
         params: The parameters of the model.
 
     Returns:
-        dict: Dictionary containing all functions of the model. The keys are
-            the names of the functions. The values are the processed functions.
-            The main difference between processed and unprocessed functions is that
-            processed functions take `params` as argument.
+        Dictionary containing all functions of the model. The keys are the names of the
+        functions. The values are the processed functions. The main difference between
+        processed and unprocessed functions is that processed functions take `params` as
+        argument.
 
     """
     variable_info = get_variable_info(model)
@@ -185,8 +185,7 @@ def _get_stochastic_weight_function(
         variable_info: A table with information about model variables.
 
     Returns:
-        callable: A function that returns the transition weights of the stochastic
-            variable.
+        A function that returns the transition weights of the stochastic variable.
 
     """
     function_parameters = list(inspect.signature(raw_func).parameters)

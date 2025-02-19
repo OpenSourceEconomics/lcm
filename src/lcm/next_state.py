@@ -55,8 +55,8 @@ def _get_next_state_function_for_solution(
         model: Model instance.
 
     Returns:
-        callable: Function that computes the next states. Depends on states and choices
-            of the current period, and the model parameters.
+        Function that computes the next states. Depends on states and choices of the
+        current period, and the model parameters.
 
     """
     targets = model.function_info.query("is_next").index.tolist()
@@ -83,10 +83,10 @@ def _get_next_state_function_for_simulation(
         model: Model instance.
 
     Returns:
-        callable: Function that computes the next states. Depends on states and choices
-            of the current period, and the model parameters. Additionaly, it depends on:
-            - key (dict): Dictionary with PRNG keys. Keys are the names of stochastic
-                next functions, e.g. 'next_health'.
+        Function that computes the next states. Depends on states and choices of the
+        current period, and the model parameters. Additionaly, it depends on:
+        - key (dict): Dictionary with PRNG keys. Keys are the names of stochastic next
+          functions, e.g. 'next_health'.
 
     """
     # ==================================================================================
@@ -144,13 +144,13 @@ def _get_stochastic_next_func(
         grids: Dict with grids.
 
     Returns:
-        callable: Function that simulates the next state of the stochastic variable.
-            Depends on variables:
-            - key (dict): Dictionary with PRNG keys. Keys are the names of stochastic
-                next functions, e.g. 'next_health'.
-            - weight_{name} (jax.numpy.array): 2d array of weights. The first dimension
-                corresponds to the number of simulation units. The second dimension
-                corresponds to the number of grid points (labels).
+        A function that simulates the next state of the stochastic variable. Depends on
+        variables:
+        - key (dict): Dictionary with PRNG keys. Keys are the names of stochastic next
+          functions, e.g. 'next_health'.
+        - weight_{name} (jax.numpy.array): 2d array of weights. The first dimension
+          corresponds to the number of simulation units. The second dimension
+          corresponds to the number of grid points (labels).
 
     """
     arg_names = ["keys", f"weight_{name}"]

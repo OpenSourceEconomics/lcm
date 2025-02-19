@@ -18,10 +18,9 @@ def create_state_choice_space(
         is_last_period: Whether the function is created for the last period.
 
     Returns:
-        tuple[StateChoiceSpace, SpaceInfo]:
         - An object containing the variable values of all variables in the
-            state-choice-space, the grid specifications for the state variables, and the
-            names of the state variables. Continuous choice variables are not included.
+          state-choice-space, the grid specifications for the state variables, and the
+          names of the state variables. Continuous choice variables are not included.
         - The state-space information.
 
     """

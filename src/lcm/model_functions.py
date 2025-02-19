@@ -148,7 +148,7 @@ def get_multiply_weights(stochastic_variables: list[str]) -> Callable[..., Array
         stochastic_variables (list): List of stochastic variables.
 
     Returns:
-        callable
+        A function that multiplies the weights of the stochastic variables.
 
     """
     arg_names = [f"weight_next_{var}" for var in stochastic_variables]
@@ -168,7 +168,7 @@ def get_combined_constraint(model: InternalModel) -> InternalUserFunction:
         model: The internal model object.
 
     Returns:
-        callable
+        The combined constraint function.
 
     """
     targets = model.function_info.query("is_constraint").index.tolist()

@@ -14,10 +14,10 @@ def get_function_info(model: Model) -> pd.DataFrame:
         model: The model as provided by the user.
 
     Returns:
-        pd.DataFrame: A table with information about all functions in the model. The
-            index contains the name of a model function. The columns are booleans that
-            are True if the function has the corresponding property. The columns are:
-            is_next, is_stochastic_next, is_constraint.
+        A table with information about all functions in the model. The index contains
+        the name of a model function. The columns are booleans that are True if the
+        function has the corresponding property. The columns are: is_next,
+        is_stochastic_next, is_constraint.
 
     """
     info = pd.DataFrame(index=list(model.functions))
@@ -37,10 +37,10 @@ def get_variable_info(model: Model) -> pd.DataFrame:
         model: The model as provided by the user.
 
     Returns:
-        pd.DataFrame: A table with information about all variables in the model. The
-            index contains the name of a model variable. The columns are booleans that
-            are True if the variable has the corresponding property. The columns are:
-            is_state, is_choice, is_continuous, is_discrete.
+        A table with information about all variables in the model. The index contains
+        the name of a model variable. The columns are booleans that are True if the
+        variable has the corresponding property. The columns are: is_state, is_choice,
+        is_continuous, is_discrete.
 
     """
     function_info = get_function_info(model)
@@ -96,7 +96,7 @@ def _get_auxiliary_variables(
         user_functions: Dictionary that maps names of functions to functions.
 
     Returns:
-        list[str]: List of state variable names that are only used in next functions.
+        List of state variable names that are only used in next functions.
 
     """
     non_next_functions = function_info.query("~is_next").index.tolist()
@@ -118,10 +118,10 @@ def get_gridspecs(
         model (dict): The model as provided by the user.
 
     Returns:
-        dict: Dictionary containing all variables of the model. The keys are
-            the names of the variables. The values describe which values the variable
-            can take. For discrete variables these are the codes. For continuous
-            variables this is information about how to build the grids.
+        Dictionary containing all variables of the model. The keys are the names of the
+        variables. The values describe which values the variable can take. For discrete
+        variables these are the codes. For continuous variables this is information
+        about how to build the grids.
 
     """
     variable_info = get_variable_info(model)
@@ -140,8 +140,8 @@ def get_grids(
         model: The model as provided by the user.
 
     Returns:
-        dict: Dictionary containing all variables of the model. The keys are
-            the names of the variables. The values are the grids.
+        Dictionary containing all variables of the model. The keys are the names of the
+        variables. The values are the grids.
 
     """
     variable_info = get_variable_info(model)
