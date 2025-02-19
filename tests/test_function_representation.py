@@ -1,4 +1,5 @@
 import re
+from dataclasses import make_dataclass
 from functools import partial
 
 import jax.numpy as jnp
@@ -14,16 +15,29 @@ from lcm.function_representation import (
     _get_lookup_function,
     get_value_function_representation,
 )
+from lcm.grids import DiscreteGrid
 from lcm.interfaces import (
     StateSpaceInfo,
 )
+
+
+@pytest.fixture
+def binary_discrete_grid():
+    return DiscreteGrid(
+        make_dataclass("BinaryCategory", [("a", bool, False), ("b", bool, True)])
+    )
+
+
+@pytest.fixture
+def dummy_continuous_grid():
+    return LinspaceGrid(start=0, stop=1, n_points=2)
 
 
 def test_function_evaluator_with_one_continuous_variable():
     wealth_grid = LinspaceGrid(start=-3, stop=3, n_points=7)
 
     state_space_info = StateSpaceInfo(
-        states_names=["wealth"],
+        states_names=("wealth",),
         discrete_states={},
         continuous_states={
             "wealth": wealth_grid,
@@ -44,12 +58,12 @@ def test_function_evaluator_with_one_continuous_variable():
     assert jnp.allclose(got, expected)
 
 
-def test_function_evaluator_with_one_discrete_variable():
+def test_function_evaluator_with_one_discrete_variable(binary_discrete_grid):
     vf_arr = jnp.array([1, 2])
 
     state_space_info = StateSpaceInfo(
-        states_names=["working"],
-        discrete_states={"working": [0, 1]},
+        states_names=("working",),
+        discrete_states={"working": binary_discrete_grid},
         continuous_states={},
     )
 
@@ -64,7 +78,7 @@ def test_function_evaluator_with_one_discrete_variable():
     assert func(next_working=1) == 2
 
 
-def test_function_evaluator():
+def test_function_evaluator(binary_discrete_grid):
     """Test get_precalculated_function_evaluator in simple example.
 
     - One discrete state variable: retired (True, False)
@@ -90,8 +104,8 @@ def test_function_evaluator():
 
     # create info on discrete variables
     discrete_vars = {
-        "retired": [0, 1],
-        "insured": [0, 1],
+        "retired": binary_discrete_grid,
+        "insured": binary_discrete_grid,
     }
 
     # create info on continuous grids
@@ -101,7 +115,7 @@ def test_function_evaluator():
     }
 
     # create info on axis of value function array
-    var_names = ["retired", "insured", "wealth", "human_capital"]
+    var_names = ("retired", "insured", "wealth", "human_capital")
 
     state_space_info = StateSpaceInfo(
         states_names=var_names,
@@ -203,7 +217,7 @@ def test_get_function_evaluator_illustrative():
     a_grid = LinspaceGrid(start=0, stop=1, n_points=3)
 
     state_space_info = StateSpaceInfo(
-        states_names=["a"],
+        states_names=("a",),
         discrete_states={},
         continuous_states={
             "a": a_grid,
@@ -271,14 +285,14 @@ def test_get_interpolator_illustrative():
 
 
 @pytest.mark.illustrative
-def test_fail_if_interpolation_axes_are_not_last_illustrative():
+def test_fail_if_interpolation_axes_are_not_last_illustrative(dummy_continuous_grid):
     # Empty intersection of var_names and continuous_vars
     # ==================================================================================
 
     state_space_info = StateSpaceInfo(
-        states_names=["a", "b"],
+        states_names=("a", "b"),
         continuous_states={
-            "c": None,
+            "c": dummy_continuous_grid,
         },
         discrete_states={},
     )
@@ -289,11 +303,11 @@ def test_fail_if_interpolation_axes_are_not_last_illustrative():
     # ==================================================================================
 
     state_space_info = StateSpaceInfo(
-        states_names=["a", "b", "c"],
+        states_names=("a", "b", "c"),
         continuous_states={
-            "b": None,
-            "c": None,
-            "d": None,
+            "b": dummy_continuous_grid,
+            "c": dummy_continuous_grid,
+            "d": dummy_continuous_grid,
         },
         discrete_states={},
     )
@@ -304,11 +318,11 @@ def test_fail_if_interpolation_axes_are_not_last_illustrative():
     # ==================================================================================
 
     state_space_info = StateSpaceInfo(
-        states_names=["b", "c", "a"],  # "b", "c" are not last anymore
+        states_names=("b", "c", "a"),  # "b", "c" are not last anymore
         continuous_states={
-            "b": None,
-            "c": None,
-            "d": None,
+            "b": dummy_continuous_grid,
+            "c": dummy_continuous_grid,
+            "d": dummy_continuous_grid,
         },
         discrete_states={},
     )

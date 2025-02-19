@@ -7,23 +7,38 @@ deteministic next states.
 
 """
 
+from collections.abc import Callable
+
 from dags import concatenate_functions
 from dags.signature import with_signature
+from jax import Array
 
 from lcm.functools import all_as_args
 from lcm.interfaces import InternalModel
 from lcm.random_choice import random_choice
+from lcm.typing import Scalar, Target
 
 
-def get_next_state_function(model: InternalModel, target):
-    if target == "solve":
-        out = _get_next_state_function_solution(model)
-    elif target == "simulate":
-        out = _get_next_state_function_simulation(model)
-    else:
-        raise ValueError(f"Target must be 'solution' or 'simulation'. Got {target}.")
+def get_next_state_function(
+    model: InternalModel, target: Target
+) -> Callable[..., dict[str, Scalar]]:
+    """Get function that computes the next states of the model.
 
-    return out
+    Args:
+        model: Internal model.
+        target: Target of the function.
+
+    Returns:
+        Function that computes the next states of the model.
+
+    """
+    if target == Target.SOLVE:
+        return _get_next_state_function_for_solution(model)
+
+    if target == Target.SIMULATE:
+        return _get_next_state_function_for_simulation(model)
+
+    raise ValueError(f"Invalid target: {target}")
 
 
 # ======================================================================================
@@ -31,15 +46,17 @@ def get_next_state_function(model: InternalModel, target):
 # ======================================================================================
 
 
-def _get_next_state_function_solution(model: InternalModel):
+def _get_next_state_function_for_solution(
+    model: InternalModel,
+) -> Callable[..., dict[str, Scalar]]:
     """Get function that computes the next states for the solution.
 
     Args:
         model: Model instance.
 
     Returns:
-        callable: Function that computes the next states. Depends on states and choices
-            of the current period, and the model parameters.
+        Function that computes the next states. Depends on states and choices of the
+        current period, and the model parameters.
 
     """
     targets = model.function_info.query("is_next").index.tolist()
@@ -57,17 +74,19 @@ def _get_next_state_function_solution(model: InternalModel):
 # ======================================================================================
 
 
-def _get_next_state_function_simulation(model: InternalModel):
+def _get_next_state_function_for_simulation(
+    model: InternalModel,
+) -> Callable[..., dict[str, Scalar]]:
     """Get function that computes the next states for the simulation.
 
     Args:
         model: Model instance.
 
     Returns:
-        callable: Function that computes the next states. Depends on states and choices
-            of the current period, and the model parameters. Additionaly, it depends on:
-            - key (dict): Dictionary with PRNG keys. Keys are the names of stochastic
-                next functions, e.g. 'next_health'.
+        Function that computes the next states. Depends on states and choices of the
+        current period, and the model parameters. Additionaly, it depends on:
+        - key (dict): Dictionary with PRNG keys. Keys are the names of stochastic next
+          functions, e.g. 'next_health'.
 
     """
     # ==================================================================================
@@ -115,28 +134,30 @@ def _get_next_state_function_simulation(model: InternalModel):
     )
 
 
-def _get_stochastic_next_func(name, grids):
+def _get_stochastic_next_func(
+    name: str, grids: dict[str, Array]
+) -> Callable[[Array, Array], Array]:
     """Get function that simulates the next state of a stochastic variable.
 
     Args:
-        name (str): Name of the stochastic variable.
-        grids (dict): Dict with grids.
+        name: Name of the stochastic variable.
+        grids: Dict with grids.
 
     Returns:
-        callable: Function that simulates the next state of the stochastic variable.
-            Depends on variables:
-            - key (dict): Dictionary with PRNG keys. Keys are the names of stochastic
-                next functions, e.g. 'next_health'.
-            - weight_{name} (jax.numpy.array): 2d array of weights. The first dimension
-                corresponds to the number of simulation units. The second dimension
-                corresponds to the number of grid points (labels).
+        A function that simulates the next state of the stochastic variable. Depends on
+        variables:
+        - key (dict): Dictionary with PRNG keys. Keys are the names of stochastic next
+          functions, e.g. 'next_health'.
+        - weight_{name} (jax.numpy.array): 2d array of weights. The first dimension
+          corresponds to the number of simulation units. The second dimension
+          corresponds to the number of grid points (labels).
 
     """
     arg_names = ["keys", f"weight_{name}"]
     labels = grids[name.removeprefix("next_")]
 
     @with_signature(args=arg_names)
-    def _next_stochastic_state(*args, **kwargs):
+    def _next_stochastic_state(*args: Array, **kwargs: Array) -> Array:
         keys, weights = all_as_args(args, kwargs, arg_names=arg_names)
         return random_choice(
             key=keys[name],

@@ -1,6 +1,7 @@
 import jax.numpy as jnp
 import pandas as pd
 import pytest
+from jax import Array
 from numpy.testing import assert_array_equal
 
 from lcm.input_processing import process_model
@@ -11,6 +12,7 @@ from lcm.model_functions import (
     get_utility_and_feasibility_function,
 )
 from lcm.solution.state_choice_space import create_state_choice_space
+from lcm.typing import ShockType
 from tests.test_models import get_model_config
 from tests.test_models.deterministic import utility
 
@@ -70,15 +72,15 @@ def internal_model_illustrative():
     def age(period):
         return period + 18
 
-    def mandatory_retirement_constraint(retirement, age):
+    def mandatory_retirement_constraint(retirement, age, params):  # noqa: ARG001
         # Individuals must be retired from age 65 onwards
         return jnp.logical_or(retirement == 1, age < 65)
 
-    def mandatory_lagged_retirement_constraint(lagged_retirement, age):
+    def mandatory_lagged_retirement_constraint(lagged_retirement, age, params):  # noqa: ARG001
         # Individuals must have been retired last year from age 66 onwards
         return jnp.logical_or(lagged_retirement == 1, age < 66)
 
-    def absorbing_retirement_constraint(retirement, lagged_retirement):
+    def absorbing_retirement_constraint(retirement, lagged_retirement, params):  # noqa: ARG001
         # If an individual was retired last year, it must be retired this year
         return jnp.logical_or(retirement == 1, lagged_retirement == 0)
 
@@ -98,21 +100,20 @@ def internal_model_illustrative():
 
     function_info = pd.DataFrame(
         {"is_constraint": [True, True, True, False]},
-        index=functions.keys(),
-        columns=["is_constraint"],
+        index=list(functions),
     )
 
     # create a model instance where some attributes are set to None because they
     # are not needed to create the feasibilty mask
     return InternalModel(
         grids=grids,
-        gridspecs=None,
-        variable_info=None,
-        functions=functions,
+        gridspecs={},
+        variable_info=pd.DataFrame(),
+        functions=functions,  # type: ignore[arg-type]
         function_info=function_info,
-        params=None,
-        random_utility_shocks=None,
-        n_periods=None,
+        params={},
+        random_utility_shocks=ShockType.NONE,
+        n_periods=0,
     )
 
 
@@ -138,7 +139,10 @@ def test_get_combined_constraint_illustrative(internal_model_illustrative):
 
     exp = jnp.array(3 * [True] + 3 * [False])
     got = combined_constraint(
-        period=period, retirement=retirement, lagged_retirement=lagged_retirement
+        period=period,
+        retirement=retirement,
+        lagged_retirement=lagged_retirement,
+        params={},
     )
     assert_array_equal(got, exp)
 
@@ -157,13 +161,13 @@ def test_get_multiply_weights():
 
 
 def test_get_combined_constraint():
-    def f():
+    def f(params):  # noqa: ARG001
         return True
 
-    def g():
+    def g(params):  # noqa: ARG001
         return False
 
-    def h():
+    def h(params):  # noqa: ARG001
         return None
 
     function_info = pd.DataFrame(
@@ -171,14 +175,15 @@ def test_get_combined_constraint():
         index=["f", "g", "h"],
     )
     model = InternalModel(
-        grids=None,
-        gridspecs=None,
-        variable_info=None,
-        functions={"f": f, "g": g, "h": h},
+        grids={},
+        gridspecs={},
+        variable_info=pd.DataFrame(),
+        functions={"f": f, "g": g, "h": h},  # type: ignore[dict-item]
         function_info=function_info,
-        params=None,
-        random_utility_shocks=None,
-        n_periods=None,
+        params={},
+        random_utility_shocks=ShockType.NONE,
+        n_periods=0,
     )
     combined_constraint = get_combined_constraint(model)
-    assert not combined_constraint()
+    feasibility: Array = combined_constraint(params={})  # type: ignore[assignment]
+    assert feasibility.item() is False

@@ -2,6 +2,7 @@ from copy import deepcopy
 
 import jax.numpy as jnp
 
+from lcm.user_model import Model
 from tests.test_models.deterministic import (
     ISKHAKOV_ET_AL_2017,
     ISKHAKOV_ET_AL_2017_STRIPPED_DOWN,
@@ -17,7 +18,7 @@ TEST_MODELS = {
 }
 
 
-def get_model_config(model_name: str, n_periods: int):
+def get_model_config(model_name: str, n_periods: int) -> Model:
     model_config = deepcopy(TEST_MODELS[model_name])
     return model_config.replace(n_periods=n_periods)
 

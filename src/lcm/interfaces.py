@@ -1,11 +1,11 @@
-from collections.abc import Callable
+from collections.abc import Mapping
 from dataclasses import dataclass
 
 import pandas as pd
 from jax import Array
 
 from lcm.grids import ContinuousGrid, DiscreteGrid, Grid
-from lcm.typing import ParamsDict, ShockType
+from lcm.typing import InternalUserFunction, ParamsDict, ShockType
 
 
 @dataclass(frozen=True)
@@ -52,8 +52,8 @@ class StateSpaceInfo:
     """
 
     states_names: tuple[str, ...]
-    discrete_states: dict[str, DiscreteGrid]
-    continuous_states: dict[str, ContinuousGrid]
+    discrete_states: Mapping[str, DiscreteGrid]
+    continuous_states: Mapping[str, ContinuousGrid]
 
 
 @dataclass(frozen=True)
@@ -89,7 +89,7 @@ class InternalModel:
     grids: dict[str, Array]
     gridspecs: dict[str, Grid]
     variable_info: pd.DataFrame
-    functions: dict[str, Callable]
+    functions: dict[str, InternalUserFunction]
     function_info: pd.DataFrame
     params: ParamsDict
     n_periods: int

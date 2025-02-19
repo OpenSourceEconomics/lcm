@@ -3,10 +3,12 @@ import inspect
 from collections.abc import Callable
 from typing import Any, TypeVar, cast
 
-F = TypeVar("F", bound=Callable[..., Any])
+from lcm.typing import Scalar
+
+ReturnType = TypeVar("ReturnType")
 
 
-def allow_only_kwargs(func: F) -> F:
+def allow_only_kwargs(func: Callable[..., ReturnType]) -> Callable[..., ReturnType]:
     """Restrict a function to be called with only keyword arguments.
 
     Args:
@@ -32,7 +34,7 @@ def allow_only_kwargs(func: F) -> F:
     new_signature = signature.replace(parameters=new_parameters)
 
     @functools.wraps(func)
-    def func_with_only_kwargs(*args, **kwargs):
+    def func_with_only_kwargs(*args: Scalar, **kwargs: Scalar) -> ReturnType:
         if args:
             raise ValueError(
                 (
@@ -74,10 +76,10 @@ def allow_only_kwargs(func: F) -> F:
     # TODO(@timmens): Remove this cast once we find an explicit way to specify the
     # change from positional to keyword-only parameter in the function signature
     # https://github.com/OpenSourceEconomics/lcm/issues/80.
-    return cast(F, func_with_only_kwargs)
+    return cast(Callable[..., ReturnType], func_with_only_kwargs)
 
 
-def allow_args(func: F) -> F:
+def allow_args(func: Callable[..., ReturnType]) -> Callable[..., ReturnType]:
     """Allow a function to be called with positional arguments.
 
     In comparison to `allow_only_kwargs`, the `allow_args` decorator does not enforce
@@ -111,7 +113,7 @@ def allow_args(func: F) -> F:
     new_signature = signature.replace(parameters=new_parameters)
 
     @functools.wraps(func)
-    def allow_args_wrapper(*args, **kwargs):
+    def allow_args_wrapper(*args: Scalar, **kwargs: Scalar) -> ReturnType:
         # Check if the total number of arguments matches the function signature
         if len(args) + len(kwargs) != len(parameters):
             too_many = len(args) + len(kwargs) > len(parameters)
@@ -150,10 +152,10 @@ def allow_args(func: F) -> F:
     # TODO(@timmens): Remove this cast once we find an explicit way to specify the
     # change from positional to keyword-only parameter in the function signature
     # https://github.com/OpenSourceEconomics/lcm/issues/80.
-    return cast(F, allow_args_wrapper)
+    return cast(Callable[..., ReturnType], allow_args_wrapper)
 
 
-def get_union_of_arguments(list_of_functions: list[Callable]) -> set[str]:
+def get_union_of_arguments(list_of_functions: list[Callable[..., Any]]) -> set[str]:
     """Return the union of arguments of a list of functions.
 
     Args:
@@ -168,7 +170,7 @@ def get_union_of_arguments(list_of_functions: list[Callable]) -> set[str]:
 
 
 def all_as_kwargs(
-    args: tuple[Any],
+    args: tuple[Any, ...],
     kwargs: dict[str, Any],
     arg_names: list[str],
 ) -> dict[str, Any]:
@@ -187,10 +189,10 @@ def all_as_kwargs(
 
 
 def all_as_args(
-    args: tuple[Any],
+    args: tuple[Any, ...],
     kwargs: dict[str, Any],
     arg_names: list[str],
-) -> tuple[Any]:
+) -> tuple[Any, ...]:
     """Return args tuple containing all arguments.
 
     Args:

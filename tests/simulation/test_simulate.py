@@ -11,7 +11,7 @@ from lcm.entry_point import (
 from lcm.input_processing import process_model
 from lcm.logging import get_logger
 from lcm.model_functions import get_utility_and_feasibility_function
-from lcm.next_state import _get_next_state_function_simulation
+from lcm.next_state import _get_next_state_function_for_simulation
 from lcm.simulation.simulate import (
     _as_data_frame,
     _compute_targets,
@@ -19,7 +19,6 @@ from lcm.simulation.simulate import (
     _process_simulated_data,
     create_data_scs,
     determine_discrete_choice_axes,
-    dict_product,
     filter_ccv_policy,
     retrieve_choices,
     simulate,
@@ -59,7 +58,7 @@ def simulate_inputs():
         )
         compute_ccv_policy_functions.append(compute_ccv)
 
-    n_grid_points = model_config.choices["consumption"].n_points
+    n_grid_points = model_config.choices["consumption"].n_points  # type: ignore[attr-defined]
 
     return {
         "continuous_choice_grids": [
@@ -67,7 +66,7 @@ def simulate_inputs():
         ],
         "compute_ccv_policy_functions": compute_ccv_policy_functions,
         "model": model,
-        "next_state": _get_next_state_function_simulation(model),
+        "next_state": _get_next_state_function_for_simulation(model),
     }
 
 
@@ -82,7 +81,7 @@ def test_simulate_using_raw_inputs(simulate_inputs):
 
     got = simulate(
         params=params,
-        vf_arr_list=[None],
+        pre_computed_vf_arr_list=[jnp.empty(0)],
         initial_states={"wealth": jnp.array([1.0, 50.400803])},
         logger=get_logger(debug_mode=False),
         **simulate_inputs,
@@ -130,9 +129,9 @@ def test_simulate_using_get_lcm_function(
 
     simulate_model, _ = get_lcm_function(model=model, targets="simulate")
 
-    res = simulate_model(
+    res: pd.DataFrame = simulate_model(  # type: ignore[assignment]
         params,
-        vf_arr_list=vf_arr_list,
+        pre_computed_vf_arr_list=vf_arr_list,
         initial_states={
             "wealth": jnp.array([20.0, 150, 250, 320]),
         },
@@ -155,10 +154,10 @@ def test_simulate_using_get_lcm_function(
 
     for period in range(n_periods):
         # assert that higher wealth leads to higher consumption in each period
-        assert (res.loc[period]["consumption"].diff()[1:] >= 0).all()
+        assert (res.loc[period]["consumption"].diff()[1:] >= 0).all()  # type: ignore[operator]
 
         # assert that higher wealth leads to higher value function in each period
-        assert (res.loc[period]["value"].diff()[1:] >= 0).all()
+        assert (res.loc[period]["value"].diff()[1:] >= 0).all()  # type: ignore[operator]
 
 
 def test_simulate_with_only_discrete_choices():
@@ -167,7 +166,7 @@ def test_simulate_with_only_discrete_choices():
 
     simulate_model, _ = get_lcm_function(model=model, targets="solve_and_simulate")
 
-    res = simulate_model(
+    res: pd.DataFrame = simulate_model(  # type: ignore[assignment]
         params,
         initial_states={"wealth": jnp.array([0, 4])},
         additional_targets=["labor_income", "working"],
@@ -206,15 +205,15 @@ def test_effect_of_beta_on_last_period():
 
     initial_wealth = jnp.array([20.0, 50, 70])
 
-    res_low = simulate_model(
+    res_low: pd.DataFrame = simulate_model(  # type: ignore[assignment]
         params_low,
-        vf_arr_list=solution_low,
+        pre_computed_vf_arr_list=solution_low,
         initial_states={"wealth": initial_wealth},
     )
 
-    res_high = simulate_model(
+    res_high: pd.DataFrame = simulate_model(  # type: ignore[assignment]
         params_high,
-        vf_arr_list=solution_high,
+        pre_computed_vf_arr_list=solution_high,
         initial_states={"wealth": initial_wealth},
     )
 
@@ -250,15 +249,15 @@ def test_effect_of_disutility_of_work():
 
     initial_wealth = jnp.array([20.0, 50, 70])
 
-    res_low = simulate_model(
+    res_low: pd.DataFrame = simulate_model(  # type: ignore[assignment]
         params_low,
-        vf_arr_list=solution_low,
+        pre_computed_vf_arr_list=solution_low,
         initial_states={"wealth": initial_wealth},
     )
 
-    res_high = simulate_model(
+    res_high: pd.DataFrame = simulate_model(  # type: ignore[assignment]
         params_high,
-        vf_arr_list=solution_high,
+        pre_computed_vf_arr_list=solution_high,
         initial_states={"wealth": initial_wealth},
     )
 
@@ -321,12 +320,15 @@ def test_compute_targets():
     def f_b(b, params):  # noqa: ARG001
         return b
 
-    model_functions = {"fa": f_a, "fb": f_b, "fc": lambda _: None}
+    def f_c(params):  # noqa: ARG001
+        return None
+
+    model_functions = {"fa": f_a, "fb": f_b, "fc": f_c}
 
     got = _compute_targets(
         processed_results=processed_results,
         targets=["fa", "fb"],
-        model_functions=model_functions,
+        model_functions=model_functions,  # type: ignore[arg-type]
         params={"disutility_of_work": -1.0},
     )
     expected = {
@@ -397,7 +399,7 @@ def test_filter_ccv_policy():
 def test_create_data_state_choice_space():
     model_config = get_model_config("iskhakov_et_al_2017", n_periods=3)
     model = process_model(model_config)
-    got_space, got_segment_info = create_data_scs(
+    got_space = create_data_scs(
         states={
             "wealth": jnp.array([10.0, 20.0]),
             "lagged_retirement": jnp.array([0, 1]),
@@ -407,16 +409,6 @@ def test_create_data_state_choice_space():
     assert_array_equal(got_space.choices["retirement"], jnp.array([0, 1]))
     assert_array_equal(got_space.states["wealth"], jnp.array([10.0, 20.0]))
     assert_array_equal(got_space.states["lagged_retirement"], jnp.array([0, 1]))
-    assert got_segment_info is None
-
-
-def test_dict_product():
-    d = {"a": jnp.array([0, 1]), "b": jnp.array([2, 3])}
-    got_dict, got_length = dict_product(d)
-    exp = {"a": jnp.array([0, 0, 1, 1]), "b": jnp.array([2, 3, 2, 3])}
-    assert got_length == 4
-    for key, val in exp.items():
-        assert_array_equal(got_dict[key], val)
 
 
 def test_determine_discrete_choice_axes():

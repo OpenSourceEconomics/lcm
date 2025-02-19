@@ -120,7 +120,7 @@ def test_process_model_iskhakov_et_al_2017():
     wealth_grid = LinspaceGrid(
         start=1,
         stop=400,
-        n_points=model_config.states["wealth"].n_points,
+        n_points=model_config.states["wealth"].n_points,  # type: ignore[attr-defined]
     )
 
     assert model.gridspecs["wealth"] == wealth_grid
@@ -128,7 +128,7 @@ def test_process_model_iskhakov_et_al_2017():
     consumption_grid = LinspaceGrid(
         start=1,
         stop=400,
-        n_points=model_config.choices["consumption"].n_points,
+        n_points=model_config.choices["consumption"].n_points,  # type: ignore[attr-defined]
     )
     assert model.gridspecs["consumption"] == consumption_grid
 
@@ -181,7 +181,7 @@ def test_process_model():
     wealth_specs = LinspaceGrid(
         start=1,
         stop=400,
-        n_points=model_config.states["wealth"].n_points,
+        n_points=model_config.states["wealth"].n_points,  # type: ignore[attr-defined]
     )
 
     assert model.gridspecs["wealth"] == wealth_specs
@@ -189,7 +189,7 @@ def test_process_model():
     consumption_specs = LinspaceGrid(
         start=1,
         stop=400,
-        n_points=model_config.choices["consumption"].n_points,
+        n_points=model_config.choices["consumption"].n_points,  # type: ignore[attr-defined]
     )
     assert model.gridspecs["consumption"] == consumption_specs
 
@@ -224,7 +224,7 @@ def test_get_stochastic_weight_function():
     def raw_func(health, wealth):
         pass
 
-    raw_func._stochastic_info = StochasticInfo()
+    raw_func._stochastic_info = StochasticInfo()  # type: ignore[attr-defined]
 
     variable_info = pd.DataFrame(
         {"is_discrete": [True, True]},
@@ -248,7 +248,7 @@ def test_get_stochastic_weight_function_non_state_dependency():
     def raw_func(health, wealth):
         pass
 
-    raw_func._stochastic_info = StochasticInfo()
+    raw_func._stochastic_info = StochasticInfo()  # type: ignore[attr-defined]
 
     variable_info = pd.DataFrame(
         {"is_discrete": [False, True]},

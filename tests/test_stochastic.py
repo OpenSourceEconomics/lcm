@@ -42,7 +42,7 @@ def test_get_lcm_function_with_simulate_target():
         1,
         0,  # period 2
     ]
-    assert jnp.array_equal(res["partner"].values, expected_partner)
+    assert jnp.array_equal(res["partner"].values, expected_partner)  # type: ignore[call-overload, arg-type]
 
 
 # ======================================================================================
@@ -105,13 +105,19 @@ def test_compare_deterministic_and_stochastic_results(model_and_params):
     # ==================================================================================
     # Compare value function arrays
     # ==================================================================================
-    solve_model_deterministic, _ = get_lcm_function(model=model_deterministic)
-    solve_model_stochastic, _ = get_lcm_function(model=model_stochastic)
+    solve_model_deterministic, _ = get_lcm_function(
+        model=model_deterministic,
+        targets="solve",
+    )
+    solve_model_stochastic, _ = get_lcm_function(
+        model=model_stochastic,
+        targets="solve",
+    )
 
     solution_deterministic = solve_model_deterministic(params)
     solution_stochastic = solve_model_stochastic(params)
 
-    assert jnp.array_equal(solution_deterministic, solution_stochastic, equal_nan=True)
+    assert jnp.array_equal(solution_deterministic, solution_stochastic, equal_nan=True)  # type: ignore[arg-type]
 
     # ==================================================================================
     # Compare simulation results
@@ -133,12 +139,12 @@ def test_compare_deterministic_and_stochastic_results(model_and_params):
 
     simulation_deterministic = simulate_model_deterministic(
         params,
-        vf_arr_list=solution_deterministic,
+        pre_computed_vf_arr_list=solution_deterministic,
         initial_states=initial_states,
     )
     simulation_stochastic = simulate_model_stochastic(
         params,
-        vf_arr_list=solution_stochastic,
+        pre_computed_vf_arr_list=solution_stochastic,
         initial_states=initial_states,
     )
-    pd.testing.assert_frame_equal(simulation_deterministic, simulation_stochastic)
+    pd.testing.assert_frame_equal(simulation_deterministic, simulation_stochastic)  # type: ignore[arg-type]

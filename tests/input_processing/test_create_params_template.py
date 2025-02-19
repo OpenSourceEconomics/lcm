@@ -1,10 +1,9 @@
 from dataclasses import dataclass
 from typing import Any
 
-import numpy as np
+import jax.numpy as jnp
 import pandas as pd
 import pytest
-from numpy.testing import assert_equal
 
 from lcm.grids import DiscreteGrid
 from lcm.input_processing.create_params_template import (
@@ -43,8 +42,8 @@ def test_create_params_without_shocks(binary_category_class):
         },
         n_periods=None,
     )
-    got = create_params_template(model)
-    assert got == {"beta": np.nan, "f": {"c": np.nan}, "next_b": {}}
+    got = create_params_template(model)  # type: ignore[arg-type]
+    assert got == {"beta": jnp.nan, "f": {"c": jnp.nan}, "next_b": {}}
 
 
 def test_create_function_params():
@@ -59,8 +58,8 @@ def test_create_function_params():
             "b": None,
         },
     )
-    got = _create_function_params(model)
-    assert got == {"f": {"c": np.nan}}
+    got = _create_function_params(model)  # type: ignore[arg-type]
+    assert got == {"f": {"c": jnp.nan}}
 
 
 def test_create_shock_params():
@@ -78,11 +77,11 @@ def test_create_shock_params():
     )
 
     got = _create_stochastic_transition_params(
-        model=model,
+        model=model,  # type: ignore[arg-type]
         variable_info=variable_info,
-        grids={"a": np.array([1, 2])},
+        grids={"a": jnp.array([1, 2])},
     )
-    assert_equal(got["a"], np.full((2, 3, 2), np.nan))
+    jnp.array_equal(got["a"], jnp.full((2, 3, 2), jnp.nan), equal_nan=True)
 
 
 def test_create_shock_params_invalid_variable():
@@ -100,9 +99,9 @@ def test_create_shock_params_invalid_variable():
 
     with pytest.raises(ValueError, match="The following variables are stochastic, but"):
         _create_stochastic_transition_params(
-            model=model,
+            model=model,  # type: ignore[arg-type]
             variable_info=variable_info,
-            grids={"a": np.array([1, 2])},
+            grids={"a": jnp.array([1, 2])},
         )
 
 
@@ -125,7 +124,7 @@ def test_create_shock_params_invalid_dependency():
 
     with pytest.raises(ValueError, match="Stochastic transition functions can only"):
         _create_stochastic_transition_params(
-            model=model,
+            model=model,  # type: ignore[arg-type]
             variable_info=variable_info,
-            grids={"a": np.array([1, 2])},
+            grids={"a": jnp.array([1, 2])},
         )

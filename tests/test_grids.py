@@ -89,19 +89,19 @@ def test_get_fields_empty():
 def test_validate_continuous_grid_invalid_start():
     error_msg = "start must be a scalar int or float value"
     with pytest.raises(GridInitializationError, match=error_msg):
-        _validate_continuous_grid("a", 1, 10)
+        _validate_continuous_grid("a", 1, 10)  # type: ignore[arg-type]
 
 
 def test_validate_continuous_grid_invalid_stop():
     error_msg = "stop must be a scalar int or float value"
     with pytest.raises(GridInitializationError, match=error_msg):
-        _validate_continuous_grid(1, "a", 10)
+        _validate_continuous_grid(1, "a", 10)  # type: ignore[arg-type]
 
 
 def test_validate_continuous_grid_invalid_n_points():
     error_msg = "n_points must be an int greater than 0 but is a"
     with pytest.raises(GridInitializationError, match=error_msg):
-        _validate_continuous_grid(1, 2, "a")
+        _validate_continuous_grid(1, 2, "a")  # type: ignore[arg-type]
 
 
 def test_validate_continuous_grid_negative_n_points():
@@ -153,3 +153,11 @@ def test_discrete_grid_invalid_category_class():
         match="Field values of the category_class passed to DiscreteGrid can only be",
     ):
         DiscreteGrid(category_class)
+
+
+def test_replace_mixin():
+    grid = LinspaceGrid(start=1, stop=5, n_points=5)
+    new_grid = grid.replace(start=0)
+    assert new_grid.start == 0
+    assert new_grid.stop == 5
+    assert new_grid.n_points == 5

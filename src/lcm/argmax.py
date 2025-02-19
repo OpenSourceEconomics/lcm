@@ -17,21 +17,19 @@ def argmax(
     If multiple maxima exist, the first index will be selected.
 
     Args:
-        a (Array): Multidimensional array.
-        axis (int | tuple | None): Axis along which to compute the argmax. If None, the
-            argmax is computed over all axes.
-        initial (float): The minimum value of an output element. Must be present to
+        a: Multidimensional array.
+        axis: Axis along which to compute the argmax. If None, the argmax is computed
+            over all axes.
+        initial: The minimum value of an output element. Must be present to
             allow computation on empty slice. See ~numpy.ufunc.reduce for details.
-        where (Array): Elements to compare for the maximum. See ~numpy.ufunc.reduce
+        where: Elements to compare for the maximum. See ~numpy.ufunc.reduce
             for details.
 
     Returns:
-        - Array: The argmax indices. Array with the same shape as a, except for
-            the dimensions specified in axis, which are dropped. The value corresponds
-            to an index that can be translated into a tuple of indices using
-            jnp.unravel_index.
-
-        - Array: The corresponding maximum values.
+        - The argmax indices. Array with the same shape as a, except for the dimensions
+          specified in axis, which are dropped. The value corresponds to an index that
+          can be translated into a tuple of indices using jnp.unravel_index.
+        - The corresponding maximum values.
 
     """
     # Preparation
@@ -69,11 +67,11 @@ def _move_axes_to_back(a: Array, axes: tuple[int, ...]) -> Array:
     """Move specified axes to the back of the array.
 
     Args:
-        a (Array): Multidimensional jax array.
-        axes (tuple): Axes to move to the back.
+        a: Multidimensional jax array.
+        axes: Axes to move to the back.
 
     Returns:
-        jax.Array: Array a with shifted axes.
+        Array a with shifted axes.
 
     """
     front_axes = sorted(set(range(a.ndim)) - set(axes))
@@ -84,11 +82,11 @@ def _flatten_last_n_axes(a: Array, n: int) -> Array:
     """Flatten the last n axes of a to 1 dimension.
 
     Args:
-        a (Array): Multidimensional jax array.
-        n (int): Number of axes to flatten.
+        a: Multidimensional jax array.
+        n: Number of axes to flatten.
 
     Returns:
-        jax.Array: Array a with flattened last n axes.
+        Array a with flattened last n axes.
 
     """
     return a.reshape(*a.shape[:-n], -1)

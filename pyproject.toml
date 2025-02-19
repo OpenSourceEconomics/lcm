@@ -30,6 +30,7 @@ classifiers = [
     "Operating System :: Unix",
     "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering",
+    "Typing :: Typed",
 ]
 authors = [
     { name = "Tim Mensinger", email = "mensingertim@gmail.com" },
@@ -71,6 +72,9 @@ only-packages = true
 [tool.hatch.build.targets.wheel]
 only-include = ["src"]
 sources = ["src"]
+include = [
+    "src/lcm/py.typed",
+]
 
 [tool.hatch.version]
 source = "vcs"
@@ -87,7 +91,7 @@ allow-direct-references = true
 channels = ["conda-forge"]
 platforms = ["linux-64", "osx-64", "osx-arm64", "win-64"]
 
-# Development Dependencies (conda)
+# Development Dependencies (conda and pypi)
 # --------------------------------------------------------------------------------------
 
 [tool.pixi.dependencies]
@@ -101,19 +105,16 @@ snakeviz = "*"
 memory_profiler = "*"
 
 [tool.pixi.target.unix.dependencies]
-jax = ">=0.4.34"
-jaxlib = ">=0.4.34"
-
-# Development Dependencies (pypi)
-# --------------------------------------------------------------------------------------
+jax = ">=0.4.34,<0.5"
+jaxlib = ">=0.4.34,<0.5"
 
 [tool.pixi.pypi-dependencies]
 lcm = {path = ".", editable = true}
 pdbp = "*"
 
 [tool.pixi.target.win-64.pypi-dependencies]
-jax = { version = ">=0.4.34", extras = ["cpu"] }
-jaxlib = ">=0.4.34"
+jax = ">=0.4.34,<0.5"
+jaxlib = ">=0.4.34,<0.5"
 
 # Features and Tasks
 # --------------------------------------------------------------------------------------
@@ -124,35 +125,31 @@ system-requirements = {cuda = "12"}
 
 [tool.pixi.feature.cuda.target.linux-64.dependencies]
 cuda-nvcc = ">=12"
-jax = ">=0.4.34"
-jaxlib = { version = ">=0.4.34", build = "cuda12*" }
+jax = ">=0.4.34,<0.5"
+jaxlib = { version = ">=0.4.34,<0.5", build = "cuda12*" }
 
-[tool.pixi.feature.test.dependencies]
+[tool.pixi.feature.testing.dependencies]
 pytest = "*"
 pytest-cov = "*"
 pytest-xdist = "*"
-
-[tool.pixi.feature.test.tasks]
-tests = "pytest tests"
-tests-with-cov = "pytest tests --cov-report=xml --cov=./"
-explanation-notebooks = "jupyter execute explanations/*.ipynb"
-
-[tool.pixi.feature.mypy.dependencies]
-mypy = ">=1.11.2"
+mypy = "==1.15.0"
 pandas-stubs = "*"
 matplotlib = "*"  # required because of pandas
+scipy-stubs = "*"
 
-[tool.pixi.feature.mypy.tasks]
-mypy = "mypy src"
+[tool.pixi.feature.testing.tasks]
+tests = "pytest tests"
+tests-with-cov = "pytest tests --cov-report=xml --cov=./"
+mypy = "mypy"
+explanation-notebooks = "jupyter execute explanations/*.ipynb"
 
 # Environments
 # --------------------------------------------------------------------------------------
 
 [tool.pixi.environments]
 cuda = {features = ["cuda"], solve-group = "cuda"}
-mypy = {features = ["mypy"], solve-group = "default"}
-test-cpu = {features = ["test"], solve-group = "default"}
-test-gpu = {features = ["test", "cuda"], solve-group = "cuda"}
+test-cpu = {features = ["testing"], solve-group = "default"}
+test-gpu = {features = ["testing", "cuda"], solve-group = "cuda"}
 
 
 # ======================================================================================
@@ -269,9 +266,24 @@ none_representation = "null"
 # mypy configuration
 # ======================================================================================
 
+[tool.mypy]
+files = ["src", "tests"]
+check_untyped_defs = true
+disallow_any_generics = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+
 [[tool.mypy.overrides]]
 module = "tests.*"
 disallow_untyped_defs = false
+
+[[tool.mypy.overrides]]
+module = [
+    "tests/test_dispatchers",
+]
 ignore_errors = true
 
 [[tool.mypy.overrides]]

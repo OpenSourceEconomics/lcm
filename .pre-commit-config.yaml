@@ -82,15 +82,17 @@ repos:
           - --drop-empty-cells
           - --keep-output
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.14.1
+    rev: v1.15.0
     hooks:
       - id: mypy
         files: src|tests
         additional_dependencies:
-          - jax>=0.4.34
+          - jax>=0.4.34,<0.5
           - numpy
           - packaging
           - pandas-stubs
+          - scipy-stubs
+          - pytest
         args:
           - --config=pyproject.toml
 ci:

@@ -41,12 +41,12 @@ def test_get_solve_discrete_problem_illustrative():
         ],
     )
 
-    got = solve_discrete_problem(cc_values, params=None)
+    got = solve_discrete_problem(cc_values, params={})
     aaae(got, jnp.array([1, 3, 5]))
 
 
 @pytest.mark.illustrative
-def test_solve_discrete_problem_no_shocks_illustrative():
+def test_solve_discrete_problem_no_shocks_illustrative_single_choice_axis():
     cc_values = jnp.array(
         [
             [0, 1],
@@ -54,28 +54,33 @@ def test_solve_discrete_problem_no_shocks_illustrative():
             [4, 5],
         ],
     )
-
-    # Single choice axes
-    # ==================================================================================
     got = _solve_discrete_problem_no_shocks(
         cc_values,
-        choice_axes=0,
-        params=None,
+        choice_axes=(0,),
+        params={},
     )
     aaae(got, jnp.array([4, 5]))
 
-    # Tuple of choice axes
-    # ==================================================================================
+
+@pytest.mark.illustrative
+def test_solve_discrete_problem_no_shocks_illustrative_multiple_choice_axes():
+    cc_values = jnp.array(
+        [
+            [0, 1],
+            [2, 3],
+            [4, 5],
+        ],
+    )
     got = _solve_discrete_problem_no_shocks(
         cc_values,
         choice_axes=(0, 1),
-        params=None,
+        params={},
     )
     aaae(got, 5)
 
 
 @pytest.mark.illustrative
-def test_calculate_emax_extreme_value_shocks_illustrative():
+def test_calculate_emax_extreme_value_shocks_illustrative_single_choice_axis():
     cc_values = jnp.array(
         [
             [0, 1],
@@ -84,17 +89,23 @@ def test_calculate_emax_extreme_value_shocks_illustrative():
         ],
     )
 
-    # Single choice axes
-    # ==================================================================================
     got = _calculate_emax_extreme_value_shocks(
         cc_values,
-        choice_axes=0,
+        choice_axes=(0,),
         params={"additive_utility_shock": {"scale": 0.1}},
     )
     aaae(got, jnp.array([4, 5]), decimal=5)
 
-    # Tuple of choice axes
-    # ==================================================================================
+
+@pytest.mark.illustrative
+def test_calculate_emax_extreme_value_shocks_illustrative_multiple_choice_axes():
+    cc_values = jnp.array(
+        [
+            [0, 1],
+            [2, 3],
+            [4, 5],
+        ],
+    )
     got = _calculate_emax_extreme_value_shocks(
         cc_values,
         choice_axes=(0, 1),

@@ -7,6 +7,8 @@ https://doi.org/10.3982/QE643).
 
 """
 
+from typing import TYPE_CHECKING
+
 import numpy as np
 import pytest
 from numpy.testing import assert_array_almost_equal as aaae
@@ -14,6 +16,9 @@ from numpy.testing import assert_array_almost_equal as aaae
 from lcm._config import TEST_DATA
 from lcm.entry_point import get_lcm_function
 from tests.test_models import get_model_config, get_params
+
+if TYPE_CHECKING:
+    from jax import Array
 
 # ======================================================================================
 # Model specifications
@@ -61,9 +66,9 @@ def test_analytical_solution(model_name, model_and_params):
     """
     # Compute LCM solution
     # ==================================================================================
-    solve_model, _ = get_lcm_function(model=model_and_params["model"])
+    solve_model, _ = get_lcm_function(model=model_and_params["model"], targets="solve")
 
-    vf_arr_list = solve_model(params=model_and_params["params"])
+    vf_arr_list: list[Array] = solve_model(params=model_and_params["params"])  # type: ignore[assignment]
     _numerical = np.stack(vf_arr_list)
     numerical = {
         "worker": _numerical[:, 0, :],

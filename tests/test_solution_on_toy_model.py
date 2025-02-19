@@ -1,7 +1,7 @@
 """Test analytical solution and simulation with only discrete choices."""
 
 from copy import deepcopy
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 
 import jax.numpy as jnp
 import numpy as np
@@ -332,7 +332,7 @@ def test_deterministic_solve(beta, n_wealth_points):
     # Update model
     # ==================================================================================
     new_states = DETERMINISTIC_MODEL.states
-    new_states["wealth"] = replace(new_states["wealth"], n_points=n_wealth_points)
+    new_states["wealth"] = new_states["wealth"].replace(n_points=n_wealth_points)  # type: ignore[attr-defined]
     model = DETERMINISTIC_MODEL.replace(states=new_states)
 
     # Solve model using LCM
@@ -346,10 +346,11 @@ def test_deterministic_solve(beta, n_wealth_points):
 
     # Compute analytical solution
     # ==================================================================================
+    wealth_grid_class: LinspaceGrid = model.states["wealth"]  # type: ignore[assignment]
     wealth_grid = np.linspace(
-        start=model.states["wealth"].start,
-        stop=model.states["wealth"].stop,
-        num=model.states["wealth"].n_points,
+        start=wealth_grid_class.start,
+        stop=wealth_grid_class.stop,
+        num=wealth_grid_class.n_points,
     )
     expected = analytical_solve_deterministic(wealth_grid, params=params)
 
@@ -366,7 +367,7 @@ def test_deterministic_simulate(beta, n_wealth_points):
     # Update model
     # ==================================================================================
     new_states = DETERMINISTIC_MODEL.states
-    new_states["wealth"] = replace(new_states["wealth"], n_points=n_wealth_points)
+    new_states["wealth"] = new_states["wealth"].replace(n_points=n_wealth_points)  # type: ignore[attr-defined]
     model = DETERMINISTIC_MODEL.replace(states=new_states)
 
     # Simulate model using LCM
@@ -376,7 +377,7 @@ def test_deterministic_simulate(beta, n_wealth_points):
         targets="solve_and_simulate",
     )
     params = {"beta": beta, "utility": {"health": 1}}
-    got = solve_and_simulate(
+    got: pd.DataFrame = solve_and_simulate(  # type: ignore[assignment]
         params=params,
         initial_states={"wealth": jnp.array([0.25, 0.75, 1.25, 1.75])},
     )
@@ -404,7 +405,7 @@ def test_stochastic_solve(beta, n_wealth_points, health_transition):
     # Update model
     # ==================================================================================
     new_states = STOCHASTIC_MODEL.states
-    new_states["wealth"] = replace(new_states["wealth"], n_points=n_wealth_points)
+    new_states["wealth"] = new_states["wealth"].replace(n_points=n_wealth_points)  # type: ignore[attr-defined]
     model = STOCHASTIC_MODEL.replace(states=new_states)
 
     # Solve model using LCM
@@ -418,10 +419,11 @@ def test_stochastic_solve(beta, n_wealth_points, health_transition):
 
     # Compute analytical solution
     # ==================================================================================
+    wealth_grid_class: LinspaceGrid = model.states["wealth"]  # type: ignore[assignment]
     _wealth_grid = np.linspace(
-        start=model.states["wealth"].start,
-        stop=model.states["wealth"].stop,
-        num=model.states["wealth"].n_points,
+        start=wealth_grid_class.start,
+        stop=wealth_grid_class.stop,
+        num=wealth_grid_class.n_points,
     )
     _health_grid = np.array([0, 1])
 
@@ -452,7 +454,7 @@ def test_stochastic_simulate(beta, n_wealth_points, health_transition):
     # Update model
     # ==================================================================================
     new_states = STOCHASTIC_MODEL.states
-    new_states["wealth"] = replace(new_states["wealth"], n_points=n_wealth_points)
+    new_states["wealth"] = new_states["wealth"].replace(n_points=n_wealth_points)  # type: ignore[attr-defined]
     model = STOCHASTIC_MODEL.replace(states=new_states)
 
     # Simulate model using LCM
@@ -466,7 +468,7 @@ def test_stochastic_simulate(beta, n_wealth_points, health_transition):
         "wealth": jnp.array([0.25, 0.75, 1.25, 1.75, 2.0]),
         "health": jnp.array([0, 1, 0, 1, 1]),
     }
-    _got = solve_and_simulate(
+    _got: pd.DataFrame = solve_and_simulate(  # type: ignore[assignment]
         params=params,
         initial_states=initial_states,
     )
