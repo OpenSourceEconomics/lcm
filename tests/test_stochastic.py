@@ -105,8 +105,14 @@ def test_compare_deterministic_and_stochastic_results(model_and_params):
     # ==================================================================================
     # Compare value function arrays
     # ==================================================================================
-    solve_model_deterministic, _ = get_lcm_function(model=model_deterministic)
-    solve_model_stochastic, _ = get_lcm_function(model=model_stochastic)
+    solve_model_deterministic, _ = get_lcm_function(
+        model=model_deterministic,
+        targets="solve",
+    )
+    solve_model_stochastic, _ = get_lcm_function(
+        model=model_stochastic,
+        targets="solve",
+    )
 
     solution_deterministic = solve_model_deterministic(params)
     solution_stochastic = solve_model_stochastic(params)

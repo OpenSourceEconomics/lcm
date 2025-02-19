@@ -26,8 +26,8 @@ from lcm.user_model import Model
 
 def get_lcm_function(
     model: Model,
-    targets: Literal["solve", "simulate", "solve_and_simulate"] = "solve",
     *,
+    targets: Literal["solve", "simulate", "solve_and_simulate"],
     debug_mode: bool = True,
     jit: bool = True,
 ) -> tuple[Callable[..., list[Array] | pd.DataFrame], ParamsDict]:

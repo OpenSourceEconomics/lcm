@@ -11,7 +11,7 @@ from lcm.entry_point import (
 from lcm.input_processing import process_model
 from lcm.logging import get_logger
 from lcm.model_functions import get_utility_and_feasibility_function
-from lcm.next_state import _get_next_state_function_simulation
+from lcm.next_state import _get_next_state_function_for_simulation
 from lcm.simulation.simulate import (
     _as_data_frame,
     _compute_targets,
@@ -19,7 +19,6 @@ from lcm.simulation.simulate import (
     _process_simulated_data,
     create_data_scs,
     determine_discrete_choice_axes,
-    dict_product,
     filter_ccv_policy,
     retrieve_choices,
     simulate,
@@ -67,7 +66,7 @@ def simulate_inputs():
         ],
         "compute_ccv_policy_functions": compute_ccv_policy_functions,
         "model": model,
-        "next_state": _get_next_state_function_simulation(model),
+        "next_state": _get_next_state_function_for_simulation(model),
     }
 
 
@@ -410,15 +409,6 @@ def test_create_data_state_choice_space():
     assert_array_equal(got_space.choices["retirement"], jnp.array([0, 1]))
     assert_array_equal(got_space.states["wealth"], jnp.array([10.0, 20.0]))
     assert_array_equal(got_space.states["lagged_retirement"], jnp.array([0, 1]))
-
-
-def test_dict_product():
-    d = {"a": jnp.array([0, 1]), "b": jnp.array([2, 3])}
-    got_dict, got_length = dict_product(d)
-    exp = {"a": jnp.array([0, 0, 1, 1]), "b": jnp.array([2, 3, 2, 3])}
-    assert got_length == 4
-    for key, val in exp.items():
-        assert_array_equal(got_dict[key], val)
 
 
 def test_determine_discrete_choice_axes():

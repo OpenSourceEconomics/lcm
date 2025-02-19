@@ -33,10 +33,10 @@ def get_next_state_function(
 
     """
     if target == Target.SOLVE:
-        return _get_next_state_function_solution(model)
+        return _get_next_state_function_for_solution(model)
 
     if target == Target.SIMULATE:
-        return _get_next_state_function_simulation(model)
+        return _get_next_state_function_for_simulation(model)
 
     raise ValueError(f"Invalid target: {target}")
 
@@ -46,7 +46,7 @@ def get_next_state_function(
 # ======================================================================================
 
 
-def _get_next_state_function_solution(
+def _get_next_state_function_for_solution(
     model: InternalModel,
 ) -> Callable[..., dict[str, Scalar]]:
     """Get function that computes the next states for the solution.
@@ -74,7 +74,7 @@ def _get_next_state_function_solution(
 # ======================================================================================
 
 
-def _get_next_state_function_simulation(
+def _get_next_state_function_for_simulation(
     model: InternalModel,
 ) -> Callable[..., dict[str, Scalar]]:
     """Get function that computes the next states for the simulation.

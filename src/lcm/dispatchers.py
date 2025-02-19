@@ -7,14 +7,16 @@ from jax import Array, vmap
 from lcm.functools import allow_args, allow_only_kwargs
 from lcm.utils import find_duplicates
 
-F = TypeVar("F", bound=Callable[..., Array | tuple[Array, Array]])
+FunctionWithArrayReturn = TypeVar(
+    "FunctionWithArrayReturn", bound=Callable[..., Array | tuple[Array, Array]]
+)
 
 
 def spacemap(
-    func: F,
+    func: FunctionWithArrayReturn,
     product_vars: tuple[str, ...],
     combination_vars: tuple[str, ...],
-) -> F:
+) -> FunctionWithArrayReturn:
     """Apply vmap such that func can be evaluated on product and combination variables.
 
     Product variables are used to create a Cartesian product of possible values. I.e.,
@@ -69,15 +71,15 @@ def spacemap(
     # https://github.com/python/mypy/issues/12472
     vmapped.__signature__ = inspect.signature(func_callable_with_args)  # type: ignore[attr-defined]
 
-    return cast(F, allow_only_kwargs(vmapped))
+    return cast(FunctionWithArrayReturn, allow_only_kwargs(vmapped))
 
 
 def vmap_1d(
-    func: F,
+    func: FunctionWithArrayReturn,
     variables: tuple[str, ...],
     *,
     callable_with: Literal["only_args", "only_kwargs"] = "only_kwargs",
-) -> F:
+) -> FunctionWithArrayReturn:
     """Apply vmap such that func is mapped over the specified variables.
 
     In contrast to a general vmap call, vmap_1d vectorizes along the leading axis of all
@@ -138,10 +140,12 @@ def vmap_1d(
             "('only_args', 'only_kwargs')",
         )
 
-    return cast(F, out)
+    return cast(FunctionWithArrayReturn, out)
 
 
-def productmap(func: F, variables: tuple[str, ...]) -> F:
+def productmap(
+    func: FunctionWithArrayReturn, variables: tuple[str, ...]
+) -> FunctionWithArrayReturn:
     """Apply vmap such that func is evaluated on the Cartesian product of variables.
 
     This is achieved by an iterative application of vmap.
@@ -178,10 +182,12 @@ def productmap(func: F, variables: tuple[str, ...]) -> F:
     # https://github.com/python/mypy/issues/12472
     vmapped.__signature__ = inspect.signature(func_callable_with_args)  # type: ignore[attr-defined]
 
-    return cast(F, allow_only_kwargs(vmapped))
+    return cast(FunctionWithArrayReturn, allow_only_kwargs(vmapped))
 
 
-def _base_productmap(func: F, product_axes: tuple[str, ...]) -> F:
+def _base_productmap(
+    func: FunctionWithArrayReturn, product_axes: tuple[str, ...]
+) -> FunctionWithArrayReturn:
     """Map func over the Cartesian product of product_axes.
 
     Like vmap, this function does not preserve the function signature and does not allow

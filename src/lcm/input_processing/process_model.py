@@ -96,28 +96,25 @@ def _get_internal_functions(
 
     functions: dict[str, InternalUserFunction] = {}
 
-    for name, func in raw_functions.items():
-        is_weight_next_function = name.startswith("weight_next_")
+    for func_name, func in raw_functions.items():
+        is_weight_next_function = func_name.startswith("weight_next_")
 
         if is_weight_next_function:
             processed_func = cast(InternalUserFunction, func)
 
+        # params[name] contains the dictionary of parameters for the function, which
+        # is empty if the function does not depend on any model parameters.
+        elif params[func_name]:
+            processed_func = _replace_func_parameters_by_params(
+                func=func,
+                params=params,
+                name=func_name,
+            )
+
         else:
-            # params[name] contains the dictionary of parameters for the function, which
-            # is empty if the function does not depend on any model parameters.
-            depends_on_params = bool(params[name])
+            processed_func = _add_dummy_params_argument(func)
 
-            if depends_on_params:
-                processed_func = _replace_func_parameters_by_params(
-                    func=func,
-                    params=params,
-                    name=name,
-                )
-
-            else:
-                processed_func = _add_dummy_params_argument(func)
-
-        functions[name] = processed_func
+        functions[func_name] = processed_func
 
     return functions
 

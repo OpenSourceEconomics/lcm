@@ -33,7 +33,7 @@ STRIPPED_DOWN_AND_DISCRETE_MODELS = [
 
 def test_get_lcm_function_with_solve_target_stripped_down():
     model = get_model_config("iskhakov_et_al_2017_stripped_down", n_periods=3)
-    solve_model, params_template = get_lcm_function(model=model)
+    solve_model, params_template = get_lcm_function(model=model, targets="solve")
 
     params = tree_map(lambda _: 0.2, params_template)
 
@@ -42,7 +42,7 @@ def test_get_lcm_function_with_solve_target_stripped_down():
 
 def test_get_lcm_function_with_solve_target_fully_discrete():
     model = get_model_config("iskhakov_et_al_2017_discrete", n_periods=3)
-    solve_model, params_template = get_lcm_function(model=model)
+    solve_model, params_template = get_lcm_function(model=model, targets="solve")
 
     params = tree_map(lambda _: 0.2, params_template)
 
@@ -101,7 +101,7 @@ def test_get_lcm_function_with_simulation_is_coherent(model):
     # ==================================================================================
 
     # solve
-    solve_model, params_template = get_lcm_function(model=model)
+    solve_model, params_template = get_lcm_function(model=model, targets="solve")
     params = tree_map(lambda _: 0.2, params_template)
     vf_arr_list = solve_model(params)
 
@@ -371,6 +371,6 @@ def test_get_lcm_function_with_period_argument_in_constraint():
 
     model.functions["absorbing_retirement_constraint"] = absorbing_retirement_constraint
 
-    solve_model, params_template = get_lcm_function(model=model)
+    solve_model, params_template = get_lcm_function(model=model, targets="solve")
     params = tree_map(lambda _: 0.2, params_template)
     solve_model(params)

@@ -100,9 +100,9 @@ def solve_continuous_problem(
         params: Dict of model parameters.
 
     Returns:
-        Jax array with continuation values for each combination of a state and a
-            discrete choice. The number and order of dimensions is defined by the
-            `gridmap` function.
+        Jax array with continuation values for each combination of the set of states and
+            the set of discrete choices. The number and order of dimensions is defined
+            by the `gridmap` function.
 
     """
     _gridmapped = spacemap(

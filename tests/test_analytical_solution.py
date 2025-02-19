@@ -66,7 +66,7 @@ def test_analytical_solution(model_name, model_and_params):
     """
     # Compute LCM solution
     # ==================================================================================
-    solve_model, _ = get_lcm_function(model=model_and_params["model"])
+    solve_model, _ = get_lcm_function(model=model_and_params["model"], targets="solve")
 
     vf_arr_list: list[Array] = solve_model(params=model_and_params["params"])  # type: ignore[assignment]
     _numerical = np.stack(vf_arr_list)

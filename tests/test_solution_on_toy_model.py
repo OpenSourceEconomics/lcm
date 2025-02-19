@@ -332,7 +332,7 @@ def test_deterministic_solve(beta, n_wealth_points):
     # Update model
     # ==================================================================================
     new_states = DETERMINISTIC_MODEL.states
-    new_states["wealth"] = new_states["wealth"].replace(n_points=n_wealth_points)
+    new_states["wealth"] = new_states["wealth"].replace(n_points=n_wealth_points)  # type: ignore[attr-defined]
     model = DETERMINISTIC_MODEL.replace(states=new_states)
 
     # Solve model using LCM
@@ -367,7 +367,7 @@ def test_deterministic_simulate(beta, n_wealth_points):
     # Update model
     # ==================================================================================
     new_states = DETERMINISTIC_MODEL.states
-    new_states["wealth"] = new_states["wealth"].replace(n_points=n_wealth_points)
+    new_states["wealth"] = new_states["wealth"].replace(n_points=n_wealth_points)  # type: ignore[attr-defined]
     model = DETERMINISTIC_MODEL.replace(states=new_states)
 
     # Simulate model using LCM
@@ -405,7 +405,7 @@ def test_stochastic_solve(beta, n_wealth_points, health_transition):
     # Update model
     # ==================================================================================
     new_states = STOCHASTIC_MODEL.states
-    new_states["wealth"] = new_states["wealth"].replace(n_points=n_wealth_points)
+    new_states["wealth"] = new_states["wealth"].replace(n_points=n_wealth_points)  # type: ignore[attr-defined]
     model = STOCHASTIC_MODEL.replace(states=new_states)
 
     # Solve model using LCM
@@ -454,7 +454,7 @@ def test_stochastic_simulate(beta, n_wealth_points, health_transition):
     # Update model
     # ==================================================================================
     new_states = STOCHASTIC_MODEL.states
-    new_states["wealth"] = new_states["wealth"].replace(n_points=n_wealth_points)
+    new_states["wealth"] = new_states["wealth"].replace(n_points=n_wealth_points)  # type: ignore[attr-defined]
     model = STOCHASTIC_MODEL.replace(states=new_states)
 
     # Simulate model using LCM

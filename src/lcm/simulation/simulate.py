@@ -32,31 +32,30 @@ def simulate(
     """Simulate the model forward in time.
 
     Args:
-        params (dict): Dict of model parameters.
-        initial_states (list): List of initial states to start from. Typically from the
+        params: Dict of model parameters.
+        initial_states: List of initial states to start from. Typically from the
             observed dataset.
-        continuous_choice_grids (list): List of dicts of length n_periods. Each dict
+        continuous_choice_grids: List of dicts of length n_periods. Each dict
             contains 1d grids for continuous choice variables.
-        compute_ccv_policy_functions (list): List of functions of length n_periods. Each
+        compute_ccv_policy_functions: List of functions of length n_periods. Each
             function computes the conditional continuation value dependent on the
             discrete choices.
-        next_state (callable): Function that returns the next state given the current
+        next_state: Function that returns the next state given the current
             state and choice variables. For stochastic variables, it returns a random
             draw from the distribution of the next state.
-        model (Model): Model instance.
-        logger (logging.Logger): Logger that logs to stdout.
-        solve_model (callable): Function that solves the model. Is only required if
+        model: Model instance.
+        logger: Logger that logs to stdout.
+        solve_model: Function that solves the model. Is only required if
             vf_arr_list is not provided.
-        pre_computed_vf_arr_list (list): List of value function arrays of length
+        pre_computed_vf_arr_list: List of value function arrays of length
             n_periods. This is the output of the model's `solve` function. If not
             provided, the model is solved first.
-        additional_targets (list): List of targets to compute. If provided, the targets
+        additional_targets: List of targets to compute. If provided, the targets
             are computed and added to the simulation results.
-        seed (int): Random number seed; will be passed to `jax.random.PRNGKey`.
+        seed: Random number seed; will be passed to `jax.random.key`.
 
     Returns:
-        list: List of length n_periods containing the valuations, optimal choices, and
-            states.
+        pd.DataFrame: DataFrame with the simulation results.
 
     """
     if pre_computed_vf_arr_list is None:
@@ -93,7 +92,7 @@ def simulate(
 
     # The following variables are updated during the forward simulation
     states = initial_states
-    key = jax.random.PRNGKey(seed=seed)
+    key = jax.random.key(seed=seed)
 
     # Forward simulation
     # ==================================================================================
@@ -217,17 +216,17 @@ def solve_continuous_problem(
 
     Args:
         data_scs: Class with entries choices and states.
-        compute_ccv (callable): Function that returns the conditional continuation
+        compute_ccv: Function that returns the conditional continuation
             values for a given combination of states and discrete choices. The function
             depends on:
             - discrete and continuous state variables
             - discrete and continuous choice variables
             - vf_arr
             - params
-        continuous_choice_grids (list): List of dicts with 1d grids for continuous
+        continuous_choice_grids: List of dicts with 1d grids for continuous
             choice variables.
-        vf_arr (jax.Array): Value function array.
-        params (dict): Dict of model parameters.
+        vf_arr: Value function array.
+        params: Dict of model parameters.
 
     Returns:
         - jnp.ndarray: Jax array with policies for each combination of a state and a
@@ -361,7 +360,17 @@ def _process_simulated_data(results: list[dict[str, Any]]) -> dict[str, Array]:
 def _generate_simulation_keys(
     key: Array, ids: list[str]
 ) -> tuple[Array, dict[str, Array]]:
-    """Generate PRNG keys for simulation.
+    """Generate pseudo-random number generator keys (PRNG keys) for simulation.
+
+    PRNG keys in JAX are immutable objects used to control random number generation.
+    A key can be used to generate a stream of random numbers, e.g., given a key, one can
+    call jax.random.normal(key) to generate a stream of normal random numbers. In order
+    to ensure that each simulation is based on a different stream of random numbers, we
+    split the key into one key per simulation unit, and one key that will be passed to
+    the next iteration in order to generate new keys.
+
+    See the JAX documentation for more details:
+    https://docs.jax.dev/en/latest/random-numbers.html#random-numbers-in-jax
 
     Args:
         key: PRNG key.
@@ -451,13 +460,11 @@ def create_data_scs(
     """Create data state choice space.
 
     Args:
-        states (dict): Dict with initial states.
+        states: Dict with initial states.
         model: Model instance.
-        period (int): Period.
 
     Returns:
-        - Space: Data state choice space.
-        - None
+        Data state choice space.
 
     """
     # preparations
@@ -523,28 +530,6 @@ def get_discrete_policy_calculator(
         return argmax(values, axis=choice_axes)
 
     return partial(_calculate_discrete_argmax, choice_axes=choice_axes)
-
-
-# ======================================================================================
-# Auxiliary
-# ======================================================================================
-
-
-def dict_product(d: dict[str, Array]) -> tuple[dict[str, Array], int]:
-    """Create a product of the entries of a dictionary.
-
-    Args:
-        d: Dictionary where all values are arrays, and keys are strings.
-
-    Returns:
-        - dict: Dictionary with same keys but values correspond to rows of product.
-        - int: Number of all combinations.
-
-    """
-    arrays = list(d.values())
-    grid = jnp.meshgrid(*arrays, indexing="ij")
-    stacked = jnp.stack(grid, axis=-1).reshape(-1, len(arrays))
-    return dict(zip(d.keys(), list(stacked.T), strict=True)), len(stacked)
 
 
 def determine_discrete_choice_axes(variable_info: pd.DataFrame) -> tuple[int, ...]:

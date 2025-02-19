@@ -1,5 +1,6 @@
 """Collection of classes that are used by the user to define the model and grids."""
 
+import dataclasses as dc
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, fields, is_dataclass
 from typing import Any
@@ -10,10 +11,10 @@ from jax import Array
 from lcm import grid_helpers
 from lcm.exceptions import GridInitializationError, format_messages
 from lcm.typing import Scalar
-from lcm.utils import ReplaceMixin, find_duplicates
+from lcm.utils import find_duplicates
 
 
-class Grid(ABC, ReplaceMixin):
+class Grid(ABC):
     """LCM Grid base class."""
 
     @abstractmethod
@@ -91,6 +92,23 @@ class ContinuousGrid(Grid, ABC):
     @abstractmethod
     def get_coordinate(self, value: Scalar) -> Scalar:
         """Get the generalized coordinate of a value in the grid."""
+
+    def replace(self, **kwargs: Any) -> "ContinuousGrid":  # noqa: ANN401
+        """Replace the attributes of the grid.
+
+        Args:
+            **kwargs: Keyword arguments to replace the attributes of the grid.
+
+        Returns:
+            A new grid with the replaced attributes.
+
+        """
+        try:
+            return dc.replace(self, **kwargs)
+        except TypeError as e:
+            raise GridInitializationError(
+                f"Failed to replace attributes of the grid. The error was: {e}"
+            ) from e
 
 
 class LinspaceGrid(ContinuousGrid):
