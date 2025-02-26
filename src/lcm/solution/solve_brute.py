@@ -4,7 +4,7 @@ from collections.abc import Callable
 import jax
 from jax import Array
 
-from lcm.dispatchers import spacemap
+from lcm.dispatchers import productmap
 from lcm.interfaces import StateChoiceSpace
 from lcm.typing import DiscreteProblemSolverFunction, ParamsDict
 
@@ -105,10 +105,9 @@ def solve_continuous_problem(
             by the `gridmap` function.
 
     """
-    _gridmapped = spacemap(
+    _gridmapped = productmap(
         func=compute_ccv,
-        product_vars=state_choice_space.ordered_var_names,
-        combination_vars=(),
+        variables=state_choice_space.ordered_var_names,
     )
     gridmapped = jax.jit(_gridmapped)
 
