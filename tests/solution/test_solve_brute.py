@@ -38,7 +38,7 @@ def test_solve_brute():
         },
         ordered_var_names=("lazy", "working", "wealth"),
     )
-    state_choice_spaces = [_scs] * 2
+    state_choice_spaces = {0: _scs, 1: _scs}
 
     # ==================================================================================
     # create continuous choice grids
@@ -47,7 +47,7 @@ def test_solve_brute():
     # you 1 if working and have at most 2 in existing wealth, so
     _ccg = {"consumption": jnp.array([0, 1, 2, 3])}
 
-    continuous_choice_grids = [_ccg] * 2
+    continuous_choice_grids = {0: _ccg, 1: _ccg}
 
     # ==================================================================================
     # create the utility_and_feasibility functions
@@ -84,7 +84,7 @@ def test_solve_brute():
         continuous_choice_variables=("consumption",),
     )
 
-    utility_and_feasibility_functions = [compute_ccv] * 2
+    compute_ccv_functions = {0: compute_ccv, 1: compute_ccv}
 
     # ==================================================================================
     # create emax aggregators and choice segments
@@ -94,7 +94,7 @@ def test_solve_brute():
         """Take max over axis that corresponds to working."""
         return values.max(axis=1)
 
-    emax_calculators = [calculate_emax] * 2
+    emax_calculators = {0: calculate_emax, 1: calculate_emax}
 
     # ==================================================================================
     # call solve function
@@ -104,7 +104,7 @@ def test_solve_brute():
         params=params,
         state_choice_spaces=state_choice_spaces,
         continuous_choice_grids=continuous_choice_grids,
-        compute_ccv_functions=utility_and_feasibility_functions,
+        compute_ccv_functions=compute_ccv_functions,
         emax_calculators=emax_calculators,
         logger=get_logger(debug_mode=False),
     )
