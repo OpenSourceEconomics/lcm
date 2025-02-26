@@ -14,6 +14,7 @@ from lcm.argmax import argmax
 from lcm.dispatchers import simulation_spacemap, vmap_1d
 from lcm.interfaces import InternalModel, StateChoiceSpace
 from lcm.typing import InternalUserFunction, ParamsDict
+from lcm.utils import draw_random_seed
 
 
 def simulate(
@@ -27,7 +28,7 @@ def simulate(
     solve_model: Callable[..., list[Array]] | None = None,
     pre_computed_vf_arr_list: list[Array] | None = None,
     additional_targets: list[str] | None = None,
-    seed: int = 12345,
+    seed: int | None = None,
 ) -> pd.DataFrame:
     """Simulate the model forward in time.
 
@@ -52,7 +53,8 @@ def simulate(
             provided, the model is solved first.
         additional_targets: List of targets to compute. If provided, the targets
             are computed and added to the simulation results.
-        seed: Random number seed; will be passed to `jax.random.key`.
+        seed: Random number seed; will be passed to `jax.random.key`. If not provided,
+            a random seed will be generated.
 
     Returns:
         DataFrame with the simulation results.
@@ -69,22 +71,24 @@ def simulate(
     else:
         vf_arr_list = pre_computed_vf_arr_list
 
-    logger.info("Starting simulation")
+    if seed is None:
+        seed = draw_random_seed()
 
-    # Update the vf_arr_list
-    # ----------------------------------------------------------------------------------
-    # We drop the value function array for the first period, because it is not needed
-    # for the simulation. This is because in the first period the agents only consider
-    # the current utility and the value function of next period. Similarly, the last
-    # value function array is not required, as the agents only consider the current
-    # utility in the last period.
-    # ==================================================================================
-    vf_arr_list = vf_arr_list[1:] + [jnp.empty(0)]
+    logger.info("Starting simulation")
 
     # Preparations
     # ==================================================================================
     n_periods = len(vf_arr_list)
     n_initial_states = len(next(iter(initial_states.values())))
+
+    # We drop the value function array for the first period, because it is not needed
+    # for the simulation. This is because in the first period the agents only consider
+    # the current utility and the value function of next period. Similarly, the last
+    # value function array is not required, as the agents only consider the current
+    # utility in the last period.
+    next_vf_arr = dict(
+        zip(range(n_periods), vf_arr_list[1:] + [jnp.empty(0)], strict=True)
+    )
 
     discrete_policy_calculator = get_discrete_policy_calculator(
         variable_info=model.variable_info,
@@ -124,7 +128,7 @@ def simulate(
             data_scs=data_scs,
             compute_ccv=compute_ccv_policy_functions[period],
             continuous_choice_grids=continuous_choice_grids[period],
-            vf_arr=vf_arr_list[period],
+            vf_arr=next_vf_arr[period],
             params=params,
         )
 

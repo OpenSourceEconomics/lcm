@@ -19,13 +19,14 @@ def simulation_spacemap(
 ) -> FunctionWithArrayReturn:
     """Apply vmap such that func can be evaluated on choices and simulation states.
 
-    Choice variables are used to create a Cartesian product of possible values. I.e.,
-    for each choice variable, we create a new leading dimension in the output object,
-    with the size of the dimension being the number of possible values in the grid. The
-    i-th entries of the state variables, correspond to one simulation state. For
-    the state variables, a single dimension is thus added to the output object,
-    with the size of the dimension being the number of simulations. This means
-    that all state variables must have the same size.
+    This function maps the function `func` over the simulation state-choice-space. That
+    is, it maps `func` over the Cartesian product of the choice variables, and over the
+    fixed simulation states. For each choice variable, a leading dimension is added to
+    the output object, with the length of the axis being the number of possible values
+    in the grid. Importantly, it does not create a Cartesian product over the state
+    variables, since these are fixed during the simulation. For the state variables,
+    a single dimension is added to the output object, with the length of the axis
+    being the number of simulated states.
 
     simulation_spacemap preserves the function signature and allows the function to be
     called with keyword arguments.
@@ -204,7 +205,7 @@ def _base_productmap(
     # We iterate in reverse order such that the output dimensions are in the same order
     # as the input dimensions.
     for pos in reversed(positions):
-        spec = [None] * len(parameters)  # type: list[int | None]
+        spec: list[int | None] = [None] * len(parameters)
         spec[pos] = 0
         vmap_specs.append(spec)
 
