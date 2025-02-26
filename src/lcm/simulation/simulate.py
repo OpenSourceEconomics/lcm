@@ -20,8 +20,8 @@ from lcm.utils import draw_random_seed
 def simulate(
     params: ParamsDict,
     initial_states: dict[str, Array],
-    continuous_choice_grids: list[dict[str, Array]],
-    compute_ccv_policy_functions: list[Callable[..., tuple[Array, Array]]],
+    continuous_choice_grids: dict[int, dict[str, Array]],
+    compute_ccv_policy_functions: dict[int, Callable[..., tuple[Array, Array]]],
     model: InternalModel,
     next_state: Callable[..., dict[str, Array]],
     logger: logging.Logger,
@@ -36,11 +36,10 @@ def simulate(
         params: Dict of model parameters.
         initial_states: List of initial states to start from. Typically from the
             observed dataset.
-        continuous_choice_grids: List of dicts of length n_periods. Each dict
-            contains 1d grids for continuous choice variables.
-        compute_ccv_policy_functions: List of functions of length n_periods. Each
-            function computes the conditional continuation value dependent on the
-            discrete choices.
+        continuous_choice_grids: Dict of length n_periods. Each dict contains 1d grids
+            for continuous choice variables.
+        compute_ccv_policy_functions: Dict of length n_periods. Each function computes
+            the conditional continuation value dependent on the discrete choices.
         next_state: Function that returns the next state given the current
             state and choice variables. For stochastic variables, it returns a random
             draw from the distribution of the next state.

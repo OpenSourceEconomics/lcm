@@ -11,10 +11,10 @@ from lcm.typing import DiscreteProblemSolverFunction, ParamsDict
 
 def solve(
     params: ParamsDict,
-    state_choice_spaces: list[StateChoiceSpace],
-    continuous_choice_grids: list[dict[str, Array]],
-    compute_ccv_functions: list[Callable[[Array, Array], Array]],
-    emax_calculators: list[DiscreteProblemSolverFunction],
+    state_choice_spaces: dict[int, StateChoiceSpace],
+    continuous_choice_grids: dict[int, dict[str, Array]],
+    compute_ccv_functions: dict[int, Callable[[Array, Array], Array]],
+    emax_calculators: dict[int, DiscreteProblemSolverFunction],
     logger: logging.Logger,
 ) -> list[Array]:
     """Solve a model by brute force.
@@ -30,10 +30,10 @@ def solve(
 
     Args:
         params: Dict of model parameters.
-        state_choice_spaces: List with one state_choice_space per period.
-        continuous_choice_grids: List of dicts with 1d grids for continuous
-            choice variables.
-        compute_ccv_functions: List of functions needed to solve the agent's
+        state_choice_spaces: Dict with one state_choice_space per period.
+        continuous_choice_grids: Dict with one dict of 1d grids for continuous
+            choice variables per period.
+        compute_ccv_functions: Dict with one function needed to solve the agent's
             problem. Each function depends on:
             - discrete and continuous state variables
             - discrete and continuous choice variables

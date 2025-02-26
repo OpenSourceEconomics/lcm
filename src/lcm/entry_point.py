@@ -12,12 +12,13 @@ from lcm.conditional_continuation import (
 )
 from lcm.discrete_problem import get_solve_discrete_problem
 from lcm.input_processing import process_model
+from lcm.interfaces import StateChoiceSpace, StateSpaceInfo
 from lcm.logging import get_logger
 from lcm.next_state import get_next_state_function
 from lcm.simulation.simulate import simulate
 from lcm.solution.solve_brute import solve
 from lcm.solution.state_choice_space import create_state_choice_space
-from lcm.typing import ParamsDict, Target
+from lcm.typing import DiscreteProblemSolverFunction, ParamsDict, Target
 from lcm.user_model import Model
 from lcm.utility_and_feasibility import (
     get_utility_and_feasibility_function,
@@ -59,62 +60,49 @@ def get_lcm_function(
     if targets not in {"solve", "simulate", "solve_and_simulate"}:
         raise NotImplementedError
 
-    _mod = process_model(model)
-    last_period = _mod.n_periods - 1
+    internal_model = process_model(model)
+    last_period = internal_model.n_periods - 1
 
     logger = get_logger(debug_mode=debug_mode)
 
     # ==================================================================================
-    # create list of continuous choice grids
+    # Create continuous choice grids
+    # ----------------------------------------------------------------------------------
+    # For now they are the same in all periods but this can change.
     # ==================================================================================
-    # for now they are the same in all periods but this will change.
-    _subset = _mod.variable_info.query("is_continuous & is_choice").index.tolist()
-    _choice_grids = {k: _mod.grids[k] for k in _subset}
-    continuous_choice_grids = [_choice_grids] * _mod.n_periods
+    continuous_choices_names = internal_model.variable_info.query(
+        "is_continuous & is_choice"
+    ).index.tolist()
+    _choice_grids = {n: internal_model.grids[n] for n in continuous_choices_names}
+    continuous_choice_grids = {
+        period: _choice_grids for period in range(internal_model.n_periods)
+    }
 
     # ==================================================================================
-    # Initialize other argument lists
+    # Create model functions and state-choice-spaces
     # ==================================================================================
-    state_choice_spaces = []
-    state_space_infos = []
-    compute_ccv_functions = []
-    compute_ccv_policy_functions = []
-    choice_segments = []  # type: ignore[var-annotated]
-    emax_calculators = []
+    state_choice_spaces: dict[int, StateChoiceSpace] = {}
+    state_space_infos: dict[int, StateSpaceInfo] = {}
+    compute_ccv_functions: dict[int, Callable[[Array, Array], Array]] = {}
+    compute_ccp_functions: dict[int, Callable[..., tuple[Array, Array]]] = {}
+    solve_discrete_problem_functions: dict[int, DiscreteProblemSolverFunction] = {}
 
-    # ==================================================================================
-    # Create stace choice space for each period
-    # ==================================================================================
-    for period in range(_mod.n_periods):
+    for period in reversed(range(internal_model.n_periods)):
         is_last_period = period == last_period
 
-        # call state space creation function, append trivial items to their lists
-        # ==============================================================================
         state_choice_space, state_space_info = create_state_choice_space(
-            model=_mod,
+            model=internal_model,
             is_last_period=is_last_period,
         )
 
-        state_choice_spaces.append(state_choice_space)
-        choice_segments.append(None)
-        state_space_infos.append(state_space_info)
+        if is_last_period:
+            next_state_space_info = LastPeriodsNextStateSpaceInfo
+        else:
+            next_state_space_info = state_space_infos[period + 1]
 
-    # ==================================================================================
-    # Shift space info (in period t we require the space info of period t+1)
-    # ==================================================================================
-    state_space_infos = state_space_infos[1:] + [{}]  # type: ignore[list-item]
-
-    # ==================================================================================
-    # Create model functions
-    # ==================================================================================
-    for period in range(_mod.n_periods):
-        is_last_period = period == last_period
-
-        # create the compute conditional continuation value functions and append to list
-        # ==============================================================================
         u_and_f = get_utility_and_feasibility_function(
-            model=_mod,
-            next_state_space_info=state_space_infos[period],
+            model=internal_model,
+            next_state_space_info=next_state_space_info,
             period=period,
             is_last_period=is_last_period,
         )
@@ -123,22 +111,23 @@ def get_lcm_function(
             utility_and_feasibility=u_and_f,
             continuous_choice_variables=tuple(_choice_grids),
         )
-        compute_ccv_functions.append(compute_ccv)
 
-        compute_ccv_argmax = get_compute_conditional_continuation_policy(
+        compute_ccp = get_compute_conditional_continuation_policy(
             utility_and_feasibility=u_and_f,
             continuous_choice_variables=tuple(_choice_grids),
         )
-        compute_ccv_policy_functions.append(compute_ccv_argmax)
 
-        # create list of emax_calculators
-        # ==============================================================================
-        calculator = get_solve_discrete_problem(
-            random_utility_shock_type=_mod.random_utility_shocks,
-            variable_info=_mod.variable_info,
+        solve_discrete_problem = get_solve_discrete_problem(
+            random_utility_shock_type=internal_model.random_utility_shocks,
+            variable_info=internal_model.variable_info,
             is_last_period=is_last_period,
         )
-        emax_calculators.append(calculator)
+
+        state_choice_spaces[period] = state_choice_space
+        state_space_infos[period] = state_space_info
+        compute_ccv_functions[period] = compute_ccv
+        compute_ccp_functions[period] = compute_ccp
+        solve_discrete_problem_functions[period] = solve_discrete_problem
 
     # ==================================================================================
     # select requested solver and partial arguments into it
@@ -148,18 +137,20 @@ def get_lcm_function(
         state_choice_spaces=state_choice_spaces,
         continuous_choice_grids=continuous_choice_grids,
         compute_ccv_functions=compute_ccv_functions,
-        emax_calculators=emax_calculators,
+        emax_calculators=solve_discrete_problem_functions,
         logger=logger,
     )
 
     solve_model = jax.jit(_solve_model) if jit else _solve_model
 
-    _next_state_simulate = get_next_state_function(model=_mod, target=Target.SIMULATE)
+    _next_state_simulate = get_next_state_function(
+        model=internal_model, target=Target.SIMULATE
+    )
     simulate_model = partial(
         simulate,
         continuous_choice_grids=continuous_choice_grids,
-        compute_ccv_policy_functions=compute_ccv_policy_functions,
-        model=_mod,
+        compute_ccv_policy_functions=compute_ccp_functions,
+        model=internal_model,
         next_state=jax.jit(_next_state_simulate),
         logger=logger,
     )
@@ -173,4 +164,11 @@ def get_lcm_function(
     elif targets == "solve_and_simulate":
         target_func = partial(simulate_model, solve_model=solve_model)
 
-    return target_func, _mod.params
+    return target_func, internal_model.params
+
+
+LastPeriodsNextStateSpaceInfo = StateSpaceInfo(
+    states_names=(),
+    discrete_states={},
+    continuous_states={},
+)
