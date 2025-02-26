@@ -16,7 +16,7 @@ from lcm.typing import InternalUserFunction, ParamsDict, Scalar, Target
 
 def get_utility_and_feasibility_function(
     model: InternalModel,
-    state_space_info: StateSpaceInfo,
+    next_state_space_info: StateSpaceInfo,
     period: int,
     *,
     is_last_period: bool,
@@ -25,7 +25,7 @@ def get_utility_and_feasibility_function(
 
     Args:
         model: The internal model object.
-        state_space_info: The state space information.
+        next_state_space_info: The state space information of the next period.
         period: The period to create the utility and feasibility function for.
         is_last_period: Whether the period is the last period.
 
@@ -37,20 +37,20 @@ def get_utility_and_feasibility_function(
     if is_last_period:
         return get_utility_and_feasibility_function_last_period(model, period=period)
     return get_utility_and_feasibility_function_before_last_period(
-        model, state_space_info=state_space_info, period=period
+        model, next_state_space_info=next_state_space_info, period=period
     )
 
 
 def get_utility_and_feasibility_function_before_last_period(
     model: InternalModel,
-    state_space_info: StateSpaceInfo,
+    next_state_space_info: StateSpaceInfo,
     period: int,
 ) -> Callable[..., tuple[Array, Array]]:
     """Create the utility and feasibility function for a period before the last period.
 
     Args:
         model: The internal model object.
-        state_space_info: The state space information.
+        next_state_space_info: The state space information of the next period.
         period: The period to create the utility and feasibility function for.
 
     Returns:
@@ -70,7 +70,7 @@ def get_utility_and_feasibility_function_before_last_period(
     calculate_state_transition = get_next_state_function(model, target=Target.SOLVE)
     calculate_next_weights = get_next_stochastic_weights_function(model)
     calculate_node_weights = _get_node_weights_function(stochastic_variables)
-    _scalar_value_function = get_value_function_representation(state_space_info)
+    _scalar_value_function = get_value_function_representation(next_state_space_info)
     value_function = productmap(
         _scalar_value_function,
         variables=tuple(f"next_{var}" for var in stochastic_variables),

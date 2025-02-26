@@ -4,10 +4,10 @@ import pytest
 from numpy.testing import assert_array_almost_equal, assert_array_equal
 from pybaum import tree_equal
 
-from lcm.entry_point import (
-    create_compute_conditional_continuation_policy,
-    get_lcm_function,
+from lcm.conditional_continuation import (
+    get_compute_conditional_continuation_policy,
 )
+from lcm.entry_point import get_lcm_function
 from lcm.input_processing import process_model
 from lcm.logging import get_logger
 from lcm.next_state import get_next_state_function
@@ -49,13 +49,13 @@ def simulate_inputs():
     for period in range(model.n_periods):
         u_and_f = get_utility_and_feasibility_function(
             model=model,
-            state_space_info=state_space_info,
+            next_state_space_info=state_space_info,
             period=period,
             is_last_period=True,
         )
-        compute_ccv = create_compute_conditional_continuation_policy(
+        compute_ccv = get_compute_conditional_continuation_policy(
             utility_and_feasibility=u_and_f,
-            continuous_choice_variables=["consumption"],
+            continuous_choice_variables=("consumption",),
         )
         compute_ccv_policy_functions.append(compute_ccv)
 

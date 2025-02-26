@@ -2,7 +2,7 @@ import jax.numpy as jnp
 import numpy as np
 from numpy.testing import assert_array_almost_equal as aaae
 
-from lcm.entry_point import create_compute_conditional_continuation_value
+from lcm.conditional_continuation import get_compute_conditional_continuation_value
 from lcm.interfaces import StateChoiceSpace
 from lcm.logging import get_logger
 from lcm.ndimage import map_coordinates
@@ -79,9 +79,9 @@ def test_solve_brute():
             coordinates=jnp.array([wealth]),
         )
 
-    compute_ccv = create_compute_conditional_continuation_value(
+    compute_ccv = get_compute_conditional_continuation_value(
         utility_and_feasibility=_utility_and_feasibility,
-        continuous_choice_variables=["consumption"],
+        continuous_choice_variables=("consumption",),
     )
 
     utility_and_feasibility_functions = [compute_ccv] * 2
@@ -130,9 +130,9 @@ def test_solve_continuous_problem_no_vf_arr():
 
     continuous_choice_grids = {"d": jnp.arange(12.0)}
 
-    compute_ccv = create_compute_conditional_continuation_value(
+    compute_ccv = get_compute_conditional_continuation_value(
         utility_and_feasibility=_utility_and_feasibility,
-        continuous_choice_variables=["d"],
+        continuous_choice_variables=("d",),
     )
 
     expected = np.array([[[6.0, 7, 8], [7, 8, 9]], [[7, 8, 9], [8, 9, 10]]])

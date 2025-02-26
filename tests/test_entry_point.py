@@ -2,11 +2,11 @@ import jax.numpy as jnp
 import pytest
 from pybaum import tree_equal, tree_map
 
-from lcm.entry_point import (
-    create_compute_conditional_continuation_policy,
-    create_compute_conditional_continuation_value,
-    get_lcm_function,
+from lcm.conditional_continuation import (
+    get_compute_conditional_continuation_policy,
+    get_compute_conditional_continuation_value,
 )
+from lcm.entry_point import get_lcm_function
 from lcm.input_processing import process_model
 from lcm.solution.state_choice_space import create_state_choice_space
 from lcm.utility_and_feasibility import get_utility_and_feasibility_function
@@ -189,14 +189,14 @@ def test_create_compute_conditional_continuation_value():
 
     u_and_f = get_utility_and_feasibility_function(
         model=model,
-        state_space_info=state_space_info,
+        next_state_space_info=state_space_info,
         period=model.n_periods - 1,
         is_last_period=True,
     )
 
-    compute_ccv = create_compute_conditional_continuation_value(
+    compute_ccv = get_compute_conditional_continuation_value(
         utility_and_feasibility=u_and_f,
-        continuous_choice_variables=["consumption"],
+        continuous_choice_variables=("consumption",),
     )
 
     val = compute_ccv(
@@ -234,14 +234,14 @@ def test_create_compute_conditional_continuation_value_with_discrete_model():
 
     u_and_f = get_utility_and_feasibility_function(
         model=model,
-        state_space_info=state_space_info,
+        next_state_space_info=state_space_info,
         period=model.n_periods - 1,
         is_last_period=True,
     )
 
-    compute_ccv = create_compute_conditional_continuation_value(
+    compute_ccv = get_compute_conditional_continuation_value(
         utility_and_feasibility=u_and_f,
-        continuous_choice_variables=[],
+        continuous_choice_variables=(),
     )
 
     val = compute_ccv(
@@ -284,14 +284,14 @@ def test_create_compute_conditional_continuation_policy():
 
     u_and_f = get_utility_and_feasibility_function(
         model=model,
-        state_space_info=state_space_info,
+        next_state_space_info=state_space_info,
         period=model.n_periods - 1,
         is_last_period=True,
     )
 
-    compute_ccv_policy = create_compute_conditional_continuation_policy(
+    compute_ccv_policy = get_compute_conditional_continuation_policy(
         utility_and_feasibility=u_and_f,
-        continuous_choice_variables=["consumption"],
+        continuous_choice_variables=("consumption",),
     )
 
     policy, val = compute_ccv_policy(
@@ -330,14 +330,14 @@ def test_create_compute_conditional_continuation_policy_with_discrete_model():
 
     u_and_f = get_utility_and_feasibility_function(
         model=model,
-        state_space_info=state_space_info,
+        next_state_space_info=state_space_info,
         period=model.n_periods - 1,
         is_last_period=True,
     )
 
-    compute_ccv_policy = create_compute_conditional_continuation_policy(
+    compute_ccv_policy = get_compute_conditional_continuation_policy(
         utility_and_feasibility=u_and_f,
-        continuous_choice_variables=[],
+        continuous_choice_variables=(),
     )
 
     policy, val = compute_ccv_policy(

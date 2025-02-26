@@ -1,16 +1,16 @@
-import functools
 from collections.abc import Callable
 from functools import partial
 from typing import Literal
 
 import jax
-import jax.numpy as jnp
 import pandas as pd
 from jax import Array
 
-from lcm.argmax import argmax
+from lcm.conditional_continuation import (
+    get_compute_conditional_continuation_policy,
+    get_compute_conditional_continuation_value,
+)
 from lcm.discrete_problem import get_solve_discrete_problem
-from lcm.dispatchers import productmap
 from lcm.input_processing import process_model
 from lcm.logging import get_logger
 from lcm.next_state import get_next_state_function
@@ -114,20 +114,20 @@ def get_lcm_function(
         # ==============================================================================
         u_and_f = get_utility_and_feasibility_function(
             model=_mod,
-            state_space_info=state_space_infos[period],
+            next_state_space_info=state_space_infos[period],
             period=period,
             is_last_period=is_last_period,
         )
 
-        compute_ccv = create_compute_conditional_continuation_value(
+        compute_ccv = get_compute_conditional_continuation_value(
             utility_and_feasibility=u_and_f,
-            continuous_choice_variables=list(_choice_grids),
+            continuous_choice_variables=tuple(_choice_grids),
         )
         compute_ccv_functions.append(compute_ccv)
 
-        compute_ccv_argmax = create_compute_conditional_continuation_policy(
+        compute_ccv_argmax = get_compute_conditional_continuation_policy(
             utility_and_feasibility=u_and_f,
-            continuous_choice_variables=list(_choice_grids),
+            continuous_choice_variables=tuple(_choice_grids),
         )
         compute_ccv_policy_functions.append(compute_ccv_argmax)
 
@@ -174,81 +174,3 @@ def get_lcm_function(
         target_func = partial(simulate_model, solve_model=solve_model)
 
     return target_func, _mod.params
-
-
-def create_compute_conditional_continuation_value(
-    utility_and_feasibility: Callable[..., tuple[Array, Array]],
-    continuous_choice_variables: list[str],
-) -> Callable[..., Array]:
-    """Create a function that computes the conditional continuation value.
-
-    Note:
-    -----
-    This function solves the continuous choice problem conditional on a state-
-    (discrete-)choice combination.
-
-    Args:
-        utility_and_feasibility (callable): A function that takes a state-choice
-            combination and return the utility of that combination (float) and whether
-            the state-choice combination is feasible (bool).
-        continuous_choice_variables (list): List of choice variable names that are
-            continuous.
-
-    Returns:
-        A function that takes a state-choice combination and returns the conditional
-        continuation value over the continuous choices.
-
-    """
-    if continuous_choice_variables:
-        utility_and_feasibility = productmap(
-            func=utility_and_feasibility,
-            variables=tuple(continuous_choice_variables),
-        )
-
-    @functools.wraps(utility_and_feasibility)
-    def compute_ccv(*args: Array | ParamsDict, **kwargs: Array | ParamsDict) -> Array:
-        u, f = utility_and_feasibility(*args, **kwargs)
-        return u.max(where=f, initial=-jnp.inf)
-
-    return compute_ccv
-
-
-def create_compute_conditional_continuation_policy(
-    utility_and_feasibility: Callable[..., tuple[Array, Array]],
-    continuous_choice_variables: list[str],
-) -> Callable[..., tuple[Array, Array]]:
-    """Create a function that computes the conditional continuation policy.
-
-    Note:
-    -----
-    This function solves the continuous choice problem conditional on a state-
-    (discrete-)choice combination.
-
-    Args:
-        utility_and_feasibility (callable): A function that takes a state-choice
-            combination and return the utility of that combination (float) and whether
-            the state-choice combination is feasible (bool).
-        continuous_choice_variables (list): List of choice variable names that are
-            continuous.
-
-    Returns:
-        A function that takes a state-choice combination and returns the conditional
-        continuation value over the continuous choices, and the index that maximizes the
-        conditional continuation value.
-
-    """
-    if continuous_choice_variables:
-        utility_and_feasibility = productmap(
-            func=utility_and_feasibility,
-            variables=tuple(continuous_choice_variables),
-        )
-
-    @functools.wraps(utility_and_feasibility)
-    def compute_ccv_policy(
-        *args: Array | ParamsDict, **kwargs: Array | ParamsDict
-    ) -> tuple[Array, Array]:
-        u, f = utility_and_feasibility(*args, **kwargs)
-        _argmax, _max = argmax(u, where=f, initial=-jnp.inf)
-        return _argmax, _max
-
-    return compute_ccv_policy

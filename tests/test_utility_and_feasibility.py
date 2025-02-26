@@ -39,7 +39,7 @@ def test_get_utility_and_feasibility_function():
 
     u_and_f = get_utility_and_feasibility_function(
         model=model,
-        state_space_info=state_space_info,
+        next_state_space_info=state_space_info,
         period=model.n_periods - 1,
         is_last_period=True,
     )
