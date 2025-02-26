@@ -43,6 +43,16 @@ class DiscreteProblemSolverFunction(Protocol):
     def __call__(self, values: Array, params: ParamsDict) -> Array: ...  # noqa: D102
 
 
+class StochasticNextFunction(Protocol):
+    """The function that simulates the next state of a stochastic variable.
+
+    Only used for type checking.
+
+    """
+
+    def __call__(self, keys: dict[str, Array], **kwargs: Array) -> Array: ...  # noqa: D102
+
+
 class ShockType(Enum):
     """Type of shocks."""
 

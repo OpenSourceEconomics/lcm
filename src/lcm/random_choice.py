@@ -4,17 +4,17 @@ import jax
 
 
 def random_choice(
-    key: jax.Array,
-    probs: jax.Array,
     labels: jax.Array,
+    probs: jax.Array,
+    key: jax.Array,
 ) -> jax.Array:
     """Draw multiple random choices.
 
     Args:
-        key: Random key.
+        labels: 1d array of labels.
         probs: 2d array of probabilities. Second dimension must be
             the same length as the first dimension of labels.
-        labels: 1d array of labels.
+        key: Random key.
 
     Returns:
         Selected labels. 1d array of length len(probs).

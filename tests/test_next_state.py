@@ -5,13 +5,9 @@ from pybaum import tree_equal
 
 from lcm.input_processing import process_model
 from lcm.interfaces import InternalModel
-from lcm.next_state import _get_stochastic_next_func, get_next_state_function
+from lcm.next_state import _create_stochastic_next_func, get_next_state_function
 from lcm.typing import ParamsDict, Scalar, ShockType, Target
 from tests.test_models import get_model_config
-
-# ======================================================================================
-# Solve target
-# ======================================================================================
 
 
 def test_get_next_state_function_with_solve_target():
@@ -33,11 +29,6 @@ def test_get_next_state_function_with_solve_target():
 
     got = got_func(**choice, **state, _period=1, params=params)
     assert got == {"next_wealth": 1.05 * (20 - 10)}
-
-
-# ======================================================================================
-# Simulate target
-# ======================================================================================
 
 
 def test_get_next_state_function_with_simulate_target():
@@ -86,12 +77,12 @@ def test_get_next_state_function_with_simulate_target():
     assert tree_equal(expected, got)
 
 
-def test_get_stochastic_next_func():
-    grids = {"a": jnp.arange(2)}
-    got_func = _get_stochastic_next_func(name="a", grids=grids)
+def test_create_stochastic_next_func():
+    labels = jnp.arange(2)
+    got_func = _create_stochastic_next_func(name="a", labels=labels)
 
     keys = {"a": jnp.arange(2, dtype="uint32")}  # PRNG dtype
     weights = jnp.array([[0.0, 1], [1, 0]])
-    got = got_func(keys=keys, weight_a=weights)  # type: ignore[call-arg]
+    got = got_func(keys=keys, weight_a=weights)
 
     assert jnp.array_equal(got, jnp.array([1, 0]))
