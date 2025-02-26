@@ -47,6 +47,31 @@ def get_next_state_function(
     )
 
 
+def get_next_stochastic_weights_function(
+    model: InternalModel,
+) -> Callable[..., dict[str, Array]]:
+    """Get function that computes the weights for the next stochastic states.
+
+    Args:
+        model: Internal model instance.
+
+    Returns:
+        Function that computes the weights for the next stochastic states.
+
+    """
+    targets = [
+        f"weight_{name}"
+        for name in model.function_info.query("is_stochastic_next").index.tolist()
+    ]
+
+    return concatenate_functions(
+        functions=model.functions,
+        targets=targets,
+        return_type="dict",
+        enforce_signature=False,
+    )
+
+
 def _extend_functions_dict_for_simulation(
     model: InternalModel,
 ) -> dict[str, Callable[..., Scalar]]:

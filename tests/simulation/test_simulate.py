@@ -10,7 +10,6 @@ from lcm.entry_point import (
 )
 from lcm.input_processing import process_model
 from lcm.logging import get_logger
-from lcm.model_functions import get_utility_and_feasibility_function
 from lcm.next_state import get_next_state_function
 from lcm.simulation.simulate import (
     _as_data_frame,
@@ -25,6 +24,7 @@ from lcm.simulation.simulate import (
 )
 from lcm.solution.state_choice_space import create_state_choice_space
 from lcm.typing import Target
+from lcm.utility_and_feasibility import get_utility_and_feasibility_function
 from tests.test_models import (
     get_model_config,
     get_params,

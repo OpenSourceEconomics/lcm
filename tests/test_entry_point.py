@@ -8,8 +8,8 @@ from lcm.entry_point import (
     get_lcm_function,
 )
 from lcm.input_processing import process_model
-from lcm.model_functions import get_utility_and_feasibility_function
 from lcm.solution.state_choice_space import create_state_choice_space
+from lcm.utility_and_feasibility import get_utility_and_feasibility_function
 from tests.test_models import get_model_config
 from tests.test_models.deterministic import RetirementStatus
 from tests.test_models.deterministic import utility as iskhakov_et_al_2017_utility
