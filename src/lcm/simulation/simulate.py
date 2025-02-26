@@ -11,7 +11,7 @@ from dags import concatenate_functions
 from jax import Array, vmap
 
 from lcm.argmax import argmax
-from lcm.dispatchers import spacemap, vmap_1d
+from lcm.dispatchers import simulation_spacemap, vmap_1d
 from lcm.interfaces import InternalModel, StateChoiceSpace
 from lcm.typing import InternalUserFunction, ParamsDict
 
@@ -236,10 +236,10 @@ def solve_continuous_problem(
           `gridmap` function.
 
     """
-    _gridmapped = spacemap(
+    _gridmapped = simulation_spacemap(
         func=compute_ccv,
-        product_vars=tuple(data_scs.choices),
-        combination_vars=tuple(data_scs.states),
+        choices_var_names=tuple(data_scs.choices),
+        states_var_names=tuple(data_scs.states),
     )
     gridmapped = jax.jit(_gridmapped)
 
