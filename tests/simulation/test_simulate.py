@@ -2,7 +2,6 @@ import jax.numpy as jnp
 import pandas as pd
 import pytest
 from numpy.testing import assert_array_almost_equal, assert_array_equal
-from pybaum import tree_equal
 
 from lcm.conditional_continuation import (
     get_compute_conditional_continuation_policy,
@@ -12,11 +11,6 @@ from lcm.input_processing import process_model
 from lcm.logging import get_logger
 from lcm.next_state import get_next_state_function
 from lcm.simulation.simulate import (
-    _as_data_frame,
-    _compute_targets,
-    _generate_simulation_keys,
-    _process_simulated_data,
-    create_data_scs,
     determine_discrete_choice_axes,
     filter_ccv_policy,
     retrieve_choices,
@@ -282,94 +276,6 @@ def test_effect_of_disutility_of_work():
 # ======================================================================================
 
 
-def test_generate_simulation_keys():
-    key = jnp.arange(2, dtype="uint32")  # PRNG dtype
-    stochastic_next_functions = ["a", "b"]
-    got = _generate_simulation_keys(key, stochastic_next_functions)
-    # assert that all generated keys are different from each other
-    matrix = jnp.array([key, got[0], got[1]["a"], got[1]["b"]])
-    assert jnp.linalg.matrix_rank(matrix) == 2
-
-
-def test_as_data_frame():
-    processed = {
-        "value": -6 + jnp.arange(6),
-        "a": jnp.arange(6),
-        "b": 6 + jnp.arange(6),
-    }
-    got = _as_data_frame(processed, n_periods=2)
-    expected = pd.DataFrame(
-        {
-            "period": [0, 0, 0, 1, 1, 1],
-            "initial_state_id": [0, 1, 2, 0, 1, 2],
-            **processed,
-        },
-    ).set_index(["period", "initial_state_id"])
-    pd.testing.assert_frame_equal(got, expected)
-
-
-def test_compute_targets():
-    processed_results = {
-        "a": jnp.arange(3),
-        "b": 1 + jnp.arange(3),
-        "c": 2 + jnp.arange(3),
-    }
-
-    def f_a(a, params):
-        return a + params["disutility_of_work"]
-
-    def f_b(b, params):  # noqa: ARG001
-        return b
-
-    def f_c(params):  # noqa: ARG001
-        return None
-
-    model_functions = {"fa": f_a, "fb": f_b, "fc": f_c}
-
-    got = _compute_targets(
-        processed_results=processed_results,
-        targets=["fa", "fb"],
-        model_functions=model_functions,  # type: ignore[arg-type]
-        params={"disutility_of_work": -1.0},
-    )
-    expected = {
-        "fa": jnp.arange(3) - 1.0,
-        "fb": 1 + jnp.arange(3),
-    }
-    assert tree_equal(expected, got)
-
-
-def test_process_simulated_data():
-    simulated = [
-        {
-            "value": jnp.array([0.1, 0.2]),
-            "states": {"a": jnp.array([1, 2]), "b": jnp.array([-1, -2])},
-            "choices": {"c": jnp.array([5, 6]), "d": jnp.array([-5, -6])},
-        },
-        {
-            "value": jnp.array([0.3, 0.4]),
-            "states": {
-                "b": jnp.array([-3, -4]),
-                "a": jnp.array([3, 4]),
-            },
-            "choices": {
-                "d": jnp.array([-7, -8]),
-                "c": jnp.array([7, 8]),
-            },
-        },
-    ]
-    expected = {
-        "value": jnp.array([0.1, 0.2, 0.3, 0.4]),
-        "c": jnp.array([5, 6, 7, 8]),
-        "d": jnp.array([-5, -6, -7, -8]),
-        "a": jnp.array([1, 2, 3, 4]),
-        "b": jnp.array([-1, -2, -3, -4]),
-    }
-
-    got = _process_simulated_data(simulated)
-    assert tree_equal(expected, got)
-
-
 def test_retrieve_choices():
     got = retrieve_choices(
         flat_indices=jnp.array([0, 3, 7]),
@@ -395,21 +301,6 @@ def test_filter_ccv_policy():
         vars_grid_shape=vars_grid_shape,
     )
     assert jnp.all(got == jnp.array([0, 0]))
-
-
-def test_create_data_state_choice_space():
-    model_config = get_model_config("iskhakov_et_al_2017", n_periods=3)
-    model = process_model(model_config)
-    got_space = create_data_scs(
-        states={
-            "wealth": jnp.array([10.0, 20.0]),
-            "lagged_retirement": jnp.array([0, 1]),
-        },
-        model=model,
-    )
-    assert_array_equal(got_space.choices["retirement"], jnp.array([0, 1]))
-    assert_array_equal(got_space.states["wealth"], jnp.array([10.0, 20.0]))
-    assert_array_equal(got_space.states["lagged_retirement"], jnp.array([0, 1]))
 
 
 def test_determine_discrete_choice_axes():

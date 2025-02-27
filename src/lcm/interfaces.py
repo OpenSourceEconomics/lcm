@@ -1,3 +1,4 @@
+import dataclasses as dc
 from collections.abc import Mapping
 from dataclasses import dataclass
 
@@ -35,6 +36,26 @@ class StateChoiceSpace:
     states: dict[str, Array]
     choices: dict[str, Array]
     ordered_var_names: tuple[str, ...]
+
+    def replace(
+        self,
+        states: dict[str, Array] | None = None,
+        choices: dict[str, Array] | None = None,
+    ) -> "StateChoiceSpace":
+        """Replace the states or choices in the state-choice space.
+
+        Args:
+            states: Dictionary with new states. If None, the existing states are used.
+            choices: Dictionary with new choices. If None, the existing choices are
+                used.
+
+        Returns:
+            New state-choice space with the replaced states or choices.
+
+        """
+        states = states if states is not None else self.states
+        choices = choices if choices is not None else self.choices
+        return dc.replace(self, states=states, choices=choices)
 
 
 @dataclass(frozen=True)

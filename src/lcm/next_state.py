@@ -7,7 +7,7 @@ from dags.signature import with_signature
 from jax import Array
 
 from lcm.interfaces import InternalModel
-from lcm.random_choice import random_choice
+from lcm.random import random_choice
 from lcm.typing import Scalar, StochasticNextFunction, Target
 
 

@@ -1,19 +1,19 @@
-import inspect
 import logging
 from collections.abc import Callable
 from functools import partial
-from typing import Any
 
 import jax
 import jax.numpy as jnp
 import pandas as pd
-from dags import concatenate_functions
 from jax import Array, vmap
 
 from lcm.argmax import argmax
 from lcm.dispatchers import simulation_spacemap, vmap_1d
 from lcm.interfaces import InternalModel, StateChoiceSpace
-from lcm.typing import InternalUserFunction, ParamsDict
+from lcm.random import generate_simulation_keys
+from lcm.simulation.processing import as_data_frame, process_simulated_data
+from lcm.simulation.state_choice_space import create_state_choice_space
+from lcm.typing import ParamsDict
 from lcm.utils import draw_random_seed
 
 
@@ -80,6 +80,11 @@ def simulate(
     n_periods = len(vf_arr_list)
     n_initial_states = len(next(iter(initial_states.values())))
 
+    data_scs = create_state_choice_space(
+        model=model,
+        initial_states=initial_states,
+    )
+
     # We drop the value function array for the first period, because it is not needed
     # for the simulation. This is because in the first period the agents only consider
     # the current utility and the value function of next period. Similarly, the last
@@ -109,10 +114,7 @@ def simulate(
         # of combination variables and initial states. The space has to be created in
         # each iteration because the states change over time.
         # ==============================================================================
-        data_scs = create_data_scs(
-            states=states,
-            model=model,
-        )
+        data_scs = data_scs.replace(states)
 
         # Compute objects dependent on data-state-choice-space
         # ==============================================================================
@@ -175,7 +177,7 @@ def simulate(
 
         # Update states
         # ==============================================================================
-        key, sim_keys = _generate_simulation_keys(
+        key, stochastic_variables_keys = generate_simulation_keys(
             key=key,
             ids=model.function_info.query("is_stochastic_next").index.tolist(),
         )
@@ -185,7 +187,7 @@ def simulate(
             **choices,
             _period=jnp.repeat(period, n_initial_states),
             params=params,
-            keys=sim_keys,
+            keys=stochastic_variables_keys,
         )
 
         # 'next_' prefix is added by the next_state function, but needs to be removed
@@ -194,18 +196,14 @@ def simulate(
 
         logger.info("Period: %s", period)
 
-    processed = _process_simulated_data(_simulation_results)
+    processed = process_simulated_data(
+        _simulation_results,
+        model=model,
+        params=params,
+        additional_targets=additional_targets,
+    )
 
-    if additional_targets is not None:
-        calculated_targets = _compute_targets(
-            processed,
-            targets=additional_targets,
-            model_functions=model.functions,
-            params=params,
-        )
-        processed = {**processed, **calculated_targets}
-
-    return _as_data_frame(processed, n_periods=n_periods)
+    return as_data_frame(processed, n_periods=n_periods)
 
 
 def solve_continuous_problem(
@@ -253,142 +251,6 @@ def solve_continuous_problem(
         vf_arr=vf_arr,
         params=params,
     )
-
-
-# ======================================================================================
-# Output processing
-# ======================================================================================
-
-
-def _as_data_frame(processed: dict[str, Array], n_periods: int) -> pd.DataFrame:
-    """Convert processed simulation results to DataFrame.
-
-    Args:
-        processed: Dict with processed simulation results.
-        n_periods: Number of periods.
-
-    Returns:
-        DataFrame with the simulation results. The index is a multi-index with the first
-        level corresponding to the period and the second level corresponding to the
-        initial state id. The columns correspond to the value, and the choice and state
-        variables, and potentially auxiliary variables.
-
-    """
-    n_initial_states = len(processed["value"]) // n_periods
-    index = pd.MultiIndex.from_product(
-        [range(n_periods), range(n_initial_states)],
-        names=["period", "initial_state_id"],
-    )
-    return pd.DataFrame(processed, index=index)
-
-
-def _compute_targets(
-    processed_results: dict[str, Array],
-    targets: list[str],
-    model_functions: dict[str, InternalUserFunction],
-    params: ParamsDict,
-) -> dict[str, Array]:
-    """Compute targets.
-
-    Args:
-        processed_results: Dict with processed simulation results. Values must be
-            one-dimensional arrays.
-        targets: List of targets to compute.
-        model_functions: Dict with model functions.
-        params: Dict with model parameters.
-
-    Returns:
-        Dict with computed targets.
-
-    """
-    target_func = concatenate_functions(
-        functions=model_functions,
-        targets=targets,
-        return_type="dict",
-    )
-
-    # get list of variables over which we want to vectorize the target function
-    variables = tuple(
-        p for p in list(inspect.signature(target_func).parameters) if p != "params"
-    )
-
-    target_func = vmap_1d(target_func, variables=variables)
-
-    kwargs = {k: v for k, v in processed_results.items() if k in variables}
-    return target_func(params=params, **kwargs)
-
-
-def _process_simulated_data(results: list[dict[str, Any]]) -> dict[str, Array]:
-    """Process and flatten the simulation results.
-
-    This function produces a dict of arrays for each var with dimension (n_periods *
-    n_initial_states,). The arrays are flattened, so that the resulting dictionary has a
-    one-dimensional array for each variable. The length of this array is the number of
-    periods times the number of initial states. The order of array elements is given by
-    an outer level of periods and an inner level of initial states ids.
-
-
-    Args:
-        results (list): List of dicts with simulation results. Each dict contains the
-            value, choices, and states for one period. Choices and states are stored in
-            a nested dictionary.
-
-    Returns:
-        Dict with processed simulation results. The keys are the variable names and the
-        values are the flattened arrays, with dimension (n_periods * n_initial_states,).
-        Additionally, the _period variable is added.
-
-    """
-    n_periods = len(results)
-    n_initial_states = len(results[0]["value"])
-
-    list_of_dicts = [
-        {"value": d["value"], **d["choices"], **d["states"]} for d in results
-    ]
-    dict_of_lists = {
-        key: [d[key] for d in list_of_dicts] for key in list(list_of_dicts[0])
-    }
-    out = {key: jnp.concatenate(values) for key, values in dict_of_lists.items()}
-    out["_period"] = jnp.repeat(jnp.arange(n_periods), n_initial_states)
-
-    return out
-
-
-# ======================================================================================
-# Simulation keys
-# ======================================================================================
-
-
-def _generate_simulation_keys(
-    key: Array, ids: list[str]
-) -> tuple[Array, dict[str, Array]]:
-    """Generate pseudo-random number generator keys (PRNG keys) for simulation.
-
-    PRNG keys in JAX are immutable objects used to control random number generation.
-    A key can be used to generate a stream of random numbers, e.g., given a key, one can
-    call jax.random.normal(key) to generate a stream of normal random numbers. In order
-    to ensure that each simulation is based on a different stream of random numbers, we
-    split the key into one key per simulation unit, and one key that will be passed to
-    the next iteration in order to generate new keys.
-
-    See the JAX documentation for more details:
-    https://docs.jax.dev/en/latest/random-numbers.html#random-numbers-in-jax
-
-    Args:
-        key: PRNG key.
-        ids: List of names for which a key is to be generated.
-
-    Returns:
-        - Updated PRNG key.
-        - Dict with PRNG keys for each id in ids.
-
-    """
-    keys = jax.random.split(key, num=len(ids) + 1)
-
-    key = keys[0]
-    simulation_keys = dict(zip(ids, keys[1:], strict=True))
-
-    return key, simulation_keys
 
 
 # ======================================================================================
@@ -448,57 +310,6 @@ def retrieve_choices(
 # vmap jnp.unravel_index over the first axis of the `indices` argument, while holding
 # the `shape` argument constant (in_axes = (0, None)).
 vmapped_unravel_index = vmap(jnp.unravel_index, in_axes=(0, None))
-
-
-# ======================================================================================
-# Data State Choice Space
-# ======================================================================================
-
-
-def create_data_scs(
-    states: dict[str, Array],
-    model: InternalModel,
-) -> StateChoiceSpace:
-    """Create data state choice space.
-
-    Args:
-        states: Dict with initial states.
-        model: Model instance.
-
-    Returns:
-        Data state choice space.
-
-    """
-    # preparations
-    # ==================================================================================
-    vi = model.variable_info
-
-    # check that all states have an initial value
-    # ==================================================================================
-    state_names = set(vi.query("is_state").index)
-
-    if state_names != set(states.keys()):
-        missing = state_names - set(states.keys())
-        too_many = set(states.keys()) - state_names
-        raise ValueError(
-            "You need to provide an initial value for each state variable in the model."
-            f"\n\nMissing initial states: {missing}\n",
-            f"Provided variables that are not states: {too_many}",
-        )
-
-    # get choices
-    # ==================================================================================
-    choices = {
-        name: grid
-        for name, grid in model.grids.items()
-        if name in vi.query("is_choice & is_discrete").index.tolist()
-    }
-
-    return StateChoiceSpace(
-        states=states,
-        choices=choices,
-        ordered_var_names=tuple(vi.query("is_state | is_discrete").index.tolist()),
-    )
 
 
 # ======================================================================================
