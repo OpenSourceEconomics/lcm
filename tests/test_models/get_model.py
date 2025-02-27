@@ -89,9 +89,20 @@ def get_params(
             ],
             # Transition from period 1 to period 2
             [
-                # Description is the same as above
-                [[0, 1.0], [1.0, 0]],
-                [[0, 1.0], [0.0, 1.0]],
+                # Current working decision 0
+                [
+                    # Current partner state 0
+                    [0, 1.0],
+                    # Current partner state 1
+                    [1.0, 0],
+                ],
+                # Current working decision 1
+                [
+                    # Current partner state 0
+                    [0, 1.0],
+                    # Current partner state 1
+                    [0.0, 1.0],
+                ],
             ],
         ],
     )

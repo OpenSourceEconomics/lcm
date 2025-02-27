@@ -19,7 +19,7 @@ def test_get_lcm_function_with_simulate_target():
         targets="solve_and_simulate",
     )
 
-    res = simulate_model(
+    res: pd.DataFrame = simulate_model(  # type: ignore[assignment]
         params=get_params(),
         initial_states={
             "health": jnp.array([1, 1, 0, 0]),
@@ -28,21 +28,17 @@ def test_get_lcm_function_with_simulate_target():
         },
     )
 
-    expected_partner = [
-        0,
-        0,
-        1,
-        0,  # period 0
-        1,
-        1,
-        1,
-        1,  # period 1
-        1,
-        1,
-        1,
-        0,  # period 2
-    ]
-    assert jnp.array_equal(res["partner"].values, expected_partner)  # type: ignore[call-overload, arg-type]
+    # This is derived from the partner transition in get_params.
+    expected_next_partner = (
+        (res.working.astype(bool) | ~res.partner.astype(bool)).astype(int).loc[:1]
+    )
+
+    pd.testing.assert_series_equal(
+        res["partner"].loc[1:],
+        expected_next_partner,
+        check_index=False,
+        check_names=False,
+    )
 
 
 # ======================================================================================
