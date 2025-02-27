@@ -109,7 +109,7 @@ def test_solve_brute():
         logger=get_logger(debug_mode=False),
     )
 
-    assert isinstance(solution, list)
+    assert isinstance(solution, dict)
 
 
 def test_solve_continuous_problem_no_vf_arr():

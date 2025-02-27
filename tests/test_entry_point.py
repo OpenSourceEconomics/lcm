@@ -103,14 +103,14 @@ def test_get_lcm_function_with_simulation_is_coherent(model):
     # solve
     solve_model, params_template = get_lcm_function(model=model, targets="solve")
     params = tree_map(lambda _: 0.2, params_template)
-    vf_arr_list = solve_model(params)
+    vf_arr_dict = solve_model(params)
 
     # simulate using solution
     simulate_model, _ = get_lcm_function(model=model, targets="simulate")
 
     solve_then_simulate = simulate_model(
         params,
-        vf_arr_list=vf_arr_list,
+        vf_arr_dict=vf_arr_dict,
         initial_states={
             "wealth": jnp.array([0.0, 10.0, 50.0]),
         },
@@ -142,14 +142,14 @@ def test_get_lcm_function_with_simulation_target_iskhakov_et_al_2017(model):
     # solve model
     solve_model, params_template = get_lcm_function(model=model, targets="solve")
     params = tree_map(lambda _: 0.2, params_template)
-    vf_arr_list = solve_model(params)
+    vf_arr_dict = solve_model(params)
 
     # simulate using solution
     simulate_model, _ = get_lcm_function(model=model, targets="simulate")
 
     simulate_model(
         params,
-        vf_arr_list=vf_arr_list,
+        vf_arr_dict=vf_arr_dict,
         initial_states={
             "wealth": jnp.array([10.0, 10.0, 20.0]),
             "lagged_retirement": jnp.array(

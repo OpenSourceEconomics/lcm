@@ -80,7 +80,7 @@ def test_simulate_using_raw_inputs(simulate_inputs):
 
     got = simulate(
         params=params,
-        vf_arr_list=[jnp.empty(0)],
+        vf_arr_dict={0: jnp.empty(0)},
         initial_states={"wealth": jnp.array([1.0, 50.400803])},
         logger=get_logger(debug_mode=False),
         **simulate_inputs,
@@ -112,8 +112,8 @@ def iskhakov_et_al_2017_stripped_down_model_solution():
         solve_model, _ = get_lcm_function(model_config, targets="solve")
 
         params = get_params()
-        vf_arr_list = solve_model(params=params)
-        return vf_arr_list, params, model_config
+        vf_arr_dict = solve_model(params=params)
+        return vf_arr_dict, params, model_config
 
     return _model_solution
 
@@ -122,7 +122,7 @@ def test_simulate_using_get_lcm_function(
     iskhakov_et_al_2017_stripped_down_model_solution,
 ):
     n_periods = 3
-    vf_arr_list, params, model = iskhakov_et_al_2017_stripped_down_model_solution(
+    vf_arr_dict, params, model = iskhakov_et_al_2017_stripped_down_model_solution(
         n_periods=n_periods,
     )
 
@@ -130,7 +130,7 @@ def test_simulate_using_get_lcm_function(
 
     res: pd.DataFrame = simulate_model(  # type: ignore[assignment]
         params,
-        vf_arr_list=vf_arr_list,
+        vf_arr_dict=vf_arr_dict,
         initial_states={
             "wealth": jnp.array([20.0, 150, 250, 320]),
         },
@@ -206,13 +206,13 @@ def test_effect_of_beta_on_last_period():
 
     res_low: pd.DataFrame = simulate_model(  # type: ignore[assignment]
         params_low,
-        vf_arr_list=solution_low,
+        vf_arr_dict=solution_low,
         initial_states={"wealth": initial_wealth},
     )
 
     res_high: pd.DataFrame = simulate_model(  # type: ignore[assignment]
         params_high,
-        vf_arr_list=solution_high,
+        vf_arr_dict=solution_high,
         initial_states={"wealth": initial_wealth},
     )
 
@@ -250,13 +250,13 @@ def test_effect_of_disutility_of_work():
 
     res_low: pd.DataFrame = simulate_model(  # type: ignore[assignment]
         params_low,
-        vf_arr_list=solution_low,
+        vf_arr_dict=solution_low,
         initial_states={"wealth": initial_wealth},
     )
 
     res_high: pd.DataFrame = simulate_model(  # type: ignore[assignment]
         params_high,
-        vf_arr_list=solution_high,
+        vf_arr_dict=solution_high,
         initial_states={"wealth": initial_wealth},
     )
 

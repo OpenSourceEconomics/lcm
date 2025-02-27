@@ -16,7 +16,7 @@ def solve(
     compute_ccv_functions: dict[int, Callable[[Array, Array], Array]],
     emax_calculators: dict[int, DiscreteProblemValueSolverFunction],
     logger: logging.Logger,
-) -> list[Array]:
+) -> dict[int, Array]:
     """Solve a model by brute force.
 
     Notes:
@@ -45,12 +45,11 @@ def solve(
         logger: Logger that logs to stdout.
 
     Returns:
-        List with one value function array per period.
+        Dict with one value function array per period.
 
     """
-    # extract information
     n_periods = len(state_choice_spaces)
-    reversed_solution = []
+    solution = {}
     vf_arr = None
 
     logger.info("Starting solution")
@@ -69,11 +68,11 @@ def solve(
         # solve discrete problem by calculating expected maximum over discrete choices
         calculate_emax = emax_calculators[period]
         vf_arr = calculate_emax(conditional_continuation_values, params=params)
-        reversed_solution.append(vf_arr)
+        solution[period] = vf_arr
 
         logger.info("Period: %s", period)
 
-    return list(reversed(reversed_solution))
+    return solution
 
 
 def solve_continuous_problem(

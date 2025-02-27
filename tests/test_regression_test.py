@@ -1,5 +1,6 @@
 import jax.numpy as jnp
 import pandas as pd
+from jax import Array
 from numpy.testing import assert_array_almost_equal as aaae
 from pandas.testing import assert_frame_equal
 
@@ -31,7 +32,7 @@ def test_regression_test():
         disutility_of_work=1.0,
         interest_rate=0.05,
     )
-    got_solve = solve(params)
+    got_solve: dict[int, Array] = solve(params)  # type: ignore[assignment]
 
     solve_and_simulate, _ = get_lcm_function(
         model=model_config,
@@ -47,5 +48,5 @@ def test_regression_test():
 
     # Compare
     # ==================================================================================
-    aaae(expected_solve, got_solve, decimal=5)
+    aaae(expected_solve, list(got_solve.values()), decimal=5)
     assert_frame_equal(expected_simulate, got_simulate)  # type: ignore[arg-type]

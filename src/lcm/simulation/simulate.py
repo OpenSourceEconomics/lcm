@@ -25,7 +25,7 @@ def solve_and_simulate(
     model: InternalModel,
     next_state: Callable[..., dict[str, Array]],
     logger: logging.Logger,
-    solve_model: Callable[..., list[Array]],
+    solve_model: Callable[..., dict[int, Array]],
     *,
     additional_targets: list[str] | None = None,
     seed: int | None = None,
@@ -35,7 +35,7 @@ def solve_and_simulate(
     Same docstring as `simulate` mutatis mutandis.
 
     """
-    vf_arr_list = solve_model(params)
+    vf_arr_dict = solve_model(params)
     return simulate(
         params=params,
         initial_states=initial_states,
@@ -44,7 +44,7 @@ def solve_and_simulate(
         model=model,
         next_state=next_state,
         logger=logger,
-        vf_arr_list=vf_arr_list,
+        vf_arr_dict=vf_arr_dict,
         additional_targets=additional_targets,
         seed=seed,
     )
@@ -58,7 +58,7 @@ def simulate(
     model: InternalModel,
     next_state: Callable[..., dict[str, Array]],
     logger: logging.Logger,
-    vf_arr_list: list[Array],
+    vf_arr_dict: dict[int, Array],
     *,
     additional_targets: list[str] | None = None,
     seed: int | None = None,
@@ -78,7 +78,7 @@ def simulate(
             draw from the distribution of the next state.
         model: Model instance.
         logger: Logger that logs to stdout.
-        vf_arr_list: List of value function arrays of length n_periods.
+        vf_arr_dict: Dict of value function arrays of length n_periods.
         additional_targets: List of targets to compute. If provided, the targets
             are computed and added to the simulation results.
         seed: Random number seed; will be passed to `jax.random.key`. If not provided,
@@ -95,21 +95,12 @@ def simulate(
 
     # Preparations
     # ==================================================================================
-    n_periods = len(vf_arr_list)
+    n_periods = len(vf_arr_dict)
     n_initial_states = len(next(iter(initial_states.values())))
 
     data_scs = create_state_choice_space(
         model=model,
         initial_states=initial_states,
-    )
-
-    # We drop the value function array for the first period, because it is not needed
-    # for the simulation. This is because in the first period the agents only consider
-    # the current utility and the value function of next period. Similarly, the last
-    # value function array is not required, as the agents only consider the current
-    # utility in the last period.
-    next_vf_arr = dict(
-        zip(range(n_periods), vf_arr_list[1:] + [jnp.empty(0)], strict=True)
     )
 
     discrete_policy_calculator = get_solve_discrete_problem_policy(
@@ -147,7 +138,7 @@ def simulate(
             data_scs=data_scs,
             compute_ccv=compute_ccv_policy_functions[period],
             continuous_choice_grids=continuous_choice_grids[period],
-            vf_arr=next_vf_arr[period],
+            vf_arr=vf_arr_dict.get(period + 1, jnp.empty(0)),
             params=params,
         )
 
