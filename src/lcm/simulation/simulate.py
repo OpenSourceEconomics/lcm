@@ -17,6 +17,39 @@ from lcm.typing import ParamsDict
 from lcm.utils import draw_random_seed
 
 
+def solve_and_simulate(
+    params: ParamsDict,
+    initial_states: dict[str, Array],
+    continuous_choice_grids: dict[int, dict[str, Array]],
+    compute_ccv_policy_functions: dict[int, Callable[..., tuple[Array, Array]]],
+    model: InternalModel,
+    next_state: Callable[..., dict[str, Array]],
+    logger: logging.Logger,
+    solve_model: Callable[..., list[Array]],
+    *,
+    additional_targets: list[str] | None = None,
+    seed: int | None = None,
+) -> pd.DataFrame:
+    """First solve the model and then simulate the model forward in time.
+
+    Same docstring as `simulate` mutatis mutandis.
+
+    """
+    vf_arr_list = solve_model(params)
+    return simulate(
+        params=params,
+        initial_states=initial_states,
+        continuous_choice_grids=continuous_choice_grids,
+        compute_ccv_policy_functions=compute_ccv_policy_functions,
+        model=model,
+        next_state=next_state,
+        logger=logger,
+        vf_arr_list=vf_arr_list,
+        additional_targets=additional_targets,
+        seed=seed,
+    )
+
+
 def simulate(
     params: ParamsDict,
     initial_states: dict[str, Array],
@@ -25,12 +58,12 @@ def simulate(
     model: InternalModel,
     next_state: Callable[..., dict[str, Array]],
     logger: logging.Logger,
-    solve_model: Callable[..., list[Array]] | None = None,
-    pre_computed_vf_arr_list: list[Array] | None = None,
+    vf_arr_list: list[Array],
+    *,
     additional_targets: list[str] | None = None,
     seed: int | None = None,
 ) -> pd.DataFrame:
-    """Simulate the model forward in time.
+    """Simulate the model forward in time given pre-computed value function arrays.
 
     Args:
         params: Dict of model parameters.
@@ -45,11 +78,7 @@ def simulate(
             draw from the distribution of the next state.
         model: Model instance.
         logger: Logger that logs to stdout.
-        solve_model: Function that solves the model. Is only required if
-            vf_arr_list is not provided.
-        pre_computed_vf_arr_list: List of value function arrays of length
-            n_periods. This is the output of the model's `solve` function. If not
-            provided, the model is solved first.
+        vf_arr_list: List of value function arrays of length n_periods.
         additional_targets: List of targets to compute. If provided, the targets
             are computed and added to the simulation results.
         seed: Random number seed; will be passed to `jax.random.key`. If not provided,
@@ -59,17 +88,6 @@ def simulate(
         DataFrame with the simulation results.
 
     """
-    if pre_computed_vf_arr_list is None:
-        if solve_model is None:
-            raise ValueError(
-                "You need to provide either vf_arr_list or solve_model.",
-            )
-        # We do not need to convert the params here, because the solve_model function
-        # will do it.
-        vf_arr_list = solve_model(params)
-    else:
-        vf_arr_list = pre_computed_vf_arr_list
-
     if seed is None:
         seed = draw_random_seed()
 

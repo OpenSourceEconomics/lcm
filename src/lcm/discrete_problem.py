@@ -91,7 +91,9 @@ def get_solve_discrete_problem_policy(
     choice_axes = _determine_discrete_choice_axes_simulation(variable_info)
 
     def _calculate_discrete_argmax(
-        values: Array, choice_axes: tuple[int, ...]
+        values: Array,
+        choice_axes: tuple[int, ...],
+        params: ParamsDict,  # noqa: ARG001
     ) -> tuple[Array, Array]:
         return argmax(values, axis=choice_axes)
 

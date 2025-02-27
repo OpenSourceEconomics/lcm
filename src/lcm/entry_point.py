@@ -15,7 +15,7 @@ from lcm.input_processing import process_model
 from lcm.interfaces import StateChoiceSpace, StateSpaceInfo
 from lcm.logging import get_logger
 from lcm.next_state import get_next_state_function
-from lcm.simulation.simulate import simulate
+from lcm.simulation.simulate import simulate, solve_and_simulate
 from lcm.solution.solve_brute import solve
 from lcm.solution.state_choice_space import create_state_choice_space
 from lcm.typing import DiscreteProblemValueSolverFunction, ParamsDict, Target
@@ -141,18 +141,30 @@ def get_lcm_function(
         logger=logger,
     )
 
-    solve_model = jax.jit(_solve_model) if jit else _solve_model
-
     _next_state_simulate = get_next_state_function(
         model=internal_model, target=Target.SIMULATE
     )
+
+    solve_model = jax.jit(_solve_model) if jit else _solve_model
+    next_state_simulate = jax.jit(_next_state_simulate) if jit else _next_state_simulate
+
     simulate_model = partial(
         simulate,
         continuous_choice_grids=continuous_choice_grids,
         compute_ccv_policy_functions=compute_ccp_functions,
         model=internal_model,
-        next_state=jax.jit(_next_state_simulate),
+        next_state=next_state_simulate,  # type: ignore[arg-type]
         logger=logger,
+    )
+
+    solve_and_simulate_model = partial(
+        solve_and_simulate,
+        continuous_choice_grids=continuous_choice_grids,
+        compute_ccv_policy_functions=compute_ccp_functions,
+        model=internal_model,
+        next_state=next_state_simulate,  # type: ignore[arg-type]
+        logger=logger,
+        solve_model=solve_model,
     )
 
     target_func: Callable[..., list[Array] | pd.DataFrame]
@@ -162,7 +174,7 @@ def get_lcm_function(
     elif targets == "simulate":
         target_func = simulate_model
     elif targets == "solve_and_simulate":
-        target_func = partial(simulate_model, solve_model=solve_model)
+        target_func = solve_and_simulate_model
 
     return target_func, internal_model.params
 

@@ -80,7 +80,7 @@ def test_simulate_using_raw_inputs(simulate_inputs):
 
     got = simulate(
         params=params,
-        pre_computed_vf_arr_list=[jnp.empty(0)],
+        vf_arr_list=[jnp.empty(0)],
         initial_states={"wealth": jnp.array([1.0, 50.400803])},
         logger=get_logger(debug_mode=False),
         **simulate_inputs,
@@ -130,7 +130,7 @@ def test_simulate_using_get_lcm_function(
 
     res: pd.DataFrame = simulate_model(  # type: ignore[assignment]
         params,
-        pre_computed_vf_arr_list=vf_arr_list,
+        vf_arr_list=vf_arr_list,
         initial_states={
             "wealth": jnp.array([20.0, 150, 250, 320]),
         },
@@ -206,13 +206,13 @@ def test_effect_of_beta_on_last_period():
 
     res_low: pd.DataFrame = simulate_model(  # type: ignore[assignment]
         params_low,
-        pre_computed_vf_arr_list=solution_low,
+        vf_arr_list=solution_low,
         initial_states={"wealth": initial_wealth},
     )
 
     res_high: pd.DataFrame = simulate_model(  # type: ignore[assignment]
         params_high,
-        pre_computed_vf_arr_list=solution_high,
+        vf_arr_list=solution_high,
         initial_states={"wealth": initial_wealth},
     )
 
@@ -250,13 +250,13 @@ def test_effect_of_disutility_of_work():
 
     res_low: pd.DataFrame = simulate_model(  # type: ignore[assignment]
         params_low,
-        pre_computed_vf_arr_list=solution_low,
+        vf_arr_list=solution_low,
         initial_states={"wealth": initial_wealth},
     )
 
     res_high: pd.DataFrame = simulate_model(  # type: ignore[assignment]
         params_high,
-        pre_computed_vf_arr_list=solution_high,
+        vf_arr_list=solution_high,
         initial_states={"wealth": initial_wealth},
     )
 
