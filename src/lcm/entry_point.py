@@ -66,19 +66,6 @@ def get_lcm_function(
     logger = get_logger(debug_mode=debug_mode)
 
     # ==================================================================================
-    # Create continuous choice grids
-    # ----------------------------------------------------------------------------------
-    # For now they are the same in all periods but this can change.
-    # ==================================================================================
-    continuous_choices_names = internal_model.variable_info.query(
-        "is_continuous & is_choice"
-    ).index.tolist()
-    _choice_grids = {n: internal_model.grids[n] for n in continuous_choices_names}
-    continuous_choice_grids = {
-        period: _choice_grids for period in range(internal_model.n_periods)
-    }
-
-    # ==================================================================================
     # Create model functions and state-choice-spaces
     # ==================================================================================
     state_choice_spaces: dict[int, StateChoiceSpace] = {}
@@ -109,12 +96,12 @@ def get_lcm_function(
 
         compute_ccv = get_compute_conditional_continuation_value(
             utility_and_feasibility=u_and_f,
-            continuous_choice_variables=tuple(_choice_grids),
+            continuous_choice_variables=tuple(state_choice_space.continuous_choices),
         )
 
         compute_ccp = get_compute_conditional_continuation_policy(
             utility_and_feasibility=u_and_f,
-            continuous_choice_variables=tuple(_choice_grids),
+            continuous_choice_variables=tuple(state_choice_space.continuous_choices),
         )
 
         solve_discrete_problem = get_solve_discrete_problem_value(
@@ -135,7 +122,6 @@ def get_lcm_function(
     _solve_model = partial(
         solve,
         state_choice_spaces=state_choice_spaces,
-        continuous_choice_grids=continuous_choice_grids,
         compute_ccv_functions=compute_ccv_functions,
         emax_calculators=solve_discrete_problem_functions,
         logger=logger,
@@ -150,7 +136,6 @@ def get_lcm_function(
 
     simulate_model = partial(
         simulate,
-        continuous_choice_grids=continuous_choice_grids,
         compute_ccv_policy_functions=compute_ccp_functions,
         model=internal_model,
         next_state=next_state_simulate,  # type: ignore[arg-type]
@@ -159,7 +144,6 @@ def get_lcm_function(
 
     solve_and_simulate_model = partial(
         solve_and_simulate,
-        continuous_choice_grids=continuous_choice_grids,
         compute_ccv_policy_functions=compute_ccp_functions,
         model=internal_model,
         next_state=next_state_simulate,  # type: ignore[arg-type]

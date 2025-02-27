@@ -26,11 +26,14 @@ def test_solve_brute():
     # create the list of state_choice_spaces
     # ==================================================================================
     _scs = StateChoiceSpace(
-        choices={
+        discrete_choices={
             # pick [0, 1] such that no label translation is needed
             # lazy is like a type, it influences utility but is not affected by choices
             "lazy": jnp.array([0, 1]),
             "working": jnp.array([0, 1]),
+        },
+        continuous_choices={
+            "consumption": jnp.array([0, 1, 2, 3]),
         },
         states={
             # pick [0, 1, 2] such that no coordinate mapping is needed
@@ -39,15 +42,6 @@ def test_solve_brute():
         ordered_var_names=("lazy", "working", "wealth"),
     )
     state_choice_spaces = {0: _scs, 1: _scs}
-
-    # ==================================================================================
-    # create continuous choice grids
-    # ==================================================================================
-
-    # you 1 if working and have at most 2 in existing wealth, so
-    _ccg = {"consumption": jnp.array([0, 1, 2, 3])}
-
-    continuous_choice_grids = {0: _ccg, 1: _ccg}
 
     # ==================================================================================
     # create the utility_and_feasibility functions
@@ -103,7 +97,6 @@ def test_solve_brute():
     solution = solve(
         params=params,
         state_choice_spaces=state_choice_spaces,
-        continuous_choice_grids=continuous_choice_grids,
         compute_ccv_functions=compute_ccv_functions,
         emax_calculators=emax_calculators,
         logger=get_logger(debug_mode=False),
@@ -114,10 +107,13 @@ def test_solve_brute():
 
 def test_solve_continuous_problem_no_vf_arr():
     state_choice_space = StateChoiceSpace(
-        choices={
+        discrete_choices={
             "a": jnp.array([0, 1.0]),
             "b": jnp.array([2, 3.0]),
             "c": jnp.array([4, 5, 6]),
+        },
+        continuous_choices={
+            "d": jnp.arange(12.0),
         },
         states={},
         ordered_var_names=("a", "b", "c"),
@@ -127,8 +123,6 @@ def test_solve_continuous_problem_no_vf_arr():
         util = d
         feasib = d <= a + b + c
         return util, feasib
-
-    continuous_choice_grids = {"d": jnp.arange(12.0)}
 
     compute_ccv = get_compute_conditional_continuation_value(
         utility_and_feasibility=_utility_and_feasibility,
@@ -140,7 +134,6 @@ def test_solve_continuous_problem_no_vf_arr():
     got = solve_continuous_problem(
         state_choice_space,
         compute_ccv,
-        continuous_choice_grids,
         vf_arr=None,
         params={},
     )

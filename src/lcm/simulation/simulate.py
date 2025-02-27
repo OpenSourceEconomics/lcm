@@ -24,7 +24,6 @@ from lcm.utils import draw_random_seed
 def solve_and_simulate(
     params: ParamsDict,
     initial_states: dict[str, Array],
-    continuous_choice_grids: dict[int, dict[str, Array]],
     compute_ccv_policy_functions: dict[int, Callable[..., tuple[Array, Array]]],
     model: InternalModel,
     next_state: Callable[..., dict[str, Array]],
@@ -43,7 +42,6 @@ def solve_and_simulate(
     return simulate(
         params=params,
         initial_states=initial_states,
-        continuous_choice_grids=continuous_choice_grids,
         compute_ccv_policy_functions=compute_ccv_policy_functions,
         model=model,
         next_state=next_state,
@@ -57,7 +55,6 @@ def solve_and_simulate(
 def simulate(
     params: ParamsDict,
     initial_states: dict[str, Array],
-    continuous_choice_grids: dict[int, dict[str, Array]],
     compute_ccv_policy_functions: dict[int, Callable[..., tuple[Array, Array]]],
     model: InternalModel,
     next_state: Callable[..., dict[str, Array]],
@@ -73,8 +70,6 @@ def simulate(
         params: Dict of model parameters.
         initial_states: List of initial states to start from. Typically from the
             observed dataset.
-        continuous_choice_grids: Dict of length n_periods. Each dict contains 1d grids
-            for continuous choice variables.
         compute_ccv_policy_functions: Dict of length n_periods. Each function computes
             the conditional continuation value dependent on the discrete choices.
         next_state: Function that returns the next state given the current
@@ -125,10 +120,10 @@ def simulate(
         # We compute these grid shapes in the loop because they can change over time.
         # TODO (@timmens): This could still be pre-computed in the entry point.  # noqa: TD003,E501
         discrete_choices_grid_shape = tuple(
-            len(grid) for grid in state_choice_space.choices.values()
+            len(grid) for grid in state_choice_space.discrete_choices.values()
         )
         continuous_choices_grid_shape = tuple(
-            len(grid) for grid in continuous_choice_grids[period].values()
+            len(grid) for grid in state_choice_space.continuous_choices.values()
         )
 
         # Compute optimal continuous choice conditional on discrete choices
@@ -141,7 +136,6 @@ def simulate(
             solve_continuous_problem(
                 data_scs=state_choice_space,
                 compute_ccv=compute_ccv_policy_functions[period],
-                continuous_choice_grids=continuous_choice_grids[period],
                 vf_arr=next_period_vf_arr,
                 params=params,
             )
@@ -165,13 +159,13 @@ def simulate(
         # ------------------------------------------------------------------------------
         discrete_choices = get_values_from_indices(
             flat_indices=discrete_argmax,
-            grids=state_choice_space.choices,
+            grids=state_choice_space.discrete_choices,
             grids_shapes=discrete_choices_grid_shape,
         )
 
         continuous_choices = get_values_from_indices(
             flat_indices=continuous_choice_argmax,
-            grids=continuous_choice_grids[period],
+            grids=state_choice_space.continuous_choices,
             grids_shapes=continuous_choices_grid_shape,
         )
 
@@ -218,7 +212,6 @@ def simulate(
 def solve_continuous_problem(
     data_scs: StateChoiceSpace,
     compute_ccv: Callable[..., tuple[Array, Array]],
-    continuous_choice_grids: dict[str, Array],
     vf_arr: Array,
     params: ParamsDict,
 ) -> tuple[Array, Array]:
@@ -233,8 +226,6 @@ def solve_continuous_problem(
             - discrete and continuous choice variables
             - vf_arr
             - params
-        continuous_choice_grids: List of dicts with 1d grids for continuous
-            choice variables.
         vf_arr: Value function array.
         params: Dict of model parameters.
 
@@ -248,15 +239,15 @@ def solve_continuous_problem(
     """
     _gridmapped = simulation_spacemap(
         func=compute_ccv,
-        choices_var_names=tuple(data_scs.choices),
+        choices_var_names=tuple(data_scs.discrete_choices),
         states_var_names=tuple(data_scs.states),
     )
     gridmapped = jax.jit(_gridmapped)
 
     return gridmapped(
-        **data_scs.choices,
         **data_scs.states,
-        **continuous_choice_grids,
+        **data_scs.discrete_choices,
+        **data_scs.continuous_choices,
         vf_arr=vf_arr,
         params=params,
     )

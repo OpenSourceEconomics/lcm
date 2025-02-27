@@ -34,11 +34,14 @@ def create_state_choice_space(
     discrete_states = {sn: model.gridspecs[sn] for sn in discrete_states_names}
     continuous_states = {sn: model.gridspecs[sn] for sn in continuous_states_names}
 
-    state_grids = {sn: model.grids[sn] for sn in vi.query("is_state").index.tolist()}
-    choice_grids = {
-        sn: model.grids[sn] for sn in vi.query("is_choice & is_discrete").index.tolist()
+    state_grids = {sn: model.grids[sn] for sn in vi.query("is_state").index}
+    discrete_choices = {
+        sn: model.grids[sn] for sn in vi.query("is_choice & is_discrete").index
     }
-    ordered_var_names = tuple(vi.query("is_state | is_discrete").index.tolist())
+    continuous_choices = {
+        sn: model.grids[sn] for sn in vi.query("is_choice & is_continuous").index
+    }
+    ordered_var_names = tuple(vi.query("is_state | is_discrete").index)
 
     state_space_info = StateSpaceInfo(
         states_names=tuple(discrete_states_names + continuous_states_names),
@@ -48,7 +51,8 @@ def create_state_choice_space(
 
     state_choice_space = StateChoiceSpace(
         states=state_grids,
-        choices=choice_grids,
+        discrete_choices=discrete_choices,
+        continuous_choices=continuous_choices,
         ordered_var_names=ordered_var_names,
     )
 

@@ -12,7 +12,6 @@ from lcm.typing import DiscreteProblemValueSolverFunction, ParamsDict
 def solve(
     params: ParamsDict,
     state_choice_spaces: dict[int, StateChoiceSpace],
-    continuous_choice_grids: dict[int, dict[str, Array]],
     compute_ccv_functions: dict[int, Callable[[Array, Array], Array]],
     emax_calculators: dict[int, DiscreteProblemValueSolverFunction],
     logger: logging.Logger,
@@ -31,8 +30,6 @@ def solve(
     Args:
         params: Dict of model parameters.
         state_choice_spaces: Dict with one state_choice_space per period.
-        continuous_choice_grids: Dict with one dict of 1d grids for continuous
-            choice variables per period.
         compute_ccv_functions: Dict with one function needed to solve the agent's
             problem. Each function depends on:
             - discrete and continuous state variables
@@ -60,7 +57,6 @@ def solve(
         conditional_continuation_values = solve_continuous_problem(
             state_choice_space=state_choice_spaces[period],
             compute_ccv=compute_ccv_functions[period],
-            continuous_choice_grids=continuous_choice_grids[period],
             vf_arr=vf_arr,
             params=params,
         )
@@ -78,7 +74,6 @@ def solve(
 def solve_continuous_problem(
     state_choice_space: StateChoiceSpace,
     compute_ccv: Callable[..., Array],
-    continuous_choice_grids: dict[str, Array],
     vf_arr: Array | None,
     params: ParamsDict,
 ) -> Array:
@@ -93,8 +88,6 @@ def solve_continuous_problem(
             - discrete and continuous choice variables
             - vf_arr
             - params
-        continuous_choice_grids: List of dicts with 1d grids for continuous
-            choice variables.
         vf_arr: Value function array.
         params: Dict of model parameters.
 
@@ -112,8 +105,8 @@ def solve_continuous_problem(
 
     return gridmapped(
         **state_choice_space.states,
-        **state_choice_space.choices,
-        **continuous_choice_grids,
+        **state_choice_space.discrete_choices,
+        **state_choice_space.continuous_choices,
         vf_arr=vf_arr,
         params=params,
     )

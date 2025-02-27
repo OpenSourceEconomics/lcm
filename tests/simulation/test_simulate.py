@@ -36,6 +36,9 @@ if TYPE_CHECKING:
 @pytest.fixture
 def simulate_inputs():
     model_config = get_model_config("iskhakov_et_al_2017_stripped_down", n_periods=1)
+    choices = model_config.choices
+    choices["consumption"] = choices["consumption"].replace(stop=100)  # type: ignore[attr-defined]
+    model_config = model_config.replace(choices=choices)
     model = process_model(model_config)
 
     state_space_info = create_state_choice_space(
@@ -57,12 +60,7 @@ def simulate_inputs():
         )
         compute_ccv_policy_functions.append(compute_ccv)
 
-    n_grid_points = model_config.choices["consumption"].n_points  # type: ignore[attr-defined]
-
     return {
-        "continuous_choice_grids": [
-            {"consumption": jnp.linspace(1, 100, num=n_grid_points)},
-        ],
         "compute_ccv_policy_functions": compute_ccv_policy_functions,
         "model": model,
         "next_state": get_next_state_function(model, target=Target.SIMULATE),

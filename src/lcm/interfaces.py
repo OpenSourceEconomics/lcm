@@ -7,6 +7,7 @@ from jax import Array
 
 from lcm.grids import ContinuousGrid, DiscreteGrid, Grid
 from lcm.typing import InternalUserFunction, ParamsDict, ShockType
+from lcm.utils import first_non_none
 
 
 @dataclass(frozen=True)
@@ -25,37 +26,55 @@ class StateChoiceSpace:
     The state-choice space becomes the product of state-combinations with the full
     Cartesian product of the choice variables.
 
+    Note:
+    -----
+    We store discrete and continuous choices separately since these are handled during
+    different stages of the solution and simulation processes.
+
     Attributes:
         states: Dictionary containing the values of the state variables.
-        choices: Dictionary containing the values of the choice variables.
+        discrete_choices: Dictionary containing the values of the discrete choice
+            variables.
+        continuous_choices: Dictionary containing the values of the continuous choice
+            variables.
         ordered_var_names: Tuple with names of state and choice variables in the order
             they appear in the variable info table.
 
     """
 
     states: dict[str, Array]
-    choices: dict[str, Array]
+    discrete_choices: dict[str, Array]
+    continuous_choices: dict[str, Array]
     ordered_var_names: tuple[str, ...]
 
     def replace(
         self,
         states: dict[str, Array] | None = None,
-        choices: dict[str, Array] | None = None,
+        discrete_choices: dict[str, Array] | None = None,
+        continuous_choices: dict[str, Array] | None = None,
     ) -> "StateChoiceSpace":
         """Replace the states or choices in the state-choice space.
 
         Args:
             states: Dictionary with new states. If None, the existing states are used.
-            choices: Dictionary with new choices. If None, the existing choices are
-                used.
+            discrete_choices: Dictionary with new discrete choices. If None, the
+                existing discrete choices are used.
+            continuous_choices: Dictionary with new continuous choices. If None, the
+                existing continuous choices are used.
 
         Returns:
             New state-choice space with the replaced states or choices.
 
         """
-        states = states if states is not None else self.states
-        choices = choices if choices is not None else self.choices
-        return dc.replace(self, states=states, choices=choices)
+        states = first_non_none(states, self.states)
+        discrete_choices = first_non_none(discrete_choices, self.discrete_choices)
+        continuous_choices = first_non_none(continuous_choices, self.continuous_choices)
+        return dc.replace(
+            self,
+            states=states,
+            discrete_choices=discrete_choices,
+            continuous_choices=continuous_choices,
+        )
 
 
 @dataclass(frozen=True)

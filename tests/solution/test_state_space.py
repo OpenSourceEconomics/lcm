@@ -21,7 +21,8 @@ def test_create_state_choice_space():
     assert isinstance(state_space_info, StateSpaceInfo)
 
     assert jnp.array_equal(
-        state_choice_space.choices["retirement"], model.choices["retirement"].to_jax()
+        state_choice_space.discrete_choices["retirement"],
+        model.choices["retirement"].to_jax(),
     )
     assert jnp.array_equal(
         state_choice_space.states["wealth"], model.states["wealth"].to_jax()

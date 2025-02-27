@@ -16,7 +16,7 @@ def test_create_state_choice_space():
             "lagged_retirement": jnp.array([0, 1]),
         },
     )
-    assert_array_equal(got_space.choices["retirement"], jnp.array([0, 1]))
+    assert_array_equal(got_space.discrete_choices["retirement"], jnp.array([0, 1]))
     assert_array_equal(got_space.states["wealth"], jnp.array([10.0, 20.0]))
     assert_array_equal(got_space.states["lagged_retirement"], jnp.array([0, 1]))
 

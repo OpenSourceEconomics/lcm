@@ -21,3 +21,22 @@ def draw_random_seed() -> int:
 
     """
     return int.from_bytes(os.urandom(4), "little")
+
+
+def first_non_none(*args: T | None) -> T:
+    """Return the first non-None argument.
+
+    Args:
+        *args: Arguments to check.
+
+    Returns:
+        The first non-None argument.
+
+    Raises:
+        ValueError: If all arguments are None.
+
+    """
+    for arg in args:
+        if arg is not None:
+            return arg
+    raise ValueError("All arguments are None")
