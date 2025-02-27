@@ -7,7 +7,7 @@ import jax.numpy as jnp
 import pandas as pd
 from jax import Array, vmap
 
-from lcm.argmax import argmax
+from lcm.discrete_problem import get_solve_discrete_problem_policy
 from lcm.dispatchers import simulation_spacemap, vmap_1d
 from lcm.interfaces import InternalModel, StateChoiceSpace
 from lcm.random import generate_simulation_keys
@@ -94,7 +94,7 @@ def simulate(
         zip(range(n_periods), vf_arr_list[1:] + [jnp.empty(0)], strict=True)
     )
 
-    discrete_policy_calculator = get_discrete_policy_calculator(
+    discrete_policy_calculator = get_solve_discrete_problem_policy(
         variable_info=model.variable_info,
     )
 
@@ -135,7 +135,7 @@ def simulate(
 
         # Get optimal discrete choice given the optimal conditional continuous choices
         # ==============================================================================
-        discrete_argmax, value = discrete_policy_calculator(ccv)
+        discrete_argmax, value = discrete_policy_calculator(ccv, params=params)
 
         # Select optimal continuous choice corresponding to optimal discrete choice
         # ------------------------------------------------------------------------------
@@ -182,17 +182,16 @@ def simulate(
             ids=model.function_info.query("is_stochastic_next").index.tolist(),
         )
 
-        states = next_state(
+        states_with_prefix = next_state(
             **states,
             **choices,
             _period=jnp.repeat(period, n_initial_states),
             params=params,
             keys=stochastic_variables_keys,
         )
-
         # 'next_' prefix is added by the next_state function, but needs to be removed
-        # because in the next period, next states are current states.
-        states = {k.removeprefix("next_"): v for k, v in states.items()}
+        # because in the next period, next states will be current states.
+        states = {k.removeprefix("next_"): v for k, v in states_with_prefix.items()}
 
         logger.info("Period: %s", period)
 
@@ -310,59 +309,3 @@ def retrieve_choices(
 # vmap jnp.unravel_index over the first axis of the `indices` argument, while holding
 # the `shape` argument constant (in_axes = (0, None)).
 vmapped_unravel_index = vmap(jnp.unravel_index, in_axes=(0, None))
-
-
-# ======================================================================================
-# Discrete policy
-# ======================================================================================
-
-
-def get_discrete_policy_calculator(
-    variable_info: pd.DataFrame,
-) -> Callable[..., tuple[Array, Array]]:
-    """Return a function that calculates the argmax and max of continuation values.
-
-    The argmax is taken over the discrete choice variables in each state.
-
-    Args:
-        variable_info (pd.DataFrame): DataFrame with information about the model
-            variables.
-
-    Returns:
-        callable: Function that calculates the argmax of the conditional continuation
-            values. The function depends on:
-            - values (jax.Array): Multidimensional jax array with conditional
-                continuation values.
-
-    """
-    choice_axes = determine_discrete_choice_axes(variable_info)
-
-    def _calculate_discrete_argmax(
-        values: Array, choice_axes: tuple[int, ...]
-    ) -> tuple[Array, Array]:
-        return argmax(values, axis=choice_axes)
-
-    return partial(_calculate_discrete_argmax, choice_axes=choice_axes)
-
-
-def determine_discrete_choice_axes(variable_info: pd.DataFrame) -> tuple[int, ...]:
-    """Determine which axes correspond to discrete choices.
-
-    Args:
-        variable_info (pd.DataFrame): DataFrame with information about the variables.
-
-    Returns:
-        tuple: Tuple of ints, specifying which axes in a value function correspond to
-            discrete choices.
-
-    """
-    discrete_choice_vars = variable_info.query(
-        "is_choice & is_discrete",
-    ).index.tolist()
-
-    choice_vars = set(variable_info.query("is_choice").index.tolist())
-
-    # The first dimension corresponds to the simulated states, so add 1.
-    return tuple(
-        1 + i for i, ax in enumerate(discrete_choice_vars) if ax in choice_vars
-    )

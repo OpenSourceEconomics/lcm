@@ -1,5 +1,6 @@
+from typing import TYPE_CHECKING
+
 import jax.numpy as jnp
-import pandas as pd
 import pytest
 from numpy.testing import assert_array_almost_equal, assert_array_equal
 
@@ -11,7 +12,6 @@ from lcm.input_processing import process_model
 from lcm.logging import get_logger
 from lcm.next_state import get_next_state_function
 from lcm.simulation.simulate import (
-    determine_discrete_choice_axes,
     filter_ccv_policy,
     retrieve_choices,
     simulate,
@@ -23,6 +23,10 @@ from tests.test_models import (
     get_model_config,
     get_params,
 )
+
+if TYPE_CHECKING:
+    import pandas as pd
+
 
 # ======================================================================================
 # Test simulate using raw inputs
@@ -301,16 +305,3 @@ def test_filter_ccv_policy():
         vars_grid_shape=vars_grid_shape,
     )
     assert jnp.all(got == jnp.array([0, 0]))
-
-
-def test_determine_discrete_choice_axes():
-    variable_info = pd.DataFrame(
-        {
-            "is_state": [True, True, False, True, False, False],
-            "is_choice": [False, False, True, True, True, True],
-            "is_discrete": [True, True, True, True, True, False],
-            "is_continuous": [False, True, False, False, False, True],
-        },
-    )
-    got = determine_discrete_choice_axes(variable_info)
-    assert got == (1, 2, 3)

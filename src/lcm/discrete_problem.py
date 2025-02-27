@@ -23,15 +23,21 @@ import jax
 import pandas as pd
 from jax import Array
 
-from lcm.typing import DiscreteProblemSolverFunction, ParamsDict, ShockType
+from lcm.argmax import argmax
+from lcm.typing import (
+    DiscreteProblemPolicySolverFunction,
+    DiscreteProblemValueSolverFunction,
+    ParamsDict,
+    ShockType,
+)
 
 
-def get_solve_discrete_problem(
+def get_solve_discrete_problem_value(
     *,
     random_utility_shock_type: ShockType,
     variable_info: pd.DataFrame,
     is_last_period: bool,
-) -> DiscreteProblemSolverFunction:
+) -> DiscreteProblemValueSolverFunction:
     """Get function that computes the expected max. of conditional continuation values.
 
     The maximum is taken over the discrete choice variables in each state.
@@ -51,7 +57,7 @@ def get_solve_discrete_problem(
     if is_last_period:
         variable_info = variable_info.query("~is_auxiliary")
 
-    choice_axes = _determine_discrete_choice_axes(variable_info)
+    choice_axes = _determine_discrete_choice_axes_solution(variable_info)
 
     if random_utility_shock_type == ShockType.NONE:
         func = _solve_discrete_problem_no_shocks
@@ -61,6 +67,35 @@ def get_solve_discrete_problem(
         raise ValueError(f"Invalid shock_type: {random_utility_shock_type}.")
 
     return partial(func, choice_axes=choice_axes)
+
+
+def get_solve_discrete_problem_policy(
+    *,
+    variable_info: pd.DataFrame,
+) -> DiscreteProblemPolicySolverFunction:
+    """Return a function that calculates the argmax and max of continuation values.
+
+    The argmax is taken over the discrete choice variables in each state.
+
+    Args:
+        variable_info (pd.DataFrame): DataFrame with information about the model
+            variables.
+
+    Returns:
+        callable: Function that calculates the argmax of the conditional continuation
+            values. The function depends on:
+            - values (jax.Array): Multidimensional jax array with conditional
+                continuation values.
+
+    """
+    choice_axes = _determine_discrete_choice_axes_simulation(variable_info)
+
+    def _calculate_discrete_argmax(
+        values: Array, choice_axes: tuple[int, ...]
+    ) -> tuple[Array, Array]:
+        return argmax(values, axis=choice_axes)
+
+    return partial(_calculate_discrete_argmax, choice_axes=choice_axes)
 
 
 # ======================================================================================
@@ -129,10 +164,10 @@ def _calculate_emax_extreme_value_shocks(
 # ======================================================================================
 
 
-def _determine_discrete_choice_axes(
+def _determine_discrete_choice_axes_solution(
     variable_info: pd.DataFrame,
 ) -> tuple[int, ...]:
-    """Get axes of a state-choice-space that correspond to discrete choices.
+    """Get axes of state-choice-space that correspond to discrete choices in solution.
 
     Args:
         variable_info: DataFrame with information about the variables.
@@ -148,3 +183,24 @@ def _determine_discrete_choice_axes(
     return tuple(
         i for i, ax in enumerate(variable_info.index) if ax in discrete_choice_vars
     )
+
+
+def _determine_discrete_choice_axes_simulation(
+    variable_info: pd.DataFrame,
+) -> tuple[int, ...]:
+    """Get axes of state-choice-space that correspond to discrete choices in simulation.
+
+    Args:
+        variable_info: DataFrame with information about the variables.
+
+    Returns:
+        A tuple of indices representing the axes' positions in the value function that
+        correspond to discrete choices.
+
+    """
+    discrete_choice_vars = set(
+        variable_info.query("is_choice & is_discrete").index.tolist()
+    )
+
+    # The first dimension corresponds to the simulated states, so add 1.
+    return tuple(1 + i for i in range(len(discrete_choice_vars)))

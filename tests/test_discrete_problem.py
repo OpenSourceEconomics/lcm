@@ -5,9 +5,10 @@ from numpy.testing import assert_array_almost_equal as aaae
 
 from lcm.discrete_problem import (
     _calculate_emax_extreme_value_shocks,
-    _determine_discrete_choice_axes,
+    _determine_discrete_choice_axes_simulation,
+    _determine_discrete_choice_axes_solution,
     _solve_discrete_problem_no_shocks,
-    get_solve_discrete_problem,
+    get_solve_discrete_problem_value,
 )
 from lcm.typing import ShockType
 
@@ -27,7 +28,7 @@ def test_get_solve_discrete_problem_illustrative():
         },
     )  # leads to choice_axes = [1]
 
-    solve_discrete_problem = get_solve_discrete_problem(
+    solve_discrete_problem = get_solve_discrete_problem_value(
         random_utility_shock_type=ShockType.NONE,
         variable_info=variable_info,
         is_last_period=False,
@@ -130,7 +131,7 @@ def test_determine_discrete_choice_axes_illustrative_one_var():
         },
     )
 
-    assert _determine_discrete_choice_axes(variable_info) == (1,)
+    assert _determine_discrete_choice_axes_solution(variable_info) == (1,)
 
 
 @pytest.mark.illustrative
@@ -144,4 +145,17 @@ def test_determine_discrete_choice_axes_illustrative_three_var():
         },
     )
 
-    assert _determine_discrete_choice_axes(variable_info) == (1, 2, 3)
+    assert _determine_discrete_choice_axes_solution(variable_info) == (1, 2, 3)
+
+
+def test_determine_discrete_choice_axes():
+    variable_info = pd.DataFrame(
+        {
+            "is_state": [True, True, False, True, False, False],
+            "is_choice": [False, False, True, True, True, True],
+            "is_discrete": [True, True, True, True, True, False],
+            "is_continuous": [False, True, False, False, False, True],
+        },
+    )
+    got = _determine_discrete_choice_axes_simulation(variable_info)
+    assert got == (1, 2, 3)

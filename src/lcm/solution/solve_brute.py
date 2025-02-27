@@ -6,7 +6,7 @@ from jax import Array
 
 from lcm.dispatchers import productmap
 from lcm.interfaces import StateChoiceSpace
-from lcm.typing import DiscreteProblemSolverFunction, ParamsDict
+from lcm.typing import DiscreteProblemValueSolverFunction, ParamsDict
 
 
 def solve(
@@ -14,7 +14,7 @@ def solve(
     state_choice_spaces: dict[int, StateChoiceSpace],
     continuous_choice_grids: dict[int, dict[str, Array]],
     compute_ccv_functions: dict[int, Callable[[Array, Array], Array]],
-    emax_calculators: dict[int, DiscreteProblemSolverFunction],
+    emax_calculators: dict[int, DiscreteProblemValueSolverFunction],
     logger: logging.Logger,
 ) -> list[Array]:
     """Solve a model by brute force.
