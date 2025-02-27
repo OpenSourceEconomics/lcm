@@ -12,8 +12,8 @@ from lcm.input_processing import process_model
 from lcm.logging import get_logger
 from lcm.next_state import get_next_state_function
 from lcm.simulation.simulate import (
-    filter_ccv_policy,
-    retrieve_choices,
+    get_continuous_choice_argmax_given_discrete,
+    get_values_from_indices,
     simulate,
 )
 from lcm.solution.state_choice_space import create_state_choice_space
@@ -281,7 +281,7 @@ def test_effect_of_disutility_of_work():
 
 
 def test_retrieve_choices():
-    got = retrieve_choices(
+    got = get_values_from_indices(
         flat_indices=jnp.array([0, 3, 7]),
         grids={"a": jnp.linspace(0, 1, 5), "b": jnp.linspace(10, 20, 6)},
         grids_shapes=(5, 6),
@@ -299,9 +299,9 @@ def test_filter_ccv_policy():
     )
     argmax = jnp.array([0, 1])
     vars_grid_shape = (2,)
-    got = filter_ccv_policy(
-        ccv_policy=ccc_policy,
+    got = get_continuous_choice_argmax_given_discrete(
+        conditional_continuous_choice_argmax=ccc_policy,
         discrete_argmax=argmax,
-        vars_grid_shape=vars_grid_shape,
+        discrete_choices_grid_shape=vars_grid_shape,
     )
     assert jnp.all(got == jnp.array([0, 0]))

@@ -1,5 +1,4 @@
 import inspect
-from typing import Any
 
 import jax.numpy as jnp
 import pandas as pd
@@ -7,12 +6,12 @@ from dags import concatenate_functions
 from jax import Array
 
 from lcm.dispatchers import vmap_1d
-from lcm.interfaces import InternalModel
+from lcm.interfaces import InternalModel, InternalSimulationPeriodResults
 from lcm.typing import InternalUserFunction, ParamsDict
 
 
 def process_simulated_data(
-    results: list[dict[str, Any]],
+    results: dict[int, InternalSimulationPeriodResults],
     model: InternalModel,
     params: ParamsDict,
     additional_targets: list[str] | None = None,
@@ -26,7 +25,7 @@ def process_simulated_data(
     an outer level of periods and an inner level of initial states ids.
 
     Args:
-        results: List of dicts with simulation results. Each dict contains the value,
+        results: Dict with simulation results. Each dict contains the value,
             choices, and states for one period. Choices and states are stored in a
             nested dictionary.
         model: Model.
@@ -40,10 +39,10 @@ def process_simulated_data(
 
     """
     n_periods = len(results)
-    n_initial_states = len(results[0]["value"])
+    n_initial_states = len(results[0].value)
 
     list_of_dicts = [
-        {"value": d["value"], **d["choices"], **d["states"]} for d in results
+        {"value": d.value, **d.choices, **d.states} for d in results.values()
     ]
     dict_of_lists = {
         key: [d[key] for d in list_of_dicts] for key in list(list_of_dicts[0])

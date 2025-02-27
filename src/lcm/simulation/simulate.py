@@ -9,7 +9,11 @@ from jax import Array, vmap
 
 from lcm.discrete_problem import get_solve_discrete_problem_policy
 from lcm.dispatchers import simulation_spacemap, vmap_1d
-from lcm.interfaces import InternalModel, StateChoiceSpace
+from lcm.interfaces import (
+    InternalModel,
+    InternalSimulationPeriodResults,
+    StateChoiceSpace,
+)
 from lcm.random import generate_simulation_keys
 from lcm.simulation.processing import as_data_frame, process_simulated_data
 from lcm.simulation.state_choice_space import create_state_choice_space
@@ -94,17 +98,17 @@ def simulate(
     logger.info("Starting simulation")
 
     # Preparations
-    # ==================================================================================
+    # ----------------------------------------------------------------------------------
     n_periods = len(vf_arr_dict)
     n_initial_states = len(next(iter(initial_states.values())))
 
-    data_scs = create_state_choice_space(
+    state_choice_space = create_state_choice_space(
         model=model,
         initial_states=initial_states,
     )
 
     discrete_policy_calculator = get_solve_discrete_problem_policy(
-        variable_info=model.variable_info,
+        variable_info=model.variable_info
     )
 
     # The following variables are updated during the forward simulation
@@ -112,80 +116,77 @@ def simulate(
     key = jax.random.key(seed=seed)
 
     # Forward simulation
-    # ==================================================================================
-    _simulation_results = []
+    # ----------------------------------------------------------------------------------
+    simulation_results = {}
 
     for period in range(n_periods):
-        # Create data state choice space
-        # ------------------------------------------------------------------------------
-        # Initial states are treated as combination variables, so that the combination
-        # variables in the data-state-choice-space correspond to the feasible product
-        # of combination variables and initial states. The space has to be created in
-        # each iteration because the states change over time.
-        # ==============================================================================
-        data_scs = data_scs.replace(states)
+        state_choice_space = state_choice_space.replace(states)
 
-        # Compute objects dependent on data-state-choice-space
-        # ==============================================================================
-        choices_grid_shape = tuple(len(grid) for grid in data_scs.choices.values())
-        cont_choices_grid_shape = tuple(
+        # We compute these grid shapes in the loop because they can change over time.
+        # TODO (@timmens): This could still be pre-computed in the entry point.  # noqa: TD003,E501
+        discrete_choices_grid_shape = tuple(
+            len(grid) for grid in state_choice_space.choices.values()
+        )
+        continuous_choices_grid_shape = tuple(
             len(grid) for grid in continuous_choice_grids[period].values()
         )
 
         # Compute optimal continuous choice conditional on discrete choices
-        # ==============================================================================
-        ccv_policy, ccv = solve_continuous_problem(
-            data_scs=data_scs,
-            compute_ccv=compute_ccv_policy_functions[period],
-            continuous_choice_grids=continuous_choice_grids[period],
-            vf_arr=vf_arr_dict.get(period + 1, jnp.empty(0)),
-            params=params,
+        # ------------------------------------------------------------------------------
+        # We need to pass the value function array of the next period to the continuous
+        # choice problem solver. If we are at the last period, we pass an empty array.
+        next_period_vf_arr = vf_arr_dict.get(period + 1, jnp.empty(0))
+
+        conditional_continuous_choice_argmax, conditional_continuous_choice_max = (
+            solve_continuous_problem(
+                data_scs=state_choice_space,
+                compute_ccv=compute_ccv_policy_functions[period],
+                continuous_choice_grids=continuous_choice_grids[period],
+                vf_arr=next_period_vf_arr,
+                params=params,
+            )
         )
 
         # Get optimal discrete choice given the optimal conditional continuous choices
-        # ==============================================================================
-        discrete_argmax, value = discrete_policy_calculator(ccv, params=params)
-
-        # Select optimal continuous choice corresponding to optimal discrete choice
         # ------------------------------------------------------------------------------
-        # The conditional continuous choice argmax is computed for each discrete choice
-        # in the data-state-choice-space. Here we select the the optimal continuous
-        # choice corresponding to the optimal discrete choice.
-        # ==============================================================================
-        cont_choice_argmax = filter_ccv_policy(
-            ccv_policy=ccv_policy,
+        discrete_argmax, choice_value = discrete_policy_calculator(
+            conditional_continuous_choice_max, params=params
+        )
+
+        # Get optimal continuous choice index given optimal discrete choice
+        # ------------------------------------------------------------------------------
+        continuous_choice_argmax = get_continuous_choice_argmax_given_discrete(
+            conditional_continuous_choice_argmax=conditional_continuous_choice_argmax,
             discrete_argmax=discrete_argmax,
-            vars_grid_shape=choices_grid_shape,
+            discrete_choices_grid_shape=discrete_choices_grid_shape,
         )
 
-        # Convert optimal choice indices to actual choice values
-        # ==============================================================================
-        choices = retrieve_choices(
+        # Convert choice indices to choice values
+        # ------------------------------------------------------------------------------
+        discrete_choices = get_values_from_indices(
             flat_indices=discrete_argmax,
-            grids=data_scs.choices,
-            grids_shapes=choices_grid_shape,
+            grids=state_choice_space.choices,
+            grids_shapes=discrete_choices_grid_shape,
         )
 
-        cont_choices = retrieve_choices(
-            flat_indices=cont_choice_argmax,
+        continuous_choices = get_values_from_indices(
+            flat_indices=continuous_choice_argmax,
             grids=continuous_choice_grids[period],
-            grids_shapes=cont_choices_grid_shape,
+            grids_shapes=continuous_choices_grid_shape,
         )
 
         # Store results
-        # ==============================================================================
-        choices = {**choices, **cont_choices}
+        # ------------------------------------------------------------------------------
+        choices = {**discrete_choices, **continuous_choices}
 
-        _simulation_results.append(
-            {
-                "value": value,
-                "choices": choices,
-                "states": states,
-            },
+        simulation_results[period] = InternalSimulationPeriodResults(
+            value=choice_value,
+            choices=choices,
+            states=states,
         )
 
         # Update states
-        # ==============================================================================
+        # ------------------------------------------------------------------------------
         key, stochastic_variables_keys = generate_simulation_keys(
             key=key,
             ids=model.function_info.query("is_stochastic_next").index.tolist(),
@@ -205,7 +206,7 @@ def simulate(
         logger.info("Period: %s", period)
 
     processed = process_simulated_data(
-        _simulation_results,
+        simulation_results,
         model=model,
         params=params,
         additional_targets=additional_targets,
@@ -221,7 +222,7 @@ def solve_continuous_problem(
     vf_arr: Array,
     params: ParamsDict,
 ) -> tuple[Array, Array]:
-    """Solve the agent's continuous choices problem problem.
+    """Solve the agents' continuous choice problem.
 
     Args:
         data_scs: Class with entries choices and states.
@@ -261,43 +262,34 @@ def solve_continuous_problem(
     )
 
 
-# ======================================================================================
-# Filter policy
-# ======================================================================================
-
-
-@partial(vmap_1d, variables=("ccv_policy", "discrete_argmax"))
-def filter_ccv_policy(
-    ccv_policy: Array,
+@partial(vmap_1d, variables=("conditional_continuous_choice_argmax", "discrete_argmax"))
+def get_continuous_choice_argmax_given_discrete(
+    conditional_continuous_choice_argmax: Array,
     discrete_argmax: Array,
-    vars_grid_shape: tuple[int, ...],
+    discrete_choices_grid_shape: tuple[int, ...],
 ) -> Array:
     """Select optimal continuous choice index given optimal discrete choice.
 
     Args:
-        ccv_policy: Index array of optimal continous choices
+        conditional_continuous_choice_argmax: Index array of optimal continous choices
             conditional on discrete choices.
         discrete_argmax: Index array of optimal discrete choices.
-        vars_grid_shape: Shape of the variables grid.
+        discrete_choices_grid_shape: Shape of the discrete choices grid.
 
     Returns:
         Index array of optimal continuous choices.
 
     """
-    if discrete_argmax is None:
-        out = ccv_policy
-    else:
-        indices = jnp.unravel_index(discrete_argmax, shape=vars_grid_shape)
-        out = ccv_policy[indices]
-    return out
+    indices = jnp.unravel_index(discrete_argmax, shape=discrete_choices_grid_shape)
+    return conditional_continuous_choice_argmax[indices]
 
 
-def retrieve_choices(
+def get_values_from_indices(
     flat_indices: Array,
     grids: dict[str, Array],
     grids_shapes: tuple[int, ...],
 ) -> dict[str, Array]:
-    """Retrieve choices given flat indices.
+    """Retrieve values from indices.
 
     Args:
         flat_indices: General indices. Represents the index of the flattened grid.
@@ -305,7 +297,7 @@ def retrieve_choices(
         grids_shapes: Shape of the grids. Is used to unravel the index.
 
     Returns:
-        Dictionary of choices.
+        Dictionary of values.
 
     """
     nd_indices = vmapped_unravel_index(flat_indices, grids_shapes)

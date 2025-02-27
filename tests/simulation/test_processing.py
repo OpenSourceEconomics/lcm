@@ -2,6 +2,7 @@ import jax.numpy as jnp
 import pandas as pd
 from pybaum import tree_equal
 
+from lcm.interfaces import InternalSimulationPeriodResults
 from lcm.simulation.processing import (
     _compute_targets,
     as_data_frame,
@@ -58,24 +59,24 @@ def test_as_data_frame():
 
 
 def test_process_simulated_data():
-    simulated = [
-        {
-            "value": jnp.array([0.1, 0.2]),
-            "states": {"a": jnp.array([1, 2]), "b": jnp.array([-1, -2])},
-            "choices": {"c": jnp.array([5, 6]), "d": jnp.array([-5, -6])},
-        },
-        {
-            "value": jnp.array([0.3, 0.4]),
-            "states": {
+    simulated = {
+        0: InternalSimulationPeriodResults(
+            value=jnp.array([0.1, 0.2]),
+            states={"a": jnp.array([1, 2]), "b": jnp.array([-1, -2])},
+            choices={"c": jnp.array([5, 6]), "d": jnp.array([-5, -6])},
+        ),
+        1: InternalSimulationPeriodResults(
+            value=jnp.array([0.3, 0.4]),
+            states={
                 "b": jnp.array([-3, -4]),
                 "a": jnp.array([3, 4]),
             },
-            "choices": {
+            choices={
                 "d": jnp.array([-7, -8]),
                 "c": jnp.array([7, 8]),
             },
-        },
-    ]
+        ),
+    }
     expected = {
         "value": jnp.array([0.1, 0.2, 0.3, 0.4]),
         "c": jnp.array([5, 6, 7, 8]),

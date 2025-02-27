@@ -116,3 +116,12 @@ class InternalModel:
     n_periods: int
     # Not properly processed yet
     random_utility_shocks: ShockType
+
+
+@dataclass(frozen=True)
+class InternalSimulationPeriodResults:
+    """The results of a simulation for one period."""
+
+    value: Array
+    choices: dict[str, Array]
+    states: dict[str, Array]
