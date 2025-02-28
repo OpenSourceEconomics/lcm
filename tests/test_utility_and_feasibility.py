@@ -6,7 +6,7 @@ from numpy.testing import assert_array_equal
 
 from lcm.input_processing import process_model
 from lcm.interfaces import InternalModel
-from lcm.solution.state_choice_space import create_state_space_info
+from lcm.state_choice_space import create_state_space_info
 from lcm.typing import ShockType
 from lcm.utility_and_feasibility import (
     _get_feasibility,

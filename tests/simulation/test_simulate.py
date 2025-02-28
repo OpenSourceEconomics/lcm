@@ -16,7 +16,7 @@ from lcm.simulation.simulate import (
     get_values_from_indices,
     simulate,
 )
-from lcm.solution.state_choice_space import create_state_space_info
+from lcm.state_choice_space import create_state_space_info
 from lcm.typing import Target
 from lcm.utility_and_feasibility import get_utility_and_feasibility_function
 from tests.test_models import (

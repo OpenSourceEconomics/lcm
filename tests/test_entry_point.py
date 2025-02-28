@@ -8,7 +8,7 @@ from lcm.conditional_continuation import (
 )
 from lcm.entry_point import get_lcm_function
 from lcm.input_processing import process_model
-from lcm.solution.state_choice_space import create_state_space_info
+from lcm.state_choice_space import create_state_space_info
 from lcm.utility_and_feasibility import get_utility_and_feasibility_function
 from tests.test_models import get_model_config
 from tests.test_models.deterministic import RetirementStatus

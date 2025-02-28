@@ -16,7 +16,7 @@ from lcm.interfaces import (
 )
 from lcm.random import generate_simulation_keys
 from lcm.simulation.processing import as_data_frame, process_simulated_data
-from lcm.simulation.state_choice_space import create_state_choice_space
+from lcm.state_choice_space import create_state_choice_space
 from lcm.typing import ParamsDict
 from lcm.utils import draw_random_seed
 

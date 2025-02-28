@@ -17,7 +17,7 @@ from lcm.logging import get_logger
 from lcm.next_state import get_next_state_function
 from lcm.simulation.simulate import simulate, solve_and_simulate
 from lcm.solution.solve_brute import solve
-from lcm.solution.state_choice_space import (
+from lcm.state_choice_space import (
     create_state_choice_space,
     create_state_space_info,
 )
