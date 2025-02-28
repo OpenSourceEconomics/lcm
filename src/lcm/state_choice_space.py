@@ -3,6 +3,7 @@
 import pandas as pd
 from jax import Array
 
+from lcm.grids import ContinuousGrid, DiscreteGrid
 from lcm.interfaces import InternalModel, StateChoiceSpace, StateSpaceInfo
 
 
@@ -78,16 +79,24 @@ def create_state_space_info(
     if is_last_period:
         vi = vi.query("~is_auxiliary")
 
-    discrete_states_names = vi.query("is_discrete & is_state").index.tolist()
-    continuous_states_names = vi.query("is_continuous & is_state").index.tolist()
+    state_names = vi.query("is_state").index.tolist()
 
-    discrete_states = {sn: model.gridspecs[sn] for sn in discrete_states_names}
-    continuous_states = {sn: model.gridspecs[sn] for sn in continuous_states_names}
+    discrete_states = {
+        name: grid_spec
+        for name, grid_spec in model.gridspecs.items()
+        if name in state_names and isinstance(grid_spec, DiscreteGrid)
+    }
+
+    continuous_states = {
+        name: grid_spec
+        for name, grid_spec in model.gridspecs.items()
+        if name in state_names and isinstance(grid_spec, ContinuousGrid)
+    }
 
     return StateSpaceInfo(
-        states_names=tuple(discrete_states_names + continuous_states_names),
-        discrete_states=discrete_states,  # type: ignore[arg-type]
-        continuous_states=continuous_states,  # type: ignore[arg-type]
+        states_names=tuple(state_names),
+        discrete_states=discrete_states,
+        continuous_states=continuous_states,
     )
 
 

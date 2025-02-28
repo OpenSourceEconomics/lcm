@@ -1,3 +1,4 @@
+import os
 from functools import partial
 
 import jax
@@ -60,3 +61,13 @@ def generate_simulation_keys(
     simulation_keys = dict(zip(ids, keys[1:], strict=True))
 
     return key, simulation_keys
+
+
+def draw_random_seed() -> int:
+    """Generate a random seed using the operating system's secure entropy pool.
+
+    Returns:
+        Random seed.
+
+    """
+    return int.from_bytes(os.urandom(4), "little")
