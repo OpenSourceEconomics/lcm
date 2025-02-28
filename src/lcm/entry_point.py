@@ -17,7 +17,10 @@ from lcm.logging import get_logger
 from lcm.next_state import get_next_state_function
 from lcm.simulation.simulate import simulate, solve_and_simulate
 from lcm.solution.solve_brute import solve
-from lcm.solution.state_choice_space import create_state_choice_space
+from lcm.solution.state_choice_space import (
+    create_state_choice_space,
+    create_state_space_info,
+)
 from lcm.typing import DiscreteProblemValueSolverFunction, ParamsDict, Target
 from lcm.user_model import Model
 from lcm.utility_and_feasibility import (
@@ -77,7 +80,12 @@ def get_lcm_function(
     for period in reversed(range(internal_model.n_periods)):
         is_last_period = period == last_period
 
-        state_choice_space, state_space_info = create_state_choice_space(
+        state_choice_space = create_state_choice_space(
+            model=internal_model,
+            is_last_period=is_last_period,
+        )
+
+        state_space_info = create_state_space_info(
             model=internal_model,
             is_last_period=is_last_period,
         )

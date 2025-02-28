@@ -6,7 +6,7 @@ from numpy.testing import assert_array_equal
 
 from lcm.input_processing import process_model
 from lcm.interfaces import InternalModel
-from lcm.solution.state_choice_space import create_state_choice_space
+from lcm.solution.state_choice_space import create_state_space_info
 from lcm.typing import ShockType
 from lcm.utility_and_feasibility import (
     _get_feasibility,
@@ -32,10 +32,10 @@ def test_get_utility_and_feasibility_function():
         },
     }
 
-    state_space_info = create_state_choice_space(
+    state_space_info = create_state_space_info(
         model=model,
         is_last_period=False,
-    )[1]
+    )
 
     u_and_f = get_utility_and_feasibility_function(
         model=model,

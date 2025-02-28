@@ -16,7 +16,7 @@ from lcm.simulation.simulate import (
     get_values_from_indices,
     simulate,
 )
-from lcm.solution.state_choice_space import create_state_choice_space
+from lcm.solution.state_choice_space import create_state_space_info
 from lcm.typing import Target
 from lcm.utility_and_feasibility import get_utility_and_feasibility_function
 from tests.test_models import (
@@ -41,10 +41,10 @@ def simulate_inputs():
     model_config = model_config.replace(choices=choices)
     model = process_model(model_config)
 
-    state_space_info = create_state_choice_space(
+    state_space_info = create_state_space_info(
         model=model,
         is_last_period=False,
-    )[1]
+    )
 
     compute_ccv_policy_functions = []
     for period in range(model.n_periods):

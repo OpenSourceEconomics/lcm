@@ -8,7 +8,7 @@ from lcm.conditional_continuation import (
 )
 from lcm.entry_point import get_lcm_function
 from lcm.input_processing import process_model
-from lcm.solution.state_choice_space import create_state_choice_space
+from lcm.solution.state_choice_space import create_state_space_info
 from lcm.utility_and_feasibility import get_utility_and_feasibility_function
 from tests.test_models import get_model_config
 from tests.test_models.deterministic import RetirementStatus
@@ -182,10 +182,10 @@ def test_create_compute_conditional_continuation_value():
         },
     }
 
-    state_space_info = create_state_choice_space(
+    state_space_info = create_state_space_info(
         model=model,
         is_last_period=False,
-    )[1]
+    )
 
     u_and_f = get_utility_and_feasibility_function(
         model=model,
@@ -227,10 +227,10 @@ def test_create_compute_conditional_continuation_value_with_discrete_model():
         },
     }
 
-    state_space_info = create_state_choice_space(
+    state_space_info = create_state_space_info(
         model=model,
         is_last_period=False,
-    )[1]
+    )
 
     u_and_f = get_utility_and_feasibility_function(
         model=model,
@@ -277,10 +277,10 @@ def test_create_compute_conditional_continuation_policy():
         },
     }
 
-    state_space_info = create_state_choice_space(
+    state_space_info = create_state_space_info(
         model=model,
         is_last_period=False,
-    )[1]
+    )
 
     u_and_f = get_utility_and_feasibility_function(
         model=model,
@@ -323,10 +323,10 @@ def test_create_compute_conditional_continuation_policy_with_discrete_model():
         },
     }
 
-    state_space_info = create_state_choice_space(
+    state_space_info = create_state_space_info(
         model=model,
         is_last_period=False,
-    )[1]
+    )
 
     u_and_f = get_utility_and_feasibility_function(
         model=model,
