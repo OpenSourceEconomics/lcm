@@ -80,7 +80,7 @@ def get_utility_and_feasibility_function_before_last_period(
     calculate_todays_u_and_f = _get_current_u_and_f(model)
 
     # ----------------------------------------------------------------------------------
-    # Create the utility and feasability function
+    # Create the utility and feasibility function
     # ----------------------------------------------------------------------------------
 
     arg_names = _get_required_arg_names_of_u_and_f(

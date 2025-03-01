@@ -20,13 +20,13 @@ def get_compute_conditional_continuation_value(
 
     Args:
         utility_and_feasibility: A function that takes a state-choice combination and
-            return the utility of that combination (scalar) and whether the state-choice
-            combination is feasible (bool).
+            returns the utility of that combination (scalar) and whether the
+            state-choice combination is feasible (bool).
         continuous_choice_variables: Tuple of choice variable names that are continuous.
 
     Returns:
-        A function that takes a state-choice combination and returns the conditional
-        continuation value over the continuous choices.
+        A function that takes a state-choice combination and returns the maximum
+        conditional continuation value over the feasible continuous choices.
 
     """
     if continuous_choice_variables:
@@ -60,9 +60,9 @@ def get_compute_conditional_continuation_policy(
             continuous.
 
     Returns:
-        A function that takes a state-choice combination and returns the conditional
-        continuation value over the continuous choices, and the index that maximizes the
-        conditional continuation value.
+        A function that takes a state-choice combination and returns the optimal policy
+        (i.e., that index that maximizes the objective function over feasible states x
+        choice combinations) and the value of the objective function.
 
     """
     if continuous_choice_variables:

@@ -134,14 +134,12 @@ def get_lcm_function(
         emax_calculators=solve_discrete_problem_functions,
         logger=logger,
     )
+    solve_model = jax.jit(_solve_model) if jit else _solve_model
 
     _next_state_simulate = get_next_state_function(
         model=internal_model, target=Target.SIMULATE
     )
-
-    solve_model = jax.jit(_solve_model) if jit else _solve_model
     next_state_simulate = jax.jit(_next_state_simulate) if jit else _next_state_simulate
-
     simulate_model = partial(
         simulate,
         compute_ccv_policy_functions=compute_ccp_functions,
