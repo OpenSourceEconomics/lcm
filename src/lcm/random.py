@@ -14,8 +14,8 @@ def random_choice(
 
     Args:
         labels: 1d array of labels.
-        probs: 2d array of probabilities. Second dimension must be
-            the same length as the first dimension of labels.
+        probs: 2d array of probabilities. Second dimension must be the same length as
+            the dimension of labels.
         key: Random key.
 
     Returns:
@@ -57,10 +57,10 @@ def generate_simulation_keys(
     """
     keys = jax.random.split(key, num=len(ids) + 1)
 
-    key = keys[0]
+    next_key = keys[0]
     simulation_keys = dict(zip(ids, keys[1:], strict=True))
 
-    return key, simulation_keys
+    return next_key, simulation_keys
 
 
 def draw_random_seed() -> int:

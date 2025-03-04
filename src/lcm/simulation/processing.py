@@ -62,17 +62,17 @@ def process_simulated_data(
     return out
 
 
-def as_data_frame(processed: dict[str, Array], n_periods: int) -> pd.DataFrame:
-    """Convert processed simulation results to DataFrame.
+def as_panel(processed: dict[str, Array], n_periods: int) -> pd.DataFrame:
+    """Convert processed simulation results to panel.
 
     Args:
         processed: Dict with processed simulation results.
         n_periods: Number of periods.
 
     Returns:
-        DataFrame with the simulation results. The index is a multi-index with the first
-        level corresponding to the period and the second level corresponding to the
-        initial state id. The columns correspond to the value, and the choice and state
+        Panel with the simulation results. The index is a multi-index with the first
+        level corresponding to the initial state id and the second level corresponding
+        to the period. The columns correspond to the value, and the choice and state
         variables, and potentially auxiliary variables.
 
     """

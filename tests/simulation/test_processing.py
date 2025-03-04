@@ -5,7 +5,7 @@ from pybaum import tree_equal
 from lcm.interfaces import InternalSimulationPeriodResults
 from lcm.simulation.processing import (
     _compute_targets,
-    as_data_frame,
+    as_panel,
     process_simulated_data,
 )
 
@@ -41,13 +41,13 @@ def test_compute_targets():
     assert tree_equal(expected, got)
 
 
-def test_as_data_frame():
+def test_as_panel():
     processed = {
         "value": -6 + jnp.arange(6),
         "a": jnp.arange(6),
         "b": 6 + jnp.arange(6),
     }
-    got = as_data_frame(processed, n_periods=2)
+    got = as_panel(processed, n_periods=2)
     expected = pd.DataFrame(
         {
             "period": [0, 0, 0, 1, 1, 1],

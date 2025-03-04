@@ -62,9 +62,6 @@ def get_utility_and_feasibility_function_before_last_period(
     # ----------------------------------------------------------------------------------
     # Generate dynamic functions
     # ----------------------------------------------------------------------------------
-    # TODO (@timmens): This can be done outside this function, since it  # noqa: TD003
-    # does not depend on the period.
-    # ----------------------------------------------------------------------------------
 
     # Functions required to calculate the expected continuation values
     calculate_state_transition = get_next_state_function(model, target=Target.SOLVE)
@@ -135,21 +132,17 @@ def get_utility_and_feasibility_function_before_last_period(
         ).sum()
 
         # ------------------------------------------------------------------------------
-        # Calculate the expected forward-looking utility.
+        # Calculate the utility and feasibility for all states and choices
         # ------------------------------------------------------------------------------
-        # This is not the value function yet, as it still depends on the choices.
-        # ------------------------------------------------------------------------------
-        period_utility, period_feasibility = calculate_todays_u_and_f(
+        period_utility, feasibility = calculate_todays_u_and_f(
             **states_and_choices,
             _period=period,
             params=params,
         )
 
-        expected_forward_utility = (
-            period_utility + params["beta"] * expected_continuation_values
-        )
+        utility = period_utility + params["beta"] * expected_continuation_values
 
-        return expected_forward_utility, period_feasibility
+        return utility, feasibility
 
     return utility_and_feasibility
 

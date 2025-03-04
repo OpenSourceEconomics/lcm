@@ -15,7 +15,7 @@ from lcm.interfaces import (
     StateChoiceSpace,
 )
 from lcm.random import draw_random_seed, generate_simulation_keys
-from lcm.simulation.processing import as_data_frame, process_simulated_data
+from lcm.simulation.processing import as_panel, process_simulated_data
 from lcm.state_choice_space import create_state_choice_space
 from lcm.typing import ParamsDict
 
@@ -205,7 +205,7 @@ def simulate(
         additional_targets=additional_targets,
     )
 
-    return as_data_frame(processed, n_periods=n_periods)
+    return as_panel(processed, n_periods=n_periods)
 
 
 def solve_continuous_problem(

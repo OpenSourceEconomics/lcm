@@ -39,7 +39,7 @@ def create_state_choice_space(
     if initial_states is None:
         states = {sn: model.grids[sn] for sn in vi.query("is_state").index}
     else:
-        _validate_initial_states(initial_states, variable_info=vi)
+        _validate_initial_states_names(initial_states, variable_info=vi)
         states = initial_states
 
     discrete_choices = {
@@ -63,7 +63,7 @@ def create_state_space_info(
     *,
     is_last_period: bool,
 ) -> StateSpaceInfo:
-    """Create a state-space information for the model solution.
+    """Collect information on the state space for the model solution.
 
     A state-space information is a compressed representation of all feasible states.
 
@@ -100,7 +100,7 @@ def create_state_space_info(
     )
 
 
-def _validate_initial_states(
+def _validate_initial_states_names(
     initial_states: dict[str, Array], variable_info: pd.DataFrame
 ) -> None:
     """Checks if each model-state has an initial value."""
