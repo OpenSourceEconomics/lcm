@@ -25,7 +25,8 @@ def get_function_info(model: Model) -> pd.DataFrame:
     info["is_constraint"] = info.index.str.endswith(("_constraint", "_filter"))
     info["is_next"] = info.index.str.startswith("next_") & ~info["is_constraint"]
     info["is_stochastic_next"] = [
-        hasattr(func, "_stochastic_info") for func in model.functions.values()
+        hasattr(func, "_stochastic_info") and info.loc[func_name]["is_next"]
+        for func_name, func in model.functions.items()
     ]
     return info
 

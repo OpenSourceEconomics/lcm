@@ -4,19 +4,18 @@ from collections.abc import Callable
 import jax
 from jax import Array
 
-from lcm.dispatchers import spacemap
+from lcm.dispatchers import productmap
 from lcm.interfaces import StateChoiceSpace
-from lcm.typing import DiscreteProblemSolverFunction, ParamsDict
+from lcm.typing import DiscreteProblemValueSolverFunction, ParamsDict
 
 
 def solve(
     params: ParamsDict,
-    state_choice_spaces: list[StateChoiceSpace],
-    continuous_choice_grids: list[dict[str, Array]],
-    compute_ccv_functions: list[Callable[[Array, Array], Array]],
-    emax_calculators: list[DiscreteProblemSolverFunction],
+    state_choice_spaces: dict[int, StateChoiceSpace],
+    compute_ccv_functions: dict[int, Callable[[Array, Array], Array]],
+    emax_calculators: dict[int, DiscreteProblemValueSolverFunction],
     logger: logging.Logger,
-) -> list[Array]:
+) -> dict[int, Array]:
     """Solve a model by brute force.
 
     Notes:
@@ -30,10 +29,8 @@ def solve(
 
     Args:
         params: Dict of model parameters.
-        state_choice_spaces: List with one state_choice_space per period.
-        continuous_choice_grids: List of dicts with 1d grids for continuous
-            choice variables.
-        compute_ccv_functions: List of functions needed to solve the agent's
+        state_choice_spaces: Dict with one state_choice_space per period.
+        compute_ccv_functions: Dict with one function needed to solve the agent's
             problem. Each function depends on:
             - discrete and continuous state variables
             - discrete and continuous choice variables
@@ -45,12 +42,11 @@ def solve(
         logger: Logger that logs to stdout.
 
     Returns:
-        List with one value function array per period.
+        Dict with one value function array per period.
 
     """
-    # extract information
     n_periods = len(state_choice_spaces)
-    reversed_solution = []
+    solution = {}
     vf_arr = None
 
     logger.info("Starting solution")
@@ -61,7 +57,6 @@ def solve(
         conditional_continuation_values = solve_continuous_problem(
             state_choice_space=state_choice_spaces[period],
             compute_ccv=compute_ccv_functions[period],
-            continuous_choice_grids=continuous_choice_grids[period],
             vf_arr=vf_arr,
             params=params,
         )
@@ -69,17 +64,16 @@ def solve(
         # solve discrete problem by calculating expected maximum over discrete choices
         calculate_emax = emax_calculators[period]
         vf_arr = calculate_emax(conditional_continuation_values, params=params)
-        reversed_solution.append(vf_arr)
+        solution[period] = vf_arr
 
         logger.info("Period: %s", period)
 
-    return list(reversed(reversed_solution))
+    return solution
 
 
 def solve_continuous_problem(
     state_choice_space: StateChoiceSpace,
     compute_ccv: Callable[..., Array],
-    continuous_choice_grids: dict[str, Array],
     vf_arr: Array | None,
     params: ParamsDict,
 ) -> Array:
@@ -94,8 +88,6 @@ def solve_continuous_problem(
             - discrete and continuous choice variables
             - vf_arr
             - params
-        continuous_choice_grids: List of dicts with 1d grids for continuous
-            choice variables.
         vf_arr: Value function array.
         params: Dict of model parameters.
 
@@ -105,17 +97,16 @@ def solve_continuous_problem(
             by the `gridmap` function.
 
     """
-    _gridmapped = spacemap(
+    _gridmapped = productmap(
         func=compute_ccv,
-        product_vars=state_choice_space.ordered_var_names,
-        combination_vars=(),
+        variables=state_choice_space.ordered_var_names,
     )
     gridmapped = jax.jit(_gridmapped)
 
     return gridmapped(
         **state_choice_space.states,
-        **state_choice_space.choices,
-        **continuous_choice_grids,
+        **state_choice_space.discrete_choices,
+        **state_choice_space.continuous_choices,
         vf_arr=vf_arr,
         params=params,
     )

@@ -6,7 +6,7 @@ from numpy.testing import assert_array_almost_equal as aaae
 
 from lcm.dispatchers import (
     productmap,
-    spacemap,
+    simulation_spacemap,
     vmap_1d,
 )
 from lcm.functools import allow_args
@@ -231,7 +231,7 @@ def test_spacemap_all_arguments_mapped(
 ):
     product_vars, combination_vars = setup_spacemap
 
-    decorated = spacemap(
+    decorated = simulation_spacemap(
         g,
         tuple(product_vars),
         tuple(combination_vars),
@@ -245,12 +245,12 @@ def test_spacemap_all_arguments_mapped(
     ("error_msg", "product_vars", "combination_vars"),
     [
         (
-            "Same argument provided more than once in product variables or combination",
+            "Same argument provided more than once in choices or states variables",
             ["a", "b"],
             ["a", "c", "d"],
         ),
         (
-            "Same argument provided more than once in product variables or combination",
+            "Same argument provided more than once in choices or states variables",
             ["a", "a", "b"],
             ["c", "d"],
         ),
@@ -258,7 +258,9 @@ def test_spacemap_all_arguments_mapped(
 )
 def test_spacemap_arguments_overlap(error_msg, product_vars, combination_vars):
     with pytest.raises(ValueError, match=error_msg):
-        spacemap(g, product_vars=product_vars, combination_vars=combination_vars)
+        simulation_spacemap(
+            g, choices_var_names=product_vars, states_var_names=combination_vars
+        )
 
 
 # ======================================================================================

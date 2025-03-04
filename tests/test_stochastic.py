@@ -1,6 +1,7 @@
 import jax.numpy as jnp
 import pandas as pd
 import pytest
+from jax import Array
 
 import lcm
 from lcm.entry_point import (
@@ -19,7 +20,7 @@ def test_get_lcm_function_with_simulate_target():
         targets="solve_and_simulate",
     )
 
-    res = simulate_model(
+    res: pd.DataFrame = simulate_model(  # type: ignore[assignment]
         params=get_params(),
         initial_states={
             "health": jnp.array([1, 1, 0, 0]),
@@ -28,21 +29,17 @@ def test_get_lcm_function_with_simulate_target():
         },
     )
 
-    expected_partner = [
-        0,
-        0,
-        1,
-        0,  # period 0
-        1,
-        1,
-        1,
-        1,  # period 1
-        1,
-        1,
-        1,
-        0,  # period 2
-    ]
-    assert jnp.array_equal(res["partner"].values, expected_partner)  # type: ignore[call-overload, arg-type]
+    # This is derived from the partner transition in get_params.
+    expected_next_partner = (
+        (res.working.astype(bool) | ~res.partner.astype(bool)).astype(int).loc[:1]
+    )
+
+    pd.testing.assert_series_equal(
+        res["partner"].loc[1:],
+        expected_next_partner,
+        check_index=False,
+        check_names=False,
+    )
 
 
 # ======================================================================================
@@ -98,7 +95,7 @@ def model_and_params():
     return model_deterministic, model_stochastic, params
 
 
-def test_compare_deterministic_and_stochastic_results(model_and_params):
+def test_compare_deterministic_and_stochastic_results_value_function(model_and_params):
     """Test that the deterministic and stochastic models produce the same results."""
     model_deterministic, model_stochastic, params = model_and_params
 
@@ -114,10 +111,14 @@ def test_compare_deterministic_and_stochastic_results(model_and_params):
         targets="solve",
     )
 
-    solution_deterministic = solve_model_deterministic(params)
-    solution_stochastic = solve_model_stochastic(params)
+    solution_deterministic: dict[int, Array] = solve_model_deterministic(params)  # type: ignore[assignment]
+    solution_stochastic: dict[int, Array] = solve_model_stochastic(params)  # type: ignore[assignment]
 
-    assert jnp.array_equal(solution_deterministic, solution_stochastic, equal_nan=True)  # type: ignore[arg-type]
+    assert jnp.array_equal(
+        jnp.array(list(solution_deterministic.values())),
+        jnp.array(list(solution_stochastic.values())),
+        equal_nan=True,
+    )
 
     # ==================================================================================
     # Compare simulation results
@@ -139,12 +140,12 @@ def test_compare_deterministic_and_stochastic_results(model_and_params):
 
     simulation_deterministic = simulate_model_deterministic(
         params,
-        pre_computed_vf_arr_list=solution_deterministic,
+        vf_arr_dict=solution_deterministic,
         initial_states=initial_states,
     )
     simulation_stochastic = simulate_model_stochastic(
         params,
-        pre_computed_vf_arr_list=solution_stochastic,
+        vf_arr_dict=solution_stochastic,
         initial_states=initial_states,
     )
     pd.testing.assert_frame_equal(simulation_deterministic, simulation_stochastic)  # type: ignore[arg-type]

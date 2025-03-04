@@ -1,33 +1,32 @@
+from typing import TYPE_CHECKING
+
 import jax.numpy as jnp
-import pandas as pd
 import pytest
 from numpy.testing import assert_array_almost_equal, assert_array_equal
-from pybaum import tree_equal
 
-from lcm.entry_point import (
-    create_compute_conditional_continuation_policy,
-    get_lcm_function,
+from lcm.conditional_continuation import (
+    get_compute_conditional_continuation_policy,
 )
+from lcm.entry_point import get_lcm_function
 from lcm.input_processing import process_model
 from lcm.logging import get_logger
-from lcm.model_functions import get_utility_and_feasibility_function
-from lcm.next_state import _get_next_state_function_for_simulation
+from lcm.next_state import get_next_state_function
 from lcm.simulation.simulate import (
-    _as_data_frame,
-    _compute_targets,
-    _generate_simulation_keys,
-    _process_simulated_data,
-    create_data_scs,
-    determine_discrete_choice_axes,
-    filter_ccv_policy,
-    retrieve_choices,
+    get_continuous_choice_argmax_given_discrete,
+    get_values_from_indices,
     simulate,
 )
-from lcm.solution.state_choice_space import create_state_choice_space
+from lcm.state_choice_space import create_state_space_info
+from lcm.typing import Target
+from lcm.utility_and_feasibility import get_utility_and_feasibility_function
 from tests.test_models import (
     get_model_config,
     get_params,
 )
+
+if TYPE_CHECKING:
+    import pandas as pd
+
 
 # ======================================================================================
 # Test simulate using raw inputs
@@ -37,36 +36,34 @@ from tests.test_models import (
 @pytest.fixture
 def simulate_inputs():
     model_config = get_model_config("iskhakov_et_al_2017_stripped_down", n_periods=1)
+    choices = model_config.choices
+    choices["consumption"] = choices["consumption"].replace(stop=100)  # type: ignore[attr-defined]
+    model_config = model_config.replace(choices=choices)
     model = process_model(model_config)
 
-    state_space_info = create_state_choice_space(
+    state_space_info = create_state_space_info(
         model=model,
         is_last_period=False,
-    )[1]
+    )
 
     compute_ccv_policy_functions = []
     for period in range(model.n_periods):
         u_and_f = get_utility_and_feasibility_function(
             model=model,
-            state_space_info=state_space_info,
+            next_state_space_info=state_space_info,
             period=period,
             is_last_period=True,
         )
-        compute_ccv = create_compute_conditional_continuation_policy(
+        compute_ccv = get_compute_conditional_continuation_policy(
             utility_and_feasibility=u_and_f,
-            continuous_choice_variables=["consumption"],
+            continuous_choice_variables=("consumption",),
         )
         compute_ccv_policy_functions.append(compute_ccv)
 
-    n_grid_points = model_config.choices["consumption"].n_points  # type: ignore[attr-defined]
-
     return {
-        "continuous_choice_grids": [
-            {"consumption": jnp.linspace(1, 100, num=n_grid_points)},
-        ],
         "compute_ccv_policy_functions": compute_ccv_policy_functions,
         "model": model,
-        "next_state": _get_next_state_function_for_simulation(model),
+        "next_state": get_next_state_function(model, target=Target.SIMULATE),
     }
 
 
@@ -81,7 +78,7 @@ def test_simulate_using_raw_inputs(simulate_inputs):
 
     got = simulate(
         params=params,
-        pre_computed_vf_arr_list=[jnp.empty(0)],
+        vf_arr_dict={0: jnp.empty(0)},
         initial_states={"wealth": jnp.array([1.0, 50.400803])},
         logger=get_logger(debug_mode=False),
         **simulate_inputs,
@@ -113,8 +110,8 @@ def iskhakov_et_al_2017_stripped_down_model_solution():
         solve_model, _ = get_lcm_function(model_config, targets="solve")
 
         params = get_params()
-        vf_arr_list = solve_model(params=params)
-        return vf_arr_list, params, model_config
+        vf_arr_dict = solve_model(params=params)
+        return vf_arr_dict, params, model_config
 
     return _model_solution
 
@@ -123,7 +120,7 @@ def test_simulate_using_get_lcm_function(
     iskhakov_et_al_2017_stripped_down_model_solution,
 ):
     n_periods = 3
-    vf_arr_list, params, model = iskhakov_et_al_2017_stripped_down_model_solution(
+    vf_arr_dict, params, model = iskhakov_et_al_2017_stripped_down_model_solution(
         n_periods=n_periods,
     )
 
@@ -131,7 +128,7 @@ def test_simulate_using_get_lcm_function(
 
     res: pd.DataFrame = simulate_model(  # type: ignore[assignment]
         params,
-        pre_computed_vf_arr_list=vf_arr_list,
+        vf_arr_dict=vf_arr_dict,
         initial_states={
             "wealth": jnp.array([20.0, 150, 250, 320]),
         },
@@ -207,13 +204,13 @@ def test_effect_of_beta_on_last_period():
 
     res_low: pd.DataFrame = simulate_model(  # type: ignore[assignment]
         params_low,
-        pre_computed_vf_arr_list=solution_low,
+        vf_arr_dict=solution_low,
         initial_states={"wealth": initial_wealth},
     )
 
     res_high: pd.DataFrame = simulate_model(  # type: ignore[assignment]
         params_high,
-        pre_computed_vf_arr_list=solution_high,
+        vf_arr_dict=solution_high,
         initial_states={"wealth": initial_wealth},
     )
 
@@ -251,13 +248,13 @@ def test_effect_of_disutility_of_work():
 
     res_low: pd.DataFrame = simulate_model(  # type: ignore[assignment]
         params_low,
-        pre_computed_vf_arr_list=solution_low,
+        vf_arr_dict=solution_low,
         initial_states={"wealth": initial_wealth},
     )
 
     res_high: pd.DataFrame = simulate_model(  # type: ignore[assignment]
         params_high,
-        pre_computed_vf_arr_list=solution_high,
+        vf_arr_dict=solution_high,
         initial_states={"wealth": initial_wealth},
     )
 
@@ -281,96 +278,8 @@ def test_effect_of_disutility_of_work():
 # ======================================================================================
 
 
-def test_generate_simulation_keys():
-    key = jnp.arange(2, dtype="uint32")  # PRNG dtype
-    stochastic_next_functions = ["a", "b"]
-    got = _generate_simulation_keys(key, stochastic_next_functions)
-    # assert that all generated keys are different from each other
-    matrix = jnp.array([key, got[0], got[1]["a"], got[1]["b"]])
-    assert jnp.linalg.matrix_rank(matrix) == 2
-
-
-def test_as_data_frame():
-    processed = {
-        "value": -6 + jnp.arange(6),
-        "a": jnp.arange(6),
-        "b": 6 + jnp.arange(6),
-    }
-    got = _as_data_frame(processed, n_periods=2)
-    expected = pd.DataFrame(
-        {
-            "period": [0, 0, 0, 1, 1, 1],
-            "initial_state_id": [0, 1, 2, 0, 1, 2],
-            **processed,
-        },
-    ).set_index(["period", "initial_state_id"])
-    pd.testing.assert_frame_equal(got, expected)
-
-
-def test_compute_targets():
-    processed_results = {
-        "a": jnp.arange(3),
-        "b": 1 + jnp.arange(3),
-        "c": 2 + jnp.arange(3),
-    }
-
-    def f_a(a, params):
-        return a + params["disutility_of_work"]
-
-    def f_b(b, params):  # noqa: ARG001
-        return b
-
-    def f_c(params):  # noqa: ARG001
-        return None
-
-    model_functions = {"fa": f_a, "fb": f_b, "fc": f_c}
-
-    got = _compute_targets(
-        processed_results=processed_results,
-        targets=["fa", "fb"],
-        model_functions=model_functions,  # type: ignore[arg-type]
-        params={"disutility_of_work": -1.0},
-    )
-    expected = {
-        "fa": jnp.arange(3) - 1.0,
-        "fb": 1 + jnp.arange(3),
-    }
-    assert tree_equal(expected, got)
-
-
-def test_process_simulated_data():
-    simulated = [
-        {
-            "value": jnp.array([0.1, 0.2]),
-            "states": {"a": jnp.array([1, 2]), "b": jnp.array([-1, -2])},
-            "choices": {"c": jnp.array([5, 6]), "d": jnp.array([-5, -6])},
-        },
-        {
-            "value": jnp.array([0.3, 0.4]),
-            "states": {
-                "b": jnp.array([-3, -4]),
-                "a": jnp.array([3, 4]),
-            },
-            "choices": {
-                "d": jnp.array([-7, -8]),
-                "c": jnp.array([7, 8]),
-            },
-        },
-    ]
-    expected = {
-        "value": jnp.array([0.1, 0.2, 0.3, 0.4]),
-        "c": jnp.array([5, 6, 7, 8]),
-        "d": jnp.array([-5, -6, -7, -8]),
-        "a": jnp.array([1, 2, 3, 4]),
-        "b": jnp.array([-1, -2, -3, -4]),
-    }
-
-    got = _process_simulated_data(simulated)
-    assert tree_equal(expected, got)
-
-
 def test_retrieve_choices():
-    got = retrieve_choices(
+    got = get_values_from_indices(
         flat_indices=jnp.array([0, 3, 7]),
         grids={"a": jnp.linspace(0, 1, 5), "b": jnp.linspace(10, 20, 6)},
         grids_shapes=(5, 6),
@@ -388,37 +297,9 @@ def test_filter_ccv_policy():
     )
     argmax = jnp.array([0, 1])
     vars_grid_shape = (2,)
-    got = filter_ccv_policy(
-        ccv_policy=ccc_policy,
+    got = get_continuous_choice_argmax_given_discrete(
+        conditional_continuous_choice_argmax=ccc_policy,
         discrete_argmax=argmax,
-        vars_grid_shape=vars_grid_shape,
+        discrete_choices_grid_shape=vars_grid_shape,
     )
     assert jnp.all(got == jnp.array([0, 0]))
-
-
-def test_create_data_state_choice_space():
-    model_config = get_model_config("iskhakov_et_al_2017", n_periods=3)
-    model = process_model(model_config)
-    got_space = create_data_scs(
-        states={
-            "wealth": jnp.array([10.0, 20.0]),
-            "lagged_retirement": jnp.array([0, 1]),
-        },
-        model=model,
-    )
-    assert_array_equal(got_space.choices["retirement"], jnp.array([0, 1]))
-    assert_array_equal(got_space.states["wealth"], jnp.array([10.0, 20.0]))
-    assert_array_equal(got_space.states["lagged_retirement"], jnp.array([0, 1]))
-
-
-def test_determine_discrete_choice_axes():
-    variable_info = pd.DataFrame(
-        {
-            "is_state": [True, True, False, True, False, False],
-            "is_choice": [False, False, True, True, True, True],
-            "is_discrete": [True, True, True, True, True, False],
-            "is_continuous": [False, True, False, False, False, True],
-        },
-    )
-    got = determine_discrete_choice_axes(variable_info)
-    assert got == (1, 2, 3)

@@ -33,14 +33,34 @@ class InternalUserFunction(Protocol):
     ) -> Scalar: ...
 
 
-class DiscreteProblemSolverFunction(Protocol):
-    """The function that solves the discrete problem.
+class DiscreteProblemValueSolverFunction(Protocol):
+    """The function that solves for the value of the discrete problem.
 
     Only used for type checking.
 
     """
 
     def __call__(self, values: Array, params: ParamsDict) -> Array: ...  # noqa: D102
+
+
+class DiscreteProblemPolicySolverFunction(Protocol):
+    """The function that solves for the policy of the discrete problem.
+
+    Only used for type checking.
+
+    """
+
+    def __call__(self, values: Array, params: ParamsDict) -> tuple[Array, Array]: ...  # noqa: D102
+
+
+class StochasticNextFunction(Protocol):
+    """The function that simulates the next state of a stochastic variable.
+
+    Only used for type checking.
+
+    """
+
+    def __call__(self, keys: dict[str, Array], **kwargs: Array) -> Array: ...  # noqa: D102
 
 
 class ShockType(Enum):

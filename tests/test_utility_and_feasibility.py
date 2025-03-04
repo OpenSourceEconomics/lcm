@@ -6,13 +6,13 @@ from numpy.testing import assert_array_equal
 
 from lcm.input_processing import process_model
 from lcm.interfaces import InternalModel
-from lcm.model_functions import (
-    get_combined_constraint,
-    get_multiply_weights,
+from lcm.state_choice_space import create_state_space_info
+from lcm.typing import ShockType
+from lcm.utility_and_feasibility import (
+    _get_feasibility,
+    _get_node_weights_function,
     get_utility_and_feasibility_function,
 )
-from lcm.solution.state_choice_space import create_state_choice_space
-from lcm.typing import ShockType
 from tests.test_models import get_model_config
 from tests.test_models.deterministic import utility
 
@@ -32,14 +32,14 @@ def test_get_utility_and_feasibility_function():
         },
     }
 
-    state_space_info = create_state_choice_space(
+    state_space_info = create_state_space_info(
         model=model,
         is_last_period=False,
-    )[1]
+    )
 
     u_and_f = get_utility_and_feasibility_function(
         model=model,
-        state_space_info=state_space_info,
+        next_state_space_info=state_space_info,
         period=model.n_periods - 1,
         is_last_period=True,
     )
@@ -119,7 +119,7 @@ def internal_model_illustrative():
 
 @pytest.mark.illustrative
 def test_get_combined_constraint_illustrative(internal_model_illustrative):
-    combined_constraint = get_combined_constraint(internal_model_illustrative)
+    combined_constraint = _get_feasibility(internal_model_illustrative)
 
     age, retirement, lagged_retirement = jnp.array(
         [
@@ -148,7 +148,7 @@ def test_get_combined_constraint_illustrative(internal_model_illustrative):
 
 
 def test_get_multiply_weights():
-    multiply_weights = get_multiply_weights(
+    multiply_weights = _get_node_weights_function(
         stochastic_variables=["a", "b"],
     )
 
@@ -184,6 +184,6 @@ def test_get_combined_constraint():
         random_utility_shocks=ShockType.NONE,
         n_periods=0,
     )
-    combined_constraint = get_combined_constraint(model)
+    combined_constraint = _get_feasibility(model)
     feasibility: Array = combined_constraint(params={})  # type: ignore[assignment]
     assert feasibility.item() is False

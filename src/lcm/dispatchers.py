@@ -12,64 +12,59 @@ FunctionWithArrayReturn = TypeVar(
 )
 
 
-def spacemap(
+def simulation_spacemap(
     func: FunctionWithArrayReturn,
-    product_vars: tuple[str, ...],
-    combination_vars: tuple[str, ...],
+    choices_var_names: tuple[str, ...],
+    states_var_names: tuple[str, ...],
 ) -> FunctionWithArrayReturn:
-    """Apply vmap such that func can be evaluated on product and combination variables.
+    """Apply vmap such that func can be evaluated on choices and simulation states.
 
-    Product variables are used to create a Cartesian product of possible values. I.e.,
-    for each product variable, we create a new leading dimension in the output object,
-    with the size of the dimension being the number of possible values in the grid. The
-    i-th entries of the combination variables, correspond to one valid combination. For
-    the combination variables, a single dimension is thus added to the output object,
-    with the size of the dimension being the number of possible combinations. This means
-    that all combination variables must have the same size (e.g., in the simulation the
-    states act as combination variables, and their size equals the number of
-    simulations).
+    This function maps the function `func` over the simulation state-choice-space. That
+    is, it maps `func` over the Cartesian product of the choice variables, and over the
+    fixed simulation states. For each choice variable, a leading dimension is added to
+    the output object, with the length of the axis being the number of possible values
+    in the grid. Importantly, it does not create a Cartesian product over the state
+    variables, since these are fixed during the simulation. For the state variables,
+    a single dimension is added to the output object, with the length of the axis
+    being the number of simulated states.
 
-    spacemap preserves the function signature and allows the function to be called with
-    keyword arguments.
+    simulation_spacemap preserves the function signature and allows the function to be
+    called with keyword arguments.
 
     Args:
         func: The function to be dispatched.
-        product_vars: Names of the product variables, i.e. those that are stored as
+        choices_var_names: Names of the choice variables, i.e. those that are stored as
             arrays of possible values in the grid, over which we create a Cartesian
             product.
-        combination_vars: Names of the combination variables, i.e. those that are
-            stored as arrays of possible combinations.
+        states_var_names: Names of the state variables, i.e. those that are stored as
+            arrays of possible states.
 
     Returns:
         A callable with the same arguments as func (but with an additional leading
-        dimension) that returns a jax.Array or pytree of arrays. If `func` returns a
-        scalar, the dispatched function returns a jax.Array with k + 1 dimensions, where
-        k is the length of `product_vars` and the additional dimension corresponds to
-        the `combination_vars`. The order of the dimensions is determined by the order
-        of `product_vars`. If the output of `func` is a jax pytree, the usual jax
+        dimension) that returns an Array or pytree of Arrays. If `func` returns a
+        scalar, the dispatched function returns an Array with k + 1 dimensions, where k
+        is the length of `choices_var_names` and the additional dimension corresponds to
+        the `states_var_names`. The order of the dimensions is determined by the order
+        of `choices_var_names`. If the output of `func` is a jax pytree, the usual jax
         behavior applies, i.e. the leading dimensions of all arrays in the pytree are as
         described above but there might be additional dimensions.
 
     """
-    if duplicates := find_duplicates(product_vars, combination_vars):
+    if duplicates := find_duplicates(choices_var_names, states_var_names):
         msg = (
-            "Same argument provided more than once in product variables or combination "
-            f"variables, or is present in both: {duplicates}"
+            "Same argument provided more than once in choices or states variables, "
+            f"or is present in both: {duplicates}"
         )
         raise ValueError(msg)
 
-    func_callable_with_args = allow_args(func)
+    mappable_func = allow_args(func)
 
-    vmapped = _base_productmap(func_callable_with_args, product_vars)
-
-    if combination_vars:
-        vmapped = vmap_1d(
-            vmapped, variables=combination_vars, callable_with="only_args"
-        )
+    vmapped = _base_productmap(mappable_func, choices_var_names)
+    vmapped = vmap_1d(vmapped, variables=states_var_names, callable_with="only_args")
 
     # This raises a mypy error but is perfectly fine to do. See
     # https://github.com/python/mypy/issues/12472
-    vmapped.__signature__ = inspect.signature(func_callable_with_args)  # type: ignore[attr-defined]
+    vmapped.__signature__ = inspect.signature(mappable_func)  # type: ignore[attr-defined]
 
     return cast(FunctionWithArrayReturn, allow_only_kwargs(vmapped))
 
@@ -210,7 +205,7 @@ def _base_productmap(
     # We iterate in reverse order such that the output dimensions are in the same order
     # as the input dimensions.
     for pos in reversed(positions):
-        spec = [None] * len(parameters)  # type: list[int | None]
+        spec: list[int | None] = [None] * len(parameters)
         spec[pos] = 0
         vmap_specs.append(spec)
 
