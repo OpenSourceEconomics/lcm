@@ -37,15 +37,15 @@ class StateActionSpace:
             variables.
         continuous_actions: Dictionary containing the values of the continuous action
             variables.
-        ordered_var_names: Tuple with names of state and action variables in the order
-            they appear in the variable info table.
+        states_and_discrete_actions_names: Tuple with names of states and discrete
+            action variables in the order they appear in the variable info table.
 
     """
 
     states: dict[str, Array]
     discrete_actions: dict[str, Array]
     continuous_actions: dict[str, Array]
-    ordered_var_names: tuple[str, ...]
+    states_and_discrete_actions_names: tuple[str, ...]
 
     def replace(
         self,

@@ -39,7 +39,7 @@ def test_solve_brute():
             # pick [0, 1, 2] such that no coordinate mapping is needed
             "wealth": jnp.array([0.0, 1.0, 2.0]),
         },
-        ordered_var_names=("lazy", "working", "wealth"),
+        states_and_discrete_actions_names=("lazy", "working", "wealth"),
     )
     state_action_spaces = {0: _scs, 1: _scs}
 
@@ -75,7 +75,8 @@ def test_solve_brute():
 
     max_Q_over_c = get_max_Q_over_c(
         utility_and_feasibility=_utility_and_feasibility,
-        continuous_action_variables=("consumption",),
+        continuous_actions_names=("consumption",),
+        states_and_discrete_actions_names=("lazy", "working", "wealth"),
     )
 
     max_Q_over_c_functions = {0: max_Q_over_c, 1: max_Q_over_c}
@@ -116,7 +117,7 @@ def test_solve_brute_single_period_qc_values():
             "d": jnp.arange(12.0),
         },
         states={},
-        ordered_var_names=("a", "b", "c"),
+        states_and_discrete_actions_names=("a", "b", "c"),
     )
 
     def _utility_and_feasibility(a, c, b, d, vf_arr, params):  # noqa: ARG001
@@ -126,7 +127,8 @@ def test_solve_brute_single_period_qc_values():
 
     max_Q_over_c = get_max_Q_over_c(
         utility_and_feasibility=_utility_and_feasibility,
-        continuous_action_variables=("d",),
+        continuous_actions_names=("d",),
+        states_and_discrete_actions_names=("a", "b", "c"),
     )
 
     expected = np.array([[[6.0, 7, 8], [7, 8, 9]], [[7, 8, 9], [8, 9, 10]]])

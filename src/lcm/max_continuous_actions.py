@@ -6,12 +6,13 @@ from jax import Array
 
 from lcm.argmax import argmax
 from lcm.dispatchers import productmap
-from lcm.typing import MaxQOverCFunction, ParamsDict
+from lcm.typing import MaxQOverCFunction, ParamsDict, Scalar
 
 
 def get_max_Q_over_c(
     utility_and_feasibility: Callable[..., tuple[Array, Array]],
-    continuous_action_variables: tuple[str, ...],
+    continuous_actions_names: tuple[str, ...],
+    states_and_discrete_actions_names: tuple[str, ...],
 ) -> MaxQOverCFunction:
     """Get function that maximizes the Q-function over continuous actions.
 
@@ -23,25 +24,27 @@ def get_max_Q_over_c(
         utility_and_feasibility: A function that takes a state-action combination and
             returns the utility of that combination (scalar) and whether the
             state-action combination is feasible (bool).
-        continuous_action_variables: Tuple of action variable names that are continuous.
+        continuous_actions_names: Tuple of action variable names that are continuous.
+        states_and_discrete_actions_names: Tuple of state and discrete action variable
+            names.
 
     Returns:
         Function that calculates the maximum of the Q-function over the continuous
         actions. The result corresponds to the Qc-function.
 
     """
-    if continuous_action_variables:
+    if continuous_actions_names:
         utility_and_feasibility = productmap(
             func=utility_and_feasibility,
-            variables=continuous_action_variables,
+            variables=continuous_actions_names,
         )
 
     @functools.wraps(utility_and_feasibility)
-    def max_Q_over_c(vf_arr: Array, params: ParamsDict, **kwargs: Array) -> Array:
+    def max_Q_over_c(vf_arr: Array, params: ParamsDict, **kwargs: Scalar) -> Array:
         u, f = utility_and_feasibility(params=params, vf_arr=vf_arr, **kwargs)
         return u.max(where=f, initial=-jnp.inf)
 
-    return max_Q_over_c
+    return productmap(max_Q_over_c, variables=states_and_discrete_actions_names)
 
 
 def get_compute_conditional_continuation_policy(

@@ -43,7 +43,9 @@ class MaxQOverCFunction(Protocol):
 
     """
 
-    def __call__(self, vf_arr: Array, params: ParamsDict, **kwargs: Array) -> Array: ...  # noqa: D102
+    def __call__(  # noqa: D102
+        self, vf_arr: Array, params: ParamsDict, **kwargs: Scalar
+    ) -> Array: ...
 
 
 class MaxQcFunction(Protocol):

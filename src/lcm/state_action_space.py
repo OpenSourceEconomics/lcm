@@ -54,7 +54,7 @@ def create_state_action_space(
         states=states,
         discrete_actions=discrete_actions,
         continuous_actions=continuous_actions,
-        ordered_var_names=ordered_var_names,
+        states_and_discrete_actions_names=ordered_var_names,
     )
 
 

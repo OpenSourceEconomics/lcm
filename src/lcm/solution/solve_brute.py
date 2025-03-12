@@ -3,7 +3,6 @@ import logging
 import jax.numpy as jnp
 from jax import Array
 
-from lcm.dispatchers import productmap
 from lcm.interfaces import StateActionSpace
 from lcm.typing import MaxQcFunction, MaxQOverCFunction, ParamsDict
 
@@ -43,16 +42,11 @@ def solve(
         state_action_space = state_action_spaces[period]
 
         max_Qc = max_Qc_functions[period]
-
         max_Q_over_c = max_Q_over_c_functions[period]
-        max_Q_over_c_pmapped = productmap(
-            func=max_Q_over_c,
-            variables=state_action_space.ordered_var_names,
-        )
 
         # evaluate Q-function on states and actions, and maximize over continuous
         # actions
-        Qc_values = max_Q_over_c_pmapped(
+        Qc_values = max_Q_over_c(
             **state_action_space.states,
             **state_action_space.discrete_actions,
             **state_action_space.continuous_actions,
@@ -60,7 +54,7 @@ def solve(
             params=params,
         )
 
-        # maximize Qc-function over discrete actions
+        # maximize Qc-function evaluations over discrete actions
         vf_arr = max_Qc(Qc_values, params=params)
 
         solution[period] = vf_arr

@@ -21,7 +21,7 @@ from lcm.state_action_space import (
     create_state_action_space,
     create_state_space_info,
 )
-from lcm.typing import MaxQcFunction, ParamsDict, Target
+from lcm.typing import MaxQcFunction, MaxQOverCFunction, ParamsDict, Target
 from lcm.user_model import Model
 from lcm.utility_and_feasibility import (
     get_utility_and_feasibility_function,
@@ -73,7 +73,7 @@ def get_lcm_function(
     # ==================================================================================
     state_action_spaces: dict[int, StateActionSpace] = {}
     state_space_infos: dict[int, StateSpaceInfo] = {}
-    max_Q_over_c_functions: dict[int, Callable[[Array, Array], Array]] = {}
+    max_Q_over_c_functions: dict[int, MaxQOverCFunction] = {}
     compute_ccp_functions: dict[int, Callable[..., tuple[Array, Array]]] = {}
     max_Qc_functions: dict[int, MaxQcFunction] = {}
 
@@ -104,7 +104,8 @@ def get_lcm_function(
 
         max_Q_over_c = get_max_Q_over_c(
             utility_and_feasibility=u_and_f,
-            continuous_action_variables=tuple(state_action_space.continuous_actions),
+            continuous_actions_names=tuple(state_action_space.continuous_actions),
+            states_and_discrete_actions_names=state_action_space.states_and_discrete_actions_names,
         )
 
         compute_ccp = get_compute_conditional_continuation_policy(

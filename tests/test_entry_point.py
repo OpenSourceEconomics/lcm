@@ -168,7 +168,7 @@ def test_get_lcm_function_with_simulation_target_iskhakov_et_al_2017(model):
 # ======================================================================================
 
 
-def test_create_compute_conditional_continuation_value():
+def test_get_max_Q_over_c():
     model = process_model(
         get_model_config("iskhakov_et_al_2017_stripped_down", n_periods=3),
     )
@@ -196,7 +196,8 @@ def test_create_compute_conditional_continuation_value():
 
     max_Q_over_c = get_max_Q_over_c(
         utility_and_feasibility=u_and_f,
-        continuous_action_variables=("consumption",),
+        continuous_actions_names=("consumption",),
+        states_and_discrete_actions_names=(),
     )
 
     val = max_Q_over_c(
@@ -204,7 +205,7 @@ def test_create_compute_conditional_continuation_value():
         retirement=RetirementStatus.retired,
         wealth=30,
         params=params,
-        vf_arr=None,
+        vf_arr=jnp.empty(0),
     )
     assert val == iskhakov_et_al_2017_utility(
         consumption=30.0,
@@ -213,7 +214,7 @@ def test_create_compute_conditional_continuation_value():
     )
 
 
-def test_create_compute_conditional_continuation_value_with_discrete_model():
+def test_get_max_Q_over_c_with_discrete_model():
     model = process_model(
         get_model_config("iskhakov_et_al_2017_discrete", n_periods=3),
     )
@@ -241,7 +242,8 @@ def test_create_compute_conditional_continuation_value_with_discrete_model():
 
     max_Q_over_c = get_max_Q_over_c(
         utility_and_feasibility=u_and_f,
-        continuous_action_variables=(),
+        continuous_actions_names=(),
+        states_and_discrete_actions_names=(),
     )
 
     val = max_Q_over_c(
@@ -249,7 +251,7 @@ def test_create_compute_conditional_continuation_value_with_discrete_model():
         retirement=RetirementStatus.retired,
         wealth=2,
         params=params,
-        vf_arr=None,
+        vf_arr=jnp.empty(0),
     )
     assert val == iskhakov_et_al_2017_utility(
         consumption=2,
