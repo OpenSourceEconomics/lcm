@@ -16,7 +16,7 @@ from lcm.interfaces import (
 )
 from lcm.random import draw_random_seed, generate_simulation_keys
 from lcm.simulation.processing import as_panel, process_simulated_data
-from lcm.state_choice_space import create_state_choice_space
+from lcm.state_action_space import create_state_action_space
 from lcm.typing import ParamsDict
 
 
@@ -70,9 +70,9 @@ def simulate(
         initial_states: List of initial states to start from. Typically from the
             observed dataset.
         compute_ccv_policy_functions: Dict of length n_periods. Each function computes
-            the conditional continuation value dependent on the discrete choices.
+            the conditional continuation value dependent on the discrete actions.
         next_state: Function that returns the next state given the current
-            state and choice variables. For stochastic variables, it returns a random
+            state and action variables. For stochastic variables, it returns a random
             draw from the distribution of the next state.
         model: Model instance.
         logger: Logger that logs to stdout.
@@ -96,7 +96,7 @@ def simulate(
     n_periods = len(vf_arr_dict)
     n_initial_states = len(next(iter(initial_states.values())))
 
-    state_choice_space = create_state_choice_space(
+    state_action_space = create_state_action_space(
         model=model,
         initial_states=initial_states,
     )
@@ -114,67 +114,67 @@ def simulate(
     simulation_results = {}
 
     for period in range(n_periods):
-        state_choice_space = state_choice_space.replace(states)
+        state_action_space = state_action_space.replace(states)
 
         # We compute these grid shapes in the loop because they can change over time.
         # TODO (@timmens): This could still be pre-computed in the entry point.  # noqa: TD003,E501
-        discrete_choices_grid_shape = tuple(
-            len(grid) for grid in state_choice_space.discrete_choices.values()
+        discrete_actions_grid_shape = tuple(
+            len(grid) for grid in state_action_space.discrete_actions.values()
         )
-        continuous_choices_grid_shape = tuple(
-            len(grid) for grid in state_choice_space.continuous_choices.values()
+        continuous_actions_grid_shape = tuple(
+            len(grid) for grid in state_action_space.continuous_actions.values()
         )
 
-        # Compute optimal continuous choice conditional on discrete choices
+        # Compute optimal continuous action conditional on discrete actions
         # ------------------------------------------------------------------------------
         # We need to pass the value function array of the next period to the continuous
-        # choice problem solver. If we are at the last period, we pass an empty array.
+        # action problem solver. If we are at the last period, we pass an empty array.
         next_period_vf_arr = vf_arr_dict.get(period + 1, jnp.empty(0))
 
-        conditional_continuous_choice_argmax, conditional_continuous_choice_max = (
+        conditional_continuous_action_argmax, conditional_continuous_action_max = (
             solve_continuous_problem(
-                data_scs=state_choice_space,
+                data_scs=state_action_space,
                 compute_ccv=compute_ccv_policy_functions[period],
                 vf_arr=next_period_vf_arr,
                 params=params,
             )
         )
 
-        # Get optimal discrete choice given the optimal conditional continuous choices
+        # Get optimal discrete action given the optimal conditional continuous actions
         # ------------------------------------------------------------------------------
-        discrete_argmax, choice_value = discrete_policy_calculator(
-            conditional_continuous_choice_max, params=params
+        discrete_argmax, action_value = discrete_policy_calculator(
+            conditional_continuous_action_max, params=params
         )
 
-        # Get optimal continuous choice index given optimal discrete choice
+        # Get optimal continuous action index given optimal discrete action
         # ------------------------------------------------------------------------------
-        continuous_choice_argmax = get_continuous_choice_argmax_given_discrete(
-            conditional_continuous_choice_argmax=conditional_continuous_choice_argmax,
+        continuous_action_argmax = get_continuous_action_argmax_given_discrete(
+            conditional_continuous_action_argmax=conditional_continuous_action_argmax,
             discrete_argmax=discrete_argmax,
-            discrete_choices_grid_shape=discrete_choices_grid_shape,
+            discrete_actions_grid_shape=discrete_actions_grid_shape,
         )
 
-        # Convert choice indices to choice values
+        # Convert action indices to action values
         # ------------------------------------------------------------------------------
-        discrete_choices = get_values_from_indices(
+        discrete_actions = get_values_from_indices(
             flat_indices=discrete_argmax,
-            grids=state_choice_space.discrete_choices,
-            grids_shapes=discrete_choices_grid_shape,
+            grids=state_action_space.discrete_actions,
+            grids_shapes=discrete_actions_grid_shape,
         )
 
-        continuous_choices = get_values_from_indices(
-            flat_indices=continuous_choice_argmax,
-            grids=state_choice_space.continuous_choices,
-            grids_shapes=continuous_choices_grid_shape,
+        continuous_actions = get_values_from_indices(
+            flat_indices=continuous_action_argmax,
+            grids=state_action_space.continuous_actions,
+            grids_shapes=continuous_actions_grid_shape,
         )
 
         # Store results
         # ------------------------------------------------------------------------------
-        choices = {**discrete_choices, **continuous_choices}
+        actions = {**discrete_actions, **continuous_actions}
 
         simulation_results[period] = InternalSimulationPeriodResults(
-            value=choice_value,
-            choices=choices,
+            value=action_value,
+            actions=actions,
             states=states,
         )
 
@@ -187,7 +187,7 @@ def simulate(
 
         states_with_prefix = next_state(
             **states,
-            **choices,
+            **actions,
             _period=jnp.repeat(period, n_initial_states),
             params=params,
             keys=stochastic_variables_keys,
@@ -214,64 +214,64 @@ def solve_continuous_problem(
     vf_arr: Array,
     params: ParamsDict,
 ) -> tuple[Array, Array]:
-    """Solve the agents' continuous choice problem.
+    """Solve the agents' continuous action problem.
 
     Args:
-        data_scs: Class with entries choices and states.
+        data_scs: Class with entries actions and states.
         compute_ccv: Function that returns the conditional continuation
-            values for a given combination of states and discrete choices. The function
+            values for a given combination of states and discrete actions. The function
             depends on:
             - discrete and continuous state variables
-            - discrete and continuous choice variables
+            - discrete and continuous action variables
             - vf_arr
             - params
         vf_arr: Value function array.
         params: Dict of model parameters.
 
     Returns:
-        - Jax array with policies for each combination of a state and a discrete choice.
+        - Jax array with policies for each combination of a state and a discrete action.
           The number and order of dimensions is defined by the `gridmap` function.
         - Jax array with continuation values for each combination of a state and a
-          discrete choice. The number and order of dimensions is defined by the
+          discrete action. The number and order of dimensions is defined by the
           `gridmap` function.
 
     """
     _gridmapped = simulation_spacemap(
         func=compute_ccv,
-        choices_var_names=tuple(data_scs.discrete_choices),
+        actions_var_names=tuple(data_scs.discrete_actions),
         states_var_names=tuple(data_scs.states),
     )
     gridmapped = jax.jit(_gridmapped)
 
     return gridmapped(
         **data_scs.states,
-        **data_scs.discrete_choices,
-        **data_scs.continuous_choices,
+        **data_scs.discrete_actions,
+        **data_scs.continuous_actions,
         vf_arr=vf_arr,
         params=params,
     )
 
 
-@partial(vmap_1d, variables=("conditional_continuous_choice_argmax", "discrete_argmax"))
-def get_continuous_choice_argmax_given_discrete(
-    conditional_continuous_choice_argmax: Array,
+@partial(vmap_1d, variables=("conditional_continuous_action_argmax", "discrete_argmax"))
+def get_continuous_action_argmax_given_discrete(
+    conditional_continuous_action_argmax: Array,
     discrete_argmax: Array,
-    discrete_choices_grid_shape: tuple[int, ...],
+    discrete_actions_grid_shape: tuple[int, ...],
 ) -> Array:
-    """Select optimal continuous choice index given optimal discrete choice.
+    """Select optimal continuous action index given optimal discrete action.
 
     Args:
-        conditional_continuous_choice_argmax: Index array of optimal continous choices
-            conditional on discrete choices.
-        discrete_argmax: Index array of optimal discrete choices.
-        discrete_choices_grid_shape: Shape of the discrete choices grid.
+        conditional_continuous_action_argmax: Index array of optimal continous actions
+            conditional on discrete actions.
+        discrete_argmax: Index array of optimal discrete actions.
+        discrete_actions_grid_shape: Shape of the discrete actions grid.
 
     Returns:
-        Index array of optimal continuous choices.
+        Index array of optimal continuous actions.
 
     """
-    indices = jnp.unravel_index(discrete_argmax, shape=discrete_choices_grid_shape)
-    return conditional_continuous_choice_argmax[indices]
+    indices = jnp.unravel_index(discrete_argmax, shape=discrete_actions_grid_shape)
+    return conditional_continuous_action_argmax[indices]
 
 
 def get_values_from_indices(

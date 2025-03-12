@@ -8,7 +8,7 @@ from lcm.conditional_continuation import (
 )
 from lcm.entry_point import get_lcm_function
 from lcm.input_processing import process_model
-from lcm.state_choice_space import create_state_space_info
+from lcm.state_action_space import create_state_space_info
 from lcm.utility_and_feasibility import get_utility_and_feasibility_function
 from tests.test_models import get_model_config
 from tests.test_models.deterministic import RetirementStatus
@@ -196,7 +196,7 @@ def test_create_compute_conditional_continuation_value():
 
     compute_ccv = get_compute_conditional_continuation_value(
         utility_and_feasibility=u_and_f,
-        continuous_choice_variables=("consumption",),
+        continuous_action_variables=("consumption",),
     )
 
     val = compute_ccv(
@@ -241,7 +241,7 @@ def test_create_compute_conditional_continuation_value_with_discrete_model():
 
     compute_ccv = get_compute_conditional_continuation_value(
         utility_and_feasibility=u_and_f,
-        continuous_choice_variables=(),
+        continuous_action_variables=(),
     )
 
     val = compute_ccv(
@@ -291,7 +291,7 @@ def test_create_compute_conditional_continuation_policy():
 
     compute_ccv_policy = get_compute_conditional_continuation_policy(
         utility_and_feasibility=u_and_f,
-        continuous_choice_variables=("consumption",),
+        continuous_action_variables=("consumption",),
     )
 
     policy, val = compute_ccv_policy(
@@ -337,7 +337,7 @@ def test_create_compute_conditional_continuation_policy_with_discrete_model():
 
     compute_ccv_policy = get_compute_conditional_continuation_policy(
         utility_and_feasibility=u_and_f,
-        continuous_choice_variables=(),
+        continuous_action_variables=(),
     )
 
     policy, val = compute_ccv_policy(

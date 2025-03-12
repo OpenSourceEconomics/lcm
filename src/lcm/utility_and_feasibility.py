@@ -90,14 +90,14 @@ def get_utility_and_feasibility_function_before_last_period(
 
     @with_signature(args=arg_names)
     def utility_and_feasibility(
-        params: ParamsDict, vf_arr: Array, **states_and_choices: Scalar
+        params: ParamsDict, vf_arr: Array, **states_and_actions: Scalar
     ) -> tuple[Scalar, Scalar]:
         """Calculate the expected forward-looking utility and feasibility.
 
         Args:
             params: The parameters.
             vf_arr: The value function array.
-            **states_and_choices: Todays states and choices.
+            **states_and_actions: Todays states and actions.
 
         Returns:
             A tuple containing the utility and feasibility for the given period.
@@ -107,13 +107,13 @@ def get_utility_and_feasibility_function_before_last_period(
         # Calculate the expected continuation values
         # ------------------------------------------------------------------------------
         next_states = calculate_state_transition(
-            **states_and_choices,
+            **states_and_actions,
             _period=period,
             params=params,
         )
 
         weights = calculate_next_weights(
-            **states_and_choices,
+            **states_and_actions,
             _period=period,
             params=params,
         )
@@ -132,10 +132,10 @@ def get_utility_and_feasibility_function_before_last_period(
         ).sum()
 
         # ------------------------------------------------------------------------------
-        # Calculate the utility and feasibility for all states and choices
+        # Calculate the utility and feasibility for all states and actions
         # ------------------------------------------------------------------------------
         period_utility, feasibility = calculate_todays_u_and_f(
-            **states_and_choices,
+            **states_and_actions,
             _period=period,
             params=params,
         )

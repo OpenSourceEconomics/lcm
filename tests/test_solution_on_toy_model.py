@@ -1,4 +1,4 @@
-"""Test analytical solution and simulation with only discrete choices."""
+"""Test analytical solution and simulation with only discrete actions."""
 
 from copy import deepcopy
 from dataclasses import dataclass
@@ -55,7 +55,7 @@ DETERMINISTIC_MODEL = Model(
         "consumption_constraint": consumption_constraint,
     },
     n_periods=2,
-    choices={
+    actions={
         "consumption": DiscreteGrid(ConsumptionChoice),
         "working": DiscreteGrid(WorkingStatus),
     },
@@ -91,7 +91,7 @@ def value_second_period_deterministic(wealth):
 def policy_second_period_deterministic(wealth):
     """Policy function in the second (last) period. Computed using pen and paper.
 
-    First column corresponds to consumption choice, second to working choice.
+    First column corresponds to consumption action, second to working action.
 
     """
     policy = np.column_stack(
@@ -200,7 +200,7 @@ def value_second_period_stochastic(wealth, health):
 def policy_second_period_stochastic(wealth, health):
     """Policy function in the second (last) period. Computed using pen and paper.
 
-    First column corresponds to consumption choice, second to working choice.
+    First column corresponds to consumption action, second to working action.
 
     """
     policy = np.column_stack(

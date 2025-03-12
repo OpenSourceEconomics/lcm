@@ -11,7 +11,7 @@ from lcm.typing import DiscreteProblemValueSolverFunction, ParamsDict
 
 def solve(
     params: ParamsDict,
-    state_choice_spaces: dict[int, StateChoiceSpace],
+    state_action_spaces: dict[int, StateChoiceSpace],
     compute_ccv_functions: dict[int, Callable[[Array, Array], Array]],
     emax_calculators: dict[int, DiscreteProblemValueSolverFunction],
     logger: logging.Logger,
@@ -29,23 +29,23 @@ def solve(
 
     Args:
         params: Dict of model parameters.
-        state_choice_spaces: Dict with one state_choice_space per period.
+        state_action_spaces: Dict with one state_action_space per period.
         compute_ccv_functions: Dict with one function needed to solve the agent's
             problem. Each function depends on:
             - discrete and continuous state variables
-            - discrete and continuous choice variables
+            - discrete and continuous action variables
             - vf_arr
             - params
         emax_calculators: List of functions that take continuation
-            values for combinations of states and discrete choices and calculate the
-            expected maximum over all discrete choices of a given state.
+            values for combinations of states and discrete actions and calculate the
+            expected maximum over all discrete actions of a given state.
         logger: Logger that logs to stdout.
 
     Returns:
         Dict with one value function array per period.
 
     """
-    n_periods = len(state_choice_spaces)
+    n_periods = len(state_action_spaces)
     solution = {}
     vf_arr = None
 
@@ -53,15 +53,15 @@ def solve(
 
     # backwards induction loop
     for period in reversed(range(n_periods)):
-        # solve continuous problem, conditional on discrete choices
+        # solve continuous problem, conditional on discrete actions
         conditional_continuation_values = solve_continuous_problem(
-            state_choice_space=state_choice_spaces[period],
+            state_action_space=state_action_spaces[period],
             compute_ccv=compute_ccv_functions[period],
             vf_arr=vf_arr,
             params=params,
         )
 
-        # solve discrete problem by calculating expected maximum over discrete choices
+        # solve discrete problem by calculating expected maximum over discrete actions
         calculate_emax = emax_calculators[period]
         vf_arr = calculate_emax(conditional_continuation_values, params=params)
         solution[period] = vf_arr
@@ -72,20 +72,20 @@ def solve(
 
 
 def solve_continuous_problem(
-    state_choice_space: StateChoiceSpace,
+    state_action_space: StateChoiceSpace,
     compute_ccv: Callable[..., Array],
     vf_arr: Array | None,
     params: ParamsDict,
 ) -> Array:
-    """Solve the agent's continuous choices problem problem.
+    """Solve the agent's continuous actions problem problem.
 
     Args:
-        state_choice_space: Class with model variables.
+        state_action_space: Class with model variables.
         compute_ccv: Function that returns the conditional continuation
-            values for a given combination of states and discrete choices. The function
+            values for a given combination of states and discrete actions. The function
             depends on:
             - discrete and continuous state variables
-            - discrete and continuous choice variables
+            - discrete and continuous action variables
             - vf_arr
             - params
         vf_arr: Value function array.
@@ -93,20 +93,20 @@ def solve_continuous_problem(
 
     Returns:
         Jax array with continuation values for each combination of the set of states and
-            the set of discrete choices. The number and order of dimensions is defined
+            the set of discrete actions. The number and order of dimensions is defined
             by the `gridmap` function.
 
     """
     _gridmapped = productmap(
         func=compute_ccv,
-        variables=state_choice_space.ordered_var_names,
+        variables=state_action_space.ordered_var_names,
     )
     gridmapped = jax.jit(_gridmapped)
 
     return gridmapped(
-        **state_choice_space.states,
-        **state_choice_space.discrete_choices,
-        **state_choice_space.continuous_choices,
+        **state_action_space.states,
+        **state_action_space.discrete_actions,
+        **state_action_space.continuous_actions,
         vf_arr=vf_arr,
         params=params,
     )

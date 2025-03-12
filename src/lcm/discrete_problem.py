@@ -1,8 +1,8 @@
-"""Functions that reduce the conditional continuation values over discrete choices.
+"""Functions that reduce the conditional continuation values over discrete actions.
 
 By conditional continuation value we mean continuation values conditional on a discrete
-choice, i.e. the result of solving the continuous choice problem conditional on the
-discrete choice. These are also _conditional_ on a given state.
+action, i.e. the result of solving the continuous action problem conditional on the
+discrete action. These are also _conditional_ on a given state.
 
 By reduce we mean calculating the expected maximum of the continuation values, based
 on the distribution of utility shocks. Currently we support no shocks. In the future,
@@ -40,10 +40,10 @@ def get_solve_discrete_problem_value(
 ) -> DiscreteProblemValueSolverFunction:
     """Get function that computes the expected max. of conditional continuation values.
 
-    The maximum is taken over the discrete choice variables in each state.
+    The maximum is taken over the discrete action variables in each state.
 
     Args:
-        random_utility_shock_type: Type of choice shock. Currently only Shock.NONE is
+        random_utility_shock_type: Type of action shock. Currently only Shock.NONE is
             supported. Work for "extreme_value" is in progress.
         variable_info: DataFrame with information about the variables.
         is_last_period: Whether the function is created for the last period.
@@ -57,7 +57,7 @@ def get_solve_discrete_problem_value(
     if is_last_period:
         variable_info = variable_info.query("~is_auxiliary")
 
-    choice_axes = _determine_discrete_choice_axes_solution(variable_info)
+    action_axes = _determine_discrete_action_axes_solution(variable_info)
 
     if random_utility_shock_type == ShockType.NONE:
         func = _solve_discrete_problem_no_shocks
@@ -66,7 +66,7 @@ def get_solve_discrete_problem_value(
     else:
         raise ValueError(f"Invalid shock_type: {random_utility_shock_type}.")
 
-    return partial(func, choice_axes=choice_axes)
+    return partial(func, action_axes=action_axes)
 
 
 def get_solve_discrete_problem_policy(
@@ -75,7 +75,7 @@ def get_solve_discrete_problem_policy(
 ) -> DiscreteProblemPolicySolverFunction:
     """Return a function that calculates the argmax and max of continuation values.
 
-    The argmax is taken over the discrete choice variables in each state.
+    The argmax is taken over the discrete action variables in each state.
 
     Args:
         variable_info (pd.DataFrame): DataFrame with information about the model
@@ -88,16 +88,16 @@ def get_solve_discrete_problem_policy(
                 continuation values.
 
     """
-    choice_axes = _determine_discrete_choice_axes_simulation(variable_info)
+    action_axes = _determine_discrete_action_axes_simulation(variable_info)
 
     def _calculate_discrete_argmax(
         values: Array,
-        choice_axes: tuple[int, ...],
+        action_axes: tuple[int, ...],
         params: ParamsDict,  # noqa: ARG001
     ) -> tuple[Array, Array]:
-        return argmax(values, axis=choice_axes)
+        return argmax(values, axis=action_axes)
 
-    return partial(_calculate_discrete_argmax, choice_axes=choice_axes)
+    return partial(_calculate_discrete_argmax, action_axes=action_axes)
 
 
 # ======================================================================================
@@ -107,26 +107,26 @@ def get_solve_discrete_problem_policy(
 
 def _solve_discrete_problem_no_shocks(
     cc_values: Array,
-    choice_axes: tuple[int, ...],
+    action_axes: tuple[int, ...],
     params: ParamsDict,  # noqa: ARG001
 ) -> Array:
-    """Reduce conditional continuation values over discrete choices.
+    """Reduce conditional continuation values over discrete actions.
 
     Args:
         cc_values: Array with conditional continuation values. For each state and
-            discrete choice variable, it has one axis.
-        choice_axes: Tuple of indices representing the axes in the value function that
-            correspond to discrete choices. Returns None if there are no discrete
-            choice axes.
+            discrete action variable, it has one axis.
+        action_axes: Tuple of indices representing the axes in the value function that
+            correspond to discrete actions. Returns None if there are no discrete
+            action axes.
         params: See `get_solve_discrete_problem`.
 
     Returns:
         Array with reduced continuation values. Has less dimensions than cc_values if
-        choice_axes is not None and is shorter in the first dimension if choice_segments
+        action_axes is not None and is shorter in the first dimension if action_segments
         is not None.
 
     """
-    return cc_values.max(axis=choice_axes)
+    return cc_values.max(axis=action_axes)
 
 
 # ======================================================================================
@@ -137,28 +137,28 @@ def _solve_discrete_problem_no_shocks(
 
 
 def _calculate_emax_extreme_value_shocks(
-    values: Array, choice_axes: tuple[int, ...], params: ParamsDict
+    values: Array, action_axes: tuple[int, ...], params: ParamsDict
 ) -> Array:
-    """Aggregate conditional continuation values over discrete choices.
+    """Aggregate conditional continuation values over discrete actions.
 
     Args:
         values: Multidimensional jax array with conditional continuation values.
-        choice_axes: Int or tuple of int, specifying which axes in values correspond to
-            the discrete choice variables.
-        choice_segments: Dictionary with the entries "segment_ids" and "num_segments".
+        action_axes: Int or tuple of int, specifying which axes in values correspond to
+            the discrete action variables.
+        action_segments: Dictionary with the entries "segment_ids" and "num_segments".
             segment_ids are a 1d integer array that partitions the first dimension of
-            values into choice sets over which we need to aggregate. "num_segments" is
-            the number of choice sets.
+            values into action sets over which we need to aggregate. "num_segments" is
+            the number of action sets.
         params: Params dict that contains the schock_scale if necessary.
 
     Returns:
         Multidimensional jax array with aggregated continuation values. Has less
-        dimensions than values if choice_axes is not None and is shorter in the first
-        dimension if choice_segments is not None.
+        dimensions than values if action_axes is not None and is shorter in the first
+        dimension if action_segments is not None.
 
     """
     scale = params["additive_utility_shock"]["scale"]
-    return scale * jax.scipy.special.logsumexp(values / scale, axis=choice_axes)
+    return scale * jax.scipy.special.logsumexp(values / scale, axis=action_axes)
 
 
 # ======================================================================================
@@ -166,43 +166,43 @@ def _calculate_emax_extreme_value_shocks(
 # ======================================================================================
 
 
-def _determine_discrete_choice_axes_solution(
+def _determine_discrete_action_axes_solution(
     variable_info: pd.DataFrame,
 ) -> tuple[int, ...]:
-    """Get axes of state-choice-space that correspond to discrete choices in solution.
+    """Get axes of state-action-space that correspond to discrete actions in solution.
 
     Args:
         variable_info: DataFrame with information about the variables.
 
     Returns:
         A tuple of indices representing the axes' positions in the value function that
-        correspond to discrete choices.
+        correspond to discrete actions.
 
     """
-    discrete_choice_vars = set(
-        variable_info.query("is_choice & is_discrete").index.tolist()
+    discrete_action_vars = set(
+        variable_info.query("is_action & is_discrete").index.tolist()
     )
     return tuple(
-        i for i, ax in enumerate(variable_info.index) if ax in discrete_choice_vars
+        i for i, ax in enumerate(variable_info.index) if ax in discrete_action_vars
     )
 
 
-def _determine_discrete_choice_axes_simulation(
+def _determine_discrete_action_axes_simulation(
     variable_info: pd.DataFrame,
 ) -> tuple[int, ...]:
-    """Get axes of state-choice-space that correspond to discrete choices in simulation.
+    """Get axes of state-action-space that correspond to discrete actions in simulation.
 
     Args:
         variable_info: DataFrame with information about the variables.
 
     Returns:
         A tuple of indices representing the axes' positions in the value function that
-        correspond to discrete choices.
+        correspond to discrete actions.
 
     """
-    discrete_choice_vars = set(
-        variable_info.query("is_choice & is_discrete").index.tolist()
+    discrete_action_vars = set(
+        variable_info.query("is_action & is_discrete").index.tolist()
     )
 
     # The first dimension corresponds to the simulated states, so add 1.
-    return tuple(1 + i for i in range(len(discrete_choice_vars)))
+    return tuple(1 + i for i in range(len(discrete_action_vars)))

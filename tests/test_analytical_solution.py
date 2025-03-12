@@ -1,7 +1,7 @@
 """Testing against the analytical solution of Iskhakov et al. (2017).
 
 The benchmark is taken from the paper "The endogenous grid method for
-discrete-continuous dynamic choice models with (or without) taste shocks" by Fedor
+discrete-continuous dynamic action models with (or without) taste shocks" by Fedor
 Iskhakov, Thomas H. Jørgensen, John Rust and Bertel Schjerning (2017,
 https://doi.org/10.3982/QE643).
 

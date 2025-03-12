@@ -17,8 +17,8 @@ from lcm.logging import get_logger
 from lcm.next_state import get_next_state_function
 from lcm.simulation.simulate import simulate, solve_and_simulate
 from lcm.solution.solve_brute import solve
-from lcm.state_choice_space import (
-    create_state_choice_space,
+from lcm.state_action_space import (
+    create_state_action_space,
     create_state_space_info,
 )
 from lcm.typing import DiscreteProblemValueSolverFunction, ParamsDict, Target
@@ -69,9 +69,9 @@ def get_lcm_function(
     logger = get_logger(debug_mode=debug_mode)
 
     # ==================================================================================
-    # Create model functions and state-choice-spaces
+    # Create model functions and state-action-spaces
     # ==================================================================================
-    state_choice_spaces: dict[int, StateChoiceSpace] = {}
+    state_action_spaces: dict[int, StateChoiceSpace] = {}
     state_space_infos: dict[int, StateSpaceInfo] = {}
     compute_ccv_functions: dict[int, Callable[[Array, Array], Array]] = {}
     compute_ccp_functions: dict[int, Callable[..., tuple[Array, Array]]] = {}
@@ -80,7 +80,7 @@ def get_lcm_function(
     for period in reversed(range(internal_model.n_periods)):
         is_last_period = period == last_period
 
-        state_choice_space = create_state_choice_space(
+        state_action_space = create_state_action_space(
             model=internal_model,
             is_last_period=is_last_period,
         )
@@ -104,12 +104,12 @@ def get_lcm_function(
 
         compute_ccv = get_compute_conditional_continuation_value(
             utility_and_feasibility=u_and_f,
-            continuous_choice_variables=tuple(state_choice_space.continuous_choices),
+            continuous_action_variables=tuple(state_action_space.continuous_actions),
         )
 
         compute_ccp = get_compute_conditional_continuation_policy(
             utility_and_feasibility=u_and_f,
-            continuous_choice_variables=tuple(state_choice_space.continuous_choices),
+            continuous_action_variables=tuple(state_action_space.continuous_actions),
         )
 
         solve_discrete_problem = get_solve_discrete_problem_value(
@@ -118,7 +118,7 @@ def get_lcm_function(
             is_last_period=is_last_period,
         )
 
-        state_choice_spaces[period] = state_choice_space
+        state_action_spaces[period] = state_action_space
         state_space_infos[period] = state_space_info
         compute_ccv_functions[period] = compute_ccv
         compute_ccp_functions[period] = compute_ccp
@@ -129,7 +129,7 @@ def get_lcm_function(
     # ==================================================================================
     _solve_model = partial(
         solve,
-        state_choice_spaces=state_choice_spaces,
+        state_action_spaces=state_action_spaces,
         compute_ccv_functions=compute_ccv_functions,
         emax_calculators=solve_discrete_problem_functions,
         logger=logger,

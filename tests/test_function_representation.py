@@ -82,13 +82,13 @@ def test_function_evaluator(binary_discrete_grid):
     """Test get_precalculated_function_evaluator in simple example.
 
     - One discrete state variable: retired (True, False)
-    - One discrete choice variable: insured ("yes", "no")
+    - One discrete action variable: insured ("yes", "no")
     - Two continuous state variables:
         - wealth (linspace(100, 1100, 6))
         - human_capital (linspace(-3, 3, 7))
 
     The utility function is wealth + human_capital + c. c takes a different
-    value for each discrete state choice combination.
+    value for each discrete state action combination.
 
     The setup of state_space_info here is quite long. Usually these inputs will be
     generated from a model specification.

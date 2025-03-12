@@ -22,7 +22,7 @@ def get_next_state_function(
         target: Whether to generate the function for the solve or simulate target.
 
     Returns:
-        Function that computes the next states. Depends on states and choices of the
+        Function that computes the next states. Depends on states and actions of the
         current period, and the model parameters ("params"). If target is "simulate",
         the function also depends on the dictionary of random keys ("keys"), which
         corresponds to the names of stochastic next functions.

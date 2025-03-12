@@ -77,7 +77,7 @@ MODEL_CONFIG = Model(
         "wage": wage,
         "age": age,
     },
-    choices={
+    actions={
         "working": DiscreteGrid(WorkingStatus),
         "consumption": LinspaceGrid(
             start=1,

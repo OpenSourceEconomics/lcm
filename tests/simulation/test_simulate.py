@@ -12,11 +12,11 @@ from lcm.input_processing import process_model
 from lcm.logging import get_logger
 from lcm.next_state import get_next_state_function
 from lcm.simulation.simulate import (
-    get_continuous_choice_argmax_given_discrete,
+    get_continuous_action_argmax_given_discrete,
     get_values_from_indices,
     simulate,
 )
-from lcm.state_choice_space import create_state_space_info
+from lcm.state_action_space import create_state_space_info
 from lcm.typing import Target
 from lcm.utility_and_feasibility import get_utility_and_feasibility_function
 from tests.test_models import (
@@ -36,9 +36,9 @@ if TYPE_CHECKING:
 @pytest.fixture
 def simulate_inputs():
     model_config = get_model_config("iskhakov_et_al_2017_stripped_down", n_periods=1)
-    choices = model_config.choices
-    choices["consumption"] = choices["consumption"].replace(stop=100)  # type: ignore[attr-defined]
-    model_config = model_config.replace(choices=choices)
+    actions = model_config.actions
+    actions["consumption"] = actions["consumption"].replace(stop=100)  # type: ignore[attr-defined]
+    model_config = model_config.replace(actions=actions)
     model = process_model(model_config)
 
     state_space_info = create_state_space_info(
@@ -56,7 +56,7 @@ def simulate_inputs():
         )
         compute_ccv = get_compute_conditional_continuation_policy(
             utility_and_feasibility=u_and_f,
-            continuous_choice_variables=("consumption",),
+            continuous_action_variables=("consumption",),
         )
         compute_ccv_policy_functions.append(compute_ccv)
 
@@ -157,7 +157,7 @@ def test_simulate_using_get_lcm_function(
         assert (res.loc[period]["value"].diff()[1:] >= 0).all()  # type: ignore[operator]
 
 
-def test_simulate_with_only_discrete_choices():
+def test_simulate_with_only_discrete_actions():
     model = get_model_config("iskhakov_et_al_2017_discrete", n_periods=2)
     params = get_params(wage=1.5, beta=1, interest_rate=0)
 
@@ -278,7 +278,7 @@ def test_effect_of_disutility_of_work():
 # ======================================================================================
 
 
-def test_retrieve_choices():
+def test_retrieve_actions():
     got = get_values_from_indices(
         flat_indices=jnp.array([0, 3, 7]),
         grids={"a": jnp.linspace(0, 1, 5), "b": jnp.linspace(10, 20, 6)},
@@ -297,9 +297,9 @@ def test_filter_ccv_policy():
     )
     argmax = jnp.array([0, 1])
     vars_grid_shape = (2,)
-    got = get_continuous_choice_argmax_given_discrete(
-        conditional_continuous_choice_argmax=ccc_policy,
+    got = get_continuous_action_argmax_given_discrete(
+        conditional_continuous_action_argmax=ccc_policy,
         discrete_argmax=argmax,
-        discrete_choices_grid_shape=vars_grid_shape,
+        discrete_actions_grid_shape=vars_grid_shape,
     )
     assert jnp.all(got == jnp.array([0, 0]))

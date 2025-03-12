@@ -23,16 +23,16 @@ def test_solve_brute():
     params = {"beta": 0.9}
 
     # ==================================================================================
-    # create the list of state_choice_spaces
+    # create the list of state_action_spaces
     # ==================================================================================
     _scs = StateChoiceSpace(
-        discrete_choices={
+        discrete_actions={
             # pick [0, 1] such that no label translation is needed
-            # lazy is like a type, it influences utility but is not affected by choices
+            # lazy is like a type, it influences utility but is not affected by actions
             "lazy": jnp.array([0, 1]),
             "working": jnp.array([0, 1]),
         },
-        continuous_choices={
+        continuous_actions={
             "consumption": jnp.array([0, 1, 2, 3]),
         },
         states={
@@ -41,7 +41,7 @@ def test_solve_brute():
         },
         ordered_var_names=("lazy", "working", "wealth"),
     )
-    state_choice_spaces = {0: _scs, 1: _scs}
+    state_action_spaces = {0: _scs, 1: _scs}
 
     # ==================================================================================
     # create the utility_and_feasibility functions
@@ -75,13 +75,13 @@ def test_solve_brute():
 
     compute_ccv = get_compute_conditional_continuation_value(
         utility_and_feasibility=_utility_and_feasibility,
-        continuous_choice_variables=("consumption",),
+        continuous_action_variables=("consumption",),
     )
 
     compute_ccv_functions = {0: compute_ccv, 1: compute_ccv}
 
     # ==================================================================================
-    # create emax aggregators and choice segments
+    # create emax aggregators and action segments
     # ==================================================================================
 
     def calculate_emax(values, params):  # noqa: ARG001
@@ -96,7 +96,7 @@ def test_solve_brute():
 
     solution = solve(
         params=params,
-        state_choice_spaces=state_choice_spaces,
+        state_action_spaces=state_action_spaces,
         compute_ccv_functions=compute_ccv_functions,
         emax_calculators=emax_calculators,
         logger=get_logger(debug_mode=False),
@@ -106,13 +106,13 @@ def test_solve_brute():
 
 
 def test_solve_continuous_problem_no_vf_arr():
-    state_choice_space = StateChoiceSpace(
-        discrete_choices={
+    state_action_space = StateChoiceSpace(
+        discrete_actions={
             "a": jnp.array([0, 1.0]),
             "b": jnp.array([2, 3.0]),
             "c": jnp.array([4, 5, 6]),
         },
-        continuous_choices={
+        continuous_actions={
             "d": jnp.arange(12.0),
         },
         states={},
@@ -126,13 +126,13 @@ def test_solve_continuous_problem_no_vf_arr():
 
     compute_ccv = get_compute_conditional_continuation_value(
         utility_and_feasibility=_utility_and_feasibility,
-        continuous_choice_variables=("d",),
+        continuous_action_variables=("d",),
     )
 
     expected = np.array([[[6.0, 7, 8], [7, 8, 9]], [[7, 8, 9], [8, 9, 10]]])
 
     got = solve_continuous_problem(
-        state_choice_space,
+        state_action_space,
         compute_ccv,
         vf_arr=None,
         params={},

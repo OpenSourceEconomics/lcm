@@ -7,28 +7,28 @@ from lcm.grids import ContinuousGrid, DiscreteGrid
 from lcm.interfaces import InternalModel, StateChoiceSpace, StateSpaceInfo
 
 
-def create_state_choice_space(
+def create_state_action_space(
     model: InternalModel,
     *,
     initial_states: dict[str, Array] | None = None,
     is_last_period: bool = False,
 ) -> StateChoiceSpace:
-    """Create a state-choice-space.
+    """Create a state-action-space.
 
-    Creates the state-choice-space for the solution and simulation of a model. In the
+    Creates the state-action-space for the solution and simulation of a model. In the
     simulation, initial states must be provided.
 
     Args:
         model: A processed model.
         initial_states: A dictionary with the initial values of the state variables.
             If None, the initial values are the minimum values of the state variables.
-        is_last_period: Whether the state-choice-space is created for the last period,
+        is_last_period: Whether the state-action-space is created for the last period,
             in which case auxiliary variables are not included.
 
     Returns:
-        A state-choice-space. Contains the grids of the discrete and continuous choices,
+        A state-action-space. Contains the grids of the discrete and continuous actions,
         the grids of the state variables, or the initial values of the state variables,
-        and the names of the state and choice variables in the order they appear in the
+        and the names of the state and action variables in the order they appear in the
         variable info table.
 
     """
@@ -42,18 +42,18 @@ def create_state_choice_space(
         _validate_initial_states_names(initial_states, variable_info=vi)
         states = initial_states
 
-    discrete_choices = {
-        name: model.grids[name] for name in vi.query("is_choice & is_discrete").index
+    discrete_actions = {
+        name: model.grids[name] for name in vi.query("is_action & is_discrete").index
     }
-    continuous_choices = {
-        name: model.grids[name] for name in vi.query("is_choice & is_continuous").index
+    continuous_actions = {
+        name: model.grids[name] for name in vi.query("is_action & is_continuous").index
     }
     ordered_var_names = tuple(vi.query("is_state | is_discrete").index)
 
     return StateChoiceSpace(
         states=states,
-        discrete_choices=discrete_choices,
-        continuous_choices=continuous_choices,
+        discrete_actions=discrete_actions,
+        continuous_actions=continuous_actions,
         ordered_var_names=ordered_var_names,
     )
 

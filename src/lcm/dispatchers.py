@@ -14,14 +14,14 @@ FunctionWithArrayReturn = TypeVar(
 
 def simulation_spacemap(
     func: FunctionWithArrayReturn,
-    choices_var_names: tuple[str, ...],
+    actions_var_names: tuple[str, ...],
     states_var_names: tuple[str, ...],
 ) -> FunctionWithArrayReturn:
-    """Apply vmap such that func can be evaluated on choices and simulation states.
+    """Apply vmap such that func can be evaluated on actions and simulation states.
 
-    This function maps the function `func` over the simulation state-choice-space. That
-    is, it maps `func` over the Cartesian product of the choice variables, and over the
-    fixed simulation states. For each choice variable, a leading dimension is added to
+    This function maps the function `func` over the simulation state-action-space. That
+    is, it maps `func` over the Cartesian product of the action variables, and over the
+    fixed simulation states. For each action variable, a leading dimension is added to
     the output object, with the length of the axis being the number of possible values
     in the grid. Importantly, it does not create a Cartesian product over the state
     variables, since these are fixed during the simulation. For the state variables,
@@ -33,7 +33,7 @@ def simulation_spacemap(
 
     Args:
         func: The function to be dispatched.
-        choices_var_names: Names of the choice variables, i.e. those that are stored as
+        actions_var_names: Names of the action variables, i.e. those that are stored as
             arrays of possible values in the grid, over which we create a Cartesian
             product.
         states_var_names: Names of the state variables, i.e. those that are stored as
@@ -43,23 +43,23 @@ def simulation_spacemap(
         A callable with the same arguments as func (but with an additional leading
         dimension) that returns an Array or pytree of Arrays. If `func` returns a
         scalar, the dispatched function returns an Array with k + 1 dimensions, where k
-        is the length of `choices_var_names` and the additional dimension corresponds to
+        is the length of `actions_var_names` and the additional dimension corresponds to
         the `states_var_names`. The order of the dimensions is determined by the order
-        of `choices_var_names`. If the output of `func` is a jax pytree, the usual jax
+        of `actions_var_names`. If the output of `func` is a jax pytree, the usual jax
         behavior applies, i.e. the leading dimensions of all arrays in the pytree are as
         described above but there might be additional dimensions.
 
     """
-    if duplicates := find_duplicates(choices_var_names, states_var_names):
+    if duplicates := find_duplicates(actions_var_names, states_var_names):
         msg = (
-            "Same argument provided more than once in choices or states variables, "
+            "Same argument provided more than once in actions or states variables, "
             f"or is present in both: {duplicates}"
         )
         raise ValueError(msg)
 
     mappable_func = allow_args(func)
 
-    vmapped = _base_productmap(mappable_func, choices_var_names)
+    vmapped = _base_productmap(mappable_func, actions_var_names)
     vmapped = vmap_1d(vmapped, variables=states_var_names, callable_with="only_args")
 
     # This raises a mypy error but is perfectly fine to do. See

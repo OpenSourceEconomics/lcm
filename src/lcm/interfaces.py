@@ -12,68 +12,68 @@ from lcm.utils import first_non_none
 
 @dataclass(frozen=True)
 class StateChoiceSpace:
-    """The state-choice space.
+    """The state-action space.
 
     When used for the model solution:
     ---------------------------------
 
-    The state-choice space becomes the full Cartesian product of the state variables and
-    the choice variables.
+    The state-action space becomes the full Cartesian product of the state variables and
+    the action variables.
 
     When used for the simulation:
     ----------------------------
 
-    The state-choice space becomes the product of state-combinations with the full
-    Cartesian product of the choice variables.
+    The state-action space becomes the product of state-combinations with the full
+    Cartesian product of the action variables.
 
     Note:
     -----
-    We store discrete and continuous choices separately since these are handled during
+    We store discrete and continuous actions separately since these are handled during
     different stages of the solution and simulation processes.
 
     Attributes:
         states: Dictionary containing the values of the state variables.
-        discrete_choices: Dictionary containing the values of the discrete choice
+        discrete_actions: Dictionary containing the values of the discrete action
             variables.
-        continuous_choices: Dictionary containing the values of the continuous choice
+        continuous_actions: Dictionary containing the values of the continuous action
             variables.
-        ordered_var_names: Tuple with names of state and choice variables in the order
+        ordered_var_names: Tuple with names of state and action variables in the order
             they appear in the variable info table.
 
     """
 
     states: dict[str, Array]
-    discrete_choices: dict[str, Array]
-    continuous_choices: dict[str, Array]
+    discrete_actions: dict[str, Array]
+    continuous_actions: dict[str, Array]
     ordered_var_names: tuple[str, ...]
 
     def replace(
         self,
         states: dict[str, Array] | None = None,
-        discrete_choices: dict[str, Array] | None = None,
-        continuous_choices: dict[str, Array] | None = None,
+        discrete_actions: dict[str, Array] | None = None,
+        continuous_actions: dict[str, Array] | None = None,
     ) -> "StateChoiceSpace":
-        """Replace the states or choices in the state-choice space.
+        """Replace the states or actions in the state-action space.
 
         Args:
             states: Dictionary with new states. If None, the existing states are used.
-            discrete_choices: Dictionary with new discrete choices. If None, the
-                existing discrete choices are used.
-            continuous_choices: Dictionary with new continuous choices. If None, the
-                existing continuous choices are used.
+            discrete_actions: Dictionary with new discrete actions. If None, the
+                existing discrete actions are used.
+            continuous_actions: Dictionary with new continuous actions. If None, the
+                existing continuous actions are used.
 
         Returns:
-            New state-choice space with the replaced states or choices.
+            New state-action space with the replaced states or actions.
 
         """
         states = first_non_none(states, self.states)
-        discrete_choices = first_non_none(discrete_choices, self.discrete_choices)
-        continuous_choices = first_non_none(continuous_choices, self.continuous_choices)
+        discrete_actions = first_non_none(discrete_actions, self.discrete_actions)
+        continuous_actions = first_non_none(continuous_actions, self.continuous_actions)
         return dc.replace(
             self,
             states=states,
-            discrete_choices=discrete_choices,
-            continuous_choices=continuous_choices,
+            discrete_actions=discrete_actions,
+            continuous_actions=continuous_actions,
         )
 
 
@@ -108,7 +108,7 @@ class InternalModel:
         variable_info: A table with information about all variables in the model. The
             index contains the name of a model variable. The columns are booleans that
             are True if the variable has the corresponding property. The columns are:
-            is_state, is_choice, is_continuous, is_discrete.
+            is_state, is_action, is_continuous, is_discrete.
         functions: Dictionary that maps names of functions to functions. The functions
             differ from the user functions in that they take `params` as a keyword
             argument. Two cases:
@@ -142,5 +142,5 @@ class InternalSimulationPeriodResults:
     """The results of a simulation for one period."""
 
     value: Array
-    choices: dict[str, Array]
+    actions: dict[str, Array]
     states: dict[str, Array]

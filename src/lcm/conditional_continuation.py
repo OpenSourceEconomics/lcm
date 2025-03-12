@@ -11,28 +11,28 @@ from lcm.typing import ParamsDict
 
 def get_compute_conditional_continuation_value(
     utility_and_feasibility: Callable[..., tuple[Array, Array]],
-    continuous_choice_variables: tuple[str, ...],
+    continuous_action_variables: tuple[str, ...],
 ) -> Callable[..., Array]:
     """Get a function that computes the conditional continuation value.
 
-    This function solves the continuous choice problem conditional on a state-
-    (discrete-)choice combination; and is used in the model solution process.
+    This function solves the continuous action problem conditional on a state-
+    (discrete-)action combination; and is used in the model solution process.
 
     Args:
-        utility_and_feasibility: A function that takes a state-choice combination and
+        utility_and_feasibility: A function that takes a state-action combination and
             returns the utility of that combination (scalar) and whether the
-            state-choice combination is feasible (bool).
-        continuous_choice_variables: Tuple of choice variable names that are continuous.
+            state-action combination is feasible (bool).
+        continuous_action_variables: Tuple of action variable names that are continuous.
 
     Returns:
-        A function that takes a state-choice combination and returns the maximum
-        conditional continuation value over the feasible continuous choices.
+        A function that takes a state-action combination and returns the maximum
+        conditional continuation value over the feasible continuous actions.
 
     """
-    if continuous_choice_variables:
+    if continuous_action_variables:
         utility_and_feasibility = productmap(
             func=utility_and_feasibility,
-            variables=continuous_choice_variables,
+            variables=continuous_action_variables,
         )
 
     @functools.wraps(utility_and_feasibility)
@@ -45,30 +45,30 @@ def get_compute_conditional_continuation_value(
 
 def get_compute_conditional_continuation_policy(
     utility_and_feasibility: Callable[..., tuple[Array, Array]],
-    continuous_choice_variables: tuple[str, ...],
+    continuous_action_variables: tuple[str, ...],
 ) -> Callable[..., tuple[Array, Array]]:
     """Get a function that computes the conditional continuation policy.
 
-    This function solves the continuous choice problem conditional on a state-
-    (discrete-)choice combination; and is used in the model simulation process.
+    This function solves the continuous action problem conditional on a state-
+    (discrete-)action combination; and is used in the model simulation process.
 
     Args:
-        utility_and_feasibility: A function that takes a state-choice combination and
-            return the utility of that combination (scalar) and whether the state-choice
+        utility_and_feasibility: A function that takes a state-action combination and
+            return the utility of that combination (scalar) and whether the state-action
             combination is feasible (bool).
-        continuous_choice_variables: Tuple of choice variable names that are
+        continuous_action_variables: Tuple of action variable names that are
             continuous.
 
     Returns:
-        A function that takes a state-choice combination and returns the optimal policy
+        A function that takes a state-action combination and returns the optimal policy
         (i.e., that index that maximizes the objective function over feasible states x
-        choice combinations) and the value of the objective function.
+        action combinations) and the value of the objective function.
 
     """
-    if continuous_choice_variables:
+    if continuous_action_variables:
         utility_and_feasibility = productmap(
             func=utility_and_feasibility,
-            variables=continuous_choice_variables,
+            variables=continuous_action_variables,
         )
 
     @functools.wraps(utility_and_feasibility)
