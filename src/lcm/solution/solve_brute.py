@@ -1,44 +1,31 @@
 import logging
-from collections.abc import Callable
 
-import jax
+import jax.numpy as jnp
 from jax import Array
 
 from lcm.dispatchers import productmap
 from lcm.interfaces import StateActionSpace
-from lcm.typing import MaxQcFunction, ParamsDict
+from lcm.typing import MaxQcFunction, MaxQOverCFunction, ParamsDict
 
 
 def solve(
     params: ParamsDict,
     state_action_spaces: dict[int, StateActionSpace],
-    max_Q_over_c_functions: dict[int, Callable[[Array, Array], Array]],
+    max_Q_over_c_functions: dict[int, MaxQOverCFunction],
     max_Qc_functions: dict[int, MaxQcFunction],
     logger: logging.Logger,
 ) -> dict[int, Array]:
-    """Solve a model by brute force.
-
-    Notes:
-    -----
-    - For now, do not do any caching. Later lists with large objects can be replaced
-      by file paths to cached versions.
-    - For simplicity, we always have lists of length n_periods with state_spaces, ...
-      even if in the model the those things don't vary across periods. As long as
-      we don't make copies, this has no memory overhead, but it simplifies the backwards
-      loop.
+    """Solve a model using grid search.
 
     Args:
         params: Dict of model parameters.
         state_action_spaces: Dict with one state_action_space per period.
-        compute_ccv_functions: Dict with one function needed to solve the agent's
-            problem. Each function depends on:
-            - discrete and continuous state variables
-            - discrete and continuous action variables
-            - vf_arr
-            - params
-        max_Qc_functions: List of functions that take continuation
-            values for combinations of states and discrete actions and calculate the
-            expected maximum over all discrete actions of a given state.
+        max_Q_over_c_functions: Dict with one function per period. The functions
+            calculate the maximum of the Q-function over the continuous actions. The
+            result corresponds to the Qc-function of that period.
+        max_Qc_functions: Dict with one function per period. The functions calculate the
+            the (expected) maximum of the Qc-function over the discrete actions. The
+            result corresponds to the value function array of that period.
         logger: Logger that logs to stdout.
 
     Returns:
@@ -47,67 +34,36 @@ def solve(
     """
     n_periods = len(state_action_spaces)
     solution = {}
-    vf_arr = None
+    vf_arr = jnp.empty(0)
 
     logger.info("Starting solution")
 
     # backwards induction loop
     for period in reversed(range(n_periods)):
-        # solve continuous problem, conditional on discrete actions
-        conditional_continuation_values = solve_continuous_problem(
-            state_action_space=state_action_spaces[period],
-            max_Q_over_c=max_Q_over_c_functions[period],
+        state_action_space = state_action_spaces[period]
+
+        max_Qc = max_Qc_functions[period]
+
+        max_Q_over_c = max_Q_over_c_functions[period]
+        max_Q_over_c_pmapped = productmap(
+            func=max_Q_over_c,
+            variables=state_action_space.ordered_var_names,
+        )
+
+        # evaluate Q-function on states and actions, and maximize over continuous
+        # actions
+        Qc_values = max_Q_over_c_pmapped(
+            **state_action_space.states,
+            **state_action_space.discrete_actions,
+            **state_action_space.continuous_actions,
             vf_arr=vf_arr,
             params=params,
         )
 
-        # solve discrete problem by calculating expected maximum over discrete actions
-        max_Qc = max_Qc_functions[period]
-        vf_arr = max_Qc(conditional_continuation_values, params=params)
-        solution[period] = vf_arr
+        # maximize Qc-function over discrete actions
+        vf_arr = max_Qc(Qc_values, params=params)
 
+        solution[period] = vf_arr
         logger.info("Period: %s", period)
 
     return solution
-
-
-def solve_continuous_problem(
-    state_action_space: StateActionSpace,
-    max_Q_over_c: Callable[..., Array],
-    vf_arr: Array | None,
-    params: ParamsDict,
-) -> Array:
-    """Solve the agent's continuous actions problem problem.
-
-    Args:
-        state_action_space: Class with model variables.
-        compute_ccv: Function that returns the conditional continuation
-            values for a given combination of states and discrete actions. The function
-            depends on:
-            - discrete and continuous state variables
-            - discrete and continuous action variables
-            - vf_arr
-            - params
-        vf_arr: Value function array.
-        params: Dict of model parameters.
-
-    Returns:
-        Jax array with continuation values for each combination of the set of states and
-            the set of discrete actions. The number and order of dimensions is defined
-            by the `gridmap` function.
-
-    """
-    max_Q_over_c_pmapped = jax.jit(
-        productmap(
-            func=max_Q_over_c,
-            variables=state_action_space.ordered_var_names,
-        )
-    )
-
-    return max_Q_over_c_pmapped(
-        **state_action_space.states,
-        **state_action_space.discrete_actions,
-        **state_action_space.continuous_actions,
-        vf_arr=vf_arr,
-        params=params,
-    )

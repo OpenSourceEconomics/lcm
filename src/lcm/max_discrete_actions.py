@@ -49,8 +49,8 @@ def get_max_Qc(
         is_last_period: Whether the function is created for the last period.
 
     Returns:
-        Function that calculates the (expected) maximum of Qc-function over the discrete
-        actions. The result corresponds to the value function array.
+        Function that calculates the (expected) maximum of the Qc-function over the
+        discrete actions. The result corresponds to the value function array.
 
     """
     if is_last_period:

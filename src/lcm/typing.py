@@ -33,6 +33,19 @@ class InternalUserFunction(Protocol):
     ) -> Scalar: ...
 
 
+class MaxQOverCFunction(Protocol):
+    """The function that maximizes Q over the continuous actions.
+
+    Q is the state-action value function. The MaxQOverCFunction returns the maximum of Q
+    over the continuous actions.
+
+    Only used for type checking.
+
+    """
+
+    def __call__(self, vf_arr: Array, params: ParamsDict, **kwargs: Array) -> Array: ...  # noqa: D102
+
+
 class MaxQcFunction(Protocol):
     """The function that maximizes Qc over the discrete actions.
 

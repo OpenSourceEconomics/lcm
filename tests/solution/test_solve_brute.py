@@ -6,7 +6,7 @@ from lcm.interfaces import StateActionSpace
 from lcm.logging import get_logger
 from lcm.max_continuous_actions import get_max_Q_over_c
 from lcm.ndimage import map_coordinates
-from lcm.solution.solve_brute import solve, solve_continuous_problem
+from lcm.solution.solve_brute import solve
 
 
 def test_solve_brute():
@@ -53,7 +53,7 @@ def test_solve_brute():
         _next_lazy = lazy
         _feasible = _next_wealth >= 0
 
-        if vf_arr is None:
+        if vf_arr.size == 0:
             cont_value = 0
         else:
             cont_value = _get_continuation_value(
@@ -105,7 +105,7 @@ def test_solve_brute():
     assert isinstance(solution, dict)
 
 
-def test_solve_continuous_problem_no_vf_arr():
+def test_solve_brute_single_period_qc_values():
     state_action_space = StateActionSpace(
         discrete_actions={
             "a": jnp.array([0, 1.0]),
@@ -131,10 +131,14 @@ def test_solve_continuous_problem_no_vf_arr():
 
     expected = np.array([[[6.0, 7, 8], [7, 8, 9]], [[7, 8, 9], [8, 9, 10]]])
 
-    got = solve_continuous_problem(
-        state_action_space,
-        max_Q_over_c,
-        vf_arr=None,
+    # by setting max_Qc to identity, we can test that the max_Q_over_c function is
+    # correctly applied to the state_action_space
+    got = solve(
         params={},
+        state_action_spaces={0: state_action_space},
+        max_Q_over_c_functions={0: max_Q_over_c},
+        max_Qc_functions={0: lambda x, params: x},  # noqa: ARG005
+        logger=get_logger(debug_mode=False),
     )
-    aaae(got, expected)
+
+    aaae(got[0], expected)
