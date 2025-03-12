@@ -4,7 +4,7 @@ import pandas as pd
 from jax import Array
 
 from lcm.grids import ContinuousGrid, DiscreteGrid
-from lcm.interfaces import InternalModel, StateChoiceSpace, StateSpaceInfo
+from lcm.interfaces import InternalModel, StateActionSpace, StateSpaceInfo
 
 
 def create_state_action_space(
@@ -12,7 +12,7 @@ def create_state_action_space(
     *,
     initial_states: dict[str, Array] | None = None,
     is_last_period: bool = False,
-) -> StateChoiceSpace:
+) -> StateActionSpace:
     """Create a state-action-space.
 
     Creates the state-action-space for the solution and simulation of a model. In the
@@ -50,7 +50,7 @@ def create_state_action_space(
     }
     ordered_var_names = tuple(vi.query("is_state | is_discrete").index)
 
-    return StateChoiceSpace(
+    return StateActionSpace(
         states=states,
         discrete_actions=discrete_actions,
         continuous_actions=continuous_actions,

@@ -2,7 +2,7 @@ import jax.numpy as jnp
 from numpy.testing import assert_array_equal
 
 from lcm.input_processing import process_model
-from lcm.interfaces import StateChoiceSpace, StateSpaceInfo
+from lcm.interfaces import StateActionSpace, StateSpaceInfo
 from lcm.state_action_space import (
     create_state_action_space,
     create_state_space_info,
@@ -19,7 +19,7 @@ def test_create_state_action_space_solution():
         is_last_period=False,
     )
 
-    assert isinstance(state_action_space, StateChoiceSpace)
+    assert isinstance(state_action_space, StateActionSpace)
     assert jnp.array_equal(
         state_action_space.discrete_actions["retirement"],
         model.actions["retirement"].to_jax(),

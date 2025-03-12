@@ -5,13 +5,13 @@ import jax
 from jax import Array
 
 from lcm.dispatchers import productmap
-from lcm.interfaces import StateChoiceSpace
+from lcm.interfaces import StateActionSpace
 from lcm.typing import DiscreteProblemValueSolverFunction, ParamsDict
 
 
 def solve(
     params: ParamsDict,
-    state_action_spaces: dict[int, StateChoiceSpace],
+    state_action_spaces: dict[int, StateActionSpace],
     compute_ccv_functions: dict[int, Callable[[Array, Array], Array]],
     emax_calculators: dict[int, DiscreteProblemValueSolverFunction],
     logger: logging.Logger,
@@ -72,7 +72,7 @@ def solve(
 
 
 def solve_continuous_problem(
-    state_action_space: StateChoiceSpace,
+    state_action_space: StateActionSpace,
     compute_ccv: Callable[..., Array],
     vf_arr: Array | None,
     params: ParamsDict,

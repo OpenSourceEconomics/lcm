@@ -12,7 +12,7 @@ from lcm.dispatchers import simulation_spacemap, vmap_1d
 from lcm.interfaces import (
     InternalModel,
     InternalSimulationPeriodResults,
-    StateChoiceSpace,
+    StateActionSpace,
 )
 from lcm.random import draw_random_seed, generate_simulation_keys
 from lcm.simulation.processing import as_panel, process_simulated_data
@@ -209,7 +209,7 @@ def simulate(
 
 
 def solve_continuous_problem(
-    data_scs: StateChoiceSpace,
+    data_scs: StateActionSpace,
     compute_ccv: Callable[..., tuple[Array, Array]],
     vf_arr: Array,
     params: ParamsDict,

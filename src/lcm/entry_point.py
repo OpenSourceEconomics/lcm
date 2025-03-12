@@ -12,7 +12,7 @@ from lcm.conditional_continuation import (
 )
 from lcm.discrete_problem import get_solve_discrete_problem_value
 from lcm.input_processing import process_model
-from lcm.interfaces import StateChoiceSpace, StateSpaceInfo
+from lcm.interfaces import StateActionSpace, StateSpaceInfo
 from lcm.logging import get_logger
 from lcm.next_state import get_next_state_function
 from lcm.simulation.simulate import simulate, solve_and_simulate
@@ -71,7 +71,7 @@ def get_lcm_function(
     # ==================================================================================
     # Create model functions and state-action-spaces
     # ==================================================================================
-    state_action_spaces: dict[int, StateChoiceSpace] = {}
+    state_action_spaces: dict[int, StateActionSpace] = {}
     state_space_infos: dict[int, StateSpaceInfo] = {}
     compute_ccv_functions: dict[int, Callable[[Array, Array], Array]] = {}
     compute_ccp_functions: dict[int, Callable[..., tuple[Array, Array]]] = {}

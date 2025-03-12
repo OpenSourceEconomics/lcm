@@ -3,7 +3,7 @@ import numpy as np
 from numpy.testing import assert_array_almost_equal as aaae
 
 from lcm.conditional_continuation import get_compute_conditional_continuation_value
-from lcm.interfaces import StateChoiceSpace
+from lcm.interfaces import StateActionSpace
 from lcm.logging import get_logger
 from lcm.ndimage import map_coordinates
 from lcm.solution.solve_brute import solve, solve_continuous_problem
@@ -25,7 +25,7 @@ def test_solve_brute():
     # ==================================================================================
     # create the list of state_action_spaces
     # ==================================================================================
-    _scs = StateChoiceSpace(
+    _scs = StateActionSpace(
         discrete_actions={
             # pick [0, 1] such that no label translation is needed
             # lazy is like a type, it influences utility but is not affected by actions
@@ -106,7 +106,7 @@ def test_solve_brute():
 
 
 def test_solve_continuous_problem_no_vf_arr():
-    state_action_space = StateChoiceSpace(
+    state_action_space = StateActionSpace(
         discrete_actions={
             "a": jnp.array([0, 1.0]),
             "b": jnp.array([2, 3.0]),

@@ -26,7 +26,7 @@ def process_simulated_data(
 
     Args:
         results: Dict with simulation results. Each dict contains the value,
-            actions, and states for one period. Choices and states are stored in a
+            actions, and states for one period. Actions and states are stored in a
             nested dictionary.
         model: Model.
         params: Parameters.

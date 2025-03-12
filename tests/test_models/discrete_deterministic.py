@@ -30,7 +30,7 @@ from tests.test_models.deterministic import (
 # Categorical variables
 # --------------------------------------------------------------------------------------
 @dataclass
-class ConsumptionChoice:
+class ConsumptionAction:
     low: int = 0
     high: int = 1
 
@@ -48,7 +48,7 @@ class WealthStatus:
 def utility_discrete(consumption, working, disutility_of_work):
     # In the discrete model, consumption is defined as "low" or "high". This can be
     # translated to the levels 1 and 2.
-    consumption_level = 1 + (consumption == ConsumptionChoice.high)
+    consumption_level = 1 + (consumption == ConsumptionAction.high)
     return utility(consumption_level, working, disutility_of_work)
 
 
@@ -89,7 +89,7 @@ ISKHAKOV_ET_AL_2017_DISCRETE = Model(
     },
     actions={
         "retirement": DiscreteGrid(RetirementStatus),
-        "consumption": DiscreteGrid(ConsumptionChoice),
+        "consumption": DiscreteGrid(ConsumptionAction),
     },
     states={
         "wealth": DiscreteGrid(WealthStatus),

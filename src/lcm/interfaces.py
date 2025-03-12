@@ -11,7 +11,7 @@ from lcm.utils import first_non_none
 
 
 @dataclass(frozen=True)
-class StateChoiceSpace:
+class StateActionSpace:
     """The state-action space.
 
     When used for the model solution:
@@ -52,7 +52,7 @@ class StateChoiceSpace:
         states: dict[str, Array] | None = None,
         discrete_actions: dict[str, Array] | None = None,
         continuous_actions: dict[str, Array] | None = None,
-    ) -> "StateChoiceSpace":
+    ) -> "StateActionSpace":
         """Replace the states or actions in the state-action space.
 
         Args:
