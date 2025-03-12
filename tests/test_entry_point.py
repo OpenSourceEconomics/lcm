@@ -6,7 +6,7 @@ from lcm.entry_point import get_lcm_function
 from lcm.input_processing import process_model
 from lcm.max_continuous_actions import (
     get_compute_conditional_continuation_policy,
-    get_compute_conditional_continuation_value,
+    get_max_Q_over_c,
 )
 from lcm.state_action_space import create_state_space_info
 from lcm.utility_and_feasibility import get_utility_and_feasibility_function
@@ -194,12 +194,12 @@ def test_create_compute_conditional_continuation_value():
         is_last_period=True,
     )
 
-    compute_ccv = get_compute_conditional_continuation_value(
+    max_Q_over_c = get_max_Q_over_c(
         utility_and_feasibility=u_and_f,
         continuous_action_variables=("consumption",),
     )
 
-    val = compute_ccv(
+    val = max_Q_over_c(
         consumption=jnp.array([10, 20, 30.0]),
         retirement=RetirementStatus.retired,
         wealth=30,
@@ -239,12 +239,12 @@ def test_create_compute_conditional_continuation_value_with_discrete_model():
         is_last_period=True,
     )
 
-    compute_ccv = get_compute_conditional_continuation_value(
+    max_Q_over_c = get_max_Q_over_c(
         utility_and_feasibility=u_and_f,
         continuous_action_variables=(),
     )
 
-    val = compute_ccv(
+    val = max_Q_over_c(
         consumption=jnp.array([ConsumptionAction.low, ConsumptionAction.high]),
         retirement=RetirementStatus.retired,
         wealth=2,

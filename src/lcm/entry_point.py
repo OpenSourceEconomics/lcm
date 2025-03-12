@@ -11,7 +11,7 @@ from lcm.interfaces import StateActionSpace, StateSpaceInfo
 from lcm.logging import get_logger
 from lcm.max_continuous_actions import (
     get_compute_conditional_continuation_policy,
-    get_compute_conditional_continuation_value,
+    get_max_Q_over_c,
 )
 from lcm.max_discrete_actions import get_max_Qc
 from lcm.next_state import get_next_state_function
@@ -73,7 +73,7 @@ def get_lcm_function(
     # ==================================================================================
     state_action_spaces: dict[int, StateActionSpace] = {}
     state_space_infos: dict[int, StateSpaceInfo] = {}
-    compute_ccv_functions: dict[int, Callable[[Array, Array], Array]] = {}
+    max_Q_over_c_functions: dict[int, Callable[[Array, Array], Array]] = {}
     compute_ccp_functions: dict[int, Callable[..., tuple[Array, Array]]] = {}
     max_Qc_functions: dict[int, MaxQcFunction] = {}
 
@@ -102,7 +102,7 @@ def get_lcm_function(
             is_last_period=is_last_period,
         )
 
-        compute_ccv = get_compute_conditional_continuation_value(
+        max_Q_over_c = get_max_Q_over_c(
             utility_and_feasibility=u_and_f,
             continuous_action_variables=tuple(state_action_space.continuous_actions),
         )
@@ -120,7 +120,7 @@ def get_lcm_function(
 
         state_action_spaces[period] = state_action_space
         state_space_infos[period] = state_space_info
-        compute_ccv_functions[period] = compute_ccv
+        max_Q_over_c_functions[period] = max_Q_over_c
         compute_ccp_functions[period] = compute_ccp
         max_Qc_functions[period] = max_Qc
 
@@ -130,7 +130,7 @@ def get_lcm_function(
     _solve_model = partial(
         solve,
         state_action_spaces=state_action_spaces,
-        compute_ccv_functions=compute_ccv_functions,
+        max_Q_over_c_functions=max_Q_over_c_functions,
         max_Qc_functions=max_Qc_functions,
         logger=logger,
     )

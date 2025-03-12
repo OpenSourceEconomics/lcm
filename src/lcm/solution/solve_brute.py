@@ -12,7 +12,7 @@ from lcm.typing import MaxQcFunction, ParamsDict
 def solve(
     params: ParamsDict,
     state_action_spaces: dict[int, StateActionSpace],
-    compute_ccv_functions: dict[int, Callable[[Array, Array], Array]],
+    max_Q_over_c_functions: dict[int, Callable[[Array, Array], Array]],
     max_Qc_functions: dict[int, MaxQcFunction],
     logger: logging.Logger,
 ) -> dict[int, Array]:
@@ -56,7 +56,7 @@ def solve(
         # solve continuous problem, conditional on discrete actions
         conditional_continuation_values = solve_continuous_problem(
             state_action_space=state_action_spaces[period],
-            compute_ccv=compute_ccv_functions[period],
+            max_Q_over_c=max_Q_over_c_functions[period],
             vf_arr=vf_arr,
             params=params,
         )
@@ -73,7 +73,7 @@ def solve(
 
 def solve_continuous_problem(
     state_action_space: StateActionSpace,
-    compute_ccv: Callable[..., Array],
+    max_Q_over_c: Callable[..., Array],
     vf_arr: Array | None,
     params: ParamsDict,
 ) -> Array:
@@ -97,13 +97,14 @@ def solve_continuous_problem(
             by the `gridmap` function.
 
     """
-    _gridmapped = productmap(
-        func=compute_ccv,
-        variables=state_action_space.ordered_var_names,
+    max_Q_over_c_pmapped = jax.jit(
+        productmap(
+            func=max_Q_over_c,
+            variables=state_action_space.ordered_var_names,
+        )
     )
-    gridmapped = jax.jit(_gridmapped)
 
-    return gridmapped(
+    return max_Q_over_c_pmapped(
         **state_action_space.states,
         **state_action_space.discrete_actions,
         **state_action_space.continuous_actions,

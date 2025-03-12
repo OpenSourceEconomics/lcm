@@ -26,7 +26,7 @@ def test_get_solve_discrete_problem_illustrative():
             "is_discrete": [True, True],
             "is_continuous": [False, False],
         },
-    )  # leads to action_axes = [1]
+    )  # leads to discrete_action_axes = [1]
 
     max_Qc = get_max_Qc(
         random_utility_shock_type=ShockType.NONE,
@@ -57,7 +57,7 @@ def test_solve_discrete_problem_no_shocks_illustrative_single_action_axis():
     )
     got = _max_Qc_no_shocks(
         Qc_values,
-        action_axes=(0,),
+        discrete_action_axes=(0,),
         params={},
     )
     aaae(got, jnp.array([4, 5]))
@@ -74,7 +74,7 @@ def test_solve_discrete_problem_no_shocks_illustrative_multiple_action_axes():
     )
     got = _max_Qc_no_shocks(
         Qc_values,
-        action_axes=(0, 1),
+        discrete_action_axes=(0, 1),
         params={},
     )
     aaae(got, 5)
@@ -92,7 +92,7 @@ def test_max_Qc_extreme_value_shocks_illustrative_single_action_axis():
 
     got = _max_Qc_extreme_value_shocks(
         Qc_values,
-        action_axes=(0,),
+        discrete_action_axes=(0,),
         params={"additive_utility_shock": {"scale": 0.1}},
     )
     aaae(got, jnp.array([4, 5]), decimal=5)
@@ -109,7 +109,7 @@ def test_max_Qc_extreme_value_shocks_illustrative_multiple_action_axes():
     )
     got = _max_Qc_extreme_value_shocks(
         Qc_values,
-        action_axes=(0, 1),
+        discrete_action_axes=(0, 1),
         params={"additive_utility_shock": {"scale": 0.1}},
     )
     aaae(got, 5, decimal=5)

@@ -4,7 +4,7 @@ from numpy.testing import assert_array_almost_equal as aaae
 
 from lcm.interfaces import StateActionSpace
 from lcm.logging import get_logger
-from lcm.max_continuous_actions import get_compute_conditional_continuation_value
+from lcm.max_continuous_actions import get_max_Q_over_c
 from lcm.ndimage import map_coordinates
 from lcm.solution.solve_brute import solve, solve_continuous_problem
 
@@ -73,12 +73,12 @@ def test_solve_brute():
             coordinates=jnp.array([wealth]),
         )
 
-    compute_ccv = get_compute_conditional_continuation_value(
+    max_Q_over_c = get_max_Q_over_c(
         utility_and_feasibility=_utility_and_feasibility,
         continuous_action_variables=("consumption",),
     )
 
-    compute_ccv_functions = {0: compute_ccv, 1: compute_ccv}
+    max_Q_over_c_functions = {0: max_Q_over_c, 1: max_Q_over_c}
 
     # ==================================================================================
     # create max_Qc functions
@@ -97,7 +97,7 @@ def test_solve_brute():
     solution = solve(
         params=params,
         state_action_spaces=state_action_spaces,
-        compute_ccv_functions=compute_ccv_functions,
+        max_Q_over_c_functions=max_Q_over_c_functions,
         max_Qc_functions=max_Qc_functions,
         logger=get_logger(debug_mode=False),
     )
@@ -124,7 +124,7 @@ def test_solve_continuous_problem_no_vf_arr():
         feasib = d <= a + b + c
         return util, feasib
 
-    compute_ccv = get_compute_conditional_continuation_value(
+    max_Q_over_c = get_max_Q_over_c(
         utility_and_feasibility=_utility_and_feasibility,
         continuous_action_variables=("d",),
     )
@@ -133,7 +133,7 @@ def test_solve_continuous_problem_no_vf_arr():
 
     got = solve_continuous_problem(
         state_action_space,
-        compute_ccv,
+        max_Q_over_c,
         vf_arr=None,
         params={},
     )
