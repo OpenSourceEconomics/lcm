@@ -6,13 +6,13 @@ import jax
 import pandas as pd
 from jax import Array
 
-from lcm.conditional_continuation import (
-    get_compute_conditional_continuation_policy,
-    get_compute_conditional_continuation_value,
-)
 from lcm.input_processing import process_model
 from lcm.interfaces import StateActionSpace, StateSpaceInfo
 from lcm.logging import get_logger
+from lcm.max_continuous_actions import (
+    get_compute_conditional_continuation_policy,
+    get_compute_conditional_continuation_value,
+)
 from lcm.max_discrete_actions import get_max_Qc
 from lcm.next_state import get_next_state_function
 from lcm.simulation.simulate import simulate, solve_and_simulate

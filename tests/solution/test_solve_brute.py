@@ -2,9 +2,9 @@ import jax.numpy as jnp
 import numpy as np
 from numpy.testing import assert_array_almost_equal as aaae
 
-from lcm.conditional_continuation import get_compute_conditional_continuation_value
 from lcm.interfaces import StateActionSpace
 from lcm.logging import get_logger
+from lcm.max_continuous_actions import get_compute_conditional_continuation_value
 from lcm.ndimage import map_coordinates
 from lcm.solution.solve_brute import solve, solve_continuous_problem
 

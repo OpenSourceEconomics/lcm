@@ -4,12 +4,12 @@ import jax.numpy as jnp
 import pytest
 from numpy.testing import assert_array_almost_equal, assert_array_equal
 
-from lcm.conditional_continuation import (
-    get_compute_conditional_continuation_policy,
-)
 from lcm.entry_point import get_lcm_function
 from lcm.input_processing import process_model
 from lcm.logging import get_logger
+from lcm.max_continuous_actions import (
+    get_compute_conditional_continuation_policy,
+)
 from lcm.next_state import get_next_state_function
 from lcm.simulation.simulate import (
     get_continuous_action_argmax_given_discrete,
