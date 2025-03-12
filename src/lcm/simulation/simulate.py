@@ -13,7 +13,7 @@ from lcm.interfaces import (
     InternalSimulationPeriodResults,
     StateActionSpace,
 )
-from lcm.max_discrete_actions import get_solve_discrete_problem_policy
+from lcm.max_discrete_actions import get_argmax_Qc
 from lcm.random import draw_random_seed, generate_simulation_keys
 from lcm.simulation.processing import as_panel, process_simulated_data
 from lcm.state_action_space import create_state_action_space
@@ -101,9 +101,7 @@ def simulate(
         initial_states=initial_states,
     )
 
-    discrete_policy_calculator = get_solve_discrete_problem_policy(
-        variable_info=model.variable_info
-    )
+    argmax_Qc = get_argmax_Qc(variable_info=model.variable_info)
 
     # The following variables are updated during the forward simulation
     states = initial_states
@@ -131,20 +129,17 @@ def simulate(
         # action problem solver. If we are at the last period, we pass an empty array.
         next_period_vf_arr = vf_arr_dict.get(period + 1, jnp.empty(0))
 
-        conditional_continuous_action_argmax, conditional_continuous_action_max = (
-            solve_continuous_problem(
-                data_scs=state_action_space,
-                compute_ccv=compute_ccv_policy_functions[period],
-                vf_arr=next_period_vf_arr,
-                params=params,
-            )
+        conditional_continuous_action_argmax, Qc_values = solve_continuous_problem(
+            data_scs=state_action_space,
+            compute_ccv=compute_ccv_policy_functions[period],
+            vf_arr=next_period_vf_arr,
+            params=params,
         )
 
-        # Get optimal discrete action given the optimal conditional continuous actions
+        # Get optimal discrete action given the optimal continuous actions, conditional
+        # on the discrete actions
         # ------------------------------------------------------------------------------
-        discrete_argmax, action_value = discrete_policy_calculator(
-            conditional_continuous_action_max, params=params
-        )
+        discrete_argmax, action_value = argmax_Qc(Qc_values, params=params)
 
         # Get optimal continuous action index given optimal discrete action
         # ------------------------------------------------------------------------------

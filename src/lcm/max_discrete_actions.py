@@ -6,7 +6,7 @@ from jax import Array
 
 from lcm.argmax import argmax
 from lcm.typing import (
-    DiscreteProblemPolicySolverFunction,
+    ArgmaxQcFunction,
     MaxQcFunction,
     ParamsDict,
     ShockType,
@@ -19,7 +19,7 @@ def get_max_Qc(
     variable_info: pd.DataFrame,
     is_last_period: bool,
 ) -> MaxQcFunction:
-    r"""Get function that computes the (expected) max. of Qc over discrete actions.
+    r"""Get function that computes the (expected) maximum of Qc over discrete actions.
 
     The state-action value function $Q$ is defined as:
 
@@ -68,33 +68,51 @@ def get_max_Qc(
     return partial(func, action_axes=action_axes)
 
 
-def get_solve_discrete_problem_policy(
+def get_argmax_Qc(
     *,
     variable_info: pd.DataFrame,
-) -> DiscreteProblemPolicySolverFunction:
-    """Return a function that calculates the argmax and max of continuation values.
+) -> ArgmaxQcFunction:
+    r"""Get function that computes the arg-maximum of Qc over discrete actions.
 
-    The argmax is taken over the discrete action variables in each state.
+    The state-action value function $Q$ is defined as:
+
+    ```{math}
+    Q(x, a) =  U(x, a) + \beta * \mathbb{E}[V(x', a') | x, a].
+    ```
+
+    Fixing a state and discrete action, maximizing over the continuous actions, we get
+    the $Q^c$ function:
+
+    ```{math}
+    Q^{c}(x, a^d) = \max_{a^c} Q(x, a^d, a^c).
+    ```
+
+    Taking the argmax over the discrete actions, we get the policy function of the
+    discrete actions:
+
+    ```{math}
+    \pi^{d}(x) = \argmax_{a^d} Q^{c}(x, a^d).
+    ```
+
+    The last step is handled by the function returned here.
 
     Args:
-        variable_info (pd.DataFrame): DataFrame with information about the model
-            variables.
+        variable_info: DataFrame with information about the variables.
 
     Returns:
-        callable: Function that calculates the argmax of the conditional continuation
-            values. The function depends on:
-            - values (jax.Array): Multidimensional jax array with conditional
-                continuation values.
+        Function that calculates the (expected) arg-maximum of Qc over the discrete
+        actions. The arg-maximum corresponds to the policy function of the discrete
+        actions.
 
     """
     action_axes = _determine_discrete_action_axes_simulation(variable_info)
 
     def _calculate_discrete_argmax(
-        values: Array,
+        Qc_values: Array,
         action_axes: tuple[int, ...],
         params: ParamsDict,  # noqa: ARG001
     ) -> tuple[Array, Array]:
-        return argmax(values, axis=action_axes)
+        return argmax(Qc_values, axis=action_axes)
 
     return partial(_calculate_discrete_argmax, action_axes=action_axes)
 

@@ -47,14 +47,18 @@ class MaxQcFunction(Protocol):
     def __call__(self, Qc_values: Array, params: ParamsDict) -> Array: ...  # noqa: D102
 
 
-class DiscreteProblemPolicySolverFunction(Protocol):
-    """The function that solves for the policy of the discrete problem.
+class ArgmaxQcFunction(Protocol):
+    """The function that finds the argmax of Qc over the discrete actions.
+
+    Qc is the maximum of the state-action value function (Q) over the continuous
+    actions, conditional on the discrete action. It depends on a state and the discrete
+    actions. The ArgmaxQcFunction returns the argmax of Qc over the discrete actions.
 
     Only used for type checking.
 
     """
 
-    def __call__(self, values: Array, params: ParamsDict) -> tuple[Array, Array]: ...  # noqa: D102
+    def __call__(self, Qc_values: Array, params: ParamsDict) -> tuple[Array, Array]: ...  # noqa: D102
 
 
 class StochasticNextFunction(Protocol):
