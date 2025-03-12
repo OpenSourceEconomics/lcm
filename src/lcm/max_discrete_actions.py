@@ -1,22 +1,3 @@
-"""Functions that reduce the conditional continuation values over discrete actions.
-
-By conditional continuation value we mean continuation values conditional on a discrete
-action, i.e. the result of solving the continuous action problem conditional on the
-discrete action. These are also _conditional_ on a given state.
-
-By reduce we mean calculating the expected maximum of the continuation values, based
-on the distribution of utility shocks. Currently we support no shocks. In the future,
-we will at least support IID Extreme Value Type 1 shocks.
-
-How we (want to) solve the problem:
------------------------------------
-
-- No shocks: We take the maximum of the conditional continuation values.
-
-- IID Extreme Value Type 1 shocks: We do a logsum calculation.
-
-"""
-
 from functools import partial
 
 import jax
@@ -26,21 +7,40 @@ from jax import Array
 from lcm.argmax import argmax
 from lcm.typing import (
     DiscreteProblemPolicySolverFunction,
-    DiscreteProblemValueSolverFunction,
+    MaxQcFunction,
     ParamsDict,
     ShockType,
 )
 
 
-def get_solve_discrete_problem_value(
+def get_max_Qc(
     *,
     random_utility_shock_type: ShockType,
     variable_info: pd.DataFrame,
     is_last_period: bool,
-) -> DiscreteProblemValueSolverFunction:
-    """Get function that computes the expected max. of conditional continuation values.
+) -> MaxQcFunction:
+    r"""Get function that computes the (expected) max. of Qc over discrete actions.
 
-    The maximum is taken over the discrete action variables in each state.
+    The state-action value function $Q$ is defined as:
+
+    ```{math}
+    Q(x, a) =  U(x, a) + \beta * \mathbb{E}[V(x', a') | x, a].
+    ```
+
+    Fixing a state and discrete action, maximizing over the continuous actions, we get
+    the $Q^c$ function:
+
+    ```{math}
+    Q^{c}(x, a^d) = \max_{a^c} Q(x, a^d, a^c).
+    ```
+
+    And maximizing over the discrete actions, we get the value function:
+
+    ```{math}
+    V(x) = \max_{a^d} Q^{c}(x, a^d).
+    ```
+
+    The last step is handled by the function returned here.
 
     Args:
         random_utility_shock_type: Type of action shock. Currently only Shock.NONE is
@@ -49,9 +49,8 @@ def get_solve_discrete_problem_value(
         is_last_period: Whether the function is created for the last period.
 
     Returns:
-        Function that calculates the expected maximum of the conditional continuation
-        values. The function depends on `cc_values` (jax.Array), the conditional
-        continuation values, and returns the reduced values.
+        Function that calculates the (expected) maximum of Qc over the discrete actions.
+        The maximum corresponds to the value function array.
 
     """
     if is_last_period:
@@ -60,7 +59,7 @@ def get_solve_discrete_problem_value(
     action_axes = _determine_discrete_action_axes_solution(variable_info)
 
     if random_utility_shock_type == ShockType.NONE:
-        func = _solve_discrete_problem_no_shocks
+        func = _max_Qc_no_shocks
     elif random_utility_shock_type == ShockType.EXTREME_VALUE:
         raise NotImplementedError("Extreme value shocks are not yet implemented.")
     else:
@@ -105,28 +104,26 @@ def get_solve_discrete_problem_policy(
 # ======================================================================================
 
 
-def _solve_discrete_problem_no_shocks(
-    cc_values: Array,
+def _max_Qc_no_shocks(
+    Qc_values: Array,
     action_axes: tuple[int, ...],
     params: ParamsDict,  # noqa: ARG001
 ) -> Array:
-    """Reduce conditional continuation values over discrete actions.
+    """Take the maximum of Qc over the discrete actions.
 
     Args:
-        cc_values: Array with conditional continuation values. For each state and
-            discrete action variable, it has one axis.
+        Qc_values: The maximum of the state-action value function (Q) over the
+            continuous actions, conditional on the discrete action. This has one axis
+            for each state and discrete action variable.
         action_axes: Tuple of indices representing the axes in the value function that
-            correspond to discrete actions. Returns None if there are no discrete
-            action axes.
+            correspond to discrete actions.
         params: See `get_solve_discrete_problem`.
 
     Returns:
-        Array with reduced continuation values. Has less dimensions than cc_values if
-        action_axes is not None and is shorter in the first dimension if action_segments
-        is not None.
+        The maximum of Qc_values over the discrete action axes.
 
     """
-    return cc_values.max(axis=action_axes)
+    return Qc_values.max(axis=action_axes)
 
 
 # ======================================================================================
@@ -136,29 +133,25 @@ def _solve_discrete_problem_no_shocks(
 # ======================================================================================
 
 
-def _calculate_emax_extreme_value_shocks(
-    values: Array, action_axes: tuple[int, ...], params: ParamsDict
+def _max_Qc_extreme_value_shocks(
+    Qc_values: Array, action_axes: tuple[int, ...], params: ParamsDict
 ) -> Array:
-    """Aggregate conditional continuation values over discrete actions.
+    """Take the expected maximum of Qc over the discrete actions.
 
     Args:
-        values: Multidimensional jax array with conditional continuation values.
-        action_axes: Int or tuple of int, specifying which axes in values correspond to
-            the discrete action variables.
-        action_segments: Dictionary with the entries "segment_ids" and "num_segments".
-            segment_ids are a 1d integer array that partitions the first dimension of
-            values into action sets over which we need to aggregate. "num_segments" is
-            the number of action sets.
-        params: Params dict that contains the schock_scale if necessary.
+        Qc_values: The maximum of the state-action value function (Q) over the
+            continuous actions, conditional on the discrete action. This has one axis
+            for each state and discrete action variable.
+        action_axes: Tuple of indices representing the axes in the value function that
+            correspond to discrete actions.
+        params: See `get_solve_discrete_problem`.
 
     Returns:
-        Multidimensional jax array with aggregated continuation values. Has less
-        dimensions than values if action_axes is not None and is shorter in the first
-        dimension if action_segments is not None.
+        The expected maximum of Qc_values over the discrete action axes.
 
     """
     scale = params["additive_utility_shock"]["scale"]
-    return scale * jax.scipy.special.logsumexp(values / scale, axis=action_axes)
+    return scale * jax.scipy.special.logsumexp(Qc_values / scale, axis=action_axes)
 
 
 # ======================================================================================

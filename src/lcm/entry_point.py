@@ -10,10 +10,10 @@ from lcm.conditional_continuation import (
     get_compute_conditional_continuation_policy,
     get_compute_conditional_continuation_value,
 )
-from lcm.discrete_problem import get_solve_discrete_problem_value
 from lcm.input_processing import process_model
 from lcm.interfaces import StateActionSpace, StateSpaceInfo
 from lcm.logging import get_logger
+from lcm.max_discrete_actions import get_max_Qc
 from lcm.next_state import get_next_state_function
 from lcm.simulation.simulate import simulate, solve_and_simulate
 from lcm.solution.solve_brute import solve
@@ -21,7 +21,7 @@ from lcm.state_action_space import (
     create_state_action_space,
     create_state_space_info,
 )
-from lcm.typing import DiscreteProblemValueSolverFunction, ParamsDict, Target
+from lcm.typing import MaxQcFunction, ParamsDict, Target
 from lcm.user_model import Model
 from lcm.utility_and_feasibility import (
     get_utility_and_feasibility_function,
@@ -75,7 +75,7 @@ def get_lcm_function(
     state_space_infos: dict[int, StateSpaceInfo] = {}
     compute_ccv_functions: dict[int, Callable[[Array, Array], Array]] = {}
     compute_ccp_functions: dict[int, Callable[..., tuple[Array, Array]]] = {}
-    solve_discrete_problem_functions: dict[int, DiscreteProblemValueSolverFunction] = {}
+    max_Qc_functions: dict[int, MaxQcFunction] = {}
 
     for period in reversed(range(internal_model.n_periods)):
         is_last_period = period == last_period
@@ -112,7 +112,7 @@ def get_lcm_function(
             continuous_action_variables=tuple(state_action_space.continuous_actions),
         )
 
-        solve_discrete_problem = get_solve_discrete_problem_value(
+        max_Qc = get_max_Qc(
             random_utility_shock_type=internal_model.random_utility_shocks,
             variable_info=internal_model.variable_info,
             is_last_period=is_last_period,
@@ -122,7 +122,7 @@ def get_lcm_function(
         state_space_infos[period] = state_space_info
         compute_ccv_functions[period] = compute_ccv
         compute_ccp_functions[period] = compute_ccp
-        solve_discrete_problem_functions[period] = solve_discrete_problem
+        max_Qc_functions[period] = max_Qc
 
     # ==================================================================================
     # select requested solver and partial arguments into it
@@ -131,7 +131,7 @@ def get_lcm_function(
         solve,
         state_action_spaces=state_action_spaces,
         compute_ccv_functions=compute_ccv_functions,
-        emax_calculators=solve_discrete_problem_functions,
+        max_Qc_functions=max_Qc_functions,
         logger=logger,
     )
     solve_model = jax.jit(_solve_model) if jit else _solve_model

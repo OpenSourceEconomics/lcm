@@ -200,6 +200,15 @@ extend-ignore = [
     # line contains a todo
     "FIX002",
 
+    # Function name should be lowercase
+    "N802",
+
+    # Argument name should be lowercase
+    "N803",
+
+    # Variable in function should be lowercase
+    "N806",
+
     # Too many arguments to function call
     "PLR0913",
 

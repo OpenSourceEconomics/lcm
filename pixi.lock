@@ -4847,18 +4847,8 @@ packages:
   timestamp: 1719463874284
 - pypi: .
   name: lcm
-  version: 0.1.dev217+g8c1a321.d20250218
-  sha256: 8bf370a920ad7d4a4636ce7312b2724b11c6d4dba089a7afbaa1eeac39db10a8
-  requires_dist:
-  - dags
-  - numpy
-  - pandas
-  requires_python: '>=3.12'
-  editable: true
-- pypi: .
-  name: lcm
-  version: 0.1.dev218+ga094538.d20250219
-  sha256: 8bf370a920ad7d4a4636ce7312b2724b11c6d4dba089a7afbaa1eeac39db10a8
+  version: 0.1.dev184+gf5c08b9
+  sha256: 88533c4ee8ee00a91fc702e1690a508288ab1eabd30794f3b7c2fcfc764277be
   requires_dist:
   - dags
   - numpy
@@ -8186,15 +8176,6 @@ packages:
   requires_dist:
   - pygments>=2.18.0
   - tabcompleter>=1.4.0
-  - colorama>=0.4.6 ; platform_system == 'Windows'
-  requires_python: '>=3.8'
-- pypi: https://files.pythonhosted.org/packages/29/93/d56fb9ba5569dc29d8263c72e46d21a2fd38741339ebf03f54cf7561828c/pdbp-1.6.1-py3-none-any.whl
-  name: pdbp
-  version: 1.6.1
-  sha256: f10bad2ee044c0e5c168cb0825abfdbdc01c50013e9755df5261b060bdd35c22
-  requires_dist:
-  - pygments>=2.18.0
-  - tabcompleter>=1.4.0
   - colorama>=0.4.6 ; sys_platform == 'win32'
   requires_python: '>=3.8'
 - conda: https://conda.anaconda.org/conda-forge/noarch/pexpect-4.9.0-pyhd8ed1ab_0.conda
@@ -9733,13 +9714,6 @@ packages:
   purls: []
   size: 15500960
   timestamp: 1729794510631
-- pypi: https://files.pythonhosted.org/packages/65/44/bb509c3d2c0b5a87e7a5af1d5917a402a32ff026f777a6d7cb6990746cbb/tabcompleter-1.4.0-py3-none-any.whl
-  name: tabcompleter
-  version: 1.4.0
-  sha256: d744aa735b49c0a6cc2fb8fcd40077fec47425e4388301010b14e6ce3311368b
-  requires_dist:
-  - pyreadline3 ; platform_system == 'Windows'
-  requires_python: '>=3.8'
 - pypi: https://files.pythonhosted.org/packages/65/44/bb509c3d2c0b5a87e7a5af1d5917a402a32ff026f777a6d7cb6990746cbb/tabcompleter-1.4.0-py3-none-any.whl
   name: tabcompleter
   version: 1.4.0

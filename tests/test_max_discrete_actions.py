@@ -3,12 +3,12 @@ import pandas as pd
 import pytest
 from numpy.testing import assert_array_almost_equal as aaae
 
-from lcm.discrete_problem import (
-    _calculate_emax_extreme_value_shocks,
+from lcm.max_discrete_actions import (
     _determine_discrete_action_axes_simulation,
     _determine_discrete_action_axes_solution,
-    _solve_discrete_problem_no_shocks,
-    get_solve_discrete_problem_value,
+    _max_Qc_extreme_value_shocks,
+    _max_Qc_no_shocks,
+    get_max_Qc,
 )
 from lcm.typing import ShockType
 
@@ -28,13 +28,13 @@ def test_get_solve_discrete_problem_illustrative():
         },
     )  # leads to action_axes = [1]
 
-    solve_discrete_problem = get_solve_discrete_problem_value(
+    max_Qc = get_max_Qc(
         random_utility_shock_type=ShockType.NONE,
         variable_info=variable_info,
         is_last_period=False,
     )
 
-    cc_values = jnp.array(
+    Qc_values = jnp.array(
         [
             [0, 1],
             [2, 3],
@@ -42,21 +42,21 @@ def test_get_solve_discrete_problem_illustrative():
         ],
     )
 
-    got = solve_discrete_problem(cc_values, params={})
+    got = max_Qc(Qc_values, params={})
     aaae(got, jnp.array([1, 3, 5]))
 
 
 @pytest.mark.illustrative
 def test_solve_discrete_problem_no_shocks_illustrative_single_action_axis():
-    cc_values = jnp.array(
+    Qc_values = jnp.array(
         [
             [0, 1],
             [2, 3],
             [4, 5],
         ],
     )
-    got = _solve_discrete_problem_no_shocks(
-        cc_values,
+    got = _max_Qc_no_shocks(
+        Qc_values,
         action_axes=(0,),
         params={},
     )
@@ -65,15 +65,15 @@ def test_solve_discrete_problem_no_shocks_illustrative_single_action_axis():
 
 @pytest.mark.illustrative
 def test_solve_discrete_problem_no_shocks_illustrative_multiple_action_axes():
-    cc_values = jnp.array(
+    Qc_values = jnp.array(
         [
             [0, 1],
             [2, 3],
             [4, 5],
         ],
     )
-    got = _solve_discrete_problem_no_shocks(
-        cc_values,
+    got = _max_Qc_no_shocks(
+        Qc_values,
         action_axes=(0, 1),
         params={},
     )
@@ -81,8 +81,8 @@ def test_solve_discrete_problem_no_shocks_illustrative_multiple_action_axes():
 
 
 @pytest.mark.illustrative
-def test_calculate_emax_extreme_value_shocks_illustrative_single_action_axis():
-    cc_values = jnp.array(
+def test_max_Qc_extreme_value_shocks_illustrative_single_action_axis():
+    Qc_values = jnp.array(
         [
             [0, 1],
             [2, 3],
@@ -90,8 +90,8 @@ def test_calculate_emax_extreme_value_shocks_illustrative_single_action_axis():
         ],
     )
 
-    got = _calculate_emax_extreme_value_shocks(
-        cc_values,
+    got = _max_Qc_extreme_value_shocks(
+        Qc_values,
         action_axes=(0,),
         params={"additive_utility_shock": {"scale": 0.1}},
     )
@@ -99,16 +99,16 @@ def test_calculate_emax_extreme_value_shocks_illustrative_single_action_axis():
 
 
 @pytest.mark.illustrative
-def test_calculate_emax_extreme_value_shocks_illustrative_multiple_action_axes():
-    cc_values = jnp.array(
+def test_max_Qc_extreme_value_shocks_illustrative_multiple_action_axes():
+    Qc_values = jnp.array(
         [
             [0, 1],
             [2, 3],
             [4, 5],
         ],
     )
-    got = _calculate_emax_extreme_value_shocks(
-        cc_values,
+    got = _max_Qc_extreme_value_shocks(
+        Qc_values,
         action_axes=(0, 1),
         params={"additive_utility_shock": {"scale": 0.1}},
     )

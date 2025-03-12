@@ -6,14 +6,14 @@ from jax import Array
 
 from lcm.dispatchers import productmap
 from lcm.interfaces import StateActionSpace
-from lcm.typing import DiscreteProblemValueSolverFunction, ParamsDict
+from lcm.typing import MaxQcFunction, ParamsDict
 
 
 def solve(
     params: ParamsDict,
     state_action_spaces: dict[int, StateActionSpace],
     compute_ccv_functions: dict[int, Callable[[Array, Array], Array]],
-    emax_calculators: dict[int, DiscreteProblemValueSolverFunction],
+    max_Qc_functions: dict[int, MaxQcFunction],
     logger: logging.Logger,
 ) -> dict[int, Array]:
     """Solve a model by brute force.
@@ -36,7 +36,7 @@ def solve(
             - discrete and continuous action variables
             - vf_arr
             - params
-        emax_calculators: List of functions that take continuation
+        max_Qc_functions: List of functions that take continuation
             values for combinations of states and discrete actions and calculate the
             expected maximum over all discrete actions of a given state.
         logger: Logger that logs to stdout.
@@ -62,8 +62,8 @@ def solve(
         )
 
         # solve discrete problem by calculating expected maximum over discrete actions
-        calculate_emax = emax_calculators[period]
-        vf_arr = calculate_emax(conditional_continuation_values, params=params)
+        max_Qc = max_Qc_functions[period]
+        vf_arr = max_Qc(conditional_continuation_values, params=params)
         solution[period] = vf_arr
 
         logger.info("Period: %s", period)

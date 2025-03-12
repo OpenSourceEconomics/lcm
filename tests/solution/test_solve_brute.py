@@ -81,14 +81,14 @@ def test_solve_brute():
     compute_ccv_functions = {0: compute_ccv, 1: compute_ccv}
 
     # ==================================================================================
-    # create emax aggregators and action segments
+    # create max_Qc functions
     # ==================================================================================
 
-    def calculate_emax(values, params):  # noqa: ARG001
+    def max_Qc(Qc_values, params):  # noqa: ARG001
         """Take max over axis that corresponds to working."""
-        return values.max(axis=1)
+        return Qc_values.max(axis=1)
 
-    emax_calculators = {0: calculate_emax, 1: calculate_emax}
+    max_Qc_functions = {0: max_Qc, 1: max_Qc}
 
     # ==================================================================================
     # call solve function
@@ -98,7 +98,7 @@ def test_solve_brute():
         params=params,
         state_action_spaces=state_action_spaces,
         compute_ccv_functions=compute_ccv_functions,
-        emax_calculators=emax_calculators,
+        max_Qc_functions=max_Qc_functions,
         logger=get_logger(debug_mode=False),
     )
 

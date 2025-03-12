@@ -33,14 +33,18 @@ class InternalUserFunction(Protocol):
     ) -> Scalar: ...
 
 
-class DiscreteProblemValueSolverFunction(Protocol):
-    """The function that solves for the value of the discrete problem.
+class MaxQcFunction(Protocol):
+    """The function that maximizes Qc over the discrete actions.
+
+    Qc is the maximum of the state-action value function (Q) over the continuous
+    actions, conditional on the discrete action. It depends on a state and the discrete
+    actions. The MaxQcFunction returns the maximum of Qc over the discrete actions.
 
     Only used for type checking.
 
     """
 
-    def __call__(self, values: Array, params: ParamsDict) -> Array: ...  # noqa: D102
+    def __call__(self, Qc_values: Array, params: ParamsDict) -> Array: ...  # noqa: D102
 
 
 class DiscreteProblemPolicySolverFunction(Protocol):

@@ -7,13 +7,13 @@ import jax.numpy as jnp
 import pandas as pd
 from jax import Array, vmap
 
-from lcm.discrete_problem import get_solve_discrete_problem_policy
 from lcm.dispatchers import simulation_spacemap, vmap_1d
 from lcm.interfaces import (
     InternalModel,
     InternalSimulationPeriodResults,
     StateActionSpace,
 )
+from lcm.max_discrete_actions import get_solve_discrete_problem_policy
 from lcm.random import draw_random_seed, generate_simulation_keys
 from lcm.simulation.processing import as_panel, process_simulated_data
 from lcm.state_action_space import create_state_action_space
