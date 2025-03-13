@@ -70,11 +70,7 @@ exclude = ["tests"]
 only-packages = true
 
 [tool.hatch.build.targets.wheel]
-only-include = ["src"]
-sources = ["src"]
-include = [
-    "src/lcm/py.typed",
-]
+packages = ["src/lcm"]
 
 [tool.hatch.version]
 source = "vcs"
@@ -109,7 +105,7 @@ jax = ">=0.4.34,<0.5"
 jaxlib = ">=0.4.34,<0.5"
 
 [tool.pixi.pypi-dependencies]
-lcm = {path = ".", editable = true}
+pylcm = {path = ".", editable = true}
 pdbp = "*"
 
 [tool.pixi.target.win-64.pypi-dependencies]
