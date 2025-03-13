@@ -2,7 +2,7 @@ import jax.numpy as jnp
 import pytest
 from pybaum import tree_equal, tree_map
 
-from lcm.action_value_and_feasibility import get_utility_and_feasibility_function
+from lcm.action_value_and_feasibility import get_Q_and_F
 from lcm.entry_point import get_lcm_function
 from lcm.input_processing import process_model
 from lcm.max_continuous_actions import (
@@ -187,7 +187,7 @@ def test_get_max_Q_over_c():
         is_last_period=False,
     )
 
-    u_and_f = get_utility_and_feasibility_function(
+    u_and_f = get_Q_and_F(
         model=model,
         next_state_space_info=state_space_info,
         period=model.n_periods - 1,
@@ -195,7 +195,7 @@ def test_get_max_Q_over_c():
     )
 
     max_Q_over_c = get_max_Q_over_c(
-        utility_and_feasibility=u_and_f,
+        Q_and_F=u_and_f,
         continuous_actions_names=("consumption",),
         states_and_discrete_actions_names=(),
     )
@@ -233,7 +233,7 @@ def test_get_max_Q_over_c_with_discrete_model():
         is_last_period=False,
     )
 
-    u_and_f = get_utility_and_feasibility_function(
+    u_and_f = get_Q_and_F(
         model=model,
         next_state_space_info=state_space_info,
         period=model.n_periods - 1,
@@ -241,7 +241,7 @@ def test_get_max_Q_over_c_with_discrete_model():
     )
 
     max_Q_over_c = get_max_Q_over_c(
-        utility_and_feasibility=u_and_f,
+        Q_and_F=u_and_f,
         continuous_actions_names=(),
         states_and_discrete_actions_names=(),
     )
@@ -284,7 +284,7 @@ def test_argmax_Q_over_c():
         is_last_period=False,
     )
 
-    u_and_f = get_utility_and_feasibility_function(
+    u_and_f = get_Q_and_F(
         model=model,
         next_state_space_info=state_space_info,
         period=model.n_periods - 1,
@@ -292,7 +292,7 @@ def test_argmax_Q_over_c():
     )
 
     argmax_Q_over_c = get_argmax_Q_over_c(
-        utility_and_feasibility=u_and_f,
+        Q_and_F=u_and_f,
         continuous_actions_names=("consumption",),
     )
 
@@ -330,7 +330,7 @@ def test_argmax_Q_over_c_with_discrete_model():
         is_last_period=False,
     )
 
-    u_and_f = get_utility_and_feasibility_function(
+    u_and_f = get_Q_and_F(
         model=model,
         next_state_space_info=state_space_info,
         period=model.n_periods - 1,
@@ -338,7 +338,7 @@ def test_argmax_Q_over_c_with_discrete_model():
     )
 
     argmax_Q_over_c = get_argmax_Q_over_c(
-        utility_and_feasibility=u_and_f,
+        Q_and_F=u_and_f,
         continuous_actions_names=(),
     )
 

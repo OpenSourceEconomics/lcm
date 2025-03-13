@@ -44,27 +44,28 @@ def test_solve_brute():
     state_action_spaces = {0: _scs, 1: _scs}
 
     # ==================================================================================
-    # create the utility_and_feasibility functions
+    # create the Q_and_F functions
     # ==================================================================================
 
-    def _utility_and_feasibility(consumption, lazy, wealth, working, vf_arr, params):
-        _u = consumption - 0.2 * lazy * working
-        _next_wealth = wealth + working - consumption
-        _next_lazy = lazy
-        _feasible = _next_wealth >= 0
+    def _Q_and_F(consumption, lazy, wealth, working, vf_arr, params):
+        next_wealth = wealth + working - consumption
+        next_lazy = lazy
 
         if vf_arr.size == 0:
-            cont_value = 0
+            # this is the last period, when vf_arr = jnp.empty(0)
+            expected_V = 0
         else:
-            cont_value = _get_continuation_value(
-                lazy=_next_lazy,
-                wealth=_next_wealth,
-                vf_arr=vf_arr,
+            expected_V = map_coordinates(
+                input=vf_arr[next_lazy],
+                coordinates=jnp.array([next_wealth]),
             )
 
-        beta = params["beta"]
-        _utility = _u + beta * cont_value
-        return _utility, _feasible
+        U = consumption - 0.2 * lazy * working
+        F = next_wealth >= 0
+
+        Q = U + params["beta"] * expected_V
+
+        return Q, F
 
     def _get_continuation_value(lazy, wealth, vf_arr):
         continuous_part = vf_arr[lazy]
@@ -74,7 +75,7 @@ def test_solve_brute():
         )
 
     max_Q_over_c = get_max_Q_over_c(
-        utility_and_feasibility=_utility_and_feasibility,
+        Q_and_F=_Q_and_F,
         continuous_actions_names=("consumption",),
         states_and_discrete_actions_names=("lazy", "working", "wealth"),
     )
@@ -120,13 +121,13 @@ def test_solve_brute_single_period_qc_values():
         states_and_discrete_actions_names=("a", "b", "c"),
     )
 
-    def _utility_and_feasibility(a, c, b, d, vf_arr, params):  # noqa: ARG001
+    def _Q_and_F(a, c, b, d, vf_arr, params):  # noqa: ARG001
         util = d
         feasib = d <= a + b + c
         return util, feasib
 
     max_Q_over_c = get_max_Q_over_c(
-        utility_and_feasibility=_utility_and_feasibility,
+        Q_and_F=_Q_and_F,
         continuous_actions_names=("d",),
         states_and_discrete_actions_names=("a", "b", "c"),
     )

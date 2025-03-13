@@ -4,7 +4,7 @@ import jax.numpy as jnp
 import pytest
 from numpy.testing import assert_array_almost_equal, assert_array_equal
 
-from lcm.action_value_and_feasibility import get_utility_and_feasibility_function
+from lcm.action_value_and_feasibility import get_Q_and_F
 from lcm.entry_point import get_lcm_function
 from lcm.input_processing import process_model
 from lcm.logging import get_logger
@@ -48,14 +48,14 @@ def simulate_inputs():
 
     argmax_Q_over_c_functions = []
     for period in range(model.n_periods):
-        u_and_f = get_utility_and_feasibility_function(
+        u_and_f = get_Q_and_F(
             model=model,
             next_state_space_info=state_space_info,
             period=period,
             is_last_period=True,
         )
         argmax_Q_over_c = get_argmax_Q_over_c(
-            utility_and_feasibility=u_and_f,
+            Q_and_F=u_and_f,
             continuous_actions_names=("consumption",),
         )
         argmax_Q_over_c_functions.append(argmax_Q_over_c)

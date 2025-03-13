@@ -14,47 +14,51 @@ from lcm.next_state import get_next_state_function, get_next_stochastic_weights_
 from lcm.typing import InternalUserFunction, ParamsDict, Scalar, Target
 
 
-def get_utility_and_feasibility_function(
+def get_Q_and_F(
     model: InternalModel,
     next_state_space_info: StateSpaceInfo,
     period: int,
     *,
     is_last_period: bool,
 ) -> Callable[..., tuple[Array, Array]]:
-    """Create the utility and feasibility function for a given period.
+    """Get the state-action (Q) and feasibility (F) function for a given period.
 
     Args:
         model: The internal model object.
         next_state_space_info: The state space information of the next period.
-        period: The period to create the utility and feasibility function for.
+        period: Period to create the state-action value and feasibility function for.
         is_last_period: Whether the period is the last period.
 
     Returns:
-        A function that computes the expected forward-looking utility and feasibility
+        A function that computes the state-action value (Q) and the feasibility (F)
         for the given period.
 
     """
     if is_last_period:
-        return get_utility_and_feasibility_function_last_period(model, period=period)
-    return get_utility_and_feasibility_function_before_last_period(
-        model, next_state_space_info=next_state_space_info, period=period
-    )
+        Q_and_F = get_Q_and_F_terminal(model, period=period)
+    else:
+        Q_and_F = get_Q_and_F_non_terminal(
+            model, next_state_space_info=next_state_space_info, period=period
+        )
+
+    return Q_and_F
 
 
-def get_utility_and_feasibility_function_before_last_period(
+def get_Q_and_F_non_terminal(
     model: InternalModel,
     next_state_space_info: StateSpaceInfo,
     period: int,
 ) -> Callable[..., tuple[Array, Array]]:
-    """Create the utility and feasibility function for a period before the last period.
+    """Get the state-action (Q) and feasibility (F) function for a non-terminal period.
 
     Args:
         model: The internal model object.
         next_state_space_info: The state space information of the next period.
-        period: The period to create the utility and feasibility function for.
+        period: Period to create the state-action value and feasibility function for.
 
     Returns:
-        A function that computes the utility and feasibility for the given period.
+        A function that computes the state-action value (Q) and the feasibility (F)
+        for a non-terminal period.
 
     """
     stochastic_variables = model.variable_info.query("is_stochastic").index.tolist()
@@ -64,7 +68,7 @@ def get_utility_and_feasibility_function_before_last_period(
     # ----------------------------------------------------------------------------------
 
     # Functions required to calculate the expected continuation values
-    calculate_state_transition = get_next_state_function(model, target=Target.SOLVE)
+    state_transition = get_next_state_function(model, target=Target.SOLVE)
     calculate_next_weights = get_next_stochastic_weights_function(model)
     calculate_node_weights = _get_node_weights_function(stochastic_variables)
     _scalar_value_function = get_value_function_representation(next_state_space_info)
@@ -74,25 +78,22 @@ def get_utility_and_feasibility_function_before_last_period(
     )
 
     # Function required to calculate todays utility and feasibility
-    calculate_todays_u_and_f = _get_current_u_and_f(model)
+    U_and_F = _get_U_and_F(model)
 
     # ----------------------------------------------------------------------------------
     # Create the utility and feasibility function
     # ----------------------------------------------------------------------------------
-
-    arg_names = _get_required_arg_names_of_u_and_f(
-        [
-            calculate_todays_u_and_f,
-            calculate_state_transition,
-            calculate_next_weights,
-        ]
+    arg_names_of_Q_and_F = _get_arg_names_of_Q_and_F(
+        [U_and_F, state_transition, calculate_next_weights],
+        include={"params", "vf_arr"},
+        exclude={"_period"},
     )
 
-    @with_signature(args=arg_names)
-    def utility_and_feasibility(
+    @with_signature(args=arg_names_of_Q_and_F)
+    def Q_and_F(
         params: ParamsDict, vf_arr: Array, **states_and_actions: Scalar
     ) -> tuple[Scalar, Scalar]:
-        """Calculate the expected forward-looking utility and feasibility.
+        """Calculate the state-action value and feasibility for a non-terminal period.
 
         Args:
             params: The parameters.
@@ -100,13 +101,14 @@ def get_utility_and_feasibility_function_before_last_period(
             **states_and_actions: Todays states and actions.
 
         Returns:
-            A tuple containing the utility and feasibility for the given period.
+            A tuple containing the state-action value and feasibility for the given
+            non-terminal period.
 
         """
         # ------------------------------------------------------------------------------
         # Calculate the expected continuation values
         # ------------------------------------------------------------------------------
-        next_states = calculate_state_transition(
+        next_states = state_transition(
             **states_and_actions,
             _period=period,
             params=params,
@@ -123,61 +125,85 @@ def get_utility_and_feasibility_function_before_last_period(
         # As we productmap'd the value function over the stochastic variables, the
         # resulting continuation values get a new dimension for each stochastic
         # variable.
-        continuation_values_at_nodes = value_function(**next_states, vf_arr=vf_arr)
+        V_at_nodes = value_function(**next_states, vf_arr=vf_arr)
 
         # We then weight these continuation values with the joint node weights and sum
         # them up to get the expected continuation values.
-        expected_continuation_values = (
-            continuation_values_at_nodes * node_weights
-        ).sum()
+        expected_V = (V_at_nodes * node_weights).sum()
 
         # ------------------------------------------------------------------------------
         # Calculate the utility and feasibility for all states and actions
         # ------------------------------------------------------------------------------
-        period_utility, feasibility = calculate_todays_u_and_f(
+        U, F = U_and_F(
             **states_and_actions,
             _period=period,
             params=params,
         )
 
-        utility = period_utility + params["beta"] * expected_continuation_values
+        Q = U + params["beta"] * expected_V
 
-        return utility, feasibility
+        return Q, F
 
-    return utility_and_feasibility
+    return Q_and_F
 
 
-def get_utility_and_feasibility_function_last_period(
+def get_Q_and_F_terminal(
     model: InternalModel,
     period: int,
 ) -> Callable[..., tuple[Array, Array]]:
-    """Create the utility and feasibility function for the last period.
+    """Get the state-action (Q) and feasibility (F) function for the terminal period.
+
+    Currently, bequest is not implemented. Therefore, the state-action value equals
+    the instantaneous utility.
 
     Args:
         model: The internal model object.
-        period: The period to create the utility and feasibility function for. This is
-            still relevant for the last period, as some functions might depend on the
-            actual period value.
+        period: Period to create the state-action value and feasibility function for.
 
     Returns:
-        A function that computes the utility and feasibility for the given period.
+        A function that computes the state-action value (Q) and the feasibility (F)
+        for the terminal period.
 
     """
-    calculate_todays_u_and_f = _get_current_u_and_f(model)
+    U_and_F = _get_U_and_F(model)
 
-    arg_names = _get_required_arg_names_of_u_and_f([calculate_todays_u_and_f])
+    arg_names_of_Q_and_F = _get_arg_names_of_Q_and_F(
+        [U_and_F],
+        # While the terminal period does not depend on the value function array, we
+        # include it in the signature, such that we can treat all periods uniformly
+        # during the solution and simulation.
+        include={"params", "vf_arr"},
+        exclude={"_period"},
+    )
 
-    @with_signature(args=arg_names)
-    def utility_and_feasibility(
-        params: ParamsDict, **kwargs: Scalar
+    @with_signature(args=arg_names_of_Q_and_F)
+    def Q_and_F(
+        params: ParamsDict,
+        vf_arr: Array,  # noqa: ARG001
+        **states_and_actions: Scalar,
     ) -> tuple[Scalar, Scalar]:
-        return calculate_todays_u_and_f(
-            **kwargs,
+        """Calculate the state-action value and feasibility for the terminal period.
+
+        Currently, bequest is not implemented. Therefore, the state-action value
+        equals the instantaneous utility.
+
+        Args:
+            params: The parameters.
+            vf_arr: The value function array. Unused in the terminal period.
+            **states_and_actions: Todays states and actions.
+
+        Returns:
+            A tuple containing the state-action value and feasibility for the given
+            terminal period.
+
+        """
+        return U_and_F(
+            **states_and_actions,
             _period=period,
             params=params,
         )
 
-    return utility_and_feasibility
+    return Q_and_F
 
 
 # ======================================================================================
@@ -185,23 +211,24 @@ def get_utility_and_feasibility_function_last_period(
 # ======================================================================================
 
 
-def _get_required_arg_names_of_u_and_f(
-    model_functions: list[Callable[..., Any]],
+def _get_arg_names_of_Q_and_F(
+    deps: list[Callable[..., Any]],
+    include: set[str] = set(),  # noqa: B006
+    exclude: set[str] = set(),  # noqa: B006
 ) -> list[str]:
-    """Get the argument names of the utility and feasibility function.
+    """Get the argument names of the dependencies.
 
     Args:
-        model_functions: The list of functions that are used to calculate the utility
-            and feasibility.
+        deps: List of dependencies.
+        include: Set of argument names to include.
+        exclude: Set of argument names to exclude.
 
     Returns:
-        The argument names of the utility and feasibility function.
+        The union of the argument names of the deps plus includes minus excludes.
 
     """
-    dynamic_arg_names = get_union_of_arguments(model_functions) - {"_period"}
-    static_arg_names = {"params", "vf_arr"}
-
-    return list(static_arg_names | dynamic_arg_names)
+    deps_arg_names = get_union_of_arguments(deps)
+    return list(include | deps_arg_names - exclude)
 
 
 def _get_node_weights_function(stochastic_variables: list[str]) -> Callable[..., Array]:
@@ -228,14 +255,14 @@ def _get_node_weights_function(stochastic_variables: list[str]) -> Callable[...,
     return productmap(_outer, variables=tuple(arg_names))
 
 
-def _get_current_u_and_f(model: InternalModel) -> Callable[..., tuple[Scalar, Scalar]]:
-    """Get the current utility and feasibility function.
+def _get_U_and_F(model: InternalModel) -> Callable[..., tuple[Scalar, Scalar]]:
+    """Get the instantaneous utility and feasibility function.
 
     Args:
         model: The internal model object.
 
     Returns:
-        The current utility and feasibility function.
+        The instantaneous utility and feasibility function.
 
     """
     functions = {"feasibility": _get_feasibility(model), **model.functions}

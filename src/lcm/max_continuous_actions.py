@@ -10,7 +10,7 @@ from lcm.typing import ArgmaxQOverCFunction, MaxQOverCFunction, ParamsDict, Scal
 
 
 def get_max_Q_over_c(
-    utility_and_feasibility: Callable[..., tuple[Array, Array]],
+    Q_and_F: Callable[..., tuple[Array, Array]],
     continuous_actions_names: tuple[str, ...],
     states_and_discrete_actions_names: tuple[str, ...],
 ) -> MaxQOverCFunction:
@@ -32,9 +32,9 @@ def get_max_Q_over_c(
     The last step is handled by the function returned here.
 
     Args:
-        utility_and_feasibility: A function that takes a state-action combination and
-            returns the utility of that combination (scalar) and whether the
-            state-action combination is feasible (bool).
+        Q_and_F: A function that takes a state-action combination and returns the action
+            value of that combination and whether the state-action combination is
+            feasible.
         continuous_actions_names: Tuple of action variable names that are continuous.
         states_and_discrete_actions_names: Tuple of state and discrete action variable
             names.
@@ -45,21 +45,21 @@ def get_max_Q_over_c(
 
     """
     if continuous_actions_names:
-        utility_and_feasibility = productmap(
-            func=utility_and_feasibility,
+        Q_and_F = productmap(
+            func=Q_and_F,
             variables=continuous_actions_names,
         )
 
-    @functools.wraps(utility_and_feasibility)
+    @functools.wraps(Q_and_F)
     def max_Q_over_c(vf_arr: Array, params: ParamsDict, **kwargs: Scalar) -> Array:
-        u, f = utility_and_feasibility(params=params, vf_arr=vf_arr, **kwargs)
+        u, f = Q_and_F(params=params, vf_arr=vf_arr, **kwargs)
         return u.max(where=f, initial=-jnp.inf)
 
     return productmap(max_Q_over_c, variables=states_and_discrete_actions_names)
 
 
 def get_argmax_Q_over_c(
-    utility_and_feasibility: Callable[..., tuple[Array, Array]],
+    Q_and_F: Callable[..., tuple[Array, Array]],
     continuous_actions_names: tuple[str, ...],
 ) -> ArgmaxQOverCFunction:
     r"""Get function that arg-maximizes the Q-function over continuous actions.
@@ -80,9 +80,9 @@ def get_argmax_Q_over_c(
     The last step is handled by the function returned here.
 
     Args:
-        utility_and_feasibility: A function that takes a state-action combination and
-            returns the utility of that combination (scalar) and whether the
-            state-action combination is feasible (bool).
+        Q_and_F: A function that takes a state-action combination and returns the action
+            value of that combination and whether the state-action combination is
+            feasible.
         continuous_actions_names: Tuple of action variable names that are continuous.
 
     Returns:
@@ -91,16 +91,16 @@ def get_argmax_Q_over_c(
 
     """
     if continuous_actions_names:
-        utility_and_feasibility = productmap(
-            func=utility_and_feasibility,
+        Q_and_F = productmap(
+            func=Q_and_F,
             variables=continuous_actions_names,
         )
 
-    @functools.wraps(utility_and_feasibility)
+    @functools.wraps(Q_and_F)
     def argmax_Q_over_c(
         vf_arr: Array, params: ParamsDict, **kwargs: Scalar
     ) -> tuple[Array, Array]:
-        u, f = utility_and_feasibility(params=params, vf_arr=vf_arr, **kwargs)
+        u, f = Q_and_F(params=params, vf_arr=vf_arr, **kwargs)
         return argmax(u, where=f, initial=-jnp.inf)
 
     return argmax_Q_over_c

@@ -7,7 +7,7 @@ import pandas as pd
 from jax import Array
 
 from lcm.action_value_and_feasibility import (
-    get_utility_and_feasibility_function,
+    get_Q_and_F,
 )
 from lcm.input_processing import process_model
 from lcm.interfaces import StateActionSpace, StateSpaceInfo
@@ -101,7 +101,7 @@ def get_lcm_function(
         else:
             next_state_space_info = state_space_infos[period + 1]
 
-        u_and_f = get_utility_and_feasibility_function(
+        Q_and_F = get_Q_and_F(
             model=internal_model,
             next_state_space_info=next_state_space_info,
             period=period,
@@ -109,13 +109,13 @@ def get_lcm_function(
         )
 
         max_Q_over_c = get_max_Q_over_c(
-            utility_and_feasibility=u_and_f,
+            Q_and_F=Q_and_F,
             continuous_actions_names=tuple(state_action_space.continuous_actions),
             states_and_discrete_actions_names=state_action_space.states_and_discrete_actions_names,
         )
 
         argmax_Q_over_c = get_argmax_Q_over_c(
-            utility_and_feasibility=u_and_f,
+            Q_and_F=Q_and_F,
             continuous_actions_names=tuple(state_action_space.continuous_actions),
         )
 
