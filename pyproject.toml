@@ -3,8 +3,8 @@
 # ======================================================================================
 
 [project]
-name = "lcm"
-description = "lcm aims to generalize and facilitate the specification, solving, and estimation of dynamic choice models."
+name = "pylcm"
+description = "Specification, solution, and simulation of finite-horizon dynamic choice models."
 requires-python = ">=3.12"
 dependencies = [
     "dags",
@@ -21,7 +21,7 @@ keywords = [
     "Statistics",
 ]
 classifiers = [
-    "Development Status :: 2 - Pre-Alpha",
+    "Development Status :: 3 - Alpha",
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: Apache Software License",
     "Operating System :: MacOS :: MacOS X",
