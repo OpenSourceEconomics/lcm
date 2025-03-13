@@ -19,8 +19,10 @@ def get_max_Q_over_c(
     The state-action value function $Q$ is defined as:
 
     ```{math}
-    Q(x, a) =  U(x, a) + \beta * \mathbb{E}[V(x', a') | x, a].
+    Q(x, a) =  g(U(x, a), \mathbb{E}[V(x', a') | x, a]),
     ```
+    with $g(u, v) = u + \beta \cdot v$ as the leading case (which is the only one that
+    is pre-implemented in LCM).
 
     Fixing a state and discrete action, maximizing over the continuous actions, we get
     the $Q^c$ function:
@@ -67,8 +69,10 @@ def get_argmax_Q_over_c(
     The state-action value function $Q$ is defined as:
 
     ```{math}
-    Q(x, a) =  U(x, a) + \beta * \mathbb{E}[V(x', a') | x, a].
+    Q(x, a) =  g(U(x, a), \mathbb{E}[V(x', a') | x, a]),
     ```
+    with $g(u, v) = u + \beta \cdot v$ as the leading case (which is the only one that
+    is pre-implemented in LCM).
 
     Fixing a state and discrete action, arg-maximizing over the continuous actions, we
     get
