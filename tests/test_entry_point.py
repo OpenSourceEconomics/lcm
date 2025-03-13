@@ -301,7 +301,7 @@ def test_argmax_Q_over_c():
         retirement=RetirementStatus.retired,
         wealth=30,
         params=params,
-        vf_arr=None,
+        vf_arr=jnp.empty(0),
     )
     assert policy == 2
     assert val == iskhakov_et_al_2017_utility(
@@ -347,7 +347,7 @@ def test_argmax_Q_over_c_with_discrete_model():
         retirement=RetirementStatus.retired,
         wealth=2,
         params=params,
-        vf_arr=None,
+        vf_arr=jnp.empty(0),
     )
     assert _argmax == 1
     assert _max == iskhakov_et_al_2017_utility(

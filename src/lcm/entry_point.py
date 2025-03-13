@@ -21,7 +21,13 @@ from lcm.state_action_space import (
     create_state_action_space,
     create_state_space_info,
 )
-from lcm.typing import MaxQcFunction, MaxQOverCFunction, ParamsDict, Target
+from lcm.typing import (
+    ArgmaxQOverCFunction,
+    MaxQcFunction,
+    MaxQOverCFunction,
+    ParamsDict,
+    Target,
+)
 from lcm.user_model import Model
 from lcm.utility_and_feasibility import (
     get_utility_and_feasibility_function,
@@ -74,7 +80,7 @@ def get_lcm_function(
     state_action_spaces: dict[int, StateActionSpace] = {}
     state_space_infos: dict[int, StateSpaceInfo] = {}
     max_Q_over_c_functions: dict[int, MaxQOverCFunction] = {}
-    argmax_Q_over_c_functions: dict[int, Callable[..., tuple[Array, Array]]] = {}
+    argmax_Q_over_c_functions: dict[int, ArgmaxQOverCFunction] = {}
     max_Qc_functions: dict[int, MaxQcFunction] = {}
 
     for period in reversed(range(internal_model.n_periods)):

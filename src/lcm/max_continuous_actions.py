@@ -6,7 +6,7 @@ from jax import Array
 
 from lcm.argmax import argmax
 from lcm.dispatchers import productmap
-from lcm.typing import MaxQOverCFunction, ParamsDict, Scalar
+from lcm.typing import ArgmaxQOverCFunction, MaxQOverCFunction, ParamsDict, Scalar
 
 
 def get_max_Q_over_c(
@@ -61,7 +61,7 @@ def get_max_Q_over_c(
 def get_argmax_Q_over_c(
     utility_and_feasibility: Callable[..., tuple[Array, Array]],
     continuous_actions_names: tuple[str, ...],
-) -> Callable[..., tuple[Array, Array]]:
+) -> ArgmaxQOverCFunction:
     r"""Get function that arg-maximizes the Q-function over continuous actions.
 
     The state-action value function $Q$ is defined as:
@@ -97,8 +97,10 @@ def get_argmax_Q_over_c(
         )
 
     @functools.wraps(utility_and_feasibility)
-    def argmax_Q_over_c(params: ParamsDict, **kwargs: Array) -> tuple[Array, Array]:
-        u, f = utility_and_feasibility(params=params, **kwargs)
+    def argmax_Q_over_c(
+        vf_arr: Array, params: ParamsDict, **kwargs: Scalar
+    ) -> tuple[Array, Array]:
+        u, f = utility_and_feasibility(params=params, vf_arr=vf_arr, **kwargs)
         return argmax(u, where=f, initial=-jnp.inf)
 
     return argmax_Q_over_c
