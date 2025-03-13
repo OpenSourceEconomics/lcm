@@ -14,11 +14,22 @@ def get_max_Q_over_c(
     continuous_actions_names: tuple[str, ...],
     states_and_discrete_actions_names: tuple[str, ...],
 ) -> MaxQOverCFunction:
-    """Get function that maximizes the Q-function over continuous actions.
+    r"""Get function that maximizes the Q-function over continuous actions.
 
-    This function maximizes the state-action value function (Q-function) over the
-    continuous actions. The resulting function depends on the state variables and the
-    discrete action variables.
+    The state-action value function $Q$ is defined as:
+
+    ```{math}
+    Q(x, a) =  U(x, a) + \beta * \mathbb{E}[V(x', a') | x, a].
+    ```
+
+    Fixing a state and discrete action, maximizing over the continuous actions, we get
+    the $Q^c$ function:
+
+    ```{math}
+    Q^{c}(x, a^d) = \max_{a^c} Q(x, a^d, a^c).
+    ```
+
+    The last step is handled by the function returned here.
 
     Args:
         utility_and_feasibility: A function that takes a state-action combination and
@@ -47,26 +58,36 @@ def get_max_Q_over_c(
     return productmap(max_Q_over_c, variables=states_and_discrete_actions_names)
 
 
-def get_compute_conditional_continuation_policy(
+def get_argmax_Q_over_c(
     utility_and_feasibility: Callable[..., tuple[Array, Array]],
     continuous_action_variables: tuple[str, ...],
 ) -> Callable[..., tuple[Array, Array]]:
-    """Get a function that computes the conditional continuation policy.
+    r"""Get function that arg-maximizes the Q-function over continuous actions.
 
-    This function solves the continuous action problem conditional on a state-
-    (discrete-)action combination; and is used in the model simulation process.
+    The state-action value function $Q$ is defined as:
+
+    ```{math}
+    Q(x, a) =  U(x, a) + \beta * \mathbb{E}[V(x', a') | x, a].
+    ```
+
+    Fixing a state and discrete action, arg-maximizing over the continuous actions, we
+    get
+
+    ```{math}
+    \pi^{c}(x, a^d) = \argmax_{a^c} Q(x, a^d, a^c).
+    ```
+
+    The last step is handled by the function returned here.
 
     Args:
         utility_and_feasibility: A function that takes a state-action combination and
-            return the utility of that combination (scalar) and whether the state-action
-            combination is feasible (bool).
-        continuous_action_variables: Tuple of action variable names that are
-            continuous.
+            returns the utility of that combination (scalar) and whether the
+            state-action combination is feasible (bool).
+        continuous_action_variables: Tuple of action variable names that are continuous.
 
     Returns:
-        A function that takes a state-action combination and returns the optimal policy
-        (i.e., that index that maximizes the objective function over feasible states x
-        action combinations) and the value of the objective function.
+        Function that calculates the arg-maximum of the Q-function over the continuous
+        actions. The result corresponds to the Qc-function.
 
     """
     if continuous_action_variables:
@@ -76,9 +97,8 @@ def get_compute_conditional_continuation_policy(
         )
 
     @functools.wraps(utility_and_feasibility)
-    def compute_ccp(params: ParamsDict, **kwargs: Array) -> tuple[Array, Array]:
+    def argmax_Q_over_c(params: ParamsDict, **kwargs: Array) -> tuple[Array, Array]:
         u, f = utility_and_feasibility(params=params, **kwargs)
-        _argmax, _max = argmax(u, where=f, initial=-jnp.inf)
-        return _argmax, _max
+        return argmax(u, where=f, initial=-jnp.inf)
 
-    return compute_ccp
+    return argmax_Q_over_c

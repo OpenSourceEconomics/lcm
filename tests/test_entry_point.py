@@ -5,7 +5,7 @@ from pybaum import tree_equal, tree_map
 from lcm.entry_point import get_lcm_function
 from lcm.input_processing import process_model
 from lcm.max_continuous_actions import (
-    get_compute_conditional_continuation_policy,
+    get_argmax_Q_over_c,
     get_max_Q_over_c,
 )
 from lcm.state_action_space import create_state_space_info
@@ -261,11 +261,11 @@ def test_get_max_Q_over_c_with_discrete_model():
 
 
 # ======================================================================================
-# Create compute conditional continuation policy
+# Test argmax_Q_over_c
 # ======================================================================================
 
 
-def test_create_compute_conditional_continuation_policy():
+def test_argmax_Q_over_c():
     model = process_model(
         get_model_config("iskhakov_et_al_2017_stripped_down", n_periods=3),
     )
@@ -291,12 +291,12 @@ def test_create_compute_conditional_continuation_policy():
         is_last_period=True,
     )
 
-    compute_ccv_policy = get_compute_conditional_continuation_policy(
+    argmax_Q_over_c = get_argmax_Q_over_c(
         utility_and_feasibility=u_and_f,
         continuous_action_variables=("consumption",),
     )
 
-    policy, val = compute_ccv_policy(
+    policy, val = argmax_Q_over_c(
         consumption=jnp.array([10, 20, 30.0]),
         retirement=RetirementStatus.retired,
         wealth=30,
@@ -311,7 +311,7 @@ def test_create_compute_conditional_continuation_policy():
     )
 
 
-def test_create_compute_conditional_continuation_policy_with_discrete_model():
+def test_argmax_Q_over_c_with_discrete_model():
     model = process_model(
         get_model_config("iskhakov_et_al_2017_discrete", n_periods=3),
     )
@@ -337,20 +337,20 @@ def test_create_compute_conditional_continuation_policy_with_discrete_model():
         is_last_period=True,
     )
 
-    compute_ccv_policy = get_compute_conditional_continuation_policy(
+    argmax_Q_over_c = get_argmax_Q_over_c(
         utility_and_feasibility=u_and_f,
         continuous_action_variables=(),
     )
 
-    policy, val = compute_ccv_policy(
+    _argmax, _max = argmax_Q_over_c(
         consumption=jnp.array([ConsumptionAction.low, ConsumptionAction.high]),
         retirement=RetirementStatus.retired,
         wealth=2,
         params=params,
         vf_arr=None,
     )
-    assert policy == 1
-    assert val == iskhakov_et_al_2017_utility(
+    assert _argmax == 1
+    assert _max == iskhakov_et_al_2017_utility(
         consumption=2,
         working=RetirementStatus.working,
         disutility_of_work=1.0,

@@ -8,7 +8,7 @@ from lcm.entry_point import get_lcm_function
 from lcm.input_processing import process_model
 from lcm.logging import get_logger
 from lcm.max_continuous_actions import (
-    get_compute_conditional_continuation_policy,
+    get_argmax_Q_over_c,
 )
 from lcm.next_state import get_next_state_function
 from lcm.simulation.simulate import (
@@ -46,7 +46,7 @@ def simulate_inputs():
         is_last_period=False,
     )
 
-    compute_ccv_policy_functions = []
+    argmax_Q_over_c_functions = []
     for period in range(model.n_periods):
         u_and_f = get_utility_and_feasibility_function(
             model=model,
@@ -54,14 +54,14 @@ def simulate_inputs():
             period=period,
             is_last_period=True,
         )
-        compute_ccv = get_compute_conditional_continuation_policy(
+        argmax_Q_over_c = get_argmax_Q_over_c(
             utility_and_feasibility=u_and_f,
             continuous_action_variables=("consumption",),
         )
-        compute_ccv_policy_functions.append(compute_ccv)
+        argmax_Q_over_c_functions.append(argmax_Q_over_c)
 
     return {
-        "compute_ccv_policy_functions": compute_ccv_policy_functions,
+        "argmax_Q_over_c_functions": argmax_Q_over_c_functions,
         "model": model,
         "next_state": get_next_state_function(model, target=Target.SIMULATE),
     }
@@ -288,8 +288,8 @@ def test_retrieve_actions():
     assert_array_equal(got["b"], jnp.array([10, 16, 12]))
 
 
-def test_filter_ccv_policy():
-    ccc_policy = jnp.array(
+def test_get_continuous_action_argmax_given_discrete():
+    argmax_Q_over_c_values = jnp.array(
         [
             [0, 1],
             [1, 0],
@@ -298,7 +298,7 @@ def test_filter_ccv_policy():
     argmax = jnp.array([0, 1])
     vars_grid_shape = (2,)
     got = get_continuous_action_argmax_given_discrete(
-        conditional_continuous_action_argmax=ccc_policy,
+        conditional_continuous_action_argmax=argmax_Q_over_c_values,
         discrete_argmax=argmax,
         discrete_actions_grid_shape=vars_grid_shape,
     )

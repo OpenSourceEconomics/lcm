@@ -10,7 +10,7 @@ from lcm.input_processing import process_model
 from lcm.interfaces import StateActionSpace, StateSpaceInfo
 from lcm.logging import get_logger
 from lcm.max_continuous_actions import (
-    get_compute_conditional_continuation_policy,
+    get_argmax_Q_over_c,
     get_max_Q_over_c,
 )
 from lcm.max_discrete_actions import get_max_Qc
@@ -74,7 +74,7 @@ def get_lcm_function(
     state_action_spaces: dict[int, StateActionSpace] = {}
     state_space_infos: dict[int, StateSpaceInfo] = {}
     max_Q_over_c_functions: dict[int, MaxQOverCFunction] = {}
-    compute_ccp_functions: dict[int, Callable[..., tuple[Array, Array]]] = {}
+    argmax_Q_over_c_functions: dict[int, Callable[..., tuple[Array, Array]]] = {}
     max_Qc_functions: dict[int, MaxQcFunction] = {}
 
     for period in reversed(range(internal_model.n_periods)):
@@ -108,7 +108,7 @@ def get_lcm_function(
             states_and_discrete_actions_names=state_action_space.states_and_discrete_actions_names,
         )
 
-        compute_ccp = get_compute_conditional_continuation_policy(
+        argmax_Q_over_c = get_argmax_Q_over_c(
             utility_and_feasibility=u_and_f,
             continuous_action_variables=tuple(state_action_space.continuous_actions),
         )
@@ -122,7 +122,7 @@ def get_lcm_function(
         state_action_spaces[period] = state_action_space
         state_space_infos[period] = state_space_info
         max_Q_over_c_functions[period] = max_Q_over_c
-        compute_ccp_functions[period] = compute_ccp
+        argmax_Q_over_c_functions[period] = argmax_Q_over_c
         max_Qc_functions[period] = max_Qc
 
     # ==================================================================================
@@ -143,7 +143,7 @@ def get_lcm_function(
     next_state_simulate = jax.jit(_next_state_simulate) if jit else _next_state_simulate
     simulate_model = partial(
         simulate,
-        compute_ccv_policy_functions=compute_ccp_functions,
+        argmax_Q_over_c_functions=argmax_Q_over_c_functions,
         model=internal_model,
         next_state=next_state_simulate,  # type: ignore[arg-type]
         logger=logger,
@@ -151,7 +151,7 @@ def get_lcm_function(
 
     solve_and_simulate_model = partial(
         solve_and_simulate,
-        compute_ccv_policy_functions=compute_ccp_functions,
+        argmax_Q_over_c_functions=argmax_Q_over_c_functions,
         model=internal_model,
         next_state=next_state_simulate,  # type: ignore[arg-type]
         logger=logger,

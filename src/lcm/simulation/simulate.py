@@ -23,7 +23,7 @@ from lcm.typing import ParamsDict
 def solve_and_simulate(
     params: ParamsDict,
     initial_states: dict[str, Array],
-    compute_ccv_policy_functions: dict[int, Callable[..., tuple[Array, Array]]],
+    argmax_Q_over_c_functions: dict[int, Callable[..., tuple[Array, Array]]],
     model: InternalModel,
     next_state: Callable[..., dict[str, Array]],
     logger: logging.Logger,
@@ -41,7 +41,7 @@ def solve_and_simulate(
     return simulate(
         params=params,
         initial_states=initial_states,
-        compute_ccv_policy_functions=compute_ccv_policy_functions,
+        argmax_Q_over_c_functions=argmax_Q_over_c_functions,
         model=model,
         next_state=next_state,
         logger=logger,
@@ -54,7 +54,7 @@ def solve_and_simulate(
 def simulate(
     params: ParamsDict,
     initial_states: dict[str, Array],
-    compute_ccv_policy_functions: dict[int, Callable[..., tuple[Array, Array]]],
+    argmax_Q_over_c_functions: dict[int, Callable[..., tuple[Array, Array]]],
     model: InternalModel,
     next_state: Callable[..., dict[str, Array]],
     logger: logging.Logger,
@@ -69,8 +69,8 @@ def simulate(
         params: Dict of model parameters.
         initial_states: List of initial states to start from. Typically from the
             observed dataset.
-        compute_ccv_policy_functions: Dict of length n_periods. Each function computes
-            the conditional continuation value dependent on the discrete actions.
+        argmax_Q_over_c_functions: Dict of fucntions length n_periods. Each function
+            calculates the arg-maximum of the Q-function over the continuous actions.
         next_state: Function that returns the next state given the current
             state and action variables. For stochastic variables, it returns a random
             draw from the distribution of the next state.
@@ -131,7 +131,7 @@ def simulate(
 
         conditional_continuous_action_argmax, Qc_values = solve_continuous_problem(
             data_scs=state_action_space,
-            compute_ccv=compute_ccv_policy_functions[period],
+            argmax_Q_over_c=argmax_Q_over_c_functions[period],
             vf_arr=next_period_vf_arr,
             params=params,
         )
@@ -205,7 +205,7 @@ def simulate(
 
 def solve_continuous_problem(
     data_scs: StateActionSpace,
-    compute_ccv: Callable[..., tuple[Array, Array]],
+    argmax_Q_over_c: Callable[..., tuple[Array, Array]],
     vf_arr: Array,
     params: ParamsDict,
 ) -> tuple[Array, Array]:
@@ -213,13 +213,7 @@ def solve_continuous_problem(
 
     Args:
         data_scs: Class with entries actions and states.
-        compute_ccv: Function that returns the conditional continuation
-            values for a given combination of states and discrete actions. The function
-            depends on:
-            - discrete and continuous state variables
-            - discrete and continuous action variables
-            - vf_arr
-            - params
+        argmax_Q_over_c: Function that maximizes Q over the continuous actions.
         vf_arr: Value function array.
         params: Dict of model parameters.
 
@@ -232,7 +226,7 @@ def solve_continuous_problem(
 
     """
     _gridmapped = simulation_spacemap(
-        func=compute_ccv,
+        func=argmax_Q_over_c,
         actions_var_names=tuple(data_scs.discrete_actions),
         states_var_names=tuple(data_scs.states),
     )
