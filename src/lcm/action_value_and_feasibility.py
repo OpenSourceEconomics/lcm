@@ -67,6 +67,9 @@ def get_Q_and_F_non_terminal(
     # Generate dynamic functions
     # ----------------------------------------------------------------------------------
 
+    # Function required to calculate instantaneous utility and feasibility
+    U_and_F = _get_U_and_F(model)
+
     # Functions required to calculate the expected continuation values
     state_transition = get_next_state_function(model, target=Target.SOLVE)
     calculate_next_weights = get_next_stochastic_weights_function(model)
@@ -77,11 +80,8 @@ def get_Q_and_F_non_terminal(
         variables=tuple(f"next_{var}" for var in stochastic_variables),
     )
 
-    # Function required to calculate todays utility and feasibility
-    U_and_F = _get_U_and_F(model)
-
     # ----------------------------------------------------------------------------------
-    # Create the utility and feasibility function
+    # Create the state-action value and feasibility function
     # ----------------------------------------------------------------------------------
     arg_names_of_Q_and_F = _get_arg_names_of_Q_and_F(
         [U_and_F, state_transition, calculate_next_weights],
@@ -132,7 +132,7 @@ def get_Q_and_F_non_terminal(
         expected_V = (V_at_nodes * node_weights).sum()
 
         # ------------------------------------------------------------------------------
-        # Calculate the utility and feasibility for all states and actions
+        # Calculate the instantaneous utility and feasibility
         # ------------------------------------------------------------------------------
         U, F = U_and_F(
             **states_and_actions,

@@ -67,13 +67,6 @@ def test_solve_brute():
 
         return Q, F
 
-    def _get_continuation_value(lazy, wealth, vf_arr):
-        continuous_part = vf_arr[lazy]
-        return map_coordinates(
-            input=continuous_part,
-            coordinates=jnp.array([wealth]),
-        )
-
     max_Q_over_c = get_max_Q_over_c(
         Q_and_F=_Q_and_F,
         continuous_actions_names=("consumption",),

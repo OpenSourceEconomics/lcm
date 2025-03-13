@@ -48,14 +48,14 @@ def simulate_inputs():
 
     argmax_Q_over_c_functions = []
     for period in range(model.n_periods):
-        u_and_f = get_Q_and_F(
+        Q_and_F = get_Q_and_F(
             model=model,
             next_state_space_info=state_space_info,
             period=period,
             is_last_period=True,
         )
         argmax_Q_over_c = get_argmax_Q_over_c(
-            Q_and_F=u_and_f,
+            Q_and_F=Q_and_F,
             continuous_actions_names=("consumption",),
         )
         argmax_Q_over_c_functions.append(argmax_Q_over_c)
