@@ -16,7 +16,7 @@ from lcm.max_continuous_actions import (
     get_argmax_Q_over_c,
     get_max_Q_over_c,
 )
-from lcm.max_discrete_actions import get_max_Qc
+from lcm.max_discrete_actions import get_max_Qc_over_d
 from lcm.next_state import get_next_state_function
 from lcm.simulation.simulate import simulate, solve_and_simulate
 from lcm.solution.solve_brute import solve
@@ -81,7 +81,7 @@ def get_lcm_function(
     state_space_infos: dict[int, StateSpaceInfo] = {}
     max_Q_over_c_functions: dict[int, MaxQOverCFunction] = {}
     argmax_Q_over_c_functions: dict[int, ArgmaxQOverCFunction] = {}
-    max_Qc_functions: dict[int, MaxQcFunction] = {}
+    max_Qc_over_d_functions: dict[int, MaxQcFunction] = {}
 
     for period in reversed(range(internal_model.n_periods)):
         is_last_period = period == last_period
@@ -119,7 +119,7 @@ def get_lcm_function(
             continuous_actions_names=tuple(state_action_space.continuous_actions),
         )
 
-        max_Qc = get_max_Qc(
+        max_Qc_over_d = get_max_Qc_over_d(
             random_utility_shock_type=internal_model.random_utility_shocks,
             variable_info=internal_model.variable_info,
             is_last_period=is_last_period,
@@ -129,7 +129,7 @@ def get_lcm_function(
         state_space_infos[period] = state_space_info
         max_Q_over_c_functions[period] = max_Q_over_c
         argmax_Q_over_c_functions[period] = argmax_Q_over_c
-        max_Qc_functions[period] = max_Qc
+        max_Qc_over_d_functions[period] = max_Qc_over_d
 
     # ==================================================================================
     # select requested solver and partial arguments into it
@@ -138,7 +138,7 @@ def get_lcm_function(
         solve,
         state_action_spaces=state_action_spaces,
         max_Q_over_c_functions=max_Q_over_c_functions,
-        max_Qc_functions=max_Qc_functions,
+        max_Qc_over_d_functions=max_Qc_over_d_functions,
         logger=logger,
     )
     solve_model = jax.jit(_solve_model) if jit else _solve_model

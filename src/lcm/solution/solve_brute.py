@@ -11,7 +11,7 @@ def solve(
     params: ParamsDict,
     state_action_spaces: dict[int, StateActionSpace],
     max_Q_over_c_functions: dict[int, MaxQOverCFunction],
-    max_Qc_functions: dict[int, MaxQcFunction],
+    max_Qc_over_d_functions: dict[int, MaxQcFunction],
     logger: logging.Logger,
 ) -> dict[int, Array]:
     """Solve a model using grid search.
@@ -22,9 +22,9 @@ def solve(
         max_Q_over_c_functions: Dict with one function per period. The functions
             calculate the maximum of the Q-function over the continuous actions. The
             result corresponds to the Qc-function of that period.
-        max_Qc_functions: Dict with one function per period. The functions calculate the
-            the (expected) maximum of the Qc-function over the discrete actions. The
-            result corresponds to the value function array of that period.
+        max_Qc_over_d_functions: Dict with one function per period. The functions
+            calculate the the (expected) maximum of the Qc-function over the discrete
+            actions. The result corresponds to the value function array of that period.
         logger: Logger that logs to stdout.
 
     Returns:
@@ -41,7 +41,7 @@ def solve(
     for period in reversed(range(n_periods)):
         state_action_space = state_action_spaces[period]
 
-        max_Qc = max_Qc_functions[period]
+        max_Qc_over_d = max_Qc_over_d_functions[period]
         max_Q_over_c = max_Q_over_c_functions[period]
 
         # evaluate Q-function on states and actions, and maximize over continuous
@@ -55,7 +55,7 @@ def solve(
         )
 
         # maximize Qc-function evaluations over discrete actions
-        vf_arr = max_Qc(Qc_values, params=params)
+        vf_arr = max_Qc_over_d(Qc_values, params=params)
 
         solution[period] = vf_arr
         logger.info("Period: %s", period)

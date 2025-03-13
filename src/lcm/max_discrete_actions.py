@@ -13,7 +13,7 @@ from lcm.typing import (
 )
 
 
-def get_max_Qc(
+def get_max_Qc_over_d(
     *,
     random_utility_shock_type: ShockType,
     variable_info: pd.DataFrame,
@@ -61,7 +61,7 @@ def get_max_Qc(
     discrete_action_axes = _determine_discrete_action_axes_solution(variable_info)
 
     if random_utility_shock_type == ShockType.NONE:
-        func = _max_Qc_no_shocks
+        func = _max_Qc_over_d_no_shocks
     elif random_utility_shock_type == ShockType.EXTREME_VALUE:
         raise NotImplementedError("Extreme value shocks are not yet implemented.")
     else:
@@ -70,7 +70,7 @@ def get_max_Qc(
     return partial(func, discrete_action_axes=discrete_action_axes)
 
 
-def get_argmax_Qc(
+def get_argmax_Qc_over_d(
     *,
     variable_info: pd.DataFrame,
 ) -> ArgmaxQcFunction:
@@ -128,7 +128,7 @@ def get_argmax_Qc(
 # ======================================================================================
 
 
-def _max_Qc_no_shocks(
+def _max_Qc_over_d_no_shocks(
     Qc_values: Array,
     discrete_action_axes: tuple[int, ...],
     params: ParamsDict,  # noqa: ARG001
@@ -157,7 +157,7 @@ def _max_Qc_no_shocks(
 # ======================================================================================
 
 
-def _max_Qc_extreme_value_shocks(
+def _max_Qc_over_d_extreme_value_shocks(
     Qc_values: Array, discrete_action_axes: tuple[int, ...], params: ParamsDict
 ) -> Array:
     """Take the expected maximum of the Qc-function over the discrete actions.

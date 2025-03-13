@@ -12,7 +12,7 @@ from lcm.interfaces import (
     InternalModel,
     InternalSimulationPeriodResults,
 )
-from lcm.max_discrete_actions import get_argmax_Qc
+from lcm.max_discrete_actions import get_argmax_Qc_over_d
 from lcm.random import draw_random_seed, generate_simulation_keys
 from lcm.simulation.processing import as_panel, process_simulated_data
 from lcm.state_action_space import create_state_action_space
@@ -100,7 +100,7 @@ def simulate(
         initial_states=initial_states,
     )
 
-    argmax_Qc = get_argmax_Qc(variable_info=model.variable_info)
+    argmax_Qc_over_d = get_argmax_Qc_over_d(variable_info=model.variable_info)
 
     # The following variables are updated during the forward simulation
     states = initial_states
@@ -146,7 +146,7 @@ def simulate(
         # Get optimal discrete action given the optimal continuous actions, conditional
         # on the discrete actions
         # ------------------------------------------------------------------------------
-        discrete_argmax, value = argmax_Qc(Qc_values, params=params)
+        discrete_argmax, value = argmax_Qc_over_d(Qc_values, params=params)
 
         # Get optimal continuous action index given optimal discrete action
         # ------------------------------------------------------------------------------
