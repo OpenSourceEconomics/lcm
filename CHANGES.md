@@ -40,7 +40,7 @@ Thanks to everyone who contributed to this release:
   codebase to improve readability and maintainability, added further tests and type
   hints for static type checking.
 
-- {ghuser}`janosg` (major contributions)
+- {ghuser}`janosg`
 
   Designed the prototype of `PyLCM` and coordinated the early development of the
   package. He onboarded {ghuser}`timmens` and provided feedback to architectural decisions.
