@@ -110,7 +110,7 @@ def get_lcm_function(
 
         argmax_Q_over_c = get_argmax_Q_over_c(
             utility_and_feasibility=u_and_f,
-            continuous_action_variables=tuple(state_action_space.continuous_actions),
+            continuous_actions_names=tuple(state_action_space.continuous_actions),
         )
 
         max_Qc = get_max_Qc(

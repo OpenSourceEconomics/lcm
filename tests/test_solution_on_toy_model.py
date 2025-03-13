@@ -392,9 +392,9 @@ def test_deterministic_simulate(beta, n_wealth_points):
 
 
 HEALTH_TRANSITION = [
-    np.array([[0.9, 0.1], [0.2, 0.8]]),
-    np.array([[0.9, 0.1], [0, 1]]),
-    np.array([[0.5, 0.5], [0.2, 0.8]]),
+    jnp.array([[0.9, 0.1], [0.2, 0.8]]),
+    jnp.array([[0.9, 0.1], [0, 1]]),
+    jnp.array([[0.5, 0.5], [0.2, 0.8]]),
 ]
 
 

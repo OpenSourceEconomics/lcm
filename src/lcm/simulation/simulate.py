@@ -11,7 +11,6 @@ from lcm.dispatchers import simulation_spacemap, vmap_1d
 from lcm.interfaces import (
     InternalModel,
     InternalSimulationPeriodResults,
-    StateActionSpace,
 )
 from lcm.max_discrete_actions import get_argmax_Qc
 from lcm.random import draw_random_seed, generate_simulation_keys
@@ -114,8 +113,6 @@ def simulate(
     for period in range(n_periods):
         state_action_space = state_action_space.replace(states)
 
-        # We compute these grid shapes in the loop because they can change over time.
-        # TODO (@timmens): This could still be pre-computed in the entry point.  # noqa: TD003,E501
         discrete_actions_grid_shape = tuple(
             len(grid) for grid in state_action_space.discrete_actions.values()
         )
@@ -125,13 +122,23 @@ def simulate(
 
         # Compute optimal continuous action conditional on discrete actions
         # ------------------------------------------------------------------------------
-        # We need to pass the value function array of the next period to the continuous
-        # action problem solver. If we are at the last period, we pass an empty array.
+        # We need to pass the value function array of tomorrow to the argmax_Q_over_c
+        # function, as todays Q-function requires tomorrows value funciton. If we are at
+        # the last period, we pass an empty array.
         next_period_vf_arr = vf_arr_dict.get(period + 1, jnp.empty(0))
 
-        conditional_continuous_action_argmax, Qc_values = solve_continuous_problem(
-            data_scs=state_action_space,
-            argmax_Q_over_c=argmax_Q_over_c_functions[period],
+        argmax_Q_over_c = simulation_spacemap(
+            argmax_Q_over_c_functions[period],
+            actions_var_names=tuple(state_action_space.discrete_actions),
+            states_var_names=tuple(state_action_space.states),
+        )
+
+        # Returns the optimal continuous action index conditional on the discrete
+        # actions and the states, as well as the achieved maximum value.
+        indices_argmax_Q_over_c, Qc_values = argmax_Q_over_c(
+            **state_action_space.states,
+            **state_action_space.discrete_actions,
+            **state_action_space.continuous_actions,
             vf_arr=next_period_vf_arr,
             params=params,
         )
@@ -139,12 +146,12 @@ def simulate(
         # Get optimal discrete action given the optimal continuous actions, conditional
         # on the discrete actions
         # ------------------------------------------------------------------------------
-        discrete_argmax, action_value = argmax_Qc(Qc_values, params=params)
+        discrete_argmax, value = argmax_Qc(Qc_values, params=params)
 
         # Get optimal continuous action index given optimal discrete action
         # ------------------------------------------------------------------------------
-        continuous_action_argmax = get_continuous_action_argmax_given_discrete(
-            conditional_continuous_action_argmax=conditional_continuous_action_argmax,
+        continuous_argmax = get_continuous_argmax_given_discrete(
+            conditional_continuous_action_argmax=indices_argmax_Q_over_c,
             discrete_argmax=discrete_argmax,
             discrete_actions_grid_shape=discrete_actions_grid_shape,
         )
@@ -158,17 +165,17 @@ def simulate(
         )
 
         continuous_actions = get_values_from_indices(
-            flat_indices=continuous_action_argmax,
+            flat_indices=continuous_argmax,
             grids=state_action_space.continuous_actions,
             grids_shapes=continuous_actions_grid_shape,
         )
 
         # Store results
         # ------------------------------------------------------------------------------
-        actions = {**discrete_actions, **continuous_actions}
+        actions = discrete_actions | continuous_actions
 
         simulation_results[period] = InternalSimulationPeriodResults(
-            value=action_value,
+            value=value,
             actions=actions,
             states=states,
         )
@@ -203,46 +210,8 @@ def simulate(
     return as_panel(processed, n_periods=n_periods)
 
 
-def solve_continuous_problem(
-    data_scs: StateActionSpace,
-    argmax_Q_over_c: Callable[..., tuple[Array, Array]],
-    vf_arr: Array,
-    params: ParamsDict,
-) -> tuple[Array, Array]:
-    """Solve the agents' continuous action problem.
-
-    Args:
-        data_scs: Class with entries actions and states.
-        argmax_Q_over_c: Function that maximizes Q over the continuous actions.
-        vf_arr: Value function array.
-        params: Dict of model parameters.
-
-    Returns:
-        - Jax array with policies for each combination of a state and a discrete action.
-          The number and order of dimensions is defined by the `gridmap` function.
-        - Jax array with continuation values for each combination of a state and a
-          discrete action. The number and order of dimensions is defined by the
-          `gridmap` function.
-
-    """
-    _gridmapped = simulation_spacemap(
-        func=argmax_Q_over_c,
-        actions_var_names=tuple(data_scs.discrete_actions),
-        states_var_names=tuple(data_scs.states),
-    )
-    gridmapped = jax.jit(_gridmapped)
-
-    return gridmapped(
-        **data_scs.states,
-        **data_scs.discrete_actions,
-        **data_scs.continuous_actions,
-        vf_arr=vf_arr,
-        params=params,
-    )
-
-
 @partial(vmap_1d, variables=("conditional_continuous_action_argmax", "discrete_argmax"))
-def get_continuous_action_argmax_given_discrete(
+def get_continuous_argmax_given_discrete(
     conditional_continuous_action_argmax: Array,
     discrete_argmax: Array,
     discrete_actions_grid_shape: tuple[int, ...],

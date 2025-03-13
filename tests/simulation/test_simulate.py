@@ -12,7 +12,7 @@ from lcm.max_continuous_actions import (
 )
 from lcm.next_state import get_next_state_function
 from lcm.simulation.simulate import (
-    get_continuous_action_argmax_given_discrete,
+    get_continuous_argmax_given_discrete,
     get_values_from_indices,
     simulate,
 )
@@ -56,7 +56,7 @@ def simulate_inputs():
         )
         argmax_Q_over_c = get_argmax_Q_over_c(
             utility_and_feasibility=u_and_f,
-            continuous_action_variables=("consumption",),
+            continuous_actions_names=("consumption",),
         )
         argmax_Q_over_c_functions.append(argmax_Q_over_c)
 
@@ -297,7 +297,7 @@ def test_get_continuous_action_argmax_given_discrete():
     )
     argmax = jnp.array([0, 1])
     vars_grid_shape = (2,)
-    got = get_continuous_action_argmax_given_discrete(
+    got = get_continuous_argmax_given_discrete(
         conditional_continuous_action_argmax=argmax_Q_over_c_values,
         discrete_argmax=argmax,
         discrete_actions_grid_shape=vars_grid_shape,

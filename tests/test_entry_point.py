@@ -293,7 +293,7 @@ def test_argmax_Q_over_c():
 
     argmax_Q_over_c = get_argmax_Q_over_c(
         utility_and_feasibility=u_and_f,
-        continuous_action_variables=("consumption",),
+        continuous_actions_names=("consumption",),
     )
 
     policy, val = argmax_Q_over_c(
@@ -339,7 +339,7 @@ def test_argmax_Q_over_c_with_discrete_model():
 
     argmax_Q_over_c = get_argmax_Q_over_c(
         utility_and_feasibility=u_and_f,
-        continuous_action_variables=(),
+        continuous_actions_names=(),
     )
 
     _argmax, _max = argmax_Q_over_c(

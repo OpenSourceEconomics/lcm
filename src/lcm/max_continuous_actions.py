@@ -60,7 +60,7 @@ def get_max_Q_over_c(
 
 def get_argmax_Q_over_c(
     utility_and_feasibility: Callable[..., tuple[Array, Array]],
-    continuous_action_variables: tuple[str, ...],
+    continuous_actions_names: tuple[str, ...],
 ) -> Callable[..., tuple[Array, Array]]:
     r"""Get function that arg-maximizes the Q-function over continuous actions.
 
@@ -83,17 +83,17 @@ def get_argmax_Q_over_c(
         utility_and_feasibility: A function that takes a state-action combination and
             returns the utility of that combination (scalar) and whether the
             state-action combination is feasible (bool).
-        continuous_action_variables: Tuple of action variable names that are continuous.
+        continuous_actions_names: Tuple of action variable names that are continuous.
 
     Returns:
         Function that calculates the arg-maximum of the Q-function over the continuous
         actions. The result corresponds to the Qc-function.
 
     """
-    if continuous_action_variables:
+    if continuous_actions_names:
         utility_and_feasibility = productmap(
             func=utility_and_feasibility,
-            variables=continuous_action_variables,
+            variables=continuous_actions_names,
         )
 
     @functools.wraps(utility_and_feasibility)
