@@ -6,6 +6,9 @@ import jax
 import pandas as pd
 from jax import Array
 
+from lcm.action_value_and_feasibility import (
+    get_utility_and_feasibility_function,
+)
 from lcm.input_processing import process_model
 from lcm.interfaces import StateActionSpace, StateSpaceInfo
 from lcm.logging import get_logger
@@ -29,9 +32,6 @@ from lcm.typing import (
     Target,
 )
 from lcm.user_model import Model
-from lcm.utility_and_feasibility import (
-    get_utility_and_feasibility_function,
-)
 
 
 def get_lcm_function(

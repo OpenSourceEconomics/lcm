@@ -4,6 +4,7 @@ import jax.numpy as jnp
 import pytest
 from numpy.testing import assert_array_almost_equal, assert_array_equal
 
+from lcm.action_value_and_feasibility import get_utility_and_feasibility_function
 from lcm.entry_point import get_lcm_function
 from lcm.input_processing import process_model
 from lcm.logging import get_logger
@@ -18,7 +19,6 @@ from lcm.simulation.simulate import (
 )
 from lcm.state_action_space import create_state_space_info
 from lcm.typing import Target
-from lcm.utility_and_feasibility import get_utility_and_feasibility_function
 from tests.test_models import (
     get_model_config,
     get_params,

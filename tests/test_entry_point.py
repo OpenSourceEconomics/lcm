@@ -2,6 +2,7 @@ import jax.numpy as jnp
 import pytest
 from pybaum import tree_equal, tree_map
 
+from lcm.action_value_and_feasibility import get_utility_and_feasibility_function
 from lcm.entry_point import get_lcm_function
 from lcm.input_processing import process_model
 from lcm.max_continuous_actions import (
@@ -9,7 +10,6 @@ from lcm.max_continuous_actions import (
     get_max_Q_over_c,
 )
 from lcm.state_action_space import create_state_space_info
-from lcm.utility_and_feasibility import get_utility_and_feasibility_function
 from tests.test_models import get_model_config
 from tests.test_models.deterministic import RetirementStatus
 from tests.test_models.deterministic import utility as iskhakov_et_al_2017_utility

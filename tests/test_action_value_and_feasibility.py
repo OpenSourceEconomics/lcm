@@ -4,15 +4,15 @@ import pytest
 from jax import Array
 from numpy.testing import assert_array_equal
 
-from lcm.input_processing import process_model
-from lcm.interfaces import InternalModel
-from lcm.state_action_space import create_state_space_info
-from lcm.typing import ShockType
-from lcm.utility_and_feasibility import (
+from lcm.action_value_and_feasibility import (
     _get_feasibility,
     _get_node_weights_function,
     get_utility_and_feasibility_function,
 )
+from lcm.input_processing import process_model
+from lcm.interfaces import InternalModel
+from lcm.state_action_space import create_state_space_info
+from lcm.typing import ShockType
 from tests.test_models import get_model_config
 from tests.test_models.deterministic import utility
 
