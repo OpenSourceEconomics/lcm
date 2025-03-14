@@ -71,11 +71,11 @@ def get_Q_and_F_non_terminal(
 
     # Functions required to calculate the expected continuation values
     state_transition = get_next_state_function(model, target=Target.SOLVE)
-    calculate_next_weights = get_next_stochastic_weights_function(model)
-    calculate_node_weights = _get_node_weights_function(stochastic_variables)
-    _scalar_value_function = get_value_function_representation(next_state_space_info)
-    value_function = productmap(
-        _scalar_value_function,
+    next_stochastic_states_weights = get_next_stochastic_weights_function(model)
+    joint_weights_from_marginals = _get_joint_weights_function(stochastic_variables)
+    _scalar_next_V = get_value_function_representation(next_state_space_info)
+    next_V = productmap(
+        _scalar_next_V,
         variables=tuple(f"next_{var}" for var in stochastic_variables),
     )
 
@@ -83,7 +83,7 @@ def get_Q_and_F_non_terminal(
     # Create the state-action value and feasibility function
     # ----------------------------------------------------------------------------------
     arg_names_of_Q_and_F = _get_arg_names_of_Q_and_F(
-        [U_and_F, state_transition, calculate_next_weights],
+        [U_and_F, state_transition, next_stochastic_states_weights],
         include={"params", "vf_arr"},
         exclude={"_period"},
     )
@@ -112,22 +112,27 @@ def get_Q_and_F_non_terminal(
             params=params,
         )
 
-        weights = calculate_next_weights(
+        marginal_next_stochastic_states_weights = next_stochastic_states_weights(
             **states_and_actions,
             _period=period,
             params=params,
         )
 
-        node_weights = calculate_node_weights(**weights)
+        joint_next_stochastic_states_weights = joint_weights_from_marginals(
+            **marginal_next_stochastic_states_weights
+        )
 
         # As we productmap'd the value function over the stochastic variables, the
-        # resulting continuation values get a new dimension for each stochastic
+        # resulting next value function gets a new dimension for each stochastic
         # variable.
-        V_at_nodes = value_function(**next_states, vf_arr=vf_arr)
+        next_V_at_stochastic_states = next_V(**next_states, vf_arr=vf_arr)
 
-        # We then weight these continuation values with the joint node weights and sum
-        # them up to get the expected continuation values.
-        expected_V = (V_at_nodes * node_weights).sum()
+        # We then take the weighted average of the next value function at the stochastic
+        # states to get the expected next value function.
+        next_V_expected = jnp.average(
+            next_V_at_stochastic_states,
+            weights=joint_next_stochastic_states_weights,
+        )
 
         # ------------------------------------------------------------------------------
         # Calculate the instantaneous utility and feasibility
@@ -138,7 +143,7 @@ def get_Q_and_F_non_terminal(
             params=params,
         )
 
-        Q = U + params["beta"] * expected_V
+        Q = U + params["beta"] * next_V_expected
 
         return Q, F
 
@@ -223,8 +228,10 @@ def _get_arg_names_of_Q_and_F(
     return list(include | deps_arg_names - exclude)
 
 
-def _get_node_weights_function(stochastic_variables: list[str]) -> Callable[..., Array]:
-    """Get joint weights function.
+def _get_joint_weights_function(
+    stochastic_variables: list[str],
+) -> Callable[..., Array]:
+    """Get function that calculates the joint weights.
 
     This function takes the weights of the individual stochastic variables and
     multiplies them together to get the joint weights on the product space of the
@@ -234,7 +241,8 @@ def _get_node_weights_function(stochastic_variables: list[str]) -> Callable[...,
         stochastic_variables: List of stochastic variables.
 
     Returns:
-        A function that multiplies the weights of the stochastic variables.
+        A function that computes the outer product of the weights of the stochastic
+        variables.
 
     """
     arg_names = [f"weight_next_{var}" for var in stochastic_variables]

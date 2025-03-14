@@ -8,7 +8,7 @@ from lcm.input_processing import process_model
 from lcm.interfaces import InternalModel
 from lcm.Q_and_F import (
     _get_feasibility,
-    _get_node_weights_function,
+    _get_joint_weights_function,
     get_Q_and_F,
 )
 from lcm.state_action_space import create_state_space_info
@@ -147,7 +147,7 @@ def test_get_combined_constraint_illustrative(internal_model_illustrative):
 
 
 def test_get_multiply_weights():
-    multiply_weights = _get_node_weights_function(
+    multiply_weights = _get_joint_weights_function(
         stochastic_variables=["a", "b"],
     )
 
