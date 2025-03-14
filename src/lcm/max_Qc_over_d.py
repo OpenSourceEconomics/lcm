@@ -19,7 +19,7 @@ def get_max_Qc_over_d(
     variable_info: pd.DataFrame,
     is_last_period: bool,
 ) -> MaxQcOverDFunction:
-    r"""Get function that maximizes the Qc-function over discrete actions.
+    r"""Get the function returning the maximum of Qc over discrete actions.
 
     The state-action value function $Q$ is defined as:
 
@@ -75,7 +75,7 @@ def get_argmax_and_max_Qc_over_d(
     *,
     variable_info: pd.DataFrame,
 ) -> ArgmaxQcOverDFunction:
-    r"""Get function that arg-maximizes the Qc-function over discrete actions.
+    r"""Get the function returning the arguments maximizing Qc over discrete actions.
 
     The state-action value function $Q$ is defined as:
 

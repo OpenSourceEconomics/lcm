@@ -14,7 +14,7 @@ def get_max_Q_over_c(
     continuous_actions_names: tuple[str, ...],
     states_and_discrete_actions_names: tuple[str, ...],
 ) -> MaxQOverCFunction:
-    r"""Get function that maximizes the Q-function over continuous actions.
+    r"""Get the function returning the maximum of Q over continuous actions.
 
     The state-action value function $Q$ is defined as:
 
