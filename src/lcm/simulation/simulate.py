@@ -147,40 +147,44 @@ def simulate(
             params=params,
         )
 
-        # Get optimal discrete action given the optimal continuous actions, conditional
-        # on the discrete actions
+        # The Qc-function values contain the information of how much value each discrete
+        # action combination is worth, assuming the corresponding optimal continuous
+        # actions are taken. To find the optimal discrete action, we therefore only need
+        # to maximize the Qc-function values over the discrete actions.
         # ------------------------------------------------------------------------------
-        discrete_argmax, values = argmax_and_max_Qc_over_d(Qc_values, params=params)
+        indices_discrete_argmax, values = argmax_and_max_Qc_over_d(
+            Qc_values, params=params
+        )
 
         # Get optimal continuous action index given optimal discrete action
         # ------------------------------------------------------------------------------
-        continuous_argmax = get_continuous_argmax_given_discrete(
+        indices_continuous_argmax = get_continuous_argmax_given_discrete(
             conditional_continuous_action_argmax=indices_argmax_Q_over_c,
-            discrete_argmax=discrete_argmax,
+            discrete_argmax=indices_discrete_argmax,
             discrete_actions_grid_shape=discrete_actions_grid_shape,
         )
 
         # Convert action indices to action values
         # ------------------------------------------------------------------------------
-        discrete_actions = get_values_from_indices(
-            flat_indices=discrete_argmax,
+        optimal_discrete_actions = get_values_from_indices(
+            flat_indices=indices_discrete_argmax,
             grids=state_action_space.discrete_actions,
             grids_shapes=discrete_actions_grid_shape,
         )
 
-        continuous_actions = get_values_from_indices(
-            flat_indices=continuous_argmax,
+        optimal_continuous_actions = get_values_from_indices(
+            flat_indices=indices_continuous_argmax,
             grids=state_action_space.continuous_actions,
             grids_shapes=continuous_actions_grid_shape,
         )
 
         # Store results
         # ------------------------------------------------------------------------------
-        actions = discrete_actions | continuous_actions
+        optimal_actions = optimal_discrete_actions | optimal_continuous_actions
 
         simulation_results[period] = InternalSimulationPeriodResults(
             value=values,
-            actions=actions,
+            actions=optimal_actions,
             states=states,
         )
 
@@ -193,7 +197,7 @@ def simulate(
 
         states_with_prefix = next_state(
             **states,
-            **actions,
+            **optimal_actions,
             _period=jnp.repeat(period, n_initial_states),
             params=params,
             keys=stochastic_variables_keys,
