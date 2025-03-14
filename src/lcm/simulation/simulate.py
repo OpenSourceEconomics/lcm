@@ -12,7 +12,7 @@ from lcm.interfaces import (
     InternalModel,
     InternalSimulationPeriodResults,
 )
-from lcm.max_discrete_actions import get_argmax_Qc_over_d
+from lcm.max_Qc_over_d import get_argmax_Qc_over_d
 from lcm.random import draw_random_seed, generate_simulation_keys
 from lcm.simulation.processing import as_panel, process_simulated_data
 from lcm.state_action_space import create_state_action_space

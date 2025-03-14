@@ -8,7 +8,7 @@ from lcm.action_value_and_feasibility import get_Q_and_F
 from lcm.entry_point import get_lcm_function
 from lcm.input_processing import process_model
 from lcm.logging import get_logger
-from lcm.max_continuous_actions import (
+from lcm.max_Q_over_c import (
     get_argmax_Q_over_c,
 )
 from lcm.next_state import get_next_state_function

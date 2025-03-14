@@ -12,11 +12,11 @@ from lcm.action_value_and_feasibility import (
 from lcm.input_processing import process_model
 from lcm.interfaces import StateActionSpace, StateSpaceInfo
 from lcm.logging import get_logger
-from lcm.max_continuous_actions import (
+from lcm.max_Q_over_c import (
     get_argmax_Q_over_c,
     get_max_Q_over_c,
 )
-from lcm.max_discrete_actions import get_max_Qc_over_d
+from lcm.max_Qc_over_d import get_max_Qc_over_d
 from lcm.next_state import get_next_state_function
 from lcm.simulation.simulate import simulate, solve_and_simulate
 from lcm.solution.solve_brute import solve

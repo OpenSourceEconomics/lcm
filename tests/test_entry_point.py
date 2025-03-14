@@ -5,7 +5,7 @@ from pybaum import tree_equal, tree_map
 from lcm.action_value_and_feasibility import get_Q_and_F
 from lcm.entry_point import get_lcm_function
 from lcm.input_processing import process_model
-from lcm.max_continuous_actions import (
+from lcm.max_Q_over_c import (
     get_argmax_Q_over_c,
     get_max_Q_over_c,
 )

@@ -4,7 +4,7 @@ from numpy.testing import assert_array_almost_equal as aaae
 
 from lcm.interfaces import StateActionSpace
 from lcm.logging import get_logger
-from lcm.max_continuous_actions import get_max_Q_over_c
+from lcm.max_Q_over_c import get_max_Q_over_c
 from lcm.ndimage import map_coordinates
 from lcm.solution.solve_brute import solve
 

@@ -3,7 +3,7 @@ import pandas as pd
 import pytest
 from numpy.testing import assert_array_almost_equal as aaae
 
-from lcm.max_discrete_actions import (
+from lcm.max_Qc_over_d import (
     _determine_discrete_action_axes_simulation,
     _determine_discrete_action_axes_solution,
     _max_Qc_over_d_extreme_value_shocks,
