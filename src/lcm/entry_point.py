@@ -6,9 +6,6 @@ import jax
 import pandas as pd
 from jax import Array
 
-from lcm.action_value_and_feasibility import (
-    get_Q_and_F,
-)
 from lcm.input_processing import process_model
 from lcm.interfaces import StateActionSpace, StateSpaceInfo
 from lcm.logging import get_logger
@@ -18,6 +15,9 @@ from lcm.max_Q_over_c import (
 )
 from lcm.max_Qc_over_d import get_max_Qc_over_d
 from lcm.next_state import get_next_state_function
+from lcm.Q_and_F import (
+    get_Q_and_F,
+)
 from lcm.simulation.simulate import simulate, solve_and_simulate
 from lcm.solution.solve_brute import solve
 from lcm.state_action_space import (

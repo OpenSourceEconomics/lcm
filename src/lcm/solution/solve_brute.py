@@ -33,7 +33,7 @@ def solve(
     """
     n_periods = len(state_action_spaces)
     solution = {}
-    vf_arr = jnp.empty(0)
+    V = jnp.empty(0)
 
     logger.info("Starting solution")
 
@@ -50,14 +50,14 @@ def solve(
             **state_action_space.states,
             **state_action_space.discrete_actions,
             **state_action_space.continuous_actions,
-            vf_arr=vf_arr,
+            vf_arr=V,
             params=params,
         )
 
         # maximize Qc-function evaluations over discrete actions
-        vf_arr = max_Qc_over_d(Qc_values, params=params)
+        V = max_Qc_over_d(Qc_values, params=params)
 
-        solution[period] = vf_arr
+        solution[period] = V
         logger.info("Period: %s", period)
 
     return solution

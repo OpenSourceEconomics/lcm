@@ -4,7 +4,6 @@ import jax.numpy as jnp
 import pytest
 from numpy.testing import assert_array_almost_equal, assert_array_equal
 
-from lcm.action_value_and_feasibility import get_Q_and_F
 from lcm.entry_point import get_lcm_function
 from lcm.input_processing import process_model
 from lcm.logging import get_logger
@@ -12,9 +11,10 @@ from lcm.max_Q_over_c import (
     get_argmax_and_max_Q_over_c,
 )
 from lcm.next_state import get_next_state_function
+from lcm.Q_and_F import get_Q_and_F
 from lcm.simulation.simulate import (
-    get_continuous_argmax_given_discrete,
-    get_values_from_indices,
+    _lookup_values_from_indices,
+    _pick_optimal_continuous_actions,
     simulate,
 )
 from lcm.state_action_space import create_state_space_info
@@ -278,7 +278,7 @@ def test_effect_of_disutility_of_work():
 
 
 def test_retrieve_actions():
-    got = get_values_from_indices(
+    got = _lookup_values_from_indices(
         flat_indices=jnp.array([0, 3, 7]),
         grids={"a": jnp.linspace(0, 1, 5), "b": jnp.linspace(10, 20, 6)},
         grids_shapes=(5, 6),
@@ -296,7 +296,7 @@ def test_get_continuous_action_argmax_given_discrete():
     )
     argmax = jnp.array([0, 1])
     vars_grid_shape = (2,)
-    got = get_continuous_argmax_given_discrete(
+    got = _pick_optimal_continuous_actions(
         conditional_continuous_action_argmax=argmax_and_max_Q_over_c_values,
         discrete_argmax=argmax,
         discrete_actions_grid_shape=vars_grid_shape,

@@ -24,14 +24,14 @@ def get_max_Q_over_c(
     with $g(u, v) = u + \beta \cdot v$ as the leading case (which is the only one that
     is pre-implemented in LCM).
 
-    Fixing a state and discrete action, maximizing over the continuous actions, we get
-    the $Q^c$ function:
+    Fixing a state and discrete action, maximizing over the feasible continuous actions,
+    we get the $Q^c$ function:
 
     ```{math}
     Q^{c}(x, a^d) = \max_{a^c} Q(x, a^d, a^c).
     ```
 
-    The last step is handled by the function returned here.
+    This last step is handled by the function returned here.
 
     Args:
         Q_and_F: A function that takes a state-action combination and returns the action
@@ -42,8 +42,8 @@ def get_max_Q_over_c(
             names.
 
     Returns:
-        Function that calculates the maximum of the Q-function over the feasible
-        continuous actions. The result corresponds to the Qc-function.
+        Qc, i.e., the function that calculates the maximum of the Q-function over the
+        feasible continuous actions.
 
     """
     if continuous_actions_names:
@@ -74,14 +74,14 @@ def get_argmax_and_max_Q_over_c(
     with $g(u, v) = u + \beta \cdot v$ as the leading case (which is the only one that
     is pre-implemented in LCM).
 
-    Fixing a state and discrete action, arg-maximizing over the continuous actions, we
-    get
+    Fixing a state and discrete action but choosing the feasible continuous actions that
+    maximizes Q, we get
 
     ```{math}
     \pi^{c}(x, a^d) = \argmax_{a^c} Q(x, a^d, a^c).
     ```
 
-    The last step is handled by the function returned here.
+    This last step is handled by the function returned here.
 
     Args:
         Q_and_F: A function that takes a state-action combination and returns the action
@@ -90,10 +90,10 @@ def get_argmax_and_max_Q_over_c(
         continuous_actions_names: Tuple of action variable names that are continuous.
 
     Returns:
-        Function that calculates the arg-maximum of the Q-function over the feasible
-        continuous actions as well as the maximum. The arg-maximum corresponds to the
-        policy function of the continuous actions, conditional on the discrete states.
-        The maximum corresponds to the Qc-function.
+        Function that calculates the argument maximizing Q over the feasible continuous
+        actions and the maximum iteself. The argument maximizing Q is the policy
+        function of the continuous actions, conditional on the states and discrete
+        actions. The maximum corresponds to the Qc-function.
 
     """
     if continuous_actions_names:

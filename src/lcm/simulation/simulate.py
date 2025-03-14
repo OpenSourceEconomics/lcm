@@ -11,6 +11,7 @@ from lcm.dispatchers import simulation_spacemap, vmap_1d
 from lcm.interfaces import (
     InternalModel,
     InternalSimulationPeriodResults,
+    StateActionSpace,
 )
 from lcm.max_Qc_over_d import get_argmax_and_max_Qc_over_d
 from lcm.random import draw_random_seed, generate_simulation_keys
@@ -69,8 +70,7 @@ def simulate(
         initial_states: List of initial states to start from. Typically from the
             observed dataset.
         argmax_and_max_Q_over_c_functions: Dict of functions of length n_periods. Each
-            function calculates the arg-maximum of the Q-function over the continuous
-            actions.
+            function calculates the argument maximizing Q over the continuous actions.
         next_state: Function that returns the next state given the current
             state and action variables. For stochastic variables, it returns a random
             draw from the distribution of the next state.
@@ -123,12 +123,11 @@ def simulate(
             len(grid) for grid in state_action_space.continuous_actions.values()
         )
 
-        # Compute optimal continuous action conditional on discrete actions
+        # Compute optimal continuous actions conditional on discrete actions
         # ------------------------------------------------------------------------------
-        # We need to pass the value function array of tomorrow to the
+        # We need to pass the value function array of the next period to the
         # argmax_and_max_Q_over_c function, as the current Q-function requires the next
-        # periods's value funciton. If we are at the last period, we pass an empty
-        # array.
+        # periods's value funciton. In the last period, we pass an empty array.
         next_period_vf_arr = vf_arr_dict.get(period + 1, jnp.empty(0))
 
         argmax_and_max_Q_over_c = simulation_spacemap(
@@ -137,8 +136,8 @@ def simulate(
             states_names=tuple(state_action_space.states),
         )
 
-        # Returns the optimal continuous action index conditional on the discrete
-        # actions and the states, as well as the achieved maximum value.
+        # Returns the optimal continuous action index conditional on the states and
+        # discrete actions, as well as the maximum value.
         indices_argmax_Q_over_c, Qc_values = argmax_and_max_Q_over_c(
             **state_action_space.states,
             **state_action_space.discrete_actions,
@@ -152,38 +151,33 @@ def simulate(
         # actions are taken. To find the optimal discrete action, we therefore only need
         # to maximize the Qc-function values over the discrete actions.
         # ------------------------------------------------------------------------------
-        indices_discrete_argmax, values = argmax_and_max_Qc_over_d(
+        indices_optimal_discrete_actions, V = argmax_and_max_Qc_over_d(
             Qc_values, params=params
         )
 
-        # Get optimal continuous action index given optimal discrete action
+        # Pick the continuous actions index from the above set given the optimal
+        # discrete actions.
         # ------------------------------------------------------------------------------
-        indices_continuous_argmax = get_continuous_argmax_given_discrete(
+        indices_optimal_continuous_actions = _pick_optimal_continuous_actions(
             conditional_continuous_action_argmax=indices_argmax_Q_over_c,
-            discrete_argmax=indices_discrete_argmax,
+            discrete_argmax=indices_optimal_discrete_actions,
             discrete_actions_grid_shape=discrete_actions_grid_shape,
         )
 
         # Convert action indices to action values
         # ------------------------------------------------------------------------------
-        optimal_discrete_actions = get_values_from_indices(
-            flat_indices=indices_discrete_argmax,
-            grids=state_action_space.discrete_actions,
-            grids_shapes=discrete_actions_grid_shape,
-        )
-
-        optimal_continuous_actions = get_values_from_indices(
-            flat_indices=indices_continuous_argmax,
-            grids=state_action_space.continuous_actions,
-            grids_shapes=continuous_actions_grid_shape,
+        optimal_actions = _lookup_actions_from_indices(
+            indices_optimal_discrete_actions=indices_optimal_discrete_actions,
+            indices_optimal_continuous_actions=indices_optimal_continuous_actions,
+            discrete_actions_grid_shape=discrete_actions_grid_shape,
+            continuous_actions_grid_shape=continuous_actions_grid_shape,
+            state_action_space=state_action_space,
         )
 
         # Store results
         # ------------------------------------------------------------------------------
-        optimal_actions = optimal_discrete_actions | optimal_continuous_actions
-
         simulation_results[period] = InternalSimulationPeriodResults(
-            value=values,
+            value=V,
             actions=optimal_actions,
             states=states,
         )
@@ -195,7 +189,7 @@ def simulate(
             ids=model.function_info.query("is_stochastic_next").index.tolist(),
         )
 
-        states_with_prefix = next_state(
+        states_with_next_prefix = next_state(
             **states,
             **optimal_actions,
             _period=jnp.repeat(period, n_initial_states),
@@ -204,7 +198,9 @@ def simulate(
         )
         # 'next_' prefix is added by the next_state function, but needs to be removed
         # because in the next period, next states will be current states.
-        states = {k.removeprefix("next_"): v for k, v in states_with_prefix.items()}
+        states = {
+            k.removeprefix("next_"): v for k, v in states_with_next_prefix.items()
+        }
 
         logger.info("Period: %s", period)
 
@@ -219,12 +215,12 @@ def simulate(
 
 
 @partial(vmap_1d, variables=("conditional_continuous_action_argmax", "discrete_argmax"))
-def get_continuous_argmax_given_discrete(
+def _pick_optimal_continuous_actions(
     conditional_continuous_action_argmax: Array,
     discrete_argmax: Array,
     discrete_actions_grid_shape: tuple[int, ...],
 ) -> Array:
-    """Select optimal continuous action index given optimal discrete action.
+    """Pick the optimal continuous action index given index of optimal discrete action.
 
     Args:
         conditional_continuous_action_argmax: Index array of optimal continous actions
@@ -240,7 +236,42 @@ def get_continuous_argmax_given_discrete(
     return conditional_continuous_action_argmax[indices]
 
 
-def get_values_from_indices(
+def _lookup_actions_from_indices(
+    indices_optimal_discrete_actions: Array,
+    indices_optimal_continuous_actions: Array,
+    discrete_actions_grid_shape: tuple[int, ...],
+    continuous_actions_grid_shape: tuple[int, ...],
+    state_action_space: StateActionSpace,
+) -> dict[str, Array]:
+    """Lookup optimal actions from indices.
+
+    Args:
+        indices_optimal_discrete_actions: Indices of optimal discrete actions.
+        indices_optimal_continuous_actions: Indices of optimal continuous actions.
+        discrete_actions_grid_shape: Shape of the discrete actions grid.
+        continuous_actions_grid_shape: Shape of the continuous actions grid.
+        state_action_space: StateActionSpace instance.
+
+    Returns:
+        Dictionary of optimal actions.
+
+    """
+    optimal_discrete_actions = _lookup_values_from_indices(
+        flat_indices=indices_optimal_discrete_actions,
+        grids=state_action_space.discrete_actions,
+        grids_shapes=discrete_actions_grid_shape,
+    )
+
+    optimal_continuous_actions = _lookup_values_from_indices(
+        flat_indices=indices_optimal_continuous_actions,
+        grids=state_action_space.continuous_actions,
+        grids_shapes=continuous_actions_grid_shape,
+    )
+
+    return optimal_discrete_actions | optimal_continuous_actions
+
+
+def _lookup_values_from_indices(
     flat_indices: Array,
     grids: dict[str, Array],
     grids_shapes: tuple[int, ...],

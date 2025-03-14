@@ -29,8 +29,8 @@ def get_max_Qc_over_d(
     with $g(u, v) = u + \beta \cdot v$ as the leading case (which is the only one that
     is pre-implemented in LCM).
 
-    Fixing a state and discrete action, maximizing over the continuous actions, we get
-    the $Q^c$ function:
+    Fixing a state and discrete action, maximizing over the feasible continuous actions,
+    we get the $Q^c$ function:
 
     ```{math}
     Q^{c}(x, a^d) = \max_{a^c} Q(x, a^d, a^c).
@@ -42,7 +42,7 @@ def get_max_Qc_over_d(
     V(x) = \max_{a^d} Q^{c}(x, a^d).
     ```
 
-    The last step is handled by the function returned here.
+    This last step is handled by the function returned here.
 
     Args:
         random_utility_shock_type: Type of action shock. Currently only Shock.NONE is
@@ -51,9 +51,9 @@ def get_max_Qc_over_d(
         is_last_period: Whether the function is created for the last period.
 
     Returns:
-        Function that returns the arguments that maximize the Qc-function over the
-        discrete actions. The arg-maximum corresponds to the policy function of the
-        discrete actions.
+        Function that returns the argument that maximize the Qc-function over the
+        discrete actions. The maximizing argument corresponds to the policy function of
+        the discrete actions.
 
     """
     if is_last_period:
@@ -85,8 +85,8 @@ def get_argmax_and_max_Qc_over_d(
     with $g(u, v) = u + \beta \cdot v$ as the leading case (which is the only one that
     is pre-implemented in LCM).
 
-    Fixing a state and discrete action, maximizing over the continuous actions, we get
-    the $Q^c$ function:
+    Fixing a state and discrete action, maximizing over the feasible continuous actions,
+    we get the $Q^c$ function:
 
     ```{math}
     Q^{c}(x, a^d) = \max_{a^c} Q(x, a^d, a^c).
@@ -99,16 +99,15 @@ def get_argmax_and_max_Qc_over_d(
     \pi^{d}(x) = \argmax_{a^d} Q^{c}(x, a^d).
     ```
 
-    The last step is handled by the function returned here.
+    This last step is handled by the function returned here.
 
     Args:
         variable_info: DataFrame with information about the variables.
 
     Returns:
         Function that returns the arguments that maximize the Qc-function over the
-        discrete actions as well as the maximum. The arg-maximum corresponds to the
-        policy function of the discrete actions. The maximum corresponds to the value
-        function.
+        discrete actions and the maximum itself, i.e., policy function of the discrete
+        actions. The maximum corresponds to the value function.
 
     """
     discrete_action_axes = _determine_discrete_action_axes_simulation(variable_info)

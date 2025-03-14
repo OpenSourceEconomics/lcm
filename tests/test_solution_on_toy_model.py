@@ -91,7 +91,7 @@ def value_second_period_deterministic(wealth):
 def policy_second_period_deterministic(wealth):
     """Policy function in the second (last) period. Computed using pen and paper.
 
-    First column corresponds to consumption action, second to working action.
+    First column corresponds to consumption choice, second to working choice.
 
     """
     policy = np.column_stack(
@@ -200,7 +200,7 @@ def value_second_period_stochastic(wealth, health):
 def policy_second_period_stochastic(wealth, health):
     """Policy function in the second (last) period. Computed using pen and paper.
 
-    First column corresponds to consumption action, second to working action.
+    First column corresponds to consumption choice, second to working choice.
 
     """
     policy = np.column_stack(

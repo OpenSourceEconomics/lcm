@@ -193,16 +193,16 @@ extend-ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"docs/source/conf.py" = ["E501", "ERA001", "DTZ005"]
-"tests/*" = ["PLR2004", "D101"]
-"examples/*" = ["INP001", "D101"]
-"src/lcm/max_Qc_over_d.py" = ["N999"]
+"**/*.ipynb" = ["D101", "E402", "FBT003"]
+"examples/*" = ["D101", "INP001"]
+"explanations/*" = ["B018", "E402", "INP001", "PD008", "T201"]
+"src/lcm/Q_and_F.py" = ["N999"]
 "src/lcm/max_Q_over_c.py" = ["N999"]
+"src/lcm/max_Qc_over_d.py" = ["N999"]
+"src/lcm/ndimage.py" = ["A002"]
+"tests/*" = ["D101", "PLR2004"]
+"tests/test_Q_and_F.py" = ["N999"]
 "tests/test_max_Qc_over_d.py" = ["N999"]
-"explanations/*" = ["INP001", "B018", "T201", "E402", "PD008"]
-"scripts/*" = ["INP001", "D101", "RET503"]
-"**/*.ipynb" = ["FBT003", "E402", "D101"]
-"src/lcm/ndimage.py" = ["A002"]  # Argument `input` is shadowing a Python builtin
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"

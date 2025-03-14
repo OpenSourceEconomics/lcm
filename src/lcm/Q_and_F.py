@@ -252,7 +252,7 @@ def _get_U_and_F(model: InternalModel) -> Callable[..., tuple[Scalar, Scalar]]:
 
     Note:
     -----
-    U may depend on all kinds of other functions (taxes, transfers, ...), which will
+    U may depend on all kinds of other functions (taxes, transfers, ...), which will be
     executed if they matter for the value of U.
 
     Args:
