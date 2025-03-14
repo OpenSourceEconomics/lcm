@@ -52,7 +52,6 @@ def simulate_inputs():
             model=model,
             next_state_space_info=state_space_info,
             period=period,
-            is_last_period=True,
         )
         argmax_Q_over_c = get_argmax_Q_over_c(
             Q_and_F=Q_and_F,

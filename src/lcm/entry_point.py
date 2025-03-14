@@ -26,7 +26,7 @@ from lcm.state_action_space import (
 )
 from lcm.typing import (
     ArgmaxQOverCFunction,
-    MaxQcFunction,
+    MaxQcOverDFunction,
     MaxQOverCFunction,
     ParamsDict,
     Target,
@@ -81,7 +81,7 @@ def get_lcm_function(
     state_space_infos: dict[int, StateSpaceInfo] = {}
     max_Q_over_c_functions: dict[int, MaxQOverCFunction] = {}
     argmax_Q_over_c_functions: dict[int, ArgmaxQOverCFunction] = {}
-    max_Qc_over_d_functions: dict[int, MaxQcFunction] = {}
+    max_Qc_over_d_functions: dict[int, MaxQcOverDFunction] = {}
 
     for period in reversed(range(internal_model.n_periods)):
         is_last_period = period == last_period
@@ -105,7 +105,6 @@ def get_lcm_function(
             model=internal_model,
             next_state_space_info=next_state_space_info,
             period=period,
-            is_last_period=is_last_period,
         )
 
         max_Q_over_c = get_max_Q_over_c(

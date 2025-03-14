@@ -41,7 +41,6 @@ def test_get_Q_and_F_function():
         model=model,
         next_state_space_info=state_space_info,
         period=model.n_periods - 1,
-        is_last_period=True,
     )
 
     consumption = jnp.array([10, 20, 30])

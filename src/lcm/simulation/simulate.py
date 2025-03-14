@@ -68,7 +68,7 @@ def simulate(
         params: Dict of model parameters.
         initial_states: List of initial states to start from. Typically from the
             observed dataset.
-        argmax_Q_over_c_functions: Dict of fucntions length n_periods. Each function
+        argmax_Q_over_c_functions: Dict of functions of length n_periods. Each function
             calculates the arg-maximum of the Q-function over the continuous actions.
         next_state: Function that returns the next state given the current
             state and action variables. For stochastic variables, it returns a random
@@ -123,14 +123,14 @@ def simulate(
         # Compute optimal continuous action conditional on discrete actions
         # ------------------------------------------------------------------------------
         # We need to pass the value function array of tomorrow to the argmax_Q_over_c
-        # function, as todays Q-function requires tomorrows value funciton. If we are at
-        # the last period, we pass an empty array.
+        # function, as the current Q-function requires the next periods's value
+        # funciton. If we are at the last period, we pass an empty array.
         next_period_vf_arr = vf_arr_dict.get(period + 1, jnp.empty(0))
 
         argmax_Q_over_c = simulation_spacemap(
             argmax_Q_over_c_functions[period],
-            actions_var_names=tuple(state_action_space.discrete_actions),
-            states_var_names=tuple(state_action_space.states),
+            actions_names=tuple(state_action_space.discrete_actions),
+            states_names=tuple(state_action_space.states),
         )
 
         # Returns the optimal continuous action index conditional on the discrete
@@ -146,7 +146,7 @@ def simulate(
         # Get optimal discrete action given the optimal continuous actions, conditional
         # on the discrete actions
         # ------------------------------------------------------------------------------
-        discrete_argmax, value = argmax_Qc_over_d(Qc_values, params=params)
+        discrete_argmax, values = argmax_Qc_over_d(Qc_values, params=params)
 
         # Get optimal continuous action index given optimal discrete action
         # ------------------------------------------------------------------------------
@@ -175,7 +175,7 @@ def simulate(
         actions = discrete_actions | continuous_actions
 
         simulation_results[period] = InternalSimulationPeriodResults(
-            value=value,
+            value=values,
             actions=actions,
             states=states,
         )

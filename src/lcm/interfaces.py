@@ -1,6 +1,5 @@
-import dataclasses as dc
+import dataclasses
 from collections.abc import Mapping
-from dataclasses import dataclass
 
 import pandas as pd
 from jax import Array
@@ -10,7 +9,7 @@ from lcm.typing import InternalUserFunction, ParamsDict, ShockType
 from lcm.utils import first_non_none
 
 
-@dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class StateActionSpace:
     """The state-action space.
 
@@ -25,6 +24,8 @@ class StateActionSpace:
 
     The state-action space becomes the product of state-combinations with the full
     Cartesian product of the action variables.
+
+    In both cases, infeasible state-action combinations will be masked.
 
     Note:
     -----
@@ -69,7 +70,7 @@ class StateActionSpace:
         states = first_non_none(states, self.states)
         discrete_actions = first_non_none(discrete_actions, self.discrete_actions)
         continuous_actions = first_non_none(continuous_actions, self.continuous_actions)
-        return dc.replace(
+        return dataclasses.replace(
             self,
             states=states,
             discrete_actions=discrete_actions,
@@ -77,7 +78,7 @@ class StateActionSpace:
         )
 
 
-@dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class StateSpaceInfo:
     """Information to work with the output of a function evaluated on a state space.
 
@@ -96,7 +97,7 @@ class StateSpaceInfo:
     continuous_states: Mapping[str, ContinuousGrid]
 
 
-@dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class InternalModel:
     """Internal representation of a user model.
 
@@ -137,7 +138,7 @@ class InternalModel:
     random_utility_shocks: ShockType
 
 
-@dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class InternalSimulationPeriodResults:
     """The results of a simulation for one period."""
 

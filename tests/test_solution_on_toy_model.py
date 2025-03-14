@@ -19,7 +19,7 @@ from lcm.entry_point import get_lcm_function
 # Model specification
 # ======================================================================================
 @dataclass
-class ConsumptionAction:
+class ConsumptionChoice:
     low: int = 0
     high: int = 1
 
@@ -56,7 +56,7 @@ DETERMINISTIC_MODEL = Model(
     },
     n_periods=2,
     actions={
-        "consumption": DiscreteGrid(ConsumptionAction),
+        "consumption": DiscreteGrid(ConsumptionChoice),
         "working": DiscreteGrid(WorkingStatus),
     },
     states={

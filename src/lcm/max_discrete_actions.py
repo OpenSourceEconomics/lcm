@@ -6,8 +6,8 @@ from jax import Array
 
 from lcm.argmax import argmax
 from lcm.typing import (
-    ArgmaxQcFunction,
-    MaxQcFunction,
+    ArgmaxQcOverDFunction,
+    MaxQcOverDFunction,
     ParamsDict,
     ShockType,
 )
@@ -18,7 +18,7 @@ def get_max_Qc_over_d(
     random_utility_shock_type: ShockType,
     variable_info: pd.DataFrame,
     is_last_period: bool,
-) -> MaxQcFunction:
+) -> MaxQcOverDFunction:
     r"""Get function that maximizes the Qc-function over discrete actions.
 
     The state-action value function $Q$ is defined as:
@@ -51,8 +51,9 @@ def get_max_Qc_over_d(
         is_last_period: Whether the function is created for the last period.
 
     Returns:
-        Function that calculates the (expected) maximum of the Qc-function over the
-        discrete actions. The result corresponds to the value function array.
+        Function that returns the arguments that maximize the Qc-function over the
+        discrete actions. The arg-maximum corresponds to the policy function of the
+        discrete actions.
 
     """
     if is_last_period:
@@ -73,7 +74,7 @@ def get_max_Qc_over_d(
 def get_argmax_Qc_over_d(
     *,
     variable_info: pd.DataFrame,
-) -> ArgmaxQcFunction:
+) -> ArgmaxQcOverDFunction:
     r"""Get function that arg-maximizes the Qc-function over discrete actions.
 
     The state-action value function $Q$ is defined as:
@@ -104,9 +105,10 @@ def get_argmax_Qc_over_d(
         variable_info: DataFrame with information about the variables.
 
     Returns:
-        Function that calculates the (expected) arg-maximum of the Qc-function over the
-        discrete actions. The arg-maximum corresponds to the policy function of the
-        discrete actions.
+        Function that returns the arguments that maximize the Qc-function over the
+        discrete actions as well as the maximum. The arg-maximum corresponds to the
+        policy function of the discrete actions. The maximum corresponds to the value
+        function.
 
     """
     discrete_action_axes = _determine_discrete_action_axes_simulation(variable_info)

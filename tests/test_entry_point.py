@@ -13,7 +13,7 @@ from lcm.state_action_space import create_state_space_info
 from tests.test_models import get_model_config
 from tests.test_models.deterministic import RetirementStatus
 from tests.test_models.deterministic import utility as iskhakov_et_al_2017_utility
-from tests.test_models.discrete_deterministic import ConsumptionAction
+from tests.test_models.discrete_deterministic import ConsumptionChoice
 
 # ======================================================================================
 # Test cases
@@ -191,7 +191,6 @@ def test_get_max_Q_over_c():
         model=model,
         next_state_space_info=state_space_info,
         period=model.n_periods - 1,
-        is_last_period=True,
     )
 
     max_Q_over_c = get_max_Q_over_c(
@@ -237,7 +236,6 @@ def test_get_max_Q_over_c_with_discrete_model():
         model=model,
         next_state_space_info=state_space_info,
         period=model.n_periods - 1,
-        is_last_period=True,
     )
 
     max_Q_over_c = get_max_Q_over_c(
@@ -247,7 +245,7 @@ def test_get_max_Q_over_c_with_discrete_model():
     )
 
     val = max_Q_over_c(
-        consumption=jnp.array([ConsumptionAction.low, ConsumptionAction.high]),
+        consumption=jnp.array([ConsumptionChoice.low, ConsumptionChoice.high]),
         retirement=RetirementStatus.retired,
         wealth=2,
         params=params,
@@ -288,7 +286,6 @@ def test_argmax_Q_over_c():
         model=model,
         next_state_space_info=state_space_info,
         period=model.n_periods - 1,
-        is_last_period=True,
     )
 
     argmax_Q_over_c = get_argmax_Q_over_c(
@@ -334,7 +331,6 @@ def test_argmax_Q_over_c_with_discrete_model():
         model=model,
         next_state_space_info=state_space_info,
         period=model.n_periods - 1,
-        is_last_period=True,
     )
 
     argmax_Q_over_c = get_argmax_Q_over_c(
@@ -343,7 +339,7 @@ def test_argmax_Q_over_c_with_discrete_model():
     )
 
     _argmax, _max = argmax_Q_over_c(
-        consumption=jnp.array([ConsumptionAction.low, ConsumptionAction.high]),
+        consumption=jnp.array([ConsumptionChoice.low, ConsumptionChoice.high]),
         retirement=RetirementStatus.retired,
         wealth=2,
         params=params,

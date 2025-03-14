@@ -18,22 +18,21 @@ def get_Q_and_F(
     model: InternalModel,
     next_state_space_info: StateSpaceInfo,
     period: int,
-    *,
-    is_last_period: bool,
 ) -> Callable[..., tuple[Array, Array]]:
     """Get the state-action (Q) and feasibility (F) function for a given period.
 
     Args:
         model: The internal model object.
         next_state_space_info: The state space information of the next period.
-        period: Period to create the state-action value and feasibility function for.
-        is_last_period: Whether the period is the last period.
+        period: The current period.
 
     Returns:
-        A function that computes the state-action value (Q) and the feasibility (F)
+        A function that computes the state-action values (Q) and the feasibilities (F)
         for the given period.
 
     """
+    is_last_period = period == model.n_periods - 1
+
     if is_last_period:
         Q_and_F = get_Q_and_F_terminal(model, period=period)
     else:
@@ -54,10 +53,10 @@ def get_Q_and_F_non_terminal(
     Args:
         model: The internal model object.
         next_state_space_info: The state space information of the next period.
-        period: Period to create the state-action value and feasibility function for.
+        period: The current period.
 
     Returns:
-        A function that computes the state-action value (Q) and the feasibility (F)
+        A function that computes the state-action values (Q) and the feasibilities (F)
         for a non-terminal period.
 
     """
@@ -97,12 +96,11 @@ def get_Q_and_F_non_terminal(
 
         Args:
             params: The parameters.
-            vf_arr: The value function array.
-            **states_and_actions: Todays states and actions.
+            vf_arr: The next period's value function array.
+            **states_and_actions: The current states and actions.
 
         Returns:
-            A tuple containing the state-action value and feasibility for the given
-            non-terminal period.
+            A tuple containing the arrays with state-action values and feasibilities.
 
         """
         # ------------------------------------------------------------------------------
@@ -153,15 +151,12 @@ def get_Q_and_F_terminal(
 ) -> Callable[..., tuple[Array, Array]]:
     """Get the state-action (Q) and feasibility (F) function for the terminal period.
 
-    Currently, bequest is not implemented. Therefore, the state-action value equals
-    the instantaneous utility.
-
     Args:
         model: The internal model object.
-        period: Period to create the state-action value and feasibility function for.
+        period: The current period.
 
     Returns:
-        A function that computes the state-action value (Q) and the feasibility (F)
+        A function that computes the state-action values (Q) and the feasibilities (F)
         for the terminal period.
 
     """
@@ -182,19 +177,15 @@ def get_Q_and_F_terminal(
         vf_arr: Array,  # noqa: ARG001
         **states_and_actions: Scalar,
     ) -> tuple[Scalar, Scalar]:
-        """Calculate the state-action value and feasibility for the terminal period.
-
-        Currently, bequest is not implemented. Therefore, the state-action value
-        equals the instantaneous utility.
+        """Calculate the state-action values and feasibilities for the terminal period.
 
         Args:
             params: The parameters.
-            vf_arr: The value function array. Unused in the terminal period.
-            **states_and_actions: Todays states and actions.
+            vf_arr: The next period's value function array (unused here).
+            **states_and_actions: The current states and actions.
 
         Returns:
-            A tuple containing the state-action value and feasibility for the given
-            terminal period.
+            A tuple containing the arrays with state-action values and feasibilities.
 
         """
         return U_and_F(
@@ -224,7 +215,8 @@ def _get_arg_names_of_Q_and_F(
         exclude: Set of argument names to exclude.
 
     Returns:
-        The union of the argument names of the deps plus includes minus excludes.
+        The union of the argument names in deps and include, except for those in
+        exclude.
 
     """
     deps_arg_names = get_union_of_arguments(deps)
@@ -258,6 +250,11 @@ def _get_node_weights_function(stochastic_variables: list[str]) -> Callable[...,
 def _get_U_and_F(model: InternalModel) -> Callable[..., tuple[Scalar, Scalar]]:
     """Get the instantaneous utility and feasibility function.
 
+    Note:
+    -----
+    U may depend on all kinds of other functions (taxes, transfers, ...), which will
+    executed if they matter for the value of U.
+
     Args:
         model: The internal model object.
 
@@ -283,12 +280,12 @@ def _get_feasibility(model: InternalModel) -> InternalUserFunction:
         The combined constraint function (feasibility).
 
     """
-    targets = model.function_info.query("is_constraint").index.tolist()
+    constraints = model.function_info.query("is_constraint").index.tolist()
 
-    if targets:
+    if constraints:
         combined_constraint = concatenate_functions(
             functions=model.functions,
-            targets=targets,
+            targets=constraints,
             aggregator=jnp.logical_and,
         )
     else:

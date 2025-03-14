@@ -259,7 +259,7 @@ def test_spacemap_all_arguments_mapped(
 def test_spacemap_arguments_overlap(error_msg, product_vars, combination_vars):
     with pytest.raises(ValueError, match=error_msg):
         simulation_spacemap(
-            g, actions_var_names=product_vars, states_var_names=combination_vars
+            g, actions_names=product_vars, states_names=combination_vars
         )
 
 

@@ -42,8 +42,8 @@ def get_max_Q_over_c(
             names.
 
     Returns:
-        Function that calculates the maximum of the Q-function over the continuous
-        actions. The result corresponds to the Qc-function.
+        Function that calculates the maximum of the Q-function over the feasible
+        continuous actions. The result corresponds to the Qc-function.
 
     """
     if continuous_actions_names:
@@ -64,7 +64,7 @@ def get_argmax_Q_over_c(
     Q_and_F: Callable[..., tuple[Array, Array]],
     continuous_actions_names: tuple[str, ...],
 ) -> ArgmaxQOverCFunction:
-    r"""Get function that arg-maximizes the Q-function over continuous actions.
+    r"""Get the function returning the arguments maximizing Q over continuous actions.
 
     The state-action value function $Q$ is defined as:
 
@@ -90,8 +90,10 @@ def get_argmax_Q_over_c(
         continuous_actions_names: Tuple of action variable names that are continuous.
 
     Returns:
-        Function that calculates the arg-maximum of the Q-function over the continuous
-        actions. The result corresponds to the Qc-function.
+        Function that calculates the arg-maximum of the Q-function over the feasible
+        continuous actions as well as the maximum. The arg-maximum corresponds to the
+        policy function of the continuous actions, conditional on the discrete states.
+        The maximum corresponds to the Qc-function.
 
     """
     if continuous_actions_names:

@@ -58,9 +58,9 @@ def argmax(
     max_value_mask = a == _max
     if where is not None:
         max_value_mask = jnp.logical_and(max_value_mask, where)
-    argmax = jnp.argmax(max_value_mask, axis=-1)
+    _argmax = jnp.argmax(max_value_mask, axis=-1)
 
-    return argmax, _max.reshape(argmax.shape)
+    return _argmax, _max.reshape(_argmax.shape)
 
 
 def _move_axes_to_back(a: Array, axes: tuple[int, ...]) -> Array:

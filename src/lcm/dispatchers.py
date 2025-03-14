@@ -14,8 +14,8 @@ FunctionWithArrayReturn = TypeVar(
 
 def simulation_spacemap(
     func: FunctionWithArrayReturn,
-    actions_var_names: tuple[str, ...],
-    states_var_names: tuple[str, ...],
+    actions_names: tuple[str, ...],
+    states_names: tuple[str, ...],
 ) -> FunctionWithArrayReturn:
     """Apply vmap such that func can be evaluated on actions and simulation states.
 
@@ -33,24 +33,21 @@ def simulation_spacemap(
 
     Args:
         func: The function to be dispatched.
-        actions_var_names: Names of the action variables, i.e. those that are stored as
-            arrays of possible values in the grid, over which we create a Cartesian
-            product.
-        states_var_names: Names of the state variables, i.e. those that are stored as
-            arrays of possible states.
+        actions_names: Names of the action variables.
+        states_names: Names of the state variables.
 
     Returns:
         A callable with the same arguments as func (but with an additional leading
         dimension) that returns an Array or pytree of Arrays. If `func` returns a
         scalar, the dispatched function returns an Array with k + 1 dimensions, where k
-        is the length of `actions_var_names` and the additional dimension corresponds to
-        the `states_var_names`. The order of the dimensions is determined by the order
-        of `actions_var_names`. If the output of `func` is a jax pytree, the usual jax
-        behavior applies, i.e. the leading dimensions of all arrays in the pytree are as
+        is the length of `actions_names` and the additional dimension corresponds to the
+        `states_names`. The order of the dimensions is determined by the order of
+        `actions_names`. If the output of `func` is a jax pytree, the usual jax behavior
+        applies, i.e. the leading dimensions of all arrays in the pytree are as
         described above but there might be additional dimensions.
 
     """
-    if duplicates := find_duplicates(actions_var_names, states_var_names):
+    if duplicates := find_duplicates(actions_names, states_names):
         msg = (
             "Same argument provided more than once in actions or states variables, "
             f"or is present in both: {duplicates}"
@@ -59,8 +56,8 @@ def simulation_spacemap(
 
     mappable_func = allow_args(func)
 
-    vmapped = _base_productmap(mappable_func, actions_var_names)
-    vmapped = vmap_1d(vmapped, variables=states_var_names, callable_with="only_args")
+    vmapped = _base_productmap(mappable_func, actions_names)
+    vmapped = vmap_1d(vmapped, variables=states_names, callable_with="only_args")
 
     # This raises a mypy error but is perfectly fine to do. See
     # https://github.com/python/mypy/issues/12472
