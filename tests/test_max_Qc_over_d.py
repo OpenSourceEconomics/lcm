@@ -34,7 +34,7 @@ def test_get_solve_discrete_problem_illustrative():
         is_last_period=False,
     )
 
-    Qc_values = jnp.array(
+    Qc_arr = jnp.array(
         [
             [0, 1],
             [2, 3],
@@ -42,13 +42,13 @@ def test_get_solve_discrete_problem_illustrative():
         ],
     )
 
-    got = max_Qc_over_d(Qc_values, params={})
+    got = max_Qc_over_d(Qc_arr, params={})
     aaae(got, jnp.array([1, 3, 5]))
 
 
 @pytest.mark.illustrative
 def test_solve_discrete_problem_no_shocks_illustrative_single_action_axis():
-    Qc_values = jnp.array(
+    Qc_arr = jnp.array(
         [
             [0, 1],
             [2, 3],
@@ -56,7 +56,7 @@ def test_solve_discrete_problem_no_shocks_illustrative_single_action_axis():
         ],
     )
     got = _max_Qc_over_d_no_shocks(
-        Qc_values,
+        Qc_arr,
         discrete_action_axes=(0,),
         params={},
     )
@@ -65,7 +65,7 @@ def test_solve_discrete_problem_no_shocks_illustrative_single_action_axis():
 
 @pytest.mark.illustrative
 def test_solve_discrete_problem_no_shocks_illustrative_multiple_action_axes():
-    Qc_values = jnp.array(
+    Qc_arr = jnp.array(
         [
             [0, 1],
             [2, 3],
@@ -73,7 +73,7 @@ def test_solve_discrete_problem_no_shocks_illustrative_multiple_action_axes():
         ],
     )
     got = _max_Qc_over_d_no_shocks(
-        Qc_values,
+        Qc_arr,
         discrete_action_axes=(0, 1),
         params={},
     )
@@ -82,7 +82,7 @@ def test_solve_discrete_problem_no_shocks_illustrative_multiple_action_axes():
 
 @pytest.mark.illustrative
 def test_max_Qc_over_d_extreme_value_shocks_illustrative_single_action_axis():
-    Qc_values = jnp.array(
+    Qc_arr = jnp.array(
         [
             [0, 1],
             [2, 3],
@@ -91,7 +91,7 @@ def test_max_Qc_over_d_extreme_value_shocks_illustrative_single_action_axis():
     )
 
     got = _max_Qc_over_d_extreme_value_shocks(
-        Qc_values,
+        Qc_arr,
         discrete_action_axes=(0,),
         params={"additive_utility_shock": {"scale": 0.1}},
     )
@@ -100,7 +100,7 @@ def test_max_Qc_over_d_extreme_value_shocks_illustrative_single_action_axis():
 
 @pytest.mark.illustrative
 def test_max_Qc_over_d_extreme_value_shocks_illustrative_multiple_action_axes():
-    Qc_values = jnp.array(
+    Qc_arr = jnp.array(
         [
             [0, 1],
             [2, 3],
@@ -108,7 +108,7 @@ def test_max_Qc_over_d_extreme_value_shocks_illustrative_multiple_action_axes():
         ],
     )
     got = _max_Qc_over_d_extreme_value_shocks(
-        Qc_values,
+        Qc_arr,
         discrete_action_axes=(0, 1),
         params={"additive_utility_shock": {"scale": 0.1}},
     )

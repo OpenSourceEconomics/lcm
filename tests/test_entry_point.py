@@ -103,14 +103,14 @@ def test_get_lcm_function_with_simulation_is_coherent(model):
     # solve
     solve_model, params_template = get_lcm_function(model=model, targets="solve")
     params = tree_map(lambda _: 0.2, params_template)
-    vf_arr_dict = solve_model(params)
+    V_arr_dict = solve_model(params)
 
     # simulate using solution
     simulate_model, _ = get_lcm_function(model=model, targets="simulate")
 
     solve_then_simulate = simulate_model(
         params,
-        vf_arr_dict=vf_arr_dict,
+        V_arr_dict=V_arr_dict,
         initial_states={
             "wealth": jnp.array([0.0, 10.0, 50.0]),
         },
@@ -142,14 +142,14 @@ def test_get_lcm_function_with_simulation_target_iskhakov_et_al_2017(model):
     # solve model
     solve_model, params_template = get_lcm_function(model=model, targets="solve")
     params = tree_map(lambda _: 0.2, params_template)
-    vf_arr_dict = solve_model(params)
+    V_arr_dict = solve_model(params)
 
     # simulate using solution
     simulate_model, _ = get_lcm_function(model=model, targets="simulate")
 
     simulate_model(
         params,
-        vf_arr_dict=vf_arr_dict,
+        V_arr_dict=V_arr_dict,
         initial_states={
             "wealth": jnp.array([10.0, 10.0, 20.0]),
             "lagged_retirement": jnp.array(
@@ -204,7 +204,7 @@ def test_get_max_Q_over_c():
         retirement=RetirementStatus.retired,
         wealth=30,
         params=params,
-        vf_arr=jnp.empty(0),
+        next_V_arr=jnp.empty(0),
     )
     assert val == iskhakov_et_al_2017_utility(
         consumption=30.0,
@@ -249,7 +249,7 @@ def test_get_max_Q_over_c_with_discrete_model():
         retirement=RetirementStatus.retired,
         wealth=2,
         params=params,
-        vf_arr=jnp.empty(0),
+        next_V_arr=jnp.empty(0),
     )
     assert val == iskhakov_et_al_2017_utility(
         consumption=2,
@@ -298,7 +298,7 @@ def test_argmax_and_max_Q_over_c():
         retirement=RetirementStatus.retired,
         wealth=30,
         params=params,
-        vf_arr=jnp.empty(0),
+        next_V_arr=jnp.empty(0),
     )
     assert policy == 2
     assert val == iskhakov_et_al_2017_utility(
@@ -343,7 +343,7 @@ def test_argmax_and_max_Q_over_c_with_discrete_model():
         retirement=RetirementStatus.retired,
         wealth=2,
         params=params,
-        vf_arr=jnp.empty(0),
+        next_V_arr=jnp.empty(0),
     )
     assert _argmax == 1
     assert _max == iskhakov_et_al_2017_utility(

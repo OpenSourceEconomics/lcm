@@ -27,5 +27,5 @@ from long_running import MODEL_CONFIG, PARAMS
 
 
 solve_model, _ = get_lcm_function(model=MODEL_CONFIG, targets="solve")
-vf_arr = solve_model(PARAMS)
+V_arr_list = solve_model(PARAMS)
 ```

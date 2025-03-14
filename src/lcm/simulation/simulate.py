@@ -37,7 +37,7 @@ def solve_and_simulate(
     Same docstring as `simulate` mutatis mutandis.
 
     """
-    vf_arr_dict = solve_model(params)
+    V_arr_dict = solve_model(params)
     return simulate(
         params=params,
         initial_states=initial_states,
@@ -45,7 +45,7 @@ def solve_and_simulate(
         model=model,
         next_state=next_state,
         logger=logger,
-        vf_arr_dict=vf_arr_dict,
+        V_arr_dict=V_arr_dict,
         additional_targets=additional_targets,
         seed=seed,
     )
@@ -58,7 +58,7 @@ def simulate(
     model: InternalModel,
     next_state: Callable[..., dict[str, Array]],
     logger: logging.Logger,
-    vf_arr_dict: dict[int, Array],
+    V_arr_dict: dict[int, Array],
     *,
     additional_targets: list[str] | None = None,
     seed: int | None = None,
@@ -76,7 +76,7 @@ def simulate(
             draw from the distribution of the next state.
         model: Model instance.
         logger: Logger that logs to stdout.
-        vf_arr_dict: Dict of value function arrays of length n_periods.
+        V_arr_dict: Dict of value function arrays of length n_periods.
         additional_targets: List of targets to compute. If provided, the targets
             are computed and added to the simulation results.
         seed: Random number seed; will be passed to `jax.random.key`. If not provided,
@@ -93,7 +93,7 @@ def simulate(
 
     # Preparations
     # ----------------------------------------------------------------------------------
-    n_periods = len(vf_arr_dict)
+    n_periods = len(V_arr_dict)
     n_initial_states = len(next(iter(initial_states.values())))
 
     state_action_space = create_state_action_space(
@@ -128,7 +128,7 @@ def simulate(
         # We need to pass the value function array of the next period to the
         # argmax_and_max_Q_over_c function, as the current Q-function requires the next
         # periods's value funciton. In the last period, we pass an empty array.
-        next_period_vf_arr = vf_arr_dict.get(period + 1, jnp.empty(0))
+        next_V_arr = V_arr_dict.get(period + 1, jnp.empty(0))
 
         argmax_and_max_Q_over_c = simulation_spacemap(
             argmax_and_max_Q_over_c_functions[period],
@@ -138,11 +138,11 @@ def simulate(
 
         # Returns the optimal continuous action index conditional on the states and
         # discrete actions, as well as the maximum value.
-        indices_argmax_Q_over_c, Qc_values = argmax_and_max_Q_over_c(
+        indices_argmax_Q_over_c, Qc_arr = argmax_and_max_Q_over_c(
             **state_action_space.states,
             **state_action_space.discrete_actions,
             **state_action_space.continuous_actions,
-            vf_arr=next_period_vf_arr,
+            next_V_arr=next_V_arr,
             params=params,
         )
 
@@ -151,8 +151,8 @@ def simulate(
         # actions are taken. To find the optimal discrete action, we therefore only need
         # to maximize the Qc-function values over the discrete actions.
         # ------------------------------------------------------------------------------
-        indices_optimal_discrete_actions, V = argmax_and_max_Qc_over_d(
-            Qc_values, params=params
+        indices_optimal_discrete_actions, V_arr = argmax_and_max_Qc_over_d(
+            Qc_arr, params=params
         )
 
         # Pick the continuous actions index from the above set given the optimal
@@ -177,7 +177,7 @@ def simulate(
         # Store results
         # ------------------------------------------------------------------------------
         simulation_results[period] = InternalSimulationPeriodResults(
-            value=V,
+            value=V_arr,
             actions=optimal_actions,
             states=states,
         )

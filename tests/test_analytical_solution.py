@@ -68,10 +68,10 @@ def test_analytical_solution(model_name, model_and_params):
     # ==================================================================================
     solve_model, _ = get_lcm_function(model=model_and_params["model"], targets="solve")
 
-    vf_arr_dict: dict[int, Array] = solve_model(params=model_and_params["params"])  # type: ignore[assignment]
-    vf_arr_list = list(dict(sorted(vf_arr_dict.items(), key=lambda x: x[0])).values())
+    V_arr_dict: dict[int, Array] = solve_model(params=model_and_params["params"])  # type: ignore[assignment]
+    V_arr_list = list(dict(sorted(V_arr_dict.items(), key=lambda x: x[0])).values())
 
-    _numerical = np.stack(vf_arr_list)
+    _numerical = np.stack(V_arr_list)
     numerical = {
         "worker": _numerical[:, 0, :],
         "retired": _numerical[:, 1, :],

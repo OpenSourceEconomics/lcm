@@ -129,20 +129,20 @@ def policy_first_period_deterministic(wealth, params):
 
 
 def analytical_solve_deterministic(wealth_grid, params):
-    vf_arr_0 = value_first_period_deterministic(wealth_grid, params=params)
-    vf_arr_1 = value_second_period_deterministic(wealth_grid)
-    return [vf_arr_0, vf_arr_1]
+    V_arr_0 = value_first_period_deterministic(wealth_grid, params=params)
+    V_arr_1 = value_second_period_deterministic(wealth_grid)
+    return [V_arr_0, V_arr_1]
 
 
 def analytical_simulate_deterministic(initial_wealth, params):
     # Simulate
     # ==================================================================================
-    vf_arr_0 = value_first_period_deterministic(initial_wealth, params=params)
+    V_arr_0 = value_first_period_deterministic(initial_wealth, params=params)
     policy_0 = policy_first_period_deterministic(initial_wealth, params=params)
 
     wealth_1 = next_wealth(initial_wealth, **policy_0)
 
-    vf_arr_1 = value_second_period_deterministic(wealth_1)
+    V_arr_1 = value_second_period_deterministic(wealth_1)
     policy_1 = policy_second_period_deterministic(wealth_1)
 
     policy_0_renamed = {f"{k}_0": v for k, v in policy_0.items()}
@@ -155,8 +155,8 @@ def analytical_simulate_deterministic(initial_wealth, params):
             "initial_state_id": jnp.arange(len(initial_wealth)),
             "wealth_0": initial_wealth,
             "wealth_1": wealth_1,
-            "value_0": vf_arr_0,
-            "value_1": vf_arr_1,
+            "value_0": V_arr_0,
+            "value_1": V_arr_1,
         }
         | policy_0_renamed
         | policy_1_renamed
@@ -262,19 +262,19 @@ def policy_first_period_stochastic(wealth, health, params):
 
 
 def analytical_solve_stochastic(wealth_grid, health_grid, params):
-    vf_arr_0 = value_first_period_stochastic(
+    V_arr_0 = value_first_period_stochastic(
         wealth=wealth_grid,
         health=health_grid,
         params=params,
     )
-    vf_arr_1 = value_second_period_stochastic(wealth=wealth_grid, health=health_grid)
-    return [vf_arr_0, vf_arr_1]
+    V_arr_1 = value_second_period_stochastic(wealth=wealth_grid, health=health_grid)
+    return [V_arr_0, V_arr_1]
 
 
 def analytical_simulate_stochastic(initial_wealth, initial_health, health_1, params):
     # Simulate
     # ==================================================================================
-    vf_arr_0 = value_first_period_stochastic(
+    V_arr_0 = value_first_period_stochastic(
         initial_wealth,
         initial_health,
         params=params,
@@ -287,7 +287,7 @@ def analytical_simulate_stochastic(initial_wealth, initial_health, health_1, par
 
     wealth_1 = next_wealth(initial_wealth, **policy_0)
 
-    vf_arr_1 = value_second_period_stochastic(wealth_1, health_1)
+    V_arr_1 = value_second_period_stochastic(wealth_1, health_1)
     policy_1 = policy_second_period_stochastic(wealth_1, health_1)
 
     policy_0_renamed = {f"{k}_0": v for k, v in policy_0.items()}
@@ -301,8 +301,8 @@ def analytical_simulate_stochastic(initial_wealth, initial_health, health_1, par
         "wealth_1": wealth_1,
         "health_0": initial_health,
         "health_1": health_1,
-        "value_0": vf_arr_0,
-        "value_1": vf_arr_1,
+        "value_0": V_arr_0,
+        "value_1": V_arr_1,
         **policy_0_renamed,
         **policy_1_renamed,
     }

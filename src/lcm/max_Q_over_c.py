@@ -53,9 +53,9 @@ def get_max_Q_over_c(
         )
 
     @functools.wraps(Q_and_F)
-    def max_Q_over_c(vf_arr: Array, params: ParamsDict, **kwargs: Scalar) -> Array:
-        u, f = Q_and_F(params=params, vf_arr=vf_arr, **kwargs)
-        return u.max(where=f, initial=-jnp.inf)
+    def max_Q_over_c(next_V_arr: Array, params: ParamsDict, **kwargs: Scalar) -> Array:
+        Q_arr, F_arr = Q_and_F(params=params, next_V_arr=next_V_arr, **kwargs)
+        return Q_arr.max(where=F_arr, initial=-jnp.inf)
 
     return productmap(max_Q_over_c, variables=states_and_discrete_actions_names)
 
@@ -104,9 +104,9 @@ def get_argmax_and_max_Q_over_c(
 
     @functools.wraps(Q_and_F)
     def argmax_and_max_Q_over_c(
-        vf_arr: Array, params: ParamsDict, **kwargs: Scalar
+        next_V_arr: Array, params: ParamsDict, **kwargs: Scalar
     ) -> tuple[Array, Array]:
-        u, f = Q_and_F(params=params, vf_arr=vf_arr, **kwargs)
-        return argmax_and_max(u, where=f, initial=-jnp.inf)
+        Q_arr, F_arr = Q_and_F(params=params, next_V_arr=next_V_arr, **kwargs)
+        return argmax_and_max(Q_arr, where=F_arr, initial=-jnp.inf)
 
     return argmax_and_max_Q_over_c

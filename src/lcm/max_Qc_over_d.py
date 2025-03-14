@@ -113,11 +113,11 @@ def get_argmax_and_max_Qc_over_d(
     discrete_action_axes = _determine_discrete_action_axes_simulation(variable_info)
 
     def argmax_and_max_Qc_over_d(
-        Qc_values: Array,
+        Qc_arr: Array,
         discrete_action_axes: tuple[int, ...],
         params: ParamsDict,  # noqa: ARG001
     ) -> tuple[Array, Array]:
-        return argmax_and_max(Qc_values, axis=discrete_action_axes)
+        return argmax_and_max(Qc_arr, axis=discrete_action_axes)
 
     return partial(argmax_and_max_Qc_over_d, discrete_action_axes=discrete_action_axes)
 
@@ -128,25 +128,25 @@ def get_argmax_and_max_Qc_over_d(
 
 
 def _max_Qc_over_d_no_shocks(
-    Qc_values: Array,
+    Qc_arr: Array,
     discrete_action_axes: tuple[int, ...],
     params: ParamsDict,  # noqa: ARG001
 ) -> Array:
     """Take the maximum of the Qc-function over the discrete actions.
 
     Args:
-        Qc_values: The maximum of the state-action value function (Q) over the
-            continuous actions, conditional on the discrete action. This has one axis
-            for each state and discrete action variable.
+        Qc_arr: The maximum of the state-action value function (Q) over the continuous
+            actions, conditional on the discrete action. This has one axis for each
+            state and discrete action variable.
         discrete_action_axes: Tuple of indices representing the axes in the value
             function that correspond to discrete actions.
         params: See `get_solve_discrete_problem`.
 
     Returns:
-        The maximum of Qc_values over the discrete action axes.
+        The maximum of Qc_arr over the discrete action axes.
 
     """
-    return Qc_values.max(axis=discrete_action_axes)
+    return Qc_arr.max(axis=discrete_action_axes)
 
 
 # ======================================================================================
@@ -157,25 +157,25 @@ def _max_Qc_over_d_no_shocks(
 
 
 def _max_Qc_over_d_extreme_value_shocks(
-    Qc_values: Array, discrete_action_axes: tuple[int, ...], params: ParamsDict
+    Qc_arr: Array, discrete_action_axes: tuple[int, ...], params: ParamsDict
 ) -> Array:
     """Take the expected maximum of the Qc-function over the discrete actions.
 
     Args:
-        Qc_values: The maximum of the state-action value function (Q) over the
-            continuous actions, conditional on the discrete action. This has one axis
-            for each state and discrete action variable.
+        Qc_arr: The maximum of the state-action value function (Q) over the continuous
+            actions, conditional on the discrete action. This has one axis for each
+            state and discrete action variable.
         discrete_action_axes: Tuple of indices representing the axes in the value
             function that correspond to discrete actions.
         params: See `get_solve_discrete_problem`.
 
     Returns:
-        The expected maximum of Qc_values over the discrete action axes.
+        The expected maximum of Qc_arr over the discrete action axes.
 
     """
     scale = params["additive_utility_shock"]["scale"]
     return scale * jax.scipy.special.logsumexp(
-        Qc_values / scale, axis=discrete_action_axes
+        Qc_arr / scale, axis=discrete_action_axes
     )
 
 

@@ -47,25 +47,25 @@ def test_solve_brute():
     # create the Q_and_F functions
     # ==================================================================================
 
-    def _Q_and_F(consumption, lazy, wealth, working, vf_arr, params):
+    def _Q_and_F(consumption, lazy, wealth, working, next_V_arr, params):
         next_wealth = wealth + working - consumption
         next_lazy = lazy
 
-        if vf_arr.size == 0:
-            # this is the last period, when vf_arr = jnp.empty(0)
+        if next_V_arr.size == 0:
+            # this is the last period, when next_V_arr = jnp.empty(0)
             expected_V = 0
         else:
             expected_V = map_coordinates(
-                input=vf_arr[next_lazy],
+                input=next_V_arr[next_lazy],
                 coordinates=jnp.array([next_wealth]),
             )
 
-        U = consumption - 0.2 * lazy * working
-        F = next_wealth >= 0
+        U_arr = consumption - 0.2 * lazy * working
+        F_arr = next_wealth >= 0
 
-        Q = U + params["beta"] * expected_V
+        Q_arr = U_arr + params["beta"] * expected_V
 
-        return Q, F
+        return Q_arr, F_arr
 
     max_Q_over_c = get_max_Q_over_c(
         Q_and_F=_Q_and_F,
@@ -79,9 +79,9 @@ def test_solve_brute():
     # create max_Qc_over_d functions
     # ==================================================================================
 
-    def max_Qc_over_d(Qc_values, params):  # noqa: ARG001
+    def max_Qc_over_d(Qc_arr, params):  # noqa: ARG001
         """Take max over axis that corresponds to working."""
-        return Qc_values.max(axis=1)
+        return Qc_arr.max(axis=1)
 
     max_Qc_over_d_functions = {0: max_Qc_over_d, 1: max_Qc_over_d}
 
@@ -100,7 +100,7 @@ def test_solve_brute():
     assert isinstance(solution, dict)
 
 
-def test_solve_brute_single_period_qc_values():
+def test_solve_brute_single_period_Qc_arr():
     state_action_space = StateActionSpace(
         discrete_actions={
             "a": jnp.array([0, 1.0]),
@@ -114,7 +114,7 @@ def test_solve_brute_single_period_qc_values():
         states_and_discrete_actions_names=("a", "b", "c"),
     )
 
-    def _Q_and_F(a, c, b, d, vf_arr, params):  # noqa: ARG001
+    def _Q_and_F(a, c, b, d, next_V_arr, params):  # noqa: ARG001
         util = d
         feasib = d <= a + b + c
         return util, feasib

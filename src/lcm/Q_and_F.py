@@ -84,19 +84,19 @@ def get_Q_and_F_non_terminal(
     # ----------------------------------------------------------------------------------
     arg_names_of_Q_and_F = _get_arg_names_of_Q_and_F(
         [U_and_F, state_transition, next_stochastic_states_weights],
-        include={"params", "vf_arr"},
+        include={"params", "next_V_arr"},
         exclude={"_period"},
     )
 
     @with_signature(args=arg_names_of_Q_and_F)
     def Q_and_F(
-        params: ParamsDict, vf_arr: Array, **states_and_actions: Scalar
+        params: ParamsDict, next_V_arr: Array, **states_and_actions: Scalar
     ) -> tuple[Scalar, Scalar]:
         """Calculate the state-action value and feasibility for a non-terminal period.
 
         Args:
             params: The parameters.
-            vf_arr: The next period's value function array.
+            next_V_arr: The next period's value function array.
             **states_and_actions: The current states and actions.
 
         Returns:
@@ -125,27 +125,27 @@ def get_Q_and_F_non_terminal(
         # As we productmap'd the value function over the stochastic variables, the
         # resulting next value function gets a new dimension for each stochastic
         # variable.
-        next_V_at_stochastic_states = next_V(**next_states, vf_arr=vf_arr)
+        next_V_at_stochastic_states_arr = next_V(**next_states, next_V_arr=next_V_arr)
 
         # We then take the weighted average of the next value function at the stochastic
         # states to get the expected next value function.
-        next_V_expected = jnp.average(
-            next_V_at_stochastic_states,
+        next_V_expected_arr = jnp.average(
+            next_V_at_stochastic_states_arr,
             weights=joint_next_stochastic_states_weights,
         )
 
         # ------------------------------------------------------------------------------
         # Calculate the instantaneous utility and feasibility
         # ------------------------------------------------------------------------------
-        U, F = U_and_F(
+        U_arr, F_arr = U_and_F(
             **states_and_actions,
             _period=period,
             params=params,
         )
 
-        Q = U + params["beta"] * next_V_expected
+        Q_arr = U_arr + params["beta"] * next_V_expected_arr
 
-        return Q, F
+        return Q_arr, F_arr
 
     return Q_and_F
 
@@ -172,21 +172,21 @@ def get_Q_and_F_terminal(
         # While the terminal period does not depend on the value function array, we
         # include it in the signature, such that we can treat all periods uniformly
         # during the solution and simulation.
-        include={"params", "vf_arr"},
+        include={"params", "next_V_arr"},
         exclude={"_period"},
     )
 
     @with_signature(args=arg_names_of_Q_and_F)
     def Q_and_F(
         params: ParamsDict,
-        vf_arr: Array,  # noqa: ARG001
+        next_V_arr: Array,  # noqa: ARG001
         **states_and_actions: Scalar,
     ) -> tuple[Scalar, Scalar]:
         """Calculate the state-action values and feasibilities for the terminal period.
 
         Args:
             params: The parameters.
-            vf_arr: The next period's value function array (unused here).
+            next_V_arr: The next period's value function array (unused here).
             **states_and_actions: The current states and actions.
 
         Returns:

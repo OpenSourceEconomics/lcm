@@ -44,7 +44,7 @@ class MaxQOverCFunction(Protocol):
     """
 
     def __call__(  # noqa: D102
-        self, vf_arr: Array, params: ParamsDict, **kwargs: Scalar
+        self, next_V_arr: Array, params: ParamsDict, **kwargs: Scalar
     ) -> Array: ...
 
 
@@ -59,7 +59,7 @@ class ArgmaxQOverCFunction(Protocol):
     """
 
     def __call__(  # noqa: D102
-        self, vf_arr: Array, params: ParamsDict, **kwargs: Scalar
+        self, next_V_arr: Array, params: ParamsDict, **kwargs: Scalar
     ) -> tuple[Array, Array]: ...
 
 
@@ -74,7 +74,7 @@ class MaxQcOverDFunction(Protocol):
 
     """
 
-    def __call__(self, Qc_values: Array, params: ParamsDict) -> Array: ...  # noqa: D102
+    def __call__(self, Qc_arr: Array, params: ParamsDict) -> Array: ...  # noqa: D102
 
 
 class ArgmaxQcOverDFunction(Protocol):
@@ -88,7 +88,7 @@ class ArgmaxQcOverDFunction(Protocol):
 
     """
 
-    def __call__(self, Qc_values: Array, params: ParamsDict) -> tuple[Array, Array]: ...  # noqa: D102
+    def __call__(self, Qc_arr: Array, params: ParamsDict) -> tuple[Array, Array]: ...  # noqa: D102
 
 
 class StochasticNextFunction(Protocol):

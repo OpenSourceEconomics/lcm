@@ -47,23 +47,23 @@ def test_get_Q_and_F_function():
     retirement = jnp.array([0, 1, 0])
     wealth = jnp.array([20, 20, 20])
 
-    Q, F = Q_and_F(
+    Q_arr, F_arr = Q_and_F(
         consumption=consumption,
         retirement=retirement,
         wealth=wealth,
         params=params,
-        vf_arr=None,
+        next_V_arr=None,
     )
 
     assert_array_equal(
-        Q,
+        Q_arr,
         utility(
             consumption=consumption,
             working=1 - retirement,
             disutility_of_work=1.0,
         ),
     )
-    assert_array_equal(F, jnp.array([True, True, False]))
+    assert_array_equal(F_arr, jnp.array([True, True, False]))
 
 
 @pytest.fixture
