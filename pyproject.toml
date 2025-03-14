@@ -198,6 +198,7 @@ extend-ignore = [
 "examples/*" = ["INP001", "D101"]
 "src/lcm/max_Qc_over_d.py" = ["N999"]
 "src/lcm/max_Q_over_c.py" = ["N999"]
+"tests/test_max_Qc_over_d.py" = ["N999"]
 "explanations/*" = ["INP001", "B018", "T201", "E402", "PD008"]
 "scripts/*" = ["INP001", "D101", "RET503"]
 "**/*.ipynb" = ["FBT003", "E402", "D101"]
