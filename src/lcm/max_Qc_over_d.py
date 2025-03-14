@@ -4,7 +4,7 @@ import jax
 import pandas as pd
 from jax import Array
 
-from lcm.argmax import argmax
+from lcm.argmax import argmax_and_max
 from lcm.typing import (
     ArgmaxQcOverDFunction,
     MaxQcOverDFunction,
@@ -71,7 +71,7 @@ def get_max_Qc_over_d(
     return partial(func, discrete_action_axes=discrete_action_axes)
 
 
-def get_argmax_Qc_over_d(
+def get_argmax_and_max_Qc_over_d(
     *,
     variable_info: pd.DataFrame,
 ) -> ArgmaxQcOverDFunction:
@@ -113,16 +113,14 @@ def get_argmax_Qc_over_d(
     """
     discrete_action_axes = _determine_discrete_action_axes_simulation(variable_info)
 
-    def _calculate_discrete_argmax(
+    def argmax_and_max_Qc_over_d(
         Qc_values: Array,
         discrete_action_axes: tuple[int, ...],
         params: ParamsDict,  # noqa: ARG001
     ) -> tuple[Array, Array]:
-        return argmax(Qc_values, axis=discrete_action_axes)
+        return argmax_and_max(Qc_values, axis=discrete_action_axes)
 
-    return partial(
-        _calculate_discrete_argmax, discrete_action_axes=discrete_action_axes
-    )
+    return partial(argmax_and_max_Qc_over_d, discrete_action_axes=discrete_action_axes)
 
 
 # ======================================================================================

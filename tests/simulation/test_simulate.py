@@ -9,7 +9,7 @@ from lcm.entry_point import get_lcm_function
 from lcm.input_processing import process_model
 from lcm.logging import get_logger
 from lcm.max_Q_over_c import (
-    get_argmax_Q_over_c,
+    get_argmax_and_max_Q_over_c,
 )
 from lcm.next_state import get_next_state_function
 from lcm.simulation.simulate import (
@@ -46,21 +46,21 @@ def simulate_inputs():
         is_last_period=False,
     )
 
-    argmax_Q_over_c_functions = []
+    argmax_and_max_Q_over_c_functions = []
     for period in range(model.n_periods):
         Q_and_F = get_Q_and_F(
             model=model,
             next_state_space_info=state_space_info,
             period=period,
         )
-        argmax_Q_over_c = get_argmax_Q_over_c(
+        argmax_and_max_Q_over_c = get_argmax_and_max_Q_over_c(
             Q_and_F=Q_and_F,
             continuous_actions_names=("consumption",),
         )
-        argmax_Q_over_c_functions.append(argmax_Q_over_c)
+        argmax_and_max_Q_over_c_functions.append(argmax_and_max_Q_over_c)
 
     return {
-        "argmax_Q_over_c_functions": argmax_Q_over_c_functions,
+        "argmax_and_max_Q_over_c_functions": argmax_and_max_Q_over_c_functions,
         "model": model,
         "next_state": get_next_state_function(model, target=Target.SIMULATE),
     }
@@ -288,7 +288,7 @@ def test_retrieve_actions():
 
 
 def test_get_continuous_action_argmax_given_discrete():
-    argmax_Q_over_c_values = jnp.array(
+    argmax_and_max_Q_over_c_values = jnp.array(
         [
             [0, 1],
             [1, 0],
@@ -297,7 +297,7 @@ def test_get_continuous_action_argmax_given_discrete():
     argmax = jnp.array([0, 1])
     vars_grid_shape = (2,)
     got = get_continuous_argmax_given_discrete(
-        conditional_continuous_action_argmax=argmax_Q_over_c_values,
+        conditional_continuous_action_argmax=argmax_and_max_Q_over_c_values,
         discrete_argmax=argmax,
         discrete_actions_grid_shape=vars_grid_shape,
     )

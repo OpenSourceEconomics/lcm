@@ -4,7 +4,7 @@ from collections.abc import Callable
 import jax.numpy as jnp
 from jax import Array
 
-from lcm.argmax import argmax
+from lcm.argmax import argmax_and_max
 from lcm.dispatchers import productmap
 from lcm.typing import ArgmaxQOverCFunction, MaxQOverCFunction, ParamsDict, Scalar
 
@@ -60,7 +60,7 @@ def get_max_Q_over_c(
     return productmap(max_Q_over_c, variables=states_and_discrete_actions_names)
 
 
-def get_argmax_Q_over_c(
+def get_argmax_and_max_Q_over_c(
     Q_and_F: Callable[..., tuple[Array, Array]],
     continuous_actions_names: tuple[str, ...],
 ) -> ArgmaxQOverCFunction:
@@ -103,10 +103,10 @@ def get_argmax_Q_over_c(
         )
 
     @functools.wraps(Q_and_F)
-    def argmax_Q_over_c(
+    def argmax_and_max_Q_over_c(
         vf_arr: Array, params: ParamsDict, **kwargs: Scalar
     ) -> tuple[Array, Array]:
         u, f = Q_and_F(params=params, vf_arr=vf_arr, **kwargs)
-        return argmax(u, where=f, initial=-jnp.inf)
+        return argmax_and_max(u, where=f, initial=-jnp.inf)
 
-    return argmax_Q_over_c
+    return argmax_and_max_Q_over_c

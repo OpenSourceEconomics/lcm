@@ -12,17 +12,17 @@ from lcm.interfaces import (
     InternalModel,
     InternalSimulationPeriodResults,
 )
-from lcm.max_Qc_over_d import get_argmax_Qc_over_d
+from lcm.max_Qc_over_d import get_argmax_and_max_Qc_over_d
 from lcm.random import draw_random_seed, generate_simulation_keys
 from lcm.simulation.processing import as_panel, process_simulated_data
 from lcm.state_action_space import create_state_action_space
-from lcm.typing import ParamsDict
+from lcm.typing import ArgmaxQOverCFunction, ParamsDict
 
 
 def solve_and_simulate(
     params: ParamsDict,
     initial_states: dict[str, Array],
-    argmax_Q_over_c_functions: dict[int, Callable[..., tuple[Array, Array]]],
+    argmax_and_max_Q_over_c_functions: dict[int, ArgmaxQOverCFunction],
     model: InternalModel,
     next_state: Callable[..., dict[str, Array]],
     logger: logging.Logger,
@@ -40,7 +40,7 @@ def solve_and_simulate(
     return simulate(
         params=params,
         initial_states=initial_states,
-        argmax_Q_over_c_functions=argmax_Q_over_c_functions,
+        argmax_and_max_Q_over_c_functions=argmax_and_max_Q_over_c_functions,
         model=model,
         next_state=next_state,
         logger=logger,
@@ -53,7 +53,7 @@ def solve_and_simulate(
 def simulate(
     params: ParamsDict,
     initial_states: dict[str, Array],
-    argmax_Q_over_c_functions: dict[int, Callable[..., tuple[Array, Array]]],
+    argmax_and_max_Q_over_c_functions: dict[int, ArgmaxQOverCFunction],
     model: InternalModel,
     next_state: Callable[..., dict[str, Array]],
     logger: logging.Logger,
@@ -68,8 +68,9 @@ def simulate(
         params: Dict of model parameters.
         initial_states: List of initial states to start from. Typically from the
             observed dataset.
-        argmax_Q_over_c_functions: Dict of functions of length n_periods. Each function
-            calculates the arg-maximum of the Q-function over the continuous actions.
+        argmax_and_max_Q_over_c_functions: Dict of functions of length n_periods. Each
+            function calculates the arg-maximum of the Q-function over the continuous
+            actions.
         next_state: Function that returns the next state given the current
             state and action variables. For stochastic variables, it returns a random
             draw from the distribution of the next state.
@@ -100,7 +101,9 @@ def simulate(
         initial_states=initial_states,
     )
 
-    argmax_Qc_over_d = get_argmax_Qc_over_d(variable_info=model.variable_info)
+    argmax_and_max_Qc_over_d = get_argmax_and_max_Qc_over_d(
+        variable_info=model.variable_info
+    )
 
     # The following variables are updated during the forward simulation
     states = initial_states
@@ -122,20 +125,21 @@ def simulate(
 
         # Compute optimal continuous action conditional on discrete actions
         # ------------------------------------------------------------------------------
-        # We need to pass the value function array of tomorrow to the argmax_Q_over_c
-        # function, as the current Q-function requires the next periods's value
-        # funciton. If we are at the last period, we pass an empty array.
+        # We need to pass the value function array of tomorrow to the
+        # argmax_and_max_Q_over_c function, as the current Q-function requires the next
+        # periods's value funciton. If we are at the last period, we pass an empty
+        # array.
         next_period_vf_arr = vf_arr_dict.get(period + 1, jnp.empty(0))
 
-        argmax_Q_over_c = simulation_spacemap(
-            argmax_Q_over_c_functions[period],
+        argmax_and_max_Q_over_c = simulation_spacemap(
+            argmax_and_max_Q_over_c_functions[period],
             actions_names=tuple(state_action_space.discrete_actions),
             states_names=tuple(state_action_space.states),
         )
 
         # Returns the optimal continuous action index conditional on the discrete
         # actions and the states, as well as the achieved maximum value.
-        indices_argmax_Q_over_c, Qc_values = argmax_Q_over_c(
+        indices_argmax_Q_over_c, Qc_values = argmax_and_max_Q_over_c(
             **state_action_space.states,
             **state_action_space.discrete_actions,
             **state_action_space.continuous_actions,
@@ -146,7 +150,7 @@ def simulate(
         # Get optimal discrete action given the optimal continuous actions, conditional
         # on the discrete actions
         # ------------------------------------------------------------------------------
-        discrete_argmax, values = argmax_Qc_over_d(Qc_values, params=params)
+        discrete_argmax, values = argmax_and_max_Qc_over_d(Qc_values, params=params)
 
         # Get optimal continuous action index given optimal discrete action
         # ------------------------------------------------------------------------------

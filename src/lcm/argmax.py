@@ -6,7 +6,7 @@ from jax import Array
 # ======================================================================================
 
 
-def argmax(
+def argmax_and_max(
     a: Array,
     axis: int | tuple[int, ...] | None = None,
     initial: float | None = None,

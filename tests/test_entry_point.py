@@ -6,7 +6,7 @@ from lcm.action_value_and_feasibility import get_Q_and_F
 from lcm.entry_point import get_lcm_function
 from lcm.input_processing import process_model
 from lcm.max_Q_over_c import (
-    get_argmax_Q_over_c,
+    get_argmax_and_max_Q_over_c,
     get_max_Q_over_c,
 )
 from lcm.state_action_space import create_state_space_info
@@ -259,11 +259,11 @@ def test_get_max_Q_over_c_with_discrete_model():
 
 
 # ======================================================================================
-# Test argmax_Q_over_c
+# Test argmax_and_max_Q_over_c
 # ======================================================================================
 
 
-def test_argmax_Q_over_c():
+def test_argmax_and_max_Q_over_c():
     model = process_model(
         get_model_config("iskhakov_et_al_2017_stripped_down", n_periods=3),
     )
@@ -288,12 +288,12 @@ def test_argmax_Q_over_c():
         period=model.n_periods - 1,
     )
 
-    argmax_Q_over_c = get_argmax_Q_over_c(
+    argmax_and_max_Q_over_c = get_argmax_and_max_Q_over_c(
         Q_and_F=Q_and_F,
         continuous_actions_names=("consumption",),
     )
 
-    policy, val = argmax_Q_over_c(
+    policy, val = argmax_and_max_Q_over_c(
         consumption=jnp.array([10, 20, 30.0]),
         retirement=RetirementStatus.retired,
         wealth=30,
@@ -308,7 +308,7 @@ def test_argmax_Q_over_c():
     )
 
 
-def test_argmax_Q_over_c_with_discrete_model():
+def test_argmax_and_max_Q_over_c_with_discrete_model():
     model = process_model(
         get_model_config("iskhakov_et_al_2017_discrete", n_periods=3),
     )
@@ -333,12 +333,12 @@ def test_argmax_Q_over_c_with_discrete_model():
         period=model.n_periods - 1,
     )
 
-    argmax_Q_over_c = get_argmax_Q_over_c(
+    argmax_and_max_Q_over_c = get_argmax_and_max_Q_over_c(
         Q_and_F=Q_and_F,
         continuous_actions_names=(),
     )
 
-    _argmax, _max = argmax_Q_over_c(
+    _argmax, _max = argmax_and_max_Q_over_c(
         consumption=jnp.array([ConsumptionChoice.low, ConsumptionChoice.high]),
         retirement=RetirementStatus.retired,
         wealth=2,
