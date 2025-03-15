@@ -13,8 +13,8 @@ from lcm.max_Q_over_c import (
 from lcm.next_state import get_next_state_function
 from lcm.Q_and_F import get_Q_and_F
 from lcm.simulation.simulate import (
+    _lookup_optimal_continuous_actions,
     _lookup_values_from_indices,
-    _pick_optimal_continuous_actions,
     simulate,
 )
 from lcm.state_action_space import create_state_space_info
@@ -296,8 +296,8 @@ def test_get_continuous_action_argmax_given_discrete():
     )
     argmax = jnp.array([0, 1])
     vars_grid_shape = (2,)
-    got = _pick_optimal_continuous_actions(
-        conditional_continuous_action_argmax=argmax_and_max_Q_over_c_values,
+    got = _lookup_optimal_continuous_actions(
+        indices_argmax_Q_over_c=argmax_and_max_Q_over_c_values,
         discrete_argmax=argmax,
         discrete_actions_grid_shape=vars_grid_shape,
     )

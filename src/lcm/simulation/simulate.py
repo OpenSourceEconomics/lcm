@@ -155,11 +155,11 @@ def simulate(
             Qc_arr, params=params
         )
 
-        # Pick the continuous actions index from the above set given the optimal
+        # Look up the continuous actions index from the above set given the optimal
         # discrete actions.
         # ------------------------------------------------------------------------------
-        indices_optimal_continuous_actions = _pick_optimal_continuous_actions(
-            conditional_continuous_action_argmax=indices_argmax_Q_over_c,
+        indices_optimal_continuous_actions = _lookup_optimal_continuous_actions(
+            indices_argmax_Q_over_c=indices_argmax_Q_over_c,
             discrete_argmax=indices_optimal_discrete_actions,
             discrete_actions_grid_shape=discrete_actions_grid_shape,
         )
@@ -215,16 +215,16 @@ def simulate(
 
 
 @partial(vmap_1d, variables=("conditional_continuous_action_argmax", "discrete_argmax"))
-def _pick_optimal_continuous_actions(
-    conditional_continuous_action_argmax: Array,
+def _lookup_optimal_continuous_actions(
+    indices_argmax_Q_over_c: Array,
     discrete_argmax: Array,
     discrete_actions_grid_shape: tuple[int, ...],
 ) -> Array:
-    """Pick the optimal continuous action index given index of optimal discrete action.
+    """Look up the optimal continuous action index given index of discrete action.
 
     Args:
-        conditional_continuous_action_argmax: Index array of optimal continous actions
-            conditional on discrete actions.
+        indices_argmax_Q_over_c: Index array of optimal continous actions conditional on
+            discrete actions and states.
         discrete_argmax: Index array of optimal discrete actions.
         discrete_actions_grid_shape: Shape of the discrete actions grid.
 
@@ -233,7 +233,7 @@ def _pick_optimal_continuous_actions(
 
     """
     indices = jnp.unravel_index(discrete_argmax, shape=discrete_actions_grid_shape)
-    return conditional_continuous_action_argmax[indices]
+    return indices_argmax_Q_over_c[indices]
 
 
 def _lookup_actions_from_indices(

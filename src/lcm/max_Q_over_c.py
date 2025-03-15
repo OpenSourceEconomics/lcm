@@ -19,9 +19,9 @@ def get_max_Q_over_c(
     The state-action value function $Q$ is defined as:
 
     ```{math}
-    Q(x, a) =  g(U(x, a), \mathbb{E}[V(x', a') | x, a]),
+    Q(x, a) =  H(U(x, a), \mathbb{E}[V(x', a') | x, a]),
     ```
-    with $g(u, v) = u + \beta \cdot v$ as the leading case (which is the only one that
+    with $H(U, v) = u + \beta \cdot v$ as the leading case (which is the only one that
     is pre-implemented in LCM).
 
     Fixing a state and discrete action, maximizing over the feasible continuous actions,
@@ -69,9 +69,9 @@ def get_argmax_and_max_Q_over_c(
     The state-action value function $Q$ is defined as:
 
     ```{math}
-    Q(x, a) =  g(U(x, a), \mathbb{E}[V(x', a') | x, a]),
+    Q(x, a) =  H(U(x, a), \mathbb{E}[V(x', a') | x, a]),
     ```
-    with $g(u, v) = u + \beta \cdot v$ as the leading case (which is the only one that
+    with $H(U, v) = u + \beta \cdot v$ as the leading case (which is the only one that
     is pre-implemented in LCM).
 
     Fixing a state and discrete action but choosing the feasible continuous actions that
