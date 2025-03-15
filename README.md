@@ -1,8 +1,8 @@
 # Life Cycle Models
 
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
-[![pre-commit.ci status](https://results.pre-commit.ci/badge/github/OpenSourceEconomics/lcm/main.svg)](https://results.pre-commit.ci/latest/github/OpenSourceEconomics/lcm/main)
-[![image](https://codecov.io/gh/OpenSourceEconomics/lcm/branch/main/graph/badge.svg)](https://codecov.io/gh/OpenSourceEconomics/lcm)
+[![pre-commit.ci status](https://results.pre-commit.ci/badge/github/OpenSourceEconomics/pylcm/main.svg)](https://results.pre-commit.ci/latest/github/OpenSourceEconomics/pylcm/main)
+[![image](https://codecov.io/gh/OpenSourceEconomics/pylcm/branch/main/graph/badge.svg)](https://codecov.io/gh/OpenSourceEconomics/pylcm)
 
 This package aims to generalize and facilitate the specification, solution, and
 simulation of finite-horizon discrete-continuous dynamic choice models.

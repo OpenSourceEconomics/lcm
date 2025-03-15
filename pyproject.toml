@@ -49,9 +49,9 @@ content-type = "text/markdown"
 file = "LICENSE"
 
 [project.urls]
-Repository = "https://github.com/opensourceeconomics/lcm"
-Github = "https://github.com/opensourceeconomics/lcm"
-Tracker = "https://github.com/OpenSourceEconomics/lcm/issues"
+Repository = "https://github.com/opensourceeconomics/pylcm"
+Github = "https://github.com/opensourceeconomics/pylcm"
+Tracker = "https://github.com/opensourceeconomics/pylcm/issues"
 
 
 # ======================================================================================

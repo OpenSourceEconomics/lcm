@@ -61,7 +61,7 @@ def test_analytical_solution(model_name, model_and_params):
     """Test that the numerical solution matches the analytical solution.
 
     The analytical solution is from Iskhakov et al (2017) and is generated
-    in the development repository: github.com/opensourceeconomics/lcm-dev.
+    in the development repository: github.com/opensourceeconomics/pylcm-dev.
 
     """
     # Compute LCM solution

@@ -13,7 +13,7 @@ Say you want to solve the `long_running` example locally. First, clone this repo
 folder, and open the interactive Python shell. In a console, type:
 
 ```console
-$ git clone https://github.com/OpenSourceEconomics/lcm.git
+$ git clone https://github.com/opensourceeconomics/pylcm.git
 $ cd lcm/examples
 $ pixi run ipython
 ```
