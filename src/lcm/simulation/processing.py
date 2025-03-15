@@ -26,7 +26,7 @@ def process_simulated_data(
 
     Args:
         results: Dict with simulation results. Each dict contains the value,
-            choices, and states for one period. Choices and states are stored in a
+            actions, and states for one period. Actions and states are stored in a
             nested dictionary.
         model: Model.
         params: Parameters.
@@ -42,7 +42,7 @@ def process_simulated_data(
     n_initial_states = len(results[0].value)
 
     list_of_dicts = [
-        {"value": d.value, **d.choices, **d.states} for d in results.values()
+        {"value": d.value, **d.actions, **d.states} for d in results.values()
     ]
     dict_of_lists = {
         key: [d[key] for d in list_of_dicts] for key in list(list_of_dicts[0])
@@ -72,7 +72,7 @@ def as_panel(processed: dict[str, Array], n_periods: int) -> pd.DataFrame:
     Returns:
         Panel with the simulation results. The index is a multi-index with the first
         level corresponding to the initial state id and the second level corresponding
-        to the period. The columns correspond to the value, and the choice and state
+        to the period. The columns correspond to the value, and the action and state
         variables, and potentially auxiliary variables.
 
     """

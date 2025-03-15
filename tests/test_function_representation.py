@@ -44,13 +44,13 @@ def test_function_evaluator_with_one_continuous_variable():
         },
     )
 
-    vf_arr = jnp.pi * wealth_grid.to_jax() + 2
+    next_V_arr = jnp.pi * wealth_grid.to_jax() + 2
 
     # create the evaluator
     evaluator = get_value_function_representation(state_space_info)
 
     # partial the function values into the evaluator
-    func = partial(evaluator, vf_arr=vf_arr)
+    func = partial(evaluator, next_V_arr=next_V_arr)
 
     # test the evaluator
     got = func(next_wealth=0.5)
@@ -59,7 +59,7 @@ def test_function_evaluator_with_one_continuous_variable():
 
 
 def test_function_evaluator_with_one_discrete_variable(binary_discrete_grid):
-    vf_arr = jnp.array([1, 2])
+    next_V_arr = jnp.array([1, 2])
 
     state_space_info = StateSpaceInfo(
         states_names=("working",),
@@ -71,7 +71,7 @@ def test_function_evaluator_with_one_discrete_variable(binary_discrete_grid):
     evaluator = get_value_function_representation(state_space_info)
 
     # partial the function values into the evaluator
-    func = partial(evaluator, vf_arr=vf_arr)
+    func = partial(evaluator, next_V_arr=next_V_arr)
 
     # test the evaluator
     assert func(next_working=0) == 1
@@ -82,13 +82,13 @@ def test_function_evaluator(binary_discrete_grid):
     """Test get_precalculated_function_evaluator in simple example.
 
     - One discrete state variable: retired (True, False)
-    - One discrete choice variable: insured ("yes", "no")
+    - One discrete action variable: insured ("yes", "no")
     - Two continuous state variables:
         - wealth (linspace(100, 1100, 6))
         - human_capital (linspace(-3, 3, 7))
 
     The utility function is wealth + human_capital + c. c takes a different
-    value for each discrete state choice combination.
+    value for each discrete state action combination.
 
     The setup of state_space_info here is quite long. Usually these inputs will be
     generated from a model specification.
@@ -100,7 +100,7 @@ def test_function_evaluator(binary_discrete_grid):
     cont_func = productmap(lambda x, y: x + y, ("x", "y"))
     cont_part = cont_func(x=jnp.linspace(100, 1100, 6), y=jnp.linspace(-3, 3, 7))
 
-    vf_arr = discrete_part + cont_part
+    next_V_arr = discrete_part + cont_part
 
     # create info on discrete variables
     discrete_vars = {
@@ -129,14 +129,14 @@ def test_function_evaluator(binary_discrete_grid):
     )
 
     # test the evaluator; note that the prefix 'next_' is added to the variable names
-    # by default, and that the argument name of the value function array is 'vf_arr' by
-    # default; these can be changed when calling get_value_function_representation
+    # by default, and that the argument name of the value function array is 'next_V_arr'
+    # by default; these can be changed when calling get_value_function_representation
     out = evaluator(
         next_retired=1,
         next_insured=0,
         next_wealth=600,
         next_human_capital=1.5,
-        vf_arr=vf_arr,
+        next_V_arr=next_V_arr,
     )
 
     assert jnp.allclose(out, 801.5)

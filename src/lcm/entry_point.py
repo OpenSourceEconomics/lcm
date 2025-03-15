@@ -6,26 +6,32 @@ import jax
 import pandas as pd
 from jax import Array
 
-from lcm.conditional_continuation import (
-    get_compute_conditional_continuation_policy,
-    get_compute_conditional_continuation_value,
-)
-from lcm.discrete_problem import get_solve_discrete_problem_value
 from lcm.input_processing import process_model
-from lcm.interfaces import StateChoiceSpace, StateSpaceInfo
+from lcm.interfaces import StateActionSpace, StateSpaceInfo
 from lcm.logging import get_logger
+from lcm.max_Q_over_c import (
+    get_argmax_and_max_Q_over_c,
+    get_max_Q_over_c,
+)
+from lcm.max_Qc_over_d import get_max_Qc_over_d
 from lcm.next_state import get_next_state_function
+from lcm.Q_and_F import (
+    get_Q_and_F,
+)
 from lcm.simulation.simulate import simulate, solve_and_simulate
 from lcm.solution.solve_brute import solve
-from lcm.state_choice_space import (
-    create_state_choice_space,
+from lcm.state_action_space import (
+    create_state_action_space,
     create_state_space_info,
 )
-from lcm.typing import DiscreteProblemValueSolverFunction, ParamsDict, Target
-from lcm.user_model import Model
-from lcm.utility_and_feasibility import (
-    get_utility_and_feasibility_function,
+from lcm.typing import (
+    ArgmaxQOverCFunction,
+    MaxQcOverDFunction,
+    MaxQOverCFunction,
+    ParamsDict,
+    Target,
 )
+from lcm.user_model import Model
 
 
 def get_lcm_function(
@@ -69,18 +75,18 @@ def get_lcm_function(
     logger = get_logger(debug_mode=debug_mode)
 
     # ==================================================================================
-    # Create model functions and state-choice-spaces
+    # Create model functions and state-action-spaces
     # ==================================================================================
-    state_choice_spaces: dict[int, StateChoiceSpace] = {}
+    state_action_spaces: dict[int, StateActionSpace] = {}
     state_space_infos: dict[int, StateSpaceInfo] = {}
-    compute_ccv_functions: dict[int, Callable[[Array, Array], Array]] = {}
-    compute_ccp_functions: dict[int, Callable[..., tuple[Array, Array]]] = {}
-    solve_discrete_problem_functions: dict[int, DiscreteProblemValueSolverFunction] = {}
+    max_Q_over_c_functions: dict[int, MaxQOverCFunction] = {}
+    argmax_and_max_Q_over_c_functions: dict[int, ArgmaxQOverCFunction] = {}
+    max_Qc_over_d_functions: dict[int, MaxQcOverDFunction] = {}
 
     for period in reversed(range(internal_model.n_periods)):
         is_last_period = period == last_period
 
-        state_choice_space = create_state_choice_space(
+        state_action_space = create_state_action_space(
             model=internal_model,
             is_last_period=is_last_period,
         )
@@ -95,43 +101,43 @@ def get_lcm_function(
         else:
             next_state_space_info = state_space_infos[period + 1]
 
-        u_and_f = get_utility_and_feasibility_function(
+        Q_and_F = get_Q_and_F(
             model=internal_model,
             next_state_space_info=next_state_space_info,
             period=period,
-            is_last_period=is_last_period,
         )
 
-        compute_ccv = get_compute_conditional_continuation_value(
-            utility_and_feasibility=u_and_f,
-            continuous_choice_variables=tuple(state_choice_space.continuous_choices),
+        max_Q_over_c = get_max_Q_over_c(
+            Q_and_F=Q_and_F,
+            continuous_actions_names=tuple(state_action_space.continuous_actions),
+            states_and_discrete_actions_names=state_action_space.states_and_discrete_actions_names,
         )
 
-        compute_ccp = get_compute_conditional_continuation_policy(
-            utility_and_feasibility=u_and_f,
-            continuous_choice_variables=tuple(state_choice_space.continuous_choices),
+        argmax_and_max_Q_over_c = get_argmax_and_max_Q_over_c(
+            Q_and_F=Q_and_F,
+            continuous_actions_names=tuple(state_action_space.continuous_actions),
         )
 
-        solve_discrete_problem = get_solve_discrete_problem_value(
+        max_Qc_over_d = get_max_Qc_over_d(
             random_utility_shock_type=internal_model.random_utility_shocks,
             variable_info=internal_model.variable_info,
             is_last_period=is_last_period,
         )
 
-        state_choice_spaces[period] = state_choice_space
+        state_action_spaces[period] = state_action_space
         state_space_infos[period] = state_space_info
-        compute_ccv_functions[period] = compute_ccv
-        compute_ccp_functions[period] = compute_ccp
-        solve_discrete_problem_functions[period] = solve_discrete_problem
+        max_Q_over_c_functions[period] = max_Q_over_c
+        argmax_and_max_Q_over_c_functions[period] = argmax_and_max_Q_over_c
+        max_Qc_over_d_functions[period] = max_Qc_over_d
 
     # ==================================================================================
     # select requested solver and partial arguments into it
     # ==================================================================================
     _solve_model = partial(
         solve,
-        state_choice_spaces=state_choice_spaces,
-        compute_ccv_functions=compute_ccv_functions,
-        emax_calculators=solve_discrete_problem_functions,
+        state_action_spaces=state_action_spaces,
+        max_Q_over_c_functions=max_Q_over_c_functions,
+        max_Qc_over_d_functions=max_Qc_over_d_functions,
         logger=logger,
     )
     solve_model = jax.jit(_solve_model) if jit else _solve_model
@@ -142,7 +148,7 @@ def get_lcm_function(
     next_state_simulate = jax.jit(_next_state_simulate) if jit else _next_state_simulate
     simulate_model = partial(
         simulate,
-        compute_ccv_policy_functions=compute_ccp_functions,
+        argmax_and_max_Q_over_c_functions=argmax_and_max_Q_over_c_functions,
         model=internal_model,
         next_state=next_state_simulate,  # type: ignore[arg-type]
         logger=logger,
@@ -150,7 +156,7 @@ def get_lcm_function(
 
     solve_and_simulate_model = partial(
         solve_and_simulate,
-        compute_ccv_policy_functions=compute_ccp_functions,
+        argmax_and_max_Q_over_c_functions=argmax_and_max_Q_over_c_functions,
         model=internal_model,
         next_state=next_state_simulate,  # type: ignore[arg-type]
         logger=logger,

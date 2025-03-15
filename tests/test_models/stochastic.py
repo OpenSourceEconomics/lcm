@@ -1,7 +1,7 @@
 """Example specification of a stochastic consumption-saving model.
 
 This specification is motivated by the example model presented in the paper: "The
-endogenous grid method for discrete-continuous dynamic choice models with (or without)
+endogenous grid method for discrete-continuous dynamic action models with (or without)
 taste shocks" by Fedor Iskhakov, Thomas H. Jørgensen, John Rust and Bertel Schjerning
 (2017, https://doi.org/10.3982/QE643).
 
@@ -112,7 +112,7 @@ ISKHAKOV_ET_AL_2017_STOCHASTIC = Model(
         "consumption_constraint": consumption_constraint,
         "labor_income": labor_income,
     },
-    choices={
+    actions={
         "working": DiscreteGrid(WorkingStatus),
         "consumption": LinspaceGrid(
             start=1,

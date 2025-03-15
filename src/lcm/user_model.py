@@ -19,7 +19,7 @@ class Model:
         functions: Dictionary of user provided functions that define the functional
             relationships between model variables. It must include at least a function
             called 'utility'.
-        choices: Dictionary of user provided choices.
+        actions: Dictionary of user provided actions.
         states: Dictionary of user provided states.
 
     """
@@ -28,7 +28,7 @@ class Model:
     _: KW_ONLY
     n_periods: int
     functions: dict[str, UserFunction] = field(default_factory=dict)
-    choices: dict[str, Grid] = field(default_factory=dict)
+    actions: dict[str, Grid] = field(default_factory=dict)
     states: dict[str, Grid] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
@@ -57,9 +57,9 @@ def _validate_attribute_types(model: Model) -> None:  # noqa: C901
     """Validate the types of the model attributes."""
     error_messages = []
 
-    # Validate types of states and choices
+    # Validate types of states and actions
     # ----------------------------------------------------------------------------------
-    for attr_name in ("choices", "states"):
+    for attr_name in ("actions", "states"):
         attr = getattr(model, attr_name)
         if isinstance(attr, dict):
             for k, v in attr.items():
@@ -111,11 +111,11 @@ def _validate_logical_consistency(model: Model) -> None:
             f"{states_without_next_func}.",
         )
 
-    states_and_choices_overlap = set(model.states) & set(model.choices)
-    if states_and_choices_overlap:
+    states_and_actions_overlap = set(model.states) & set(model.actions)
+    if states_and_actions_overlap:
         error_messages.append(
-            "States and choices cannot have overlapping names. The following names "
-            f"are used in both states and choices: {states_and_choices_overlap}.",
+            "States and actions cannot have overlapping names. The following names "
+            f"are used in both states and actions: {states_and_actions_overlap}.",
         )
 
     if error_messages:

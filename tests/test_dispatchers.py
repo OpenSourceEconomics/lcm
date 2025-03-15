@@ -245,12 +245,12 @@ def test_spacemap_all_arguments_mapped(
     ("error_msg", "product_vars", "combination_vars"),
     [
         (
-            "Same argument provided more than once in choices or states variables",
+            "Same argument provided more than once in actions or states variables",
             ["a", "b"],
             ["a", "c", "d"],
         ),
         (
-            "Same argument provided more than once in choices or states variables",
+            "Same argument provided more than once in actions or states variables",
             ["a", "a", "b"],
             ["c", "d"],
         ),
@@ -259,7 +259,7 @@ def test_spacemap_all_arguments_mapped(
 def test_spacemap_arguments_overlap(error_msg, product_vars, combination_vars):
     with pytest.raises(ValueError, match=error_msg):
         simulation_spacemap(
-            g, choices_var_names=product_vars, states_var_names=combination_vars
+            g, actions_names=product_vars, states_names=combination_vars
         )
 
 

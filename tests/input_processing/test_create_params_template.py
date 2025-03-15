@@ -24,7 +24,7 @@ class ModelMock:
 
     n_periods: int | None = None
     functions: dict[str, Any] | None = None
-    choices: dict[str, Any] | None = None
+    actions: dict[str, Any] | None = None
     states: dict[str, Any] | None = None
 
 
@@ -34,7 +34,7 @@ def test_create_params_without_shocks(binary_category_class):
             "f": lambda a, b, c: None,  # noqa: ARG005
             "next_b": lambda b: b,
         },
-        choices={
+        actions={
             "a": DiscreteGrid(binary_category_class),
         },
         states={
@@ -51,7 +51,7 @@ def test_create_function_params():
         functions={
             "f": lambda a, b, c: None,  # noqa: ARG005
         },
-        choices={
+        actions={
             "a": None,
         },
         states={

@@ -50,7 +50,7 @@ def _create_function_params(model: Model) -> dict[str, dict[str, float]]:
     """Get function parameters from a model specification.
 
     Explanation: We consider the arguments of all model functions, from which we exclude
-    all variables that are states, choices or the period argument. Everything else is
+    all variables that are states, actions or the period argument. Everything else is
     considered a parameter of the respective model function that is provided by the
     user.
 
@@ -62,11 +62,11 @@ def _create_function_params(model: Model) -> dict[str, dict[str, float]]:
         model functions, initialized with jnp.nan.
 
     """
-    # Collect all model variables, that includes choices, states, the period, and
+    # Collect all model variables, that includes actions, states, the period, and
     # auxiliary variables (model function names).
     variables = {
         *model.functions,
-        *model.choices,
+        *model.actions,
         *model.states,
         "_period",
     }

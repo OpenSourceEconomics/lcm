@@ -24,10 +24,10 @@ def test_get_next_state_function_with_solve_target():
         },
     }
 
-    choice = {"retirement": 1, "consumption": 10}
+    action = {"retirement": 1, "consumption": 10}
     state = {"wealth": 20}
 
-    got = got_func(**choice, **state, _period=1, params=params)
+    got = got_func(**action, **state, _period=1, params=params)
     assert got == {"next_wealth": 1.05 * (20 - 10)}
 
 

@@ -40,18 +40,18 @@ def get_variable_info(model: Model) -> pd.DataFrame:
     Returns:
         A table with information about all variables in the model. The index contains
         the name of a model variable. The columns are booleans that are True if the
-        variable has the corresponding property. The columns are: is_state, is_choice,
+        variable has the corresponding property. The columns are: is_state, is_action,
         is_continuous, is_discrete.
 
     """
     function_info = get_function_info(model)
 
-    variables = model.states | model.choices
+    variables = model.states | model.actions
 
     info = pd.DataFrame(index=list(variables))
 
     info["is_state"] = info.index.isin(model.states)
-    info["is_choice"] = ~info["is_state"]
+    info["is_action"] = ~info["is_state"]
 
     info["is_continuous"] = [
         isinstance(spec, ContinuousGrid) for spec in variables.values()
@@ -71,9 +71,9 @@ def get_variable_info(model: Model) -> pd.DataFrame:
     info["is_auxiliary"] = [var in auxiliary_variables for var in variables]
 
     order = info.query("is_discrete & is_state").index.tolist()
-    order += info.query("is_discrete & is_choice").index.tolist()
+    order += info.query("is_discrete & is_action").index.tolist()
     order += info.query("is_continuous & is_state").index.tolist()
-    order += info.query("is_continuous & is_choice").index.tolist()
+    order += info.query("is_continuous & is_action").index.tolist()
 
     if set(order) != set(info.index):
         raise ValueError("Order and index do not match.")
@@ -127,7 +127,7 @@ def get_gridspecs(
     """
     variable_info = get_variable_info(model)
 
-    raw_variables = model.states | model.choices
+    raw_variables = model.states | model.actions
     order = variable_info.index.tolist()
     return {k: raw_variables[k] for k in order}
 

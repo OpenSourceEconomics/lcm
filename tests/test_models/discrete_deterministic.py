@@ -1,7 +1,7 @@
 """Example specifications of fully discrete deterministic consumption-saving model.
 
 The specification builds on the example model presented in the paper: "The endogenous
-grid method for discrete-continuous dynamic choice models with (or without) taste
+grid method for discrete-continuous dynamic action models with (or without) taste
 shocks" by Fedor Iskhakov, Thomas H. Jørgensen, John Rust and Bertel Schjerning (2017,
 https://doi.org/10.3982/QE643). See module `tests.test_models.deterministic` for the
 continuous version.
@@ -87,7 +87,7 @@ ISKHAKOV_ET_AL_2017_DISCRETE = Model(
         "labor_income": labor_income,
         "working": working,
     },
-    choices={
+    actions={
         "retirement": DiscreteGrid(RetirementStatus),
         "consumption": DiscreteGrid(ConsumptionChoice),
     },
