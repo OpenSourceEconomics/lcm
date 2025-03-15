@@ -214,7 +214,7 @@ def simulate(
     return as_panel(processed, n_periods=n_periods)
 
 
-@partial(vmap_1d, variables=("conditional_continuous_action_argmax", "discrete_argmax"))
+@partial(vmap_1d, variables=("indices_argmax_Q_over_c", "discrete_argmax"))
 def _lookup_optimal_continuous_actions(
     indices_argmax_Q_over_c: Array,
     discrete_argmax: Array,
