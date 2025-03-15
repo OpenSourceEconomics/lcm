@@ -2,14 +2,14 @@ import jax.numpy as jnp
 import pytest
 from pybaum import tree_equal, tree_map
 
-from lcm.conditional_continuation import (
-    get_compute_conditional_continuation_policy,
-    get_compute_conditional_continuation_value,
-)
 from lcm.entry_point import get_lcm_function
 from lcm.input_processing import process_model
-from lcm.state_choice_space import create_state_space_info
-from lcm.utility_and_feasibility import get_utility_and_feasibility_function
+from lcm.max_Q_over_c import (
+    get_argmax_and_max_Q_over_c,
+    get_max_Q_over_c,
+)
+from lcm.Q_and_F import get_Q_and_F
+from lcm.state_action_space import create_state_space_info
 from tests.test_models import get_model_config
 from tests.test_models.deterministic import RetirementStatus
 from tests.test_models.deterministic import utility as iskhakov_et_al_2017_utility
@@ -103,14 +103,14 @@ def test_get_lcm_function_with_simulation_is_coherent(model):
     # solve
     solve_model, params_template = get_lcm_function(model=model, targets="solve")
     params = tree_map(lambda _: 0.2, params_template)
-    vf_arr_dict = solve_model(params)
+    V_arr_dict = solve_model(params)
 
     # simulate using solution
     simulate_model, _ = get_lcm_function(model=model, targets="simulate")
 
     solve_then_simulate = simulate_model(
         params,
-        vf_arr_dict=vf_arr_dict,
+        V_arr_dict=V_arr_dict,
         initial_states={
             "wealth": jnp.array([0.0, 10.0, 50.0]),
         },
@@ -142,14 +142,14 @@ def test_get_lcm_function_with_simulation_target_iskhakov_et_al_2017(model):
     # solve model
     solve_model, params_template = get_lcm_function(model=model, targets="solve")
     params = tree_map(lambda _: 0.2, params_template)
-    vf_arr_dict = solve_model(params)
+    V_arr_dict = solve_model(params)
 
     # simulate using solution
     simulate_model, _ = get_lcm_function(model=model, targets="simulate")
 
     simulate_model(
         params,
-        vf_arr_dict=vf_arr_dict,
+        V_arr_dict=V_arr_dict,
         initial_states={
             "wealth": jnp.array([10.0, 10.0, 20.0]),
             "lagged_retirement": jnp.array(
@@ -168,7 +168,7 @@ def test_get_lcm_function_with_simulation_target_iskhakov_et_al_2017(model):
 # ======================================================================================
 
 
-def test_create_compute_conditional_continuation_value():
+def test_get_max_Q_over_c():
     model = process_model(
         get_model_config("iskhakov_et_al_2017_stripped_down", n_periods=3),
     )
@@ -187,24 +187,24 @@ def test_create_compute_conditional_continuation_value():
         is_last_period=False,
     )
 
-    u_and_f = get_utility_and_feasibility_function(
+    Q_and_F = get_Q_and_F(
         model=model,
         next_state_space_info=state_space_info,
         period=model.n_periods - 1,
-        is_last_period=True,
     )
 
-    compute_ccv = get_compute_conditional_continuation_value(
-        utility_and_feasibility=u_and_f,
-        continuous_choice_variables=("consumption",),
+    max_Q_over_c = get_max_Q_over_c(
+        Q_and_F=Q_and_F,
+        continuous_actions_names=("consumption",),
+        states_and_discrete_actions_names=(),
     )
 
-    val = compute_ccv(
+    val = max_Q_over_c(
         consumption=jnp.array([10, 20, 30.0]),
         retirement=RetirementStatus.retired,
         wealth=30,
         params=params,
-        vf_arr=None,
+        next_V_arr=jnp.empty(0),
     )
     assert val == iskhakov_et_al_2017_utility(
         consumption=30.0,
@@ -213,7 +213,7 @@ def test_create_compute_conditional_continuation_value():
     )
 
 
-def test_create_compute_conditional_continuation_value_with_discrete_model():
+def test_get_max_Q_over_c_with_discrete_model():
     model = process_model(
         get_model_config("iskhakov_et_al_2017_discrete", n_periods=3),
     )
@@ -232,24 +232,24 @@ def test_create_compute_conditional_continuation_value_with_discrete_model():
         is_last_period=False,
     )
 
-    u_and_f = get_utility_and_feasibility_function(
+    Q_and_F = get_Q_and_F(
         model=model,
         next_state_space_info=state_space_info,
         period=model.n_periods - 1,
-        is_last_period=True,
     )
 
-    compute_ccv = get_compute_conditional_continuation_value(
-        utility_and_feasibility=u_and_f,
-        continuous_choice_variables=(),
+    max_Q_over_c = get_max_Q_over_c(
+        Q_and_F=Q_and_F,
+        continuous_actions_names=(),
+        states_and_discrete_actions_names=(),
     )
 
-    val = compute_ccv(
+    val = max_Q_over_c(
         consumption=jnp.array([ConsumptionChoice.low, ConsumptionChoice.high]),
         retirement=RetirementStatus.retired,
         wealth=2,
         params=params,
-        vf_arr=None,
+        next_V_arr=jnp.empty(0),
     )
     assert val == iskhakov_et_al_2017_utility(
         consumption=2,
@@ -259,11 +259,11 @@ def test_create_compute_conditional_continuation_value_with_discrete_model():
 
 
 # ======================================================================================
-# Create compute conditional continuation policy
+# Test argmax_and_max_Q_over_c
 # ======================================================================================
 
 
-def test_create_compute_conditional_continuation_policy():
+def test_argmax_and_max_Q_over_c():
     model = process_model(
         get_model_config("iskhakov_et_al_2017_stripped_down", n_periods=3),
     )
@@ -282,24 +282,23 @@ def test_create_compute_conditional_continuation_policy():
         is_last_period=False,
     )
 
-    u_and_f = get_utility_and_feasibility_function(
+    Q_and_F = get_Q_and_F(
         model=model,
         next_state_space_info=state_space_info,
         period=model.n_periods - 1,
-        is_last_period=True,
     )
 
-    compute_ccv_policy = get_compute_conditional_continuation_policy(
-        utility_and_feasibility=u_and_f,
-        continuous_choice_variables=("consumption",),
+    argmax_and_max_Q_over_c = get_argmax_and_max_Q_over_c(
+        Q_and_F=Q_and_F,
+        continuous_actions_names=("consumption",),
     )
 
-    policy, val = compute_ccv_policy(
+    policy, val = argmax_and_max_Q_over_c(
         consumption=jnp.array([10, 20, 30.0]),
         retirement=RetirementStatus.retired,
         wealth=30,
         params=params,
-        vf_arr=None,
+        next_V_arr=jnp.empty(0),
     )
     assert policy == 2
     assert val == iskhakov_et_al_2017_utility(
@@ -309,7 +308,7 @@ def test_create_compute_conditional_continuation_policy():
     )
 
 
-def test_create_compute_conditional_continuation_policy_with_discrete_model():
+def test_argmax_and_max_Q_over_c_with_discrete_model():
     model = process_model(
         get_model_config("iskhakov_et_al_2017_discrete", n_periods=3),
     )
@@ -328,27 +327,26 @@ def test_create_compute_conditional_continuation_policy_with_discrete_model():
         is_last_period=False,
     )
 
-    u_and_f = get_utility_and_feasibility_function(
+    Q_and_F = get_Q_and_F(
         model=model,
         next_state_space_info=state_space_info,
         period=model.n_periods - 1,
-        is_last_period=True,
     )
 
-    compute_ccv_policy = get_compute_conditional_continuation_policy(
-        utility_and_feasibility=u_and_f,
-        continuous_choice_variables=(),
+    argmax_and_max_Q_over_c = get_argmax_and_max_Q_over_c(
+        Q_and_F=Q_and_F,
+        continuous_actions_names=(),
     )
 
-    policy, val = compute_ccv_policy(
+    _argmax, _max = argmax_and_max_Q_over_c(
         consumption=jnp.array([ConsumptionChoice.low, ConsumptionChoice.high]),
         retirement=RetirementStatus.retired,
         wealth=2,
         params=params,
-        vf_arr=None,
+        next_V_arr=jnp.empty(0),
     )
-    assert policy == 1
-    assert val == iskhakov_et_al_2017_utility(
+    assert _argmax == 1
+    assert _max == iskhakov_et_al_2017_utility(
         consumption=2,
         working=RetirementStatus.working,
         disutility_of_work=1.0,

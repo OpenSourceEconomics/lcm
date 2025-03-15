@@ -1,7 +1,7 @@
 """Example specifications of a deterministic consumption-saving model.
 
 The specification builds on the example model presented in the paper: "The endogenous
-grid method for discrete-continuous dynamic choice models with (or without) taste
+grid method for discrete-continuous dynamic action models with (or without) taste
 shocks" by Fedor Iskhakov, Thomas H. Jørgensen, John Rust and Bertel Schjerning (2017,
 https://doi.org/10.3982/QE643).
 
@@ -107,7 +107,7 @@ ISKHAKOV_ET_AL_2017 = Model(
         "labor_income": labor_income,
         "working": working,
     },
-    choices={
+    actions={
         "retirement": DiscreteGrid(RetirementStatus),
         "consumption": LinspaceGrid(
             start=1,
@@ -141,7 +141,7 @@ ISKHAKOV_ET_AL_2017_STRIPPED_DOWN = Model(
         "wage": wage,
         "age": age,
     },
-    choices={
+    actions={
         "retirement": DiscreteGrid(RetirementStatus),
         "consumption": LinspaceGrid(
             start=1,

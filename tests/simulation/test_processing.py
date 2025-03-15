@@ -63,7 +63,7 @@ def test_process_simulated_data():
         0: InternalSimulationPeriodResults(
             value=jnp.array([0.1, 0.2]),
             states={"a": jnp.array([1, 2]), "b": jnp.array([-1, -2])},
-            choices={"c": jnp.array([5, 6]), "d": jnp.array([-5, -6])},
+            actions={"c": jnp.array([5, 6]), "d": jnp.array([-5, -6])},
         ),
         1: InternalSimulationPeriodResults(
             value=jnp.array([0.3, 0.4]),
@@ -71,7 +71,7 @@ def test_process_simulated_data():
                 "b": jnp.array([-3, -4]),
                 "a": jnp.array([3, 4]),
             },
-            choices={
+            actions={
                 "d": jnp.array([-7, -8]),
                 "c": jnp.array([7, 8]),
             },

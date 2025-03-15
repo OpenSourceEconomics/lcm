@@ -17,9 +17,9 @@ def get_value_function_representation(
     state_space_info: StateSpaceInfo,
     *,
     input_prefix: str = "next_",
-    name_of_values_on_grid: str = "vf_arr",
+    name_of_values_on_grid: str = "next_V_arr",
 ) -> Callable[..., Array]:
-    """Create a function representation of the value function array.
+    """Create a function representation of the next value function array.
 
     The returned function
     ---------------------
@@ -63,7 +63,7 @@ def get_value_function_representation(
             value function is typically evaluated on the next period's state space.
         name_of_values_on_grid: The name of the argument via which the pre-calculated
             values, that have been evaluated on the state-space grid, will be passed
-            into the resulting function. Defaults to "vf_arr".
+            into the resulting function. Defaults to "next_V_arr".
 
     Returns:
         A callable that lets you treat the result of pre-calculating a function on the

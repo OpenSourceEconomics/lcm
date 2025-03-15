@@ -7,23 +7,23 @@ import jax.numpy as jnp
 import pandas as pd
 from jax import Array, vmap
 
-from lcm.discrete_problem import get_solve_discrete_problem_policy
 from lcm.dispatchers import simulation_spacemap, vmap_1d
 from lcm.interfaces import (
     InternalModel,
     InternalSimulationPeriodResults,
-    StateChoiceSpace,
+    StateActionSpace,
 )
+from lcm.max_Qc_over_d import get_argmax_and_max_Qc_over_d
 from lcm.random import draw_random_seed, generate_simulation_keys
 from lcm.simulation.processing import as_panel, process_simulated_data
-from lcm.state_choice_space import create_state_choice_space
-from lcm.typing import ParamsDict
+from lcm.state_action_space import create_state_action_space
+from lcm.typing import ArgmaxQOverCFunction, ParamsDict
 
 
 def solve_and_simulate(
     params: ParamsDict,
     initial_states: dict[str, Array],
-    compute_ccv_policy_functions: dict[int, Callable[..., tuple[Array, Array]]],
+    argmax_and_max_Q_over_c_functions: dict[int, ArgmaxQOverCFunction],
     model: InternalModel,
     next_state: Callable[..., dict[str, Array]],
     logger: logging.Logger,
@@ -37,15 +37,15 @@ def solve_and_simulate(
     Same docstring as `simulate` mutatis mutandis.
 
     """
-    vf_arr_dict = solve_model(params)
+    V_arr_dict = solve_model(params)
     return simulate(
         params=params,
         initial_states=initial_states,
-        compute_ccv_policy_functions=compute_ccv_policy_functions,
+        argmax_and_max_Q_over_c_functions=argmax_and_max_Q_over_c_functions,
         model=model,
         next_state=next_state,
         logger=logger,
-        vf_arr_dict=vf_arr_dict,
+        V_arr_dict=V_arr_dict,
         additional_targets=additional_targets,
         seed=seed,
     )
@@ -54,11 +54,11 @@ def solve_and_simulate(
 def simulate(
     params: ParamsDict,
     initial_states: dict[str, Array],
-    compute_ccv_policy_functions: dict[int, Callable[..., tuple[Array, Array]]],
+    argmax_and_max_Q_over_c_functions: dict[int, ArgmaxQOverCFunction],
     model: InternalModel,
     next_state: Callable[..., dict[str, Array]],
     logger: logging.Logger,
-    vf_arr_dict: dict[int, Array],
+    V_arr_dict: dict[int, Array],
     *,
     additional_targets: list[str] | None = None,
     seed: int | None = None,
@@ -69,14 +69,14 @@ def simulate(
         params: Dict of model parameters.
         initial_states: List of initial states to start from. Typically from the
             observed dataset.
-        compute_ccv_policy_functions: Dict of length n_periods. Each function computes
-            the conditional continuation value dependent on the discrete choices.
+        argmax_and_max_Q_over_c_functions: Dict of functions of length n_periods. Each
+            function calculates the argument maximizing Q over the continuous actions.
         next_state: Function that returns the next state given the current
-            state and choice variables. For stochastic variables, it returns a random
+            state and action variables. For stochastic variables, it returns a random
             draw from the distribution of the next state.
         model: Model instance.
         logger: Logger that logs to stdout.
-        vf_arr_dict: Dict of value function arrays of length n_periods.
+        V_arr_dict: Dict of value function arrays of length n_periods.
         additional_targets: List of targets to compute. If provided, the targets
             are computed and added to the simulation results.
         seed: Random number seed; will be passed to `jax.random.key`. If not provided,
@@ -93,15 +93,15 @@ def simulate(
 
     # Preparations
     # ----------------------------------------------------------------------------------
-    n_periods = len(vf_arr_dict)
+    n_periods = len(V_arr_dict)
     n_initial_states = len(next(iter(initial_states.values())))
 
-    state_choice_space = create_state_choice_space(
+    state_action_space = create_state_action_space(
         model=model,
         initial_states=initial_states,
     )
 
-    discrete_policy_calculator = get_solve_discrete_problem_policy(
+    argmax_and_max_Qc_over_d = get_argmax_and_max_Qc_over_d(
         variable_info=model.variable_info
     )
 
@@ -114,67 +114,71 @@ def simulate(
     simulation_results = {}
 
     for period in range(n_periods):
-        state_choice_space = state_choice_space.replace(states)
+        state_action_space = state_action_space.replace(states)
 
-        # We compute these grid shapes in the loop because they can change over time.
-        # TODO (@timmens): This could still be pre-computed in the entry point.  # noqa: TD003,E501
-        discrete_choices_grid_shape = tuple(
-            len(grid) for grid in state_choice_space.discrete_choices.values()
+        discrete_actions_grid_shape = tuple(
+            len(grid) for grid in state_action_space.discrete_actions.values()
         )
-        continuous_choices_grid_shape = tuple(
-            len(grid) for grid in state_choice_space.continuous_choices.values()
+        continuous_actions_grid_shape = tuple(
+            len(grid) for grid in state_action_space.continuous_actions.values()
         )
 
-        # Compute optimal continuous choice conditional on discrete choices
+        # Compute optimal continuous actions conditional on discrete actions
         # ------------------------------------------------------------------------------
-        # We need to pass the value function array of the next period to the continuous
-        # choice problem solver. If we are at the last period, we pass an empty array.
-        next_period_vf_arr = vf_arr_dict.get(period + 1, jnp.empty(0))
+        # We need to pass the value function array of the next period to the
+        # argmax_and_max_Q_over_c function, as the current Q-function requires the next
+        # periods's value funciton. In the last period, we pass an empty array.
+        next_V_arr = V_arr_dict.get(period + 1, jnp.empty(0))
 
-        conditional_continuous_choice_argmax, conditional_continuous_choice_max = (
-            solve_continuous_problem(
-                data_scs=state_choice_space,
-                compute_ccv=compute_ccv_policy_functions[period],
-                vf_arr=next_period_vf_arr,
-                params=params,
-            )
+        argmax_and_max_Q_over_c = simulation_spacemap(
+            argmax_and_max_Q_over_c_functions[period],
+            actions_names=tuple(state_action_space.discrete_actions),
+            states_names=tuple(state_action_space.states),
         )
 
-        # Get optimal discrete choice given the optimal conditional continuous choices
+        # Returns the optimal continuous action index conditional on the states and
+        # discrete actions, as well as the maximum value.
+        indices_argmax_Q_over_c, Qc_arr = argmax_and_max_Q_over_c(
+            **state_action_space.states,
+            **state_action_space.discrete_actions,
+            **state_action_space.continuous_actions,
+            next_V_arr=next_V_arr,
+            params=params,
+        )
+
+        # The Qc-function values contain the information of how much value each discrete
+        # action combination is worth, assuming the corresponding optimal continuous
+        # actions are taken. To find the optimal discrete action, we therefore only need
+        # to maximize the Qc-function values over the discrete actions.
         # ------------------------------------------------------------------------------
-        discrete_argmax, choice_value = discrete_policy_calculator(
-            conditional_continuous_choice_max, params=params
+        indices_optimal_discrete_actions, V_arr = argmax_and_max_Qc_over_d(
+            Qc_arr, params=params
         )
 
-        # Get optimal continuous choice index given optimal discrete choice
+        # Look up the continuous actions index from the above set given the optimal
+        # discrete actions.
         # ------------------------------------------------------------------------------
-        continuous_choice_argmax = get_continuous_choice_argmax_given_discrete(
-            conditional_continuous_choice_argmax=conditional_continuous_choice_argmax,
-            discrete_argmax=discrete_argmax,
-            discrete_choices_grid_shape=discrete_choices_grid_shape,
+        indices_optimal_continuous_actions = _lookup_optimal_continuous_actions(
+            indices_argmax_Q_over_c=indices_argmax_Q_over_c,
+            discrete_argmax=indices_optimal_discrete_actions,
+            discrete_actions_grid_shape=discrete_actions_grid_shape,
         )
 
-        # Convert choice indices to choice values
+        # Convert action indices to action values
         # ------------------------------------------------------------------------------
-        discrete_choices = get_values_from_indices(
-            flat_indices=discrete_argmax,
-            grids=state_choice_space.discrete_choices,
-            grids_shapes=discrete_choices_grid_shape,
-        )
-
-        continuous_choices = get_values_from_indices(
-            flat_indices=continuous_choice_argmax,
-            grids=state_choice_space.continuous_choices,
-            grids_shapes=continuous_choices_grid_shape,
+        optimal_actions = _lookup_actions_from_indices(
+            indices_optimal_discrete_actions=indices_optimal_discrete_actions,
+            indices_optimal_continuous_actions=indices_optimal_continuous_actions,
+            discrete_actions_grid_shape=discrete_actions_grid_shape,
+            continuous_actions_grid_shape=continuous_actions_grid_shape,
+            state_action_space=state_action_space,
         )
 
         # Store results
         # ------------------------------------------------------------------------------
-        choices = {**discrete_choices, **continuous_choices}
-
         simulation_results[period] = InternalSimulationPeriodResults(
-            value=choice_value,
-            choices=choices,
+            value=V_arr,
+            actions=optimal_actions,
             states=states,
         )
 
@@ -185,16 +189,18 @@ def simulate(
             ids=model.function_info.query("is_stochastic_next").index.tolist(),
         )
 
-        states_with_prefix = next_state(
+        states_with_next_prefix = next_state(
             **states,
-            **choices,
+            **optimal_actions,
             _period=jnp.repeat(period, n_initial_states),
             params=params,
             keys=stochastic_variables_keys,
         )
         # 'next_' prefix is added by the next_state function, but needs to be removed
         # because in the next period, next states will be current states.
-        states = {k.removeprefix("next_"): v for k, v in states_with_prefix.items()}
+        states = {
+            k.removeprefix("next_"): v for k, v in states_with_next_prefix.items()
+        }
 
         logger.info("Period: %s", period)
 
@@ -208,73 +214,64 @@ def simulate(
     return as_panel(processed, n_periods=n_periods)
 
 
-def solve_continuous_problem(
-    data_scs: StateChoiceSpace,
-    compute_ccv: Callable[..., tuple[Array, Array]],
-    vf_arr: Array,
-    params: ParamsDict,
-) -> tuple[Array, Array]:
-    """Solve the agents' continuous choice problem.
-
-    Args:
-        data_scs: Class with entries choices and states.
-        compute_ccv: Function that returns the conditional continuation
-            values for a given combination of states and discrete choices. The function
-            depends on:
-            - discrete and continuous state variables
-            - discrete and continuous choice variables
-            - vf_arr
-            - params
-        vf_arr: Value function array.
-        params: Dict of model parameters.
-
-    Returns:
-        - Jax array with policies for each combination of a state and a discrete choice.
-          The number and order of dimensions is defined by the `gridmap` function.
-        - Jax array with continuation values for each combination of a state and a
-          discrete choice. The number and order of dimensions is defined by the
-          `gridmap` function.
-
-    """
-    _gridmapped = simulation_spacemap(
-        func=compute_ccv,
-        choices_var_names=tuple(data_scs.discrete_choices),
-        states_var_names=tuple(data_scs.states),
-    )
-    gridmapped = jax.jit(_gridmapped)
-
-    return gridmapped(
-        **data_scs.states,
-        **data_scs.discrete_choices,
-        **data_scs.continuous_choices,
-        vf_arr=vf_arr,
-        params=params,
-    )
-
-
-@partial(vmap_1d, variables=("conditional_continuous_choice_argmax", "discrete_argmax"))
-def get_continuous_choice_argmax_given_discrete(
-    conditional_continuous_choice_argmax: Array,
+@partial(vmap_1d, variables=("indices_argmax_Q_over_c", "discrete_argmax"))
+def _lookup_optimal_continuous_actions(
+    indices_argmax_Q_over_c: Array,
     discrete_argmax: Array,
-    discrete_choices_grid_shape: tuple[int, ...],
+    discrete_actions_grid_shape: tuple[int, ...],
 ) -> Array:
-    """Select optimal continuous choice index given optimal discrete choice.
+    """Look up the optimal continuous action index given index of discrete action.
 
     Args:
-        conditional_continuous_choice_argmax: Index array of optimal continous choices
-            conditional on discrete choices.
-        discrete_argmax: Index array of optimal discrete choices.
-        discrete_choices_grid_shape: Shape of the discrete choices grid.
+        indices_argmax_Q_over_c: Index array of optimal continous actions conditional on
+            discrete actions and states.
+        discrete_argmax: Index array of optimal discrete actions.
+        discrete_actions_grid_shape: Shape of the discrete actions grid.
 
     Returns:
-        Index array of optimal continuous choices.
+        Index array of optimal continuous actions.
 
     """
-    indices = jnp.unravel_index(discrete_argmax, shape=discrete_choices_grid_shape)
-    return conditional_continuous_choice_argmax[indices]
+    indices = jnp.unravel_index(discrete_argmax, shape=discrete_actions_grid_shape)
+    return indices_argmax_Q_over_c[indices]
 
 
-def get_values_from_indices(
+def _lookup_actions_from_indices(
+    indices_optimal_discrete_actions: Array,
+    indices_optimal_continuous_actions: Array,
+    discrete_actions_grid_shape: tuple[int, ...],
+    continuous_actions_grid_shape: tuple[int, ...],
+    state_action_space: StateActionSpace,
+) -> dict[str, Array]:
+    """Lookup optimal actions from indices.
+
+    Args:
+        indices_optimal_discrete_actions: Indices of optimal discrete actions.
+        indices_optimal_continuous_actions: Indices of optimal continuous actions.
+        discrete_actions_grid_shape: Shape of the discrete actions grid.
+        continuous_actions_grid_shape: Shape of the continuous actions grid.
+        state_action_space: StateActionSpace instance.
+
+    Returns:
+        Dictionary of optimal actions.
+
+    """
+    optimal_discrete_actions = _lookup_values_from_indices(
+        flat_indices=indices_optimal_discrete_actions,
+        grids=state_action_space.discrete_actions,
+        grids_shapes=discrete_actions_grid_shape,
+    )
+
+    optimal_continuous_actions = _lookup_values_from_indices(
+        flat_indices=indices_optimal_continuous_actions,
+        grids=state_action_space.continuous_actions,
+        grids_shapes=continuous_actions_grid_shape,
+    )
+
+    return optimal_discrete_actions | optimal_continuous_actions
+
+
+def _lookup_values_from_indices(
     flat_indices: Array,
     grids: dict[str, Array],
     grids_shapes: tuple[int, ...],

@@ -1,7 +1,7 @@
 """Testing against the analytical solution of Iskhakov et al. (2017).
 
 The benchmark is taken from the paper "The endogenous grid method for
-discrete-continuous dynamic choice models with (or without) taste shocks" by Fedor
+discrete-continuous dynamic action models with (or without) taste shocks" by Fedor
 Iskhakov, Thomas H. Jørgensen, John Rust and Bertel Schjerning (2017,
 https://doi.org/10.3982/QE643).
 
@@ -68,10 +68,10 @@ def test_analytical_solution(model_name, model_and_params):
     # ==================================================================================
     solve_model, _ = get_lcm_function(model=model_and_params["model"], targets="solve")
 
-    vf_arr_dict: dict[int, Array] = solve_model(params=model_and_params["params"])  # type: ignore[assignment]
-    vf_arr_list = list(dict(sorted(vf_arr_dict.items(), key=lambda x: x[0])).values())
+    V_arr_dict: dict[int, Array] = solve_model(params=model_and_params["params"])  # type: ignore[assignment]
+    V_arr_list = list(dict(sorted(V_arr_dict.items(), key=lambda x: x[0])).values())
 
-    _numerical = np.stack(vf_arr_list)
+    _numerical = np.stack(V_arr_list)
     numerical = {
         "worker": _numerical[:, 0, :],
         "retired": _numerical[:, 1, :],

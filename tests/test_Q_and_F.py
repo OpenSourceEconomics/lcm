@@ -6,19 +6,19 @@ from numpy.testing import assert_array_equal
 
 from lcm.input_processing import process_model
 from lcm.interfaces import InternalModel
-from lcm.state_choice_space import create_state_space_info
-from lcm.typing import ShockType
-from lcm.utility_and_feasibility import (
+from lcm.Q_and_F import (
     _get_feasibility,
-    _get_node_weights_function,
-    get_utility_and_feasibility_function,
+    _get_joint_weights_function,
+    get_Q_and_F,
 )
+from lcm.state_action_space import create_state_space_info
+from lcm.typing import ShockType
 from tests.test_models import get_model_config
 from tests.test_models.deterministic import utility
 
 
 @pytest.mark.illustrative
-def test_get_utility_and_feasibility_function():
+def test_get_Q_and_F_function():
     model = process_model(
         get_model_config("iskhakov_et_al_2017_stripped_down", n_periods=3),
     )
@@ -37,34 +37,33 @@ def test_get_utility_and_feasibility_function():
         is_last_period=False,
     )
 
-    u_and_f = get_utility_and_feasibility_function(
+    Q_and_F = get_Q_and_F(
         model=model,
         next_state_space_info=state_space_info,
         period=model.n_periods - 1,
-        is_last_period=True,
     )
 
     consumption = jnp.array([10, 20, 30])
     retirement = jnp.array([0, 1, 0])
     wealth = jnp.array([20, 20, 20])
 
-    u, f = u_and_f(
+    Q_arr, F_arr = Q_and_F(
         consumption=consumption,
         retirement=retirement,
         wealth=wealth,
         params=params,
-        vf_arr=None,
+        next_V_arr=None,
     )
 
     assert_array_equal(
-        u,
+        Q_arr,
         utility(
             consumption=consumption,
             working=1 - retirement,
             disutility_of_work=1.0,
         ),
     )
-    assert_array_equal(f, jnp.array([True, True, False]))
+    assert_array_equal(F_arr, jnp.array([True, True, False]))
 
 
 @pytest.fixture
@@ -148,7 +147,7 @@ def test_get_combined_constraint_illustrative(internal_model_illustrative):
 
 
 def test_get_multiply_weights():
-    multiply_weights = _get_node_weights_function(
+    multiply_weights = _get_joint_weights_function(
         stochastic_variables=["a", "b"],
     )
 

@@ -32,7 +32,7 @@ class ModelMock:
 
     n_periods: int
     functions: dict[str, Any]
-    choices: dict[str, Any]
+    actions: dict[str, Any]
     states: dict[str, Any]
 
 
@@ -46,7 +46,7 @@ def model(binary_category_class):
         functions={
             "next_c": next_c,
         },
-        choices={
+        actions={
             "a": DiscreteGrid(binary_category_class),
         },
         states={
@@ -73,7 +73,7 @@ def test_get_variable_info(model):
     exp = pd.DataFrame(
         {
             "is_state": [False, True],
-            "is_choice": [True, False],
+            "is_action": [True, False],
             "is_continuous": [False, False],
             "is_discrete": [True, True],
             "is_stochastic": [False, False],
@@ -128,7 +128,7 @@ def test_process_model_iskhakov_et_al_2017():
     consumption_grid = LinspaceGrid(
         start=1,
         stop=400,
-        n_points=model_config.choices["consumption"].n_points,  # type: ignore[attr-defined]
+        n_points=model_config.actions["consumption"].n_points,  # type: ignore[attr-defined]
     )
     assert model.gridspecs["consumption"] == consumption_grid
 
@@ -141,7 +141,7 @@ def test_process_model_iskhakov_et_al_2017():
     assert model.gridspecs["lagged_retirement"].codes == (0, 1)
 
     # Grids
-    expected = grid_helpers.linspace(**model_config.choices["consumption"].__dict__)
+    expected = grid_helpers.linspace(**model_config.actions["consumption"].__dict__)
     assert_array_equal(model.grids["consumption"], expected)
 
     expected = grid_helpers.linspace(**model_config.states["wealth"].__dict__)
@@ -189,7 +189,7 @@ def test_process_model():
     consumption_specs = LinspaceGrid(
         start=1,
         stop=400,
-        n_points=model_config.choices["consumption"].n_points,  # type: ignore[attr-defined]
+        n_points=model_config.actions["consumption"].n_points,  # type: ignore[attr-defined]
     )
     assert model.gridspecs["consumption"] == consumption_specs
 
@@ -198,7 +198,7 @@ def test_process_model():
     assert model.gridspecs["retirement"].codes == (0, 1)
 
     # Grids
-    expected = grid_helpers.linspace(**model_config.choices["consumption"].__dict__)
+    expected = grid_helpers.linspace(**model_config.actions["consumption"].__dict__)
     assert_array_equal(model.grids["consumption"], expected)
 
     expected = grid_helpers.linspace(**model_config.states["wealth"].__dict__)

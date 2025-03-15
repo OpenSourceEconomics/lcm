@@ -4,21 +4,21 @@ import jax.numpy as jnp
 import pytest
 from numpy.testing import assert_array_almost_equal, assert_array_equal
 
-from lcm.conditional_continuation import (
-    get_compute_conditional_continuation_policy,
-)
 from lcm.entry_point import get_lcm_function
 from lcm.input_processing import process_model
 from lcm.logging import get_logger
+from lcm.max_Q_over_c import (
+    get_argmax_and_max_Q_over_c,
+)
 from lcm.next_state import get_next_state_function
+from lcm.Q_and_F import get_Q_and_F
 from lcm.simulation.simulate import (
-    get_continuous_choice_argmax_given_discrete,
-    get_values_from_indices,
+    _lookup_optimal_continuous_actions,
+    _lookup_values_from_indices,
     simulate,
 )
-from lcm.state_choice_space import create_state_space_info
+from lcm.state_action_space import create_state_space_info
 from lcm.typing import Target
-from lcm.utility_and_feasibility import get_utility_and_feasibility_function
 from tests.test_models import (
     get_model_config,
     get_params,
@@ -36,9 +36,9 @@ if TYPE_CHECKING:
 @pytest.fixture
 def simulate_inputs():
     model_config = get_model_config("iskhakov_et_al_2017_stripped_down", n_periods=1)
-    choices = model_config.choices
-    choices["consumption"] = choices["consumption"].replace(stop=100)  # type: ignore[attr-defined]
-    model_config = model_config.replace(choices=choices)
+    actions = model_config.actions
+    actions["consumption"] = actions["consumption"].replace(stop=100)  # type: ignore[attr-defined]
+    model_config = model_config.replace(actions=actions)
     model = process_model(model_config)
 
     state_space_info = create_state_space_info(
@@ -46,22 +46,21 @@ def simulate_inputs():
         is_last_period=False,
     )
 
-    compute_ccv_policy_functions = []
+    argmax_and_max_Q_over_c_functions = []
     for period in range(model.n_periods):
-        u_and_f = get_utility_and_feasibility_function(
+        Q_and_F = get_Q_and_F(
             model=model,
             next_state_space_info=state_space_info,
             period=period,
-            is_last_period=True,
         )
-        compute_ccv = get_compute_conditional_continuation_policy(
-            utility_and_feasibility=u_and_f,
-            continuous_choice_variables=("consumption",),
+        argmax_and_max_Q_over_c = get_argmax_and_max_Q_over_c(
+            Q_and_F=Q_and_F,
+            continuous_actions_names=("consumption",),
         )
-        compute_ccv_policy_functions.append(compute_ccv)
+        argmax_and_max_Q_over_c_functions.append(argmax_and_max_Q_over_c)
 
     return {
-        "compute_ccv_policy_functions": compute_ccv_policy_functions,
+        "argmax_and_max_Q_over_c_functions": argmax_and_max_Q_over_c_functions,
         "model": model,
         "next_state": get_next_state_function(model, target=Target.SIMULATE),
     }
@@ -78,7 +77,7 @@ def test_simulate_using_raw_inputs(simulate_inputs):
 
     got = simulate(
         params=params,
-        vf_arr_dict={0: jnp.empty(0)},
+        V_arr_dict={0: jnp.empty(0)},
         initial_states={"wealth": jnp.array([1.0, 50.400803])},
         logger=get_logger(debug_mode=False),
         **simulate_inputs,
@@ -110,8 +109,8 @@ def iskhakov_et_al_2017_stripped_down_model_solution():
         solve_model, _ = get_lcm_function(model_config, targets="solve")
 
         params = get_params()
-        vf_arr_dict = solve_model(params=params)
-        return vf_arr_dict, params, model_config
+        V_arr_dict = solve_model(params=params)
+        return V_arr_dict, params, model_config
 
     return _model_solution
 
@@ -120,7 +119,7 @@ def test_simulate_using_get_lcm_function(
     iskhakov_et_al_2017_stripped_down_model_solution,
 ):
     n_periods = 3
-    vf_arr_dict, params, model = iskhakov_et_al_2017_stripped_down_model_solution(
+    V_arr_dict, params, model = iskhakov_et_al_2017_stripped_down_model_solution(
         n_periods=n_periods,
     )
 
@@ -128,7 +127,7 @@ def test_simulate_using_get_lcm_function(
 
     res: pd.DataFrame = simulate_model(  # type: ignore[assignment]
         params,
-        vf_arr_dict=vf_arr_dict,
+        V_arr_dict=V_arr_dict,
         initial_states={
             "wealth": jnp.array([20.0, 150, 250, 320]),
         },
@@ -157,7 +156,7 @@ def test_simulate_using_get_lcm_function(
         assert (res.loc[period]["value"].diff()[1:] >= 0).all()  # type: ignore[operator]
 
 
-def test_simulate_with_only_discrete_choices():
+def test_simulate_with_only_discrete_actions():
     model = get_model_config("iskhakov_et_al_2017_discrete", n_periods=2)
     params = get_params(wage=1.5, beta=1, interest_rate=0)
 
@@ -204,13 +203,13 @@ def test_effect_of_beta_on_last_period():
 
     res_low: pd.DataFrame = simulate_model(  # type: ignore[assignment]
         params_low,
-        vf_arr_dict=solution_low,
+        V_arr_dict=solution_low,
         initial_states={"wealth": initial_wealth},
     )
 
     res_high: pd.DataFrame = simulate_model(  # type: ignore[assignment]
         params_high,
-        vf_arr_dict=solution_high,
+        V_arr_dict=solution_high,
         initial_states={"wealth": initial_wealth},
     )
 
@@ -248,13 +247,13 @@ def test_effect_of_disutility_of_work():
 
     res_low: pd.DataFrame = simulate_model(  # type: ignore[assignment]
         params_low,
-        vf_arr_dict=solution_low,
+        V_arr_dict=solution_low,
         initial_states={"wealth": initial_wealth},
     )
 
     res_high: pd.DataFrame = simulate_model(  # type: ignore[assignment]
         params_high,
-        vf_arr_dict=solution_high,
+        V_arr_dict=solution_high,
         initial_states={"wealth": initial_wealth},
     )
 
@@ -278,8 +277,8 @@ def test_effect_of_disutility_of_work():
 # ======================================================================================
 
 
-def test_retrieve_choices():
-    got = get_values_from_indices(
+def test_retrieve_actions():
+    got = _lookup_values_from_indices(
         flat_indices=jnp.array([0, 3, 7]),
         grids={"a": jnp.linspace(0, 1, 5), "b": jnp.linspace(10, 20, 6)},
         grids_shapes=(5, 6),
@@ -288,8 +287,8 @@ def test_retrieve_choices():
     assert_array_equal(got["b"], jnp.array([10, 16, 12]))
 
 
-def test_filter_ccv_policy():
-    ccc_policy = jnp.array(
+def test_get_continuous_action_argmax_given_discrete():
+    argmax_and_max_Q_over_c_values = jnp.array(
         [
             [0, 1],
             [1, 0],
@@ -297,9 +296,9 @@ def test_filter_ccv_policy():
     )
     argmax = jnp.array([0, 1])
     vars_grid_shape = (2,)
-    got = get_continuous_choice_argmax_given_discrete(
-        conditional_continuous_choice_argmax=ccc_policy,
+    got = _lookup_optimal_continuous_actions(
+        indices_argmax_Q_over_c=argmax_and_max_Q_over_c_values,
         discrete_argmax=argmax,
-        discrete_choices_grid_shape=vars_grid_shape,
+        discrete_actions_grid_shape=vars_grid_shape,
     )
     assert jnp.all(got == jnp.array([0, 0]))
