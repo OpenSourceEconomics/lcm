@@ -7,5 +7,4 @@
 
 | Module name                                                                                                                                | Description                                                            |
 | ------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------- |
-| [`dispatchers.py`](https://nbviewer.org/github/OpenSourceEconomics/pylcm/blob/main/explanations/dispatchers.ipynb)                         | Explanations of `spacemap`, `productmap`, and `vmap_1d` functions      |
 | [`function_representation.py`](https://nbviewer.org/github/OpenSourceEconomics/pylcm/blob/main/explanations/function_representation.ipynb) | Explanations of what the function representation does and how it works |
