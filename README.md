@@ -23,6 +23,11 @@ for installation of `jax` and `jaxlib`, please consult the `jax`
 > [!NOTE]
 > We currently test GPU support for `PyLCM` only on Linux with CUDA 12.
 
+## Questions
+
+If you have any questions, feel free to ask them on the PyLCM
+[Zulip chat](https://ose.zulipchat.com/#narrow/channel/491562-PyLCM).
+
 ## License
 
 This project is licensed under the Apache License, Version 2.0. See the

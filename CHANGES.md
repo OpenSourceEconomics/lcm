@@ -16,15 +16,16 @@ chronological order. We follow [semantic versioning](https://semver.org/).
     - Specification of finite-horizon discrete-continuous choice models with an
        arbitrary number of discrete and continuous states and actions.
 
-    - Linearly spaced grids that approximate continuous states and actions.
+    - Linearly and Log-linearly spaced grids that approximate continuous states and
+      actions.
 
     - Linear interpolation and extrapolation of the value function for continuous
        states.
 
     - Grid search (brute-force) for finding the optimal continuous policy.
 
-    - Stochastic state transitions for discrete states, that are modeled via a
-       Markov transition matrix, which may depend on other discrete states and actions.
+    - Stochastic state transitions for discrete states which may depend on other
+      discrete states and actions.
 
 - Built with contributions from the PyLCM team.
 
