@@ -41,6 +41,13 @@ Thanks to everyone who contributed to this release:
   funding to support core development. Additionally, he reviewed pull requests and
   provided feedback on the internal and external code structure and design.
 
+- {ghuser}`janosg`
+
+  Designed and implemented the initial prototype of `PyLCM`, laying the foundation for
+  its development. He onboarded {ghuser}`timmens` and played a key role in shaping the
+  project's direction. Even after stepping back from active development, he contributed
+  to implementation discussions and later provided guidance on architectural decisions.
+
 - {ghuser}`timmens`
 
   Took over development of `PyLCM`, expanding its functionality with key features like
@@ -49,13 +56,6 @@ Thanks to everyone who contributed to this release:
   making the package easier to develop and extend. His contributions also include
   improved documentation, type annotations, static type checking, and the introduction
   of example and explanation notebooks.
-
-- {ghuser}`janosg`
-
-  Designed and implemented the initial prototype of `PyLCM`, laying the foundation for
-  its development. He onboarded {ghuser}`timmens` and played a key role in shaping the
-  project's direction. Even after stepping back from active development, he contributed
-  to implementation discussions and later provided guidance on architectural decisions.
 
 - {ghuser}`mj023`
 
