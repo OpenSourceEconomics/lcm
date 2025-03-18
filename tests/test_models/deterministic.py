@@ -41,7 +41,7 @@ def utility_with_constraint(
     # Temporary workaround for bug described in issue #30, which requires us to pass
     # all state variables to the utility function.
     # TODO(@timmens): Remove function once #30 is fixed (re-use "utility").
-    # https://github.com/OpenSourceEconomics/lcm/issues/30
+    # https://github.com/opensourceeconomics/pylcm/issues/30
     lagged_retirement,  # noqa: ARG001
 ):
     return utility(consumption, working, disutility_of_work)

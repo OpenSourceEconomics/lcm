@@ -52,7 +52,7 @@ def utility(
     # Temporary workaround for bug described in issue #30, which requires us to pass
     # all state variables to the utility function.
     # TODO(@timmens): Remove function arguments once #30 is fixed.
-    # https://github.com/OpenSourceEconomics/lcm/issues/30
+    # https://github.com/opensourceeconomics/pylcm/issues/30
     partner,  # noqa: ARG001
     disutility_of_work,
 ):
