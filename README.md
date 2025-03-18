@@ -9,19 +9,45 @@ simulation of finite-horizon discrete-continuous dynamic choice models.
 
 ## Installation
 
-PyLCM currently needs to be installed from GitHub and requires `jax` and `jaxlib`.
+PyLCM currently needs to be installed from GitHub using
 
-> [!IMPORTANT]
-> We recommend installing at least version "0.4.34" of `jax` and `jaxlib`, due to memory
-> issues with previous versions.
+```console
+$ pip install git+https://github.com/OpenSourceEconomics/pylcm.git
+```
 
-If you aim to run PyLCM on a GPU, you need to install `jaxlib` with CUDA support (for
-Linux) or with support for AMD GPUs / ARM-based Silicon GPUs (for MacOS). In any case,
-for installation of `jax` and `jaxlib`, please consult the `jax`
+### GPU Support
+
+By default, the installation of `PyLCM` comes with the CPU version of `jax`. If you aim
+to run `PyLCM` on a GPU, you need to install a `jaxlib` version with GPU support. For
+the installation of `jaxlib`, please consult the `jax`
 [docs](https://jax.readthedocs.io/en/latest/installation.html#supported-platforms).
 
 > [!NOTE]
-> We currently test GPU support for PyLCM only on Linux with CUDA 12.
+> GPU support is currently only tested on Linux with CUDA 12.
+
+## Developing
+
+We use [pixi](https://pixi.sh/latest/) for our local development environment. If you
+want to work with or extend the PyLCM code base you can run the tests using
+
+```console
+$ git clone https://github.com/OpenSourceEconomics/pylcm.git
+$ pixi run tests
+```
+
+This will install the development environment and run the tests. You can run
+[mypy](https://mypy-lang.org/) using
+
+```console
+$ pixi run mypy
+```
+
+Before committing, install the pre-commit hooks using
+
+```console
+$ pixi global install pre-commit
+$ pre-commit install
+```
 
 ## Questions
 
