@@ -17,9 +17,9 @@ $ pip install git+https://github.com/OpenSourceEconomics/pylcm.git
 
 ### GPU Support
 
-By default, the installation of `PyLCM` comes with the CPU version of `jax`. If you aim
-to run `PyLCM` on a GPU, you need to install a `jaxlib` version with GPU support. For
-the installation of `jaxlib`, please consult the `jax`
+By default, the installation of PyLCM comes with the CPU version of `jax`. If you aim to
+run PyLCM on a GPU, you need to install a `jaxlib` version with GPU support. For the
+installation of `jaxlib`, please consult the `jax`
 [docs](https://jax.readthedocs.io/en/latest/installation.html#supported-platforms).
 
 > [!NOTE]
