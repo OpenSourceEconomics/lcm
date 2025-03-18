@@ -9,7 +9,14 @@ simulation of finite-horizon discrete-continuous dynamic choice models.
 
 ## Installation
 
-PyLCM currently needs to be installed from GitHub using
+PyLCM can be installed via PyPI or via GitHub. To do so, type the following in a
+terminal:
+
+```console
+$ pip install pylcm
+```
+
+or, for the latest development version, type:
 
 ```console
 $ pip install git+https://github.com/OpenSourceEconomics/pylcm.git
